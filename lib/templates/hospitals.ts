@@ -15,7 +15,6 @@ export const yuquanHospitalTemplate: HospitalProfile = {
     "身份证",
     "医保卡 / 社保卡",
     "产检资料",
-    "银行卡 / 支付方式",
     "医院要求的其他入院材料",
   ],
   hospitalProvidedItems: ["不确定"],
@@ -25,7 +24,8 @@ export const yuquanHospitalTemplate: HospitalProfile = {
     "产检时确认是否需要自带宝宝尿不湿",
     "产检时确认是否需要自带宝宝衣物",
     "产检时确认陪产/探视规则",
-    "产检时确认住院押金、停车和入院动线",
+    "产检时确认住院押金、医保结算和支付方式要求",
+    "产检时确认停车和入院动线",
   ],
   notAllowedItems: ["待确认"],
   admissionNotes:
