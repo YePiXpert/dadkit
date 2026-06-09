@@ -1,15 +1,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  createSnapshot,
   exportData,
   importData,
   loadChecklist,
   loadChecklistMode,
+  loadSnapshots,
+  loadUserProfile,
+  restoreSnapshot,
   saveChecklist,
   saveChecklistMode,
+  saveUserProfile,
   STORAGE_KEYS,
 } from "@/lib/storage";
-import type { ChecklistItem } from "@/lib/types";
+import type { ChecklistItem, UserProfile } from "@/lib/types";
 
 function installLocalStorage(initial: Record<string, string> = {}) {
   const store = new Map(Object.entries(initial));
@@ -41,6 +46,22 @@ function testItem(id = "item-1"): ChecklistItem {
     bag: "mom_bag",
     bulk: "small",
     timing: "pack_now",
+  };
+}
+
+function testProfile(dueDate = "2026-07-21"): UserProfile {
+  return {
+    dueDate,
+    regionId: "cn-bj-general",
+    hospitalMode: "unknown",
+    deliveryMode: "unknown",
+    expectedStayDays: 3,
+    breastfeeding: true,
+    partnerPresent: true,
+    coldWeather: false,
+    hospitalProvidedItemIds: [],
+    createdAt: "2026-06-09T00:00:00.000Z",
+    updatedAt: "2026-06-09T00:00:00.000Z",
   };
 }
 
@@ -113,6 +134,50 @@ describe("storage import/export", () => {
 
     expect(result.ok).toBe(true);
     expect(loadChecklist()).toEqual(existingChecklist);
+    expect(loadChecklistMode()).toBe("full");
+  });
+
+  it("keeps only the latest 5 snapshots", () => {
+    installLocalStorage();
+
+    saveChecklist([testItem("existing")]);
+
+    for (let index = 1; index <= 7; index += 1) {
+      createSnapshot(`备份 ${index}`);
+    }
+
+    const snapshots = loadSnapshots();
+
+    expect(snapshots).toHaveLength(5);
+    expect(snapshots.map((snapshot) => snapshot.reason)).toEqual([
+      "备份 7",
+      "备份 6",
+      "备份 5",
+      "备份 4",
+      "备份 3",
+    ]);
+  });
+
+  it("restores userProfile, checklist, and checklistMode from a snapshot", () => {
+    installLocalStorage();
+    const profile = testProfile();
+    const checklist = [testItem("before")];
+
+    saveUserProfile(profile);
+    saveChecklist(checklist);
+    saveChecklistMode("full");
+
+    const snapshot = createSnapshot("恢复测试");
+
+    saveUserProfile(testProfile("2026-08-01"));
+    saveChecklist([testItem("after")]);
+    saveChecklistMode("lean");
+
+    const result = restoreSnapshot(snapshot?.id ?? "");
+
+    expect(result).toEqual({ ok: true, message: "导入成功" });
+    expect(loadUserProfile()).toEqual(profile);
+    expect(loadChecklist()).toEqual(checklist);
     expect(loadChecklistMode()).toBe("full");
   });
 });

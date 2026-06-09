@@ -12,7 +12,17 @@ export const STORAGE_KEYS = {
   hiddenTemplateItems: "dadkit:hidden-template-items",
   hospitalOverrides: "dadkit:hospital-overrides",
   checklistMode: "dadkit:checklist-mode",
+  snapshots: "dadkit:snapshots",
 } as const;
+
+const DATA_STORAGE_KEYS = [
+  STORAGE_KEYS.userProfile,
+  STORAGE_KEYS.checklist,
+  STORAGE_KEYS.customItems,
+  STORAGE_KEYS.hiddenTemplateItems,
+  STORAGE_KEYS.hospitalOverrides,
+  STORAGE_KEYS.checklistMode,
+];
 
 export type DadKitExportData = {
   version: 1;
@@ -28,6 +38,13 @@ export type DadKitExportData = {
 export type ImportResult = {
   ok: boolean;
   message: string;
+};
+
+export type DadKitSnapshot = {
+  id: string;
+  createdAt: string;
+  reason: string;
+  data: DadKitExportData;
 };
 
 function canUseLocalStorage() {
@@ -124,7 +141,7 @@ export function resetAllData() {
     return;
   }
 
-  Object.values(STORAGE_KEYS).forEach((key) => window.localStorage.removeItem(key));
+  DATA_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
 }
 
 export function exportData(): DadKitExportData {
@@ -216,4 +233,115 @@ export function importData(rawJson: string): ImportResult {
   }
 
   return { ok: true, message: "导入成功" };
+}
+
+function snapshotId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `snapshot-${crypto.randomUUID()}`;
+  }
+
+  return `snapshot-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function hasSnapshotData(data: DadKitExportData) {
+  return Boolean(
+    data.userProfile ||
+      data.checklist.length > 0 ||
+      data.customItems.length > 0 ||
+      data.hiddenTemplateItemIds.length > 0 ||
+      data.hospitalOverrides.length > 0,
+  );
+}
+
+function isSnapshot(value: unknown): value is DadKitSnapshot {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.createdAt === "string" &&
+    typeof value.reason === "string" &&
+    isRecord(value.data) &&
+    value.data.version === 1
+  );
+}
+
+export function loadSnapshots(): DadKitSnapshot[] {
+  try {
+    const snapshots = readJson<DadKitSnapshot[]>(STORAGE_KEYS.snapshots, []);
+
+    if (!Array.isArray(snapshots)) {
+      return [];
+    }
+
+    return snapshots.filter(isSnapshot).slice(0, 5);
+  } catch {
+    return [];
+  }
+}
+
+export function saveSnapshots(snapshots: DadKitSnapshot[]) {
+  try {
+    if (!canUseLocalStorage()) {
+      return;
+    }
+
+    writeJson(STORAGE_KEYS.snapshots, snapshots.filter(isSnapshot).slice(0, 5));
+  } catch {
+    return;
+  }
+}
+
+export function createSnapshot(reason: string): DadKitSnapshot | undefined {
+  try {
+    if (!canUseLocalStorage()) {
+      return undefined;
+    }
+
+    const data = exportData();
+
+    if (!hasSnapshotData(data)) {
+      return undefined;
+    }
+
+    const snapshot: DadKitSnapshot = {
+      id: snapshotId(),
+      createdAt: new Date().toISOString(),
+      reason,
+      data,
+    };
+
+    saveSnapshots([snapshot, ...loadSnapshots()]);
+
+    return snapshot;
+  } catch {
+    return undefined;
+  }
+}
+
+export function restoreSnapshot(id: string): ImportResult {
+  const snapshot = loadSnapshots().find((candidate) => candidate.id === id);
+
+  if (!snapshot) {
+    return { ok: false, message: "未找到这份本地备份，未修改本地数据。" };
+  }
+
+  try {
+    return importData(JSON.stringify(snapshot.data));
+  } catch {
+    return { ok: false, message: "恢复失败，未修改本地数据。" };
+  }
+}
+
+export function clearSnapshots() {
+  try {
+    if (!canUseLocalStorage()) {
+      return;
+    }
+
+    window.localStorage.removeItem(STORAGE_KEYS.snapshots);
+  } catch {
+    return;
+  }
 }

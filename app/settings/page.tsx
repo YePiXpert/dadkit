@@ -1,18 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Copy, Info, RotateCcw, Upload } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Copy, History, Info, RotateCcw, Trash2, Upload } from "lucide-react";
 
 import { DisclaimerBox } from "@/components/DisclaimerBox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useDadKitStore } from "@/lib/store";
+import {
+  clearSnapshots,
+  loadSnapshots,
+  restoreSnapshot,
+  type DadKitSnapshot,
+} from "@/lib/storage";
 
 export default function SettingsPage() {
   const clearAll = useDadKitStore((state) => state.clearAll);
   const exportJson = useDadKitStore((state) => state.exportJson);
+  const hydrate = useDadKitStore((state) => state.hydrate);
   const importJson = useDadKitStore((state) => state.importJson);
   const profile = useDadKitStore((state) => state.profile);
   const checklist = useDadKitStore((state) => state.checklist);
@@ -21,6 +28,15 @@ export default function SettingsPage() {
   const [importText, setImportText] = useState("");
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState<boolean | undefined>();
+  const [snapshots, setSnapshots] = useState<DadKitSnapshot[]>([]);
+
+  function refreshSnapshots() {
+    setSnapshots(loadSnapshots());
+  }
+
+  useEffect(() => {
+    refreshSnapshots();
+  }, []);
 
   function clearData() {
     if (!window.confirm("确认清空本地数据？此操作只会影响当前浏览器。")) {
@@ -28,6 +44,7 @@ export default function SettingsPage() {
     }
 
     clearAll();
+    refreshSnapshots();
     setMessage("本地数据已清空。");
     setMessageOk(true);
   }
@@ -35,12 +52,40 @@ export default function SettingsPage() {
   function importData() {
     const result = importJson(importText);
 
+    refreshSnapshots();
     setMessage(result.message);
     setMessageOk(result.ok);
 
     if (result.ok) {
       setImportText("");
     }
+  }
+
+  function restoreLocalSnapshot(id: string) {
+    if (!window.confirm("恢复此备份会替换当前资料和清单。是否继续？")) {
+      return;
+    }
+
+    const result = restoreSnapshot(id);
+
+    if (result.ok) {
+      hydrate();
+    }
+
+    refreshSnapshots();
+    setMessage(result.message);
+    setMessageOk(result.ok);
+  }
+
+  function deleteAllSnapshots() {
+    if (!window.confirm("确认删除全部本地备份？")) {
+      return;
+    }
+
+    clearSnapshots();
+    refreshSnapshots();
+    setMessage("本地备份已删除。");
+    setMessageOk(true);
   }
 
   return (
@@ -67,6 +112,57 @@ export default function SettingsPage() {
             value={checklistMode === "lean" ? "精简" : "完整"}
           />
           <StatusTile label="自定义项" value={`${customItems.length} 项`} />
+        </CardContent>
+      </Card>
+
+      <Card className="mobile-shell rounded-2xl lg:max-w-none">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="size-4 text-primary" />
+            最近备份
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          {snapshots.length === 0 ? (
+            <p className="text-sm leading-6 text-muted-foreground">
+              暂无本地备份。DadKit 会在导入、重置、清空或创建新清单前自动保存最近备份。
+            </p>
+          ) : (
+            <>
+              <div className="grid gap-2">
+                {snapshots.map((snapshot) => (
+                  <div
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background p-3"
+                    key={snapshot.id}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">
+                        {formatSnapshotTime(snapshot.createdAt)}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {snapshot.reason}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => restoreLocalSnapshot(snapshot.id)}
+                    >
+                      恢复
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button
+                className="justify-self-start"
+                variant="outline"
+                onClick={deleteAllSnapshots}
+              >
+                <Trash2 className="size-4" />
+                删除全部快照
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -152,6 +248,16 @@ export default function SettingsPage() {
       <DisclaimerBox />
     </div>
   );
+}
+
+function formatSnapshotTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString("zh-CN", { hour12: false });
 }
 
 function StatusTile({ label, value }: { label: string; value: string }) {

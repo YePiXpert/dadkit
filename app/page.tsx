@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
+import { differenceInCalendarDays, parseISO } from "date-fns";
 import {
   ArrowRight,
   CalendarClock,
@@ -10,7 +10,6 @@ import {
   Hospital,
   Share2,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 import { ActionCard } from "@/components/ActionCard";
 import { DisclaimerBox } from "@/components/DisclaimerBox";
@@ -37,31 +36,14 @@ function dueAdvice(daysLeft: number) {
 }
 
 export default function HomePage() {
-  const router = useRouter();
   const profile = useDadKitStore((state) => state.profile);
   const checklist = useDadKitStore((state) => state.checklist);
-  const createProfile = useDadKitStore((state) => state.createProfile);
   const packing = calculatePackingCompletion(checklist);
   const confirmation = calculateConfirmationCompletion(checklist);
   const lastMinute = calculateLastMinuteCompletion(checklist);
   const daysLeft = profile?.dueDate
     ? differenceInCalendarDays(parseISO(profile.dueDate), new Date())
     : undefined;
-
-  function openExample() {
-    createProfile({
-      dueDate: format(addDays(new Date(), 42), "yyyy-MM-dd"),
-      hospitalMode: "preset",
-      hospitalId: "cn-bj-yuquan-hospital",
-      deliveryMode: "unknown",
-      expectedStayDays: 3,
-      breastfeeding: true,
-      partnerPresent: true,
-      coldWeather: false,
-      hospitalProvidedItemIds: ["unknown"],
-    });
-    router.push("/checklist");
-  }
 
   return (
     <div className="page-shell">
@@ -137,9 +119,11 @@ export default function HomePage() {
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
-            <Button className="h-9" variant="outline" onClick={openExample}>
-              <Eye className="size-4" />
-              查看示例
+            <Button asChild className="h-9" variant="outline">
+              <Link href="/demo">
+                <Eye className="size-4" />
+                {profile ? "查看示例，不影响当前数据" : "查看示例"}
+              </Link>
             </Button>
           </div>
         </div>

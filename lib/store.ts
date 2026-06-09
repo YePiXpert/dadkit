@@ -4,6 +4,7 @@ import { create } from "zustand";
 
 import { generateChecklist } from "@/lib/rules";
 import {
+  createSnapshot,
   exportData,
   importData,
   loadChecklist,
@@ -133,6 +134,10 @@ function buildChecklist(
   });
 }
 
+function snapshotBeforeChange(reason: string) {
+  createSnapshot(reason);
+}
+
 export const useDadKitStore = create<DadKitState>((set, get) => ({
   hydrated: false,
   profile: undefined,
@@ -177,6 +182,8 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     }
   },
   createProfile: (input) => {
+    snapshotBeforeChange("创建新清单前");
+
     const profile = createDefaultProfile(input);
     const state = get();
     const checklist = buildChecklist(profile, {
@@ -193,6 +200,8 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     return profile;
   },
   saveProfile: (profile) => {
+    snapshotBeforeChange("修改个人资料前");
+
     const updatedProfile = {
       ...profile,
       updatedAt: nowIso(),
@@ -237,6 +246,8 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     if (!state.profile) {
       return;
     }
+
+    snapshotBeforeChange("重置清单前");
 
     const checklist = generateChecklist(state.profile, {
       customItems: [],
@@ -354,6 +365,8 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   },
   exportJson: () => JSON.stringify(exportData(), null, 2),
   importJson: (json) => {
+    snapshotBeforeChange("导入 JSON 前");
+
     const result = importData(json);
 
     if (result.ok) {
@@ -363,6 +376,8 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     return result;
   },
   clearAll: () => {
+    snapshotBeforeChange("清空本地数据前");
+
     resetAllData();
     set({
       profile: undefined,
