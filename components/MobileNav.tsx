@@ -10,7 +10,7 @@ const navItems = [
   { href: "/", label: "首页", icon: Home },
   { href: "/checklist", label: "清单", icon: ClipboardList },
   { href: "/hospital", label: "医院", icon: Hospital },
-  { href: "/share", label: "导出", icon: Share2 },
+  { href: "/share", label: "爸爸", icon: Share2 },
   { href: "/settings", label: "设置", icon: Settings },
 ];
 

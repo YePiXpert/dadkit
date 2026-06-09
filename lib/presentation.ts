@@ -63,20 +63,20 @@ export function getChecklistVisualGroup(item: ChecklistItem): ChecklistVisualGro
     return "baby_bag";
   }
 
-  if (normalized.category === "partner") {
-    return "dad";
-  }
-
-  if (normalized.category === "hospital_questions" || normalized.itemKind === "question") {
-    return "questions";
-  }
-
   if (
     normalized.category === "last_minute" ||
     normalized.status === "last_minute" ||
     normalized.bag === "last_minute"
   ) {
     return "last_minute";
+  }
+
+  if (normalized.category === "partner") {
+    return "dad";
+  }
+
+  if (normalized.category === "hospital_questions" || normalized.itemKind === "question") {
+    return "questions";
   }
 
   return "going_home";

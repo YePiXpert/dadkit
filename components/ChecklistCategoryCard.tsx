@@ -34,7 +34,7 @@ export function ChecklistCategoryCard({
   }
 
   return (
-    <section className="rounded-lg border border-border bg-card p-3 shadow-soft">
+    <section className="rounded-2xl border border-border bg-card p-3 shadow-soft">
       <div className="space-y-2">
         <button
           className="flex w-full items-center justify-between gap-3 text-left"
@@ -47,7 +47,7 @@ export function ChecklistCategoryCard({
                 open ? "" : "-rotate-90"
               }`}
             />
-            <span className="truncate text-base font-semibold">
+            <span className="truncate text-base font-semibold tracking-normal">
               {title}
             </span>
           </span>

@@ -25,10 +25,10 @@ export function ProgressSummary({ items }: ProgressSummaryProps) {
   const categories = calculateCategoryCompletion(items).filter((item) => item.total > 0);
 
   return (
-    <Card>
+    <Card className="rounded-2xl">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-base">
-          <span>打包进度</span>
+          <span>核心打包进度</span>
           <span className="text-primary">{packing.percent}%</span>
         </CardTitle>
       </CardHeader>
@@ -83,7 +83,7 @@ function SummaryPill({
   total: number;
 }) {
   return (
-    <div className="rounded-md bg-secondary p-2.5 text-sm">
+    <div className="rounded-xl bg-secondary p-2.5 text-sm">
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="font-medium text-secondary-foreground">{label}</span>
         <span className="text-muted-foreground">
@@ -107,7 +107,7 @@ function CategoryProgress({
   total: number;
 }) {
   return (
-    <div className="rounded-md border border-border bg-background p-2.5">
+    <div className="rounded-xl border border-border bg-background p-2.5">
       <div className="mb-2 flex items-center justify-between text-sm">
         <span className="font-medium">{CATEGORY_LABELS[category]}</span>
         <span className="text-muted-foreground">

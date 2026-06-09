@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Save } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleHelp, MapPinned, Save } from "lucide-react";
 
 import { CustomHospitalForm } from "@/components/CustomHospitalForm";
 import { DisclaimerBox } from "@/components/DisclaimerBox";
@@ -31,6 +31,7 @@ function textToLines(text: string) {
 
 export default function HospitalPage() {
   const profile = useDadKitStore((state) => state.profile);
+  const checklist = useDadKitStore((state) => state.checklist);
   const updateProfile = useDadKitStore((state) => state.updateProfile);
   const hospitalOverrides = useDadKitStore((state) => state.hospitalOverrides);
   const updateHospitalOverride = useDadKitStore(
@@ -78,6 +79,55 @@ export default function HospitalPage() {
     );
   }
 
+  const priorityQuestions = checklist
+    .filter(
+      (item) =>
+        item.itemKind === "question" &&
+        item.category === "hospital_questions" &&
+        (item.priority === "must" ||
+          item.name.includes("押金") ||
+          item.name.includes("医保结算") ||
+          item.name.includes("入口") ||
+          item.name.includes("路线") ||
+          item.name.includes("电话") ||
+          item.name.includes("停车")),
+    )
+    .slice(0, 6);
+  const routePaymentItems = checklist
+    .filter(
+      (item) =>
+        (item.itemKind === "task" || item.itemKind === "question") &&
+        (item.name.includes("路线") ||
+          item.name.includes("入口") ||
+          item.name.includes("电话") ||
+          item.name.includes("停车") ||
+          item.name.includes("支付") ||
+          item.name.includes("押金") ||
+          item.name.includes("医保结算")),
+    )
+    .slice(0, 6);
+
+  function toggleProvidedItem(id: string) {
+    const current = new Set(profile.hospitalProvidedItemIds);
+
+    if (id === "unknown") {
+      updateProfile({
+        hospitalProvidedItemIds: current.has("unknown") ? [] : ["unknown"],
+      });
+      return;
+    }
+
+    current.delete("unknown");
+
+    if (current.has(id)) {
+      current.delete(id);
+    } else {
+      current.add(id);
+    }
+
+    updateProfile({ hospitalProvidedItemIds: Array.from(current) });
+  }
+
   function saveOverride() {
     if (!hospitalId) {
       return;
@@ -104,11 +154,115 @@ export default function HospitalPage() {
 
   return (
     <div className="page-shell">
-      {hospital?.verificationStatus === "unverified" ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-          该医院模板尚未核验，请以最近一次产检、入院须知或医院通知为准。
-        </div>
-      ) : null}
+      <div className="mobile-shell grid gap-2 lg:max-w-none">
+        <h1 className="text-3xl font-semibold tracking-normal">
+          到下次产检时问清楚
+        </h1>
+        <p className="text-sm leading-6 text-muted-foreground">
+          医院规则变化快，未确认前不要把“可能提供”当成“已提供”。
+        </p>
+      </div>
+
+      <Card className="mobile-shell rounded-2xl lg:max-w-none">
+        <CardContent className="grid gap-3 p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm text-muted-foreground">当前医院</p>
+              <h2 className="mt-1 text-xl font-semibold tracking-normal">
+                {hospital?.name ?? "暂未确定医院"}
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                模板可信度：
+                {hospital?.verificationStatus === "unverified"
+                  ? "未核验模板"
+                  : hospital?.verificationStatus ?? "待填写"}
+              </p>
+            </div>
+            {hospital?.verificationStatus === "unverified" ? (
+              <span className="rounded-full bg-amber-soft px-3 py-1 text-xs font-medium text-amber-foreground">
+                未核验
+              </span>
+            ) : null}
+          </div>
+          <div className="rounded-xl border border-amber/35 bg-amber-soft p-3 text-sm leading-6 text-amber-foreground">
+            <AlertTriangle className="mr-2 inline size-4" />
+            未核验模板不代表官方要求，请以最近一次产检、入院须知或医院通知为准。
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="mobile-shell grid gap-4 lg:max-w-none lg:grid-cols-2">
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CircleHelp className="size-5 text-primary" />
+              高优先级问题
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2">
+            {priorityQuestions.map((item) => (
+              <HospitalTaskLine key={item.id} name={item.name} note={item.note} />
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPinned className="size-5 text-primary" />
+              入院路线 / 电话 / 停车
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2">
+            {routePaymentItems.map((item) => (
+              <HospitalTaskLine key={item.id} name={item.name} note={item.note} />
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="mobile-shell rounded-2xl border-primary/20 bg-secondary lg:max-w-none">
+        <CardHeader>
+          <CardTitle>医院明确提供才勾选</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          <p className="text-sm leading-6 text-muted-foreground">
+            拿不准就保持“不确定”。勾选后才会把匹配物品标记为“医院提供”。
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              ["postpartum-pads", "产褥垫"],
+              ["baby-diapers", "宝宝尿不湿"],
+              ["baby-clothes", "宝宝衣物"],
+              ["unknown", "不确定"],
+            ].map(([id, label]) => {
+              const checked = profile.hospitalProvidedItemIds.includes(id);
+
+              return (
+                <button
+                  className={`flex items-center gap-2 rounded-xl border bg-card px-3 py-2 text-left text-sm font-medium ${
+                    checked ? "border-primary text-primary" : "border-border"
+                  }`}
+                  key={id}
+                  type="button"
+                  onClick={() => toggleProvidedItem(id)}
+                >
+                  <span
+                    className={`flex size-5 items-center justify-center rounded-md border ${
+                      checked
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-primary/60"
+                    }`}
+                  >
+                    {checked ? <CheckCircle2 className="size-3.5" /> : null}
+                  </span>
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -193,6 +347,17 @@ export default function HospitalPage() {
       )}
 
       <DisclaimerBox />
+    </div>
+  );
+}
+
+function HospitalTaskLine({ name, note }: { name: string; note?: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card px-3 py-2.5">
+      <p className="text-sm font-semibold leading-5">{name}</p>
+      {note ? (
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">{note}</p>
+      ) : null}
     </div>
   );
 }

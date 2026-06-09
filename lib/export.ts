@@ -92,7 +92,12 @@ export function generateShareText(
     ["packed", "hospital_provided"].includes(item.status),
   );
   const lastMinute = normalizedItems.filter(
-    (item) => item.status === "last_minute" || item.category === "last_minute",
+    (item) =>
+      item.category === "last_minute" ||
+      item.bag === "last_minute" ||
+      (item.bag !== "car" &&
+        item.timing === "grab_before_leaving" &&
+        item.itemKind === "task"),
   );
   const hospitalQuestions = normalizedItems.filter(
     (item) => item.category === "hospital_questions" || item.itemKind === "question",
@@ -102,6 +107,12 @@ export function generateShareText(
       isIncomplete(item.status) &&
       item.status !== "last_minute" &&
       item.category !== "last_minute" &&
+      item.bag !== "last_minute" &&
+      !(
+        item.bag !== "car" &&
+        item.timing === "grab_before_leaving" &&
+        item.itemKind === "task"
+      ) &&
       item.category !== "hospital_questions" &&
       item.itemKind !== "question",
   );
@@ -180,7 +191,14 @@ export function generateDadExecutionShareText(
   const payment = dadItems.filter(
     (item) => item.name.includes("支付") || item.name.includes("押金"),
   );
-  const lastMinute = dadItems.filter((item) => item.category === "last_minute");
+  const lastMinute = dadItems.filter(
+    (item) =>
+      item.category === "last_minute" ||
+      item.bag === "last_minute" ||
+      (item.bag !== "car" &&
+        item.timing === "grab_before_leaving" &&
+        item.itemKind === "task"),
+  );
   const goingHome = dadItems.filter(
     (item) =>
       item.name.includes("安全座椅") ||

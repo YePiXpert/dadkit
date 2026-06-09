@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Info, RotateCcw, Upload } from "lucide-react";
+import { Copy, Database, FileJson, Info, RotateCcw, Upload } from "lucide-react";
 
 import { DisclaimerBox } from "@/components/DisclaimerBox";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,13 @@ export default function SettingsPage() {
   const clearAll = useDadKitStore((state) => state.clearAll);
   const exportJson = useDadKitStore((state) => state.exportJson);
   const importJson = useDadKitStore((state) => state.importJson);
+  const profile = useDadKitStore((state) => state.profile);
+  const checklist = useDadKitStore((state) => state.checklist);
+  const checklistMode = useDadKitStore((state) => state.checklistMode);
+  const customItems = useDadKitStore((state) => state.customItems);
   const [importText, setImportText] = useState("");
   const [message, setMessage] = useState("");
+  const [messageOk, setMessageOk] = useState<boolean | undefined>();
 
   function clearData() {
     if (!window.confirm("确认清空本地数据？此操作只会影响当前浏览器。")) {
@@ -24,23 +29,50 @@ export default function SettingsPage() {
 
     clearAll();
     setMessage("本地数据已清空。");
+    setMessageOk(true);
   }
 
   function importData() {
-    try {
-      importJson(importText);
-      setMessage("JSON 已导入。");
+    const result = importJson(importText);
+
+    setMessage(result.message);
+    setMessageOk(result.ok);
+
+    if (result.ok) {
       setImportText("");
-    } catch {
-      setMessage("JSON 格式无法导入，请检查内容。");
     }
   }
 
   return (
     <div className="page-shell">
-      <Card>
+      <div className="mobile-shell grid gap-2 lg:max-w-none">
+        <h1 className="text-3xl font-semibold tracking-normal">本地数据</h1>
+        <p className="text-sm leading-6 text-muted-foreground">
+          数据只在当前浏览器。导入会先校验 JSON，失败时不会修改本地数据。
+        </p>
+      </div>
+
+      <Card className="mobile-shell rounded-2xl lg:max-w-none">
         <CardHeader>
-          <CardTitle>设置</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="size-4 text-primary" />
+            本地存储状态
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 text-sm sm:grid-cols-4">
+          <StatusTile label="个人资料" value={profile ? "已创建" : "未创建"} />
+          <StatusTile label="清单项目" value={`${checklist.length} 项`} />
+          <StatusTile
+            label="清单模式"
+            value={checklistMode === "lean" ? "精简" : "完整"}
+          />
+          <StatusTile label="自定义项" value={`${customItems.length} 项`} />
+        </CardContent>
+      </Card>
+
+      <Card className="mobile-shell rounded-2xl lg:max-w-none">
+        <CardHeader>
+          <CardTitle>常用设置</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <Button asChild variant="outline">
@@ -59,11 +91,11 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="mobile-shell rounded-2xl lg:max-w-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Upload className="size-4 text-primary" />
-            JSON 导入 / 导出
+            <FileJson className="size-4 text-primary" />
+            JSON 备份
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
@@ -74,19 +106,33 @@ export default function SettingsPage() {
             onChange={(event) => setImportText(event.target.value)}
           />
           <div className="flex flex-wrap gap-2">
-            <Button onClick={importData}>导入 JSON</Button>
+            <Button onClick={importData}>
+              <Upload className="size-4" />
+              校验并导入
+            </Button>
             <Button
               variant="outline"
               onClick={() => navigator.clipboard.writeText(exportJson())}
             >
+              <Copy className="size-4" />
               复制当前 JSON
             </Button>
           </div>
-          {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
+          {message ? (
+            <p
+              className={`rounded-xl px-3 py-2 text-sm ${
+                messageOk === false
+                  ? "bg-coral-soft text-coral-foreground"
+                  : "bg-secondary text-primary"
+              }`}
+            >
+              {message}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="mobile-shell rounded-2xl lg:max-w-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Info className="size-4 text-primary" />
@@ -104,6 +150,15 @@ export default function SettingsPage() {
       </Card>
 
       <DisclaimerBox />
+    </div>
+  );
+}
+
+function StatusTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-background px-3 py-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 font-semibold">{value}</p>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import type {
+  ChecklistMode,
   ChecklistItem,
   UserHospitalOverride,
   UserProfile,
@@ -10,16 +11,23 @@ export const STORAGE_KEYS = {
   customItems: "dadkit:custom-items",
   hiddenTemplateItems: "dadkit:hidden-template-items",
   hospitalOverrides: "dadkit:hospital-overrides",
+  checklistMode: "dadkit:checklist-mode",
 } as const;
 
 export type DadKitExportData = {
   version: 1;
   exportedAt: string;
   userProfile?: UserProfile;
+  checklistMode: ChecklistMode;
   checklist: ChecklistItem[];
   customItems: ChecklistItem[];
   hiddenTemplateItemIds: string[];
   hospitalOverrides: UserHospitalOverride[];
+};
+
+export type ImportResult = {
+  ok: boolean;
+  message: string;
 };
 
 function canUseLocalStorage() {
@@ -101,6 +109,16 @@ export function saveHospitalOverrides(overrides: UserHospitalOverride[]) {
   writeJson(STORAGE_KEYS.hospitalOverrides, overrides);
 }
 
+export function loadChecklistMode(): ChecklistMode {
+  const mode = readJson<ChecklistMode>(STORAGE_KEYS.checklistMode, "lean");
+
+  return mode === "full" ? "full" : "lean";
+}
+
+export function saveChecklistMode(mode: ChecklistMode) {
+  writeJson(STORAGE_KEYS.checklistMode, mode);
+}
+
 export function resetAllData() {
   if (!canUseLocalStorage()) {
     return;
@@ -114,6 +132,7 @@ export function exportData(): DadKitExportData {
     version: 1,
     exportedAt: new Date().toISOString(),
     userProfile: loadUserProfile(),
+    checklistMode: loadChecklistMode(),
     checklist: loadChecklist(),
     customItems: loadCustomItems(),
     hiddenTemplateItemIds: loadHiddenTemplateItemIds(),
@@ -121,19 +140,80 @@ export function exportData(): DadKitExportData {
   };
 }
 
-export function importData(rawJson: string) {
-  const data = JSON.parse(rawJson) as Partial<DadKitExportData>;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+export function importData(rawJson: string): ImportResult {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(rawJson);
+  } catch {
+    return { ok: false, message: "JSON 格式不正确，未修改本地数据。" };
+  }
+
+  if (!isRecord(parsed)) {
+    return { ok: false, message: "JSON 内容不是 DadKit 备份，未修改本地数据。" };
+  }
+
+  const data = parsed as Partial<DadKitExportData> & Record<string, unknown>;
+
+  if (data.version !== 1) {
+    return { ok: false, message: "不支持的备份版本，未修改本地数据。" };
+  }
+
+  const arrayFields: Array<[
+    "checklist" | "customItems" | "hiddenTemplateItemIds" | "hospitalOverrides",
+    string,
+  ]> = [
+    ["checklist", "checklist 必须是数组"],
+    ["customItems", "customItems 必须是数组"],
+    ["hiddenTemplateItemIds", "hiddenTemplateItemIds 必须是数组"],
+    ["hospitalOverrides", "hospitalOverrides 必须是数组"],
+  ];
+
+  for (const [field, message] of arrayFields) {
+    if (field in data && data[field] !== undefined && !Array.isArray(data[field])) {
+      return { ok: false, message: `${message}，未修改本地数据。` };
+    }
+  }
+
+  if (
+    "checklistMode" in data &&
+    data.checklistMode !== undefined &&
+    data.checklistMode !== "lean" &&
+    data.checklistMode !== "full"
+  ) {
+    return {
+      ok: false,
+      message: "checklistMode 只能是 lean 或 full，未修改本地数据。",
+    };
+  }
 
   if (data.userProfile) {
     saveUserProfile(data.userProfile);
   }
 
-  saveChecklist(Array.isArray(data.checklist) ? data.checklist : []);
-  saveCustomItems(Array.isArray(data.customItems) ? data.customItems : []);
-  saveHiddenTemplateItemIds(
-    Array.isArray(data.hiddenTemplateItemIds) ? data.hiddenTemplateItemIds : [],
-  );
-  saveHospitalOverrides(
-    Array.isArray(data.hospitalOverrides) ? data.hospitalOverrides : [],
-  );
+  if (Array.isArray(data.checklist)) {
+    saveChecklist(data.checklist);
+  }
+
+  if (Array.isArray(data.customItems)) {
+    saveCustomItems(data.customItems);
+  }
+
+  if (Array.isArray(data.hiddenTemplateItemIds)) {
+    saveHiddenTemplateItemIds(data.hiddenTemplateItemIds);
+  }
+
+  if (Array.isArray(data.hospitalOverrides)) {
+    saveHospitalOverrides(data.hospitalOverrides);
+  }
+
+  if (data.checklistMode === "lean" || data.checklistMode === "full") {
+    saveChecklistMode(data.checklistMode);
+  }
+
+  return { ok: true, message: "导入成功" };
 }

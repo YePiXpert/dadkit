@@ -39,6 +39,8 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
   const rowTone =
     item.packTier === "confirm" || itemKind === "question"
       ? "border-amber/35 bg-amber-soft/55"
+      : itemKind === "task"
+        ? "border-primary/20 bg-secondary/70"
       : item.packTier === "optional" || item.packTier === "hidden"
         ? "bg-card/60 opacity-85"
         : "bg-card";
@@ -46,7 +48,7 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
   return (
     <div
       className={cn(
-        "grid grid-cols-[auto_1fr] gap-2 rounded-lg border border-border p-2.5 sm:grid-cols-[auto_1fr_auto] sm:items-center",
+        "grid grid-cols-[auto_1fr] gap-2 rounded-xl border border-border p-3 shadow-sm sm:grid-cols-[auto_1fr_auto] sm:items-center",
         rowTone,
       )}
     >

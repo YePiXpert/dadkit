@@ -62,10 +62,13 @@ const TASK_KEYWORDS = [
   "安全座椅",
   "电话",
   "押金",
+  "医保结算",
   "支付",
   "接送",
   "安排",
 ];
+
+const QUESTION_KEYWORDS = ["是否", "待确认", "需要哪些", "医院是否"];
 
 function stableId(source: string, category: ChecklistCategory, name: string) {
   const compact = encodeURIComponent(name)
@@ -88,6 +91,10 @@ function hasTaskKeyword(name: string) {
   return TASK_KEYWORDS.some((keyword) => name.includes(keyword));
 }
 
+function hasQuestionKeyword(name: string) {
+  return QUESTION_KEYWORDS.some((keyword) => name.includes(keyword));
+}
+
 function inferItemKind(item: ChecklistItem): ItemKind {
   if (item.itemKind) {
     return item.itemKind;
@@ -97,15 +104,15 @@ function inferItemKind(item: ChecklistItem): ItemKind {
     return "question";
   }
 
+  if (hasQuestionKeyword(item.name)) {
+    return "question";
+  }
+
   if (item.category === "last_minute") {
     return "task";
   }
 
-  if (item.category === "partner" && hasTaskKeyword(item.name)) {
-    return "task";
-  }
-
-  if (item.category === "going_home" && hasTaskKeyword(item.name)) {
+  if (item.category !== "documents" && hasTaskKeyword(item.name)) {
     return "task";
   }
 
@@ -1063,6 +1070,8 @@ export function calculatePackingCompletion(items: ChecklistItem[]) {
         item.itemKind === "item" &&
         item.category !== "hospital_questions" &&
         item.category !== "last_minute" &&
+        item.bag !== "none" &&
+        item.bag !== "car" &&
         item.status !== "not_needed",
     );
   const completed = packableItems.filter((item) =>
@@ -1088,12 +1097,20 @@ export function calculateConfirmationCompletion(items: ChecklistItem[]) {
 export function calculateLastMinuteCompletion(items: ChecklistItem[]) {
   const lastMinuteItems = items
     .map(normalizeChecklistItem)
-    .filter(
-      (item) =>
-        item.category === "last_minute" ||
-        item.status === "last_minute" ||
-        item.bag === "last_minute",
-    );
+    .filter((item) => {
+      if (item.category === "last_minute") {
+        return true;
+      }
+
+      if (item.bag === "car") {
+        return false;
+      }
+
+      return (
+        item.bag === "last_minute" ||
+        (item.timing === "grab_before_leaving" && item.itemKind === "task")
+      );
+    });
   const completed = lastMinuteItems.filter((item) =>
     ["packed", "not_needed"].includes(item.status),
   ).length;

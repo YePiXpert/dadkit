@@ -17,9 +17,11 @@ DadKit 目前包含以下核心内容：
 - 包位分组：按证件包、妈妈包、宝宝包、爸爸背包、车上/交通、临出门等场景组织物品。
 - 医院确认：把入院材料、陪产规则、押金、医院提供物品等不确定事项单独列出。
 - 爸爸执行版：提供更适合陪产人临场查看的任务和导出内容。
-- 本地持久化：使用 `localStorage` 保存用户资料、清单状态、自定义项和医院覆盖信息。
+- 物品/任务/问题分离：支付、押金、路线、电话、停车和安全座椅等事项作为任务或问题，不计入待产包打包进度。
+- 本地持久化：使用 `localStorage` 保存用户资料、清单状态、清单模式、自定义项和医院覆盖信息。
+- JSON 备份：导入前校验版本和字段结构，失败时不会覆盖当前本地数据。
 - PWA 支持：提供 manifest、图标和 service worker，支持安装到手机桌面与基础离线访问。
-- Docker 部署：提供生产 Dockerfile、Compose 配置和一键部署/升级脚本。
+- Docker 部署：提供非 root 生产镜像、Compose 健康检查和一键部署/升级脚本。
 
 ## 页面结构
 
@@ -88,6 +90,14 @@ curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docke
 
 升级脚本会进入 `/opt/dadkit`，拉取 `main` 分支最新代码，并重新构建启动容器。
 
+如果部署目录没有本地修改，但远端历史曾被重写导致 fast-forward 失败，可以显式强制对齐远端：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docker-upgrade.sh | sudo env DADKIT_FORCE_RESET=1 sh
+```
+
+`DADKIT_FORCE_RESET=1` 会在部署目录执行 `git reset --hard origin/main`。仅在确认部署目录没有需要保留的本地改动时使用。
+
 ### 自定义部署目录或端口
 
 默认端口是 `3333`，容器内部和外部端口保持一致。如果确实需要换端口，可以同步覆盖：
@@ -95,6 +105,15 @@ curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docke
 ```bash
 curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docker-deploy.sh | sudo env DADKIT_DIR=/srv/dadkit DADKIT_PORT=3333 sh
 ```
+
+可用环境变量：
+
+- `DADKIT_DIR`：部署目录，默认 `/opt/dadkit`
+- `DADKIT_PORT`：宿主机和容器端口，默认 `3333`
+- `DADKIT_BRANCH`：部署分支，默认 `main`
+- `DADKIT_REPO`：部署仓库，仅部署脚本使用
+- `DADKIT_IMAGE`：Compose 镜像名，默认 `dadkit:latest`
+- `DADKIT_FORCE_RESET=1`：部署/升级时强制把部署目录对齐到 `origin/$DADKIT_BRANCH`
 
 ### 手动部署
 
@@ -112,6 +131,15 @@ git pull --ff-only
 docker compose up --build -d --remove-orphans
 ```
 
+如果远端历史被重写且部署目录无需保留本地改动：
+
+```bash
+cd /opt/dadkit
+git fetch origin main
+git reset --hard origin/main
+docker compose up --build -d --remove-orphans
+```
+
 ### 常用运维命令
 
 ```bash
@@ -121,6 +149,8 @@ docker compose logs -f
 docker compose restart
 docker compose down
 ```
+
+`docker compose ps` 会显示容器健康状态。生产镜像使用 Next.js standalone 输出，并以非 root 用户运行。
 
 本机访问地址：
 
@@ -197,6 +227,8 @@ docker-compose.yml      Docker Compose 部署配置
 
 主打包进度只统计真正要打包的物品，不包含“到下次产检时问清楚”和“临出门检查”。医院确认和临出门检查会作为单独进度显示，避免把待确认问题混进打包完成率。
 
+以下事项默认不作为待产包物品，也不进入主打包进度：支付方式、住院押金、医保结算、停车、入院路线、产科/住院处电话、安全座椅安装。它们会以 `task` 或 `question` 进入爸爸负责、医院确认、临出门或车上任务。
+
 ## 医院模板可信度说明
 
 内置的清华大学玉泉医院（清华大学中西医结合医院）模板为 `unverified`，只用于帮助用户记录待确认事项，不作为官方入院要求。
@@ -219,6 +251,9 @@ docker-compose.yml      Docker Compose 部署配置
 - `dadkit:custom-items`
 - `dadkit:hidden-template-items`
 - `dadkit:hospital-overrides`
+- `dadkit:checklist-mode`
+
+JSON 导入只支持 `version: 1`。`checklist`、`customItems`、`hiddenTemplateItemIds`、`hospitalOverrides` 如果存在必须是数组；`checklistMode` 如果存在必须是 `lean` 或 `full`。导入失败会返回明确错误，并保持本地数据不变。
 
 ## 免责声明
 

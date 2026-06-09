@@ -10,7 +10,7 @@ export function AppHeader() {
   const profile = useDadKitStore((state) => state.profile);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
+    <header className="hidden border-b border-border bg-background/90 backdrop-blur sm:sticky sm:top-0 sm:z-40 sm:block">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link className="flex min-w-0 items-center gap-2" href="/">
           <span className="flex size-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -18,7 +18,7 @@ export function AppHeader() {
           </span>
           <span className="min-w-0">
             <span className="block truncate text-base font-semibold leading-tight">
-              DadKit 待产包
+              DadKit 任务控制台
             </span>
             <span className="hidden text-xs text-muted-foreground sm:block">
               本地优先的动态清单

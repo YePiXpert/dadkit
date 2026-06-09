@@ -6,6 +6,8 @@ import {
   generateChecklist,
 } from "@/lib/rules";
 import { STATUS_FLOW } from "@/lib/store";
+import { beijingRegionTemplate } from "@/lib/templates/regions";
+import { yuquanHospitalTemplate } from "@/lib/templates/hospitals";
 import type { ChecklistItem, UserProfile } from "@/lib/types";
 
 function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
@@ -93,6 +95,83 @@ describe("generateChecklist", () => {
     expect(names).toContain("安全座椅确认");
   });
 
+  it("does not generate payment as a documents item", () => {
+    const items = generateChecklist(makeProfile());
+    const documentPaymentItems = items.filter(
+      (item) =>
+        item.category === "documents" &&
+        item.itemKind === "item" &&
+        (item.name.includes("支付") ||
+          item.name.includes("押金") ||
+          item.name.includes("银行卡")),
+    );
+
+    expect(documentPaymentItems).toEqual([]);
+  });
+
+  it("keeps payment and deposit confirmation as tasks", () => {
+    const items = generateChecklist(makeProfile({ partnerPresent: true }));
+    const partnerPayment = items.find(
+      (item) => item.name === "确认支付方式和住院押金",
+    );
+    const lastPayment = items.find((item) => item.name === "支付 / 押金确认");
+
+    expect(partnerPayment).toMatchObject({
+      category: "partner",
+      itemKind: "task",
+      bag: "none",
+    });
+    expect(lastPayment).toMatchObject({
+      category: "last_minute",
+      itemKind: "task",
+      bag: "none",
+    });
+  });
+
+  it("does not count payment and deposit tasks toward packing completion", () => {
+    const result = calculatePackingCompletion([
+      testItem({ id: "packed-item", status: "packed" }),
+      testItem({
+        id: "payment-task",
+        name: "确认支付方式和住院押金",
+        category: "partner",
+        itemKind: "task",
+        bag: "none",
+        status: "packed",
+      }),
+      testItem({
+        id: "last-payment-task",
+        name: "支付 / 押金确认",
+        category: "last_minute",
+        itemKind: "task",
+        bag: "none",
+        status: "packed",
+      }),
+    ]);
+
+    expect(result).toEqual({ total: 1, completed: 1, percent: 100 });
+  });
+
+  it("keeps Beijing template payment confirmation out of required documents", () => {
+    expect(beijingRegionTemplate.requiredDocuments).not.toContain("支付方式");
+    expect(
+      beijingRegionTemplate.requiredDocuments.some((document) =>
+        document.includes("支付"),
+      ),
+    ).toBe(false);
+  });
+
+  it("keeps Yuquan payment confirmation out of required documents", () => {
+    expect(yuquanHospitalTemplate.requiredDocuments).not.toContain(
+      "银行卡 / 支付方式",
+    );
+    expect(
+      yuquanHospitalTemplate.requiredDocuments.some((document) =>
+        document.includes("支付"),
+      ),
+    ).toBe(false);
+  });
+
   it("adds dad tasks when partnerPresent is true", () => {
     const items = generateChecklist(makeProfile({ partnerPresent: true }));
     const dadTasks = items.filter(
@@ -155,6 +234,14 @@ describe("generateChecklist", () => {
     expect(items.some((item) => item.status === "hospital_provided")).toBe(false);
   });
 
+  it("does not mark any item as hospital_provided when provided ids contain unknown", () => {
+    const items = generateChecklist(
+      makeProfile({ hospitalProvidedItemIds: ["unknown", "postpartum-pads"] }),
+    );
+
+    expect(items.some((item) => item.status === "hospital_provided")).toBe(false);
+  });
+
   it("keeps birth certificate material question", () => {
     const items = generateChecklist(makeProfile());
 
@@ -169,7 +256,7 @@ describe("generateChecklist", () => {
     const items = generateChecklist(makeProfile());
 
     expect(
-      items.some((item) => item.name === "产科/住院处联系电话是否已保存？"),
+      items.some((item) => item.name === "产科 / 住院处联系电话是否已保存？"),
     ).toBe(true);
   });
 
@@ -199,6 +286,27 @@ describe("generateChecklist", () => {
       }),
     ]);
 
+    expect(result).toEqual({ total: 1, completed: 1, percent: 100 });
+  });
+
+  it("keeps safety seat checks as car tasks outside packing completion", () => {
+    const safetySeatItems = generateChecklist(makeProfile()).filter((item) =>
+      item.name.includes("安全座椅"),
+    );
+    const result = calculatePackingCompletion([
+      testItem({ id: "packed-item", status: "packed" }),
+      ...safetySeatItems.map((item) => ({ ...item, status: "packed" as const })),
+    ]);
+
+    expect(safetySeatItems.length).toBeGreaterThan(0);
+    expect(
+      safetySeatItems.every(
+        (item) =>
+          item.itemKind === "task" &&
+          item.bag === "car" &&
+          item.packTier === "core",
+      ),
+    ).toBe(true);
     expect(result).toEqual({ total: 1, completed: 1, percent: 100 });
   });
 

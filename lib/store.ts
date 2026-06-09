@@ -7,17 +7,20 @@ import {
   exportData,
   importData,
   loadChecklist,
+  loadChecklistMode,
   loadCustomItems,
   loadHiddenTemplateItemIds,
   loadHospitalOverrides,
   loadUserProfile,
   resetAllData,
   saveChecklist,
+  saveChecklistMode,
   saveCustomItems,
   saveHiddenTemplateItemIds,
   saveHospitalOverrides,
   saveUserProfile,
   type DadKitExportData,
+  type ImportResult,
 } from "@/lib/storage";
 import type {
   ChecklistCategory,
@@ -64,7 +67,7 @@ type DadKitState = {
   removeItem: (id: string) => void;
   updateHospitalOverride: (override: UserHospitalOverride) => void;
   exportJson: () => string;
-  importJson: (json: string) => void;
+  importJson: (json: string) => ImportResult;
   clearAll: () => void;
 };
 
@@ -149,6 +152,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     const customItems = loadCustomItems();
     const hiddenTemplateItemIds = loadHiddenTemplateItemIds();
     const hospitalOverrides = loadHospitalOverrides();
+    const checklistMode = loadChecklistMode();
     const hydratedChecklist = profile
       ? generateChecklist(profile, {
           currentItems: checklist,
@@ -162,6 +166,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       hydrated: true,
       profile,
       checklist: hydratedChecklist,
+      checklistMode,
       customItems,
       hiddenTemplateItemIds,
       hospitalOverrides,
@@ -213,6 +218,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   },
   setChecklistMode: (mode) => {
     set({ checklistMode: mode });
+    saveChecklistMode(mode);
   },
   regenerateChecklist: () => {
     const state = get();
@@ -348,8 +354,13 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   },
   exportJson: () => JSON.stringify(exportData(), null, 2),
   importJson: (json) => {
-    importData(json);
-    get().hydrate();
+    const result = importData(json);
+
+    if (result.ok) {
+      get().hydrate();
+    }
+
+    return result;
   },
   clearAll: () => {
     resetAllData();

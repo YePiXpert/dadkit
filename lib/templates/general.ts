@@ -80,25 +80,18 @@ export const generalTemplate: TemplateChecklistItem[] = [
     bulk: "small",
   }),
   templateItem(
-    "general-doc-payment",
-    "银行卡 / 支付方式",
+    "general-doc-cash",
+    "少量现金，如医院 / 停车 / 食堂需要",
     "documents",
-    "must",
+    "optional",
     "pack_now",
     {
-      removable: false,
-      packTier: "core",
+      packTier: "optional",
       itemKind: "item",
       bag: "documents_folder",
       bulk: "small",
     },
   ),
-  templateItem("general-doc-cash", "少量现金", "documents", "optional", "pack_now", {
-    packTier: "optional",
-    itemKind: "item",
-    bag: "documents_folder",
-    bulk: "small",
-  }),
 
   templateItem("general-labor-phone", "手机", "mom_labor", "must", "grab_before_leaving", {
     removable: false,
@@ -496,10 +489,11 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "confirm_with_hospital",
     {
+      note: "支付方式、住院押金和医保结算属于入院确认事项，不算待产包物品。若医院明确要求实体银行卡或现金，再作为自定义物品加入证件包。",
       appliesTo: { partnerPresent: true },
       packTier: "core",
       itemKind: "task",
-      bag: "documents_folder",
+      bag: "none",
       bulk: "small",
     },
   ),
@@ -725,7 +719,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
   ),
   templateItem(
     "general-question-deposit",
-    "是否需要住院押金？",
+    "住院押金和医保结算方式是否已确认？",
     "hospital_questions",
     "recommended",
     "confirm_with_hospital",
@@ -757,7 +751,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
   ),
   templateItem(
     "general-question-phone",
-    "产科/住院处联系电话是否已保存？",
+    "产科 / 住院处联系电话是否已保存？",
     "hospital_questions",
     "recommended",
     "confirm_with_hospital",
@@ -918,13 +912,20 @@ export const generalTemplate: TemplateChecklistItem[] = [
       bulk: "small",
     },
   ),
-  templateItem("general-last-payment", "支付方式", "last_minute", "must", "grab_before_leaving", {
-    removable: false,
-    packTier: "core",
-    itemKind: "task",
-    bag: "last_minute",
-    bulk: "small",
-  }),
+  templateItem(
+    "general-last-payment",
+    "支付 / 押金确认",
+    "last_minute",
+    "must",
+    "grab_before_leaving",
+    {
+      removable: false,
+      packTier: "core",
+      itemKind: "task",
+      bag: "none",
+      bulk: "small",
+    },
+  ),
   templateItem(
     "general-last-car-seat",
     "安全座椅确认",

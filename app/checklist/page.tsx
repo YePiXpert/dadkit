@@ -184,7 +184,7 @@ export default function ChecklistPage() {
       {filteredItems.length === 0 ? (
         <EmptyState
           title="没有符合筛选的物品"
-          description="可以调整分类、状态或优先级筛选，也可以新增自定义物品。"
+          description="可以调整分类、状态或优先级筛选，也可以新增自定义项目。"
         />
       ) : (
         groupItemsForChecklist(filteredItems).map((group) => (

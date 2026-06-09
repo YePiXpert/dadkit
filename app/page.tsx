@@ -69,16 +69,12 @@ export default function HomePage() {
         <div className="rounded-[1.35rem] bg-card p-5 shadow-soft">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-primary">DadKit</p>
-              <h1 className="mt-1 text-2xl font-semibold leading-tight tracking-normal sm:text-4xl">
-                {typeof daysLeft === "number"
-                  ? daysLeft >= 0
-                    ? `还有 ${daysLeft} 天`
-                    : "已经到预产期"
-                  : "3 分钟生成你的待产准备清单"}
+              <p className="text-sm font-medium text-primary">准爸爸任务控制台</p>
+              <h1 className="mt-1 text-4xl font-semibold leading-tight tracking-normal sm:text-5xl">
+                DadKit
               </h1>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                准爸爸的低焦虑待产准备工具箱
+                先准备少数关键物品，再确认医院差异；不按电商大礼包打包。
               </p>
             </div>
             <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-primary">
@@ -94,18 +90,37 @@ export default function HomePage() {
               医院待确认
             </span>
             <span className="rounded-full bg-coral-soft px-3 py-1 text-coral-foreground">
-              爸爸照着做
+              爸爸任务流
             </span>
           </div>
 
-          <p className="text-sm leading-6 text-muted-foreground">
-            {typeof daysLeft === "number"
-              ? dueAdvice(daysLeft)
-              : "只问必要信息，之后都能改。"}
-          </p>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            先准备少数关键物品，再确认医院差异，不按电商大礼包打包。
-          </p>
+          <div className="mt-5 rounded-[1.35rem] bg-primary p-5 text-primary-foreground shadow-soft">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-primary-foreground/80">
+                  距离预产期
+                </p>
+                <p className="mt-2 text-4xl font-semibold tracking-normal">
+                  {typeof daysLeft === "number"
+                    ? daysLeft >= 0
+                      ? `还有 ${daysLeft} 天`
+                      : "已经到预产期"
+                    : "未设置"}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-primary-foreground/80">
+                  {typeof daysLeft === "number"
+                    ? dueAdvice(daysLeft)
+                    : "先填写基础信息，之后都能修改。"}
+                </p>
+              </div>
+              <Link
+                className="hidden rounded-2xl bg-card px-5 py-8 text-sm font-semibold text-primary sm:block"
+                href="/checklist"
+              >
+                核心打包
+              </Link>
+            </div>
+          </div>
 
           <Link
             className="mt-4 flex items-center justify-between rounded-lg bg-coral-soft px-3 py-2 text-sm font-medium text-coral-foreground"
@@ -161,12 +176,6 @@ export default function HomePage() {
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-3">
         <ActionCard
-          description="先看核心物品，按包位逐项打勾。"
-          href="/checklist"
-          icon={ClipboardList}
-          title="打开清单"
-        />
-        <ActionCard
           description="陪产、入口、押金、提供物品，留到产检时问清楚。"
           href="/checklist"
           icon={Hospital}
@@ -174,10 +183,16 @@ export default function HomePage() {
           tone="amber"
         />
         <ActionCard
-          description="只保留要拿、要问、要确认的事。"
+          description="只看核心物品，按证件包、妈妈包、宝宝包处理。"
+          href="/checklist"
+          icon={ClipboardList}
+          title="打开精简清单"
+        />
+        <ActionCard
+          description="生成要拿、要问、要确认的执行清单。"
           href="/share"
           icon={Share2}
-          title="爸爸执行版"
+          title="生成爸爸执行版"
           tone="coral"
         />
       </section>

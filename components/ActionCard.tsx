@@ -21,7 +21,7 @@ export function ActionCard({
   return (
     <Link
       className={cn(
-        "rounded-lg border border-border bg-card p-4 shadow-soft transition-transform active:scale-[0.99]",
+        "rounded-2xl border border-border bg-card p-4 shadow-soft transition-transform active:scale-[0.99]",
         tone === "primary" && "hover:border-primary",
         tone === "amber" && "bg-amber-soft/70",
         tone === "coral" && "bg-coral-soft/80",
