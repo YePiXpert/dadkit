@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, CircleHelp, MapPinned, Save } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Hospital, Info, Save } from "lucide-react";
 
 import { CustomHospitalForm } from "@/components/CustomHospitalForm";
 import { DisclaimerBox } from "@/components/DisclaimerBox";
@@ -79,6 +79,7 @@ export default function HospitalPage() {
     );
   }
 
+  const activeProfile = profile;
   const priorityQuestions = checklist
     .filter(
       (item) =>
@@ -108,7 +109,7 @@ export default function HospitalPage() {
     .slice(0, 6);
 
   function toggleProvidedItem(id: string) {
-    const current = new Set(profile.hospitalProvidedItemIds);
+    const current = new Set(activeProfile.hospitalProvidedItemIds);
 
     if (id === "unknown") {
       updateProfile({
@@ -195,7 +196,7 @@ export default function HospitalPage() {
         <Card className="rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CircleHelp className="size-5 text-primary" />
+              <Info className="size-5 text-primary" />
               高优先级问题
             </CardTitle>
           </CardHeader>
@@ -209,7 +210,7 @@ export default function HospitalPage() {
         <Card className="rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <MapPinned className="size-5 text-primary" />
+              <Hospital className="size-5 text-primary" />
               入院路线 / 电话 / 停车
             </CardTitle>
           </CardHeader>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Copy, Database, FileJson, Info, RotateCcw, Upload } from "lucide-react";
+import { Copy, Info, RotateCcw, Upload } from "lucide-react";
 
 import { DisclaimerBox } from "@/components/DisclaimerBox";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,7 @@ export default function SettingsPage() {
       <Card className="mobile-shell rounded-2xl lg:max-w-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Database className="size-4 text-primary" />
+            <Info className="size-4 text-primary" />
             本地存储状态
           </CardTitle>
         </CardHeader>
@@ -94,7 +94,7 @@ export default function SettingsPage() {
       <Card className="mobile-shell rounded-2xl lg:max-w-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileJson className="size-4 text-primary" />
+            <Upload className="size-4 text-primary" />
             JSON 备份
           </CardTitle>
         </CardHeader>
