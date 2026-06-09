@@ -8,9 +8,8 @@ export const beijingRegionTemplate: RegionTemplate = {
     "医保卡 / 社保卡",
     "北京市母子健康手册或电子条形码",
     "产检资料",
-    "支付方式",
   ],
-  recommendedItems: [],
+  recommendedItems: ["产检时确认住院押金、医保结算和支付方式要求"],
   notes: [
     "北京地区用户请确认北京市母子健康手册或电子版手册/条形码是否可用",
     "具体入院材料以生产医院通知为准",
@@ -21,8 +20,8 @@ export const beijingRegionTemplate: RegionTemplate = {
 export const otherRegionTemplate: RegionTemplate = {
   id: "other",
   name: "其他地区",
-  requiredDocuments: ["身份证件", "医保卡 / 社保卡", "本地区孕产资料", "产检资料", "支付方式"],
-  recommendedItems: [],
+  requiredDocuments: ["身份证件", "医保卡 / 社保卡", "本地区孕产资料", "产检资料"],
+  recommendedItems: ["产检时确认住院押金、医保结算和支付方式要求"],
   notes: ["请以本地区医院入院须知、最近一次产检或医院通知为准。"],
 };
 
