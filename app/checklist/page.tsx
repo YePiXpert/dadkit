@@ -53,7 +53,7 @@ export default function ChecklistPage() {
       <div className="page-shell">
         <EmptyState
           title="还没有清单"
-          description="先填写预产期、地区、医院和生产方式，DadKit 会生成第一版可编辑清单。"
+          description="先填写预产期、地区、医院和生产方式，DadKit 会生成一份可编辑清单。"
           actionHref="/setup"
           actionLabel="开始创建清单"
         />

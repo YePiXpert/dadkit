@@ -29,7 +29,7 @@ export const yuquanHospitalTemplate: HospitalProfile = {
   ],
   notAllowedItems: ["待确认"],
   admissionNotes:
-    "玉泉医院模板第一版为未核验模板，不假设医院一定提供或不提供某项物品。请以最近一次产检、入院须知或医院通知为准。",
+    "玉泉医院模板为未核验模板，不假设医院一定提供或不提供某项物品。请以最近一次产检、入院须知或医院通知为准。",
   partnerPolicyNotes: "待确认。请在产检或入院前向医院确认最新陪产/探视规则。",
   paymentNotes: "待确认。请确认住院押金、医保结算和支付方式要求。",
   parkingNotes: "待确认。请提前确认入院入口和停车安排。",

@@ -56,8 +56,6 @@ import {
   type WebDavSyncState,
 } from "@/lib/webdav/types";
 
-const WEBDAV_PROXY_ENABLED = false;
-
 export default function SettingsPage() {
   const clearAll = useDadKitStore((state) => state.clearAll);
   const exportJson = useDadKitStore((state) => state.exportJson);
@@ -420,7 +418,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="grid gap-4">
           <p className="text-sm leading-6 text-muted-foreground">
-            DadKit 可以把 JSON 备份保存到你自己的 WebDAV 存储。第一版只做手动上传和恢复，不会自动同步。
+            DadKit 可以把 JSON 备份保存到你自己的 WebDAV 存储。需要你手动上传或下载恢复，不会自动同步。
           </p>
 
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background p-3">
@@ -501,24 +499,6 @@ export default function SettingsPage() {
                   updateWebDavConfig({ filename: event.target.value })
                 }
               />
-            </Field>
-            <Field label="连接方式" htmlFor="webdav-connection-mode">
-              <Select value="direct" onValueChange={() => undefined}>
-                <SelectTrigger id="webdav-connection-mode">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="direct">浏览器直连</SelectItem>
-                  <SelectItem disabled={!WEBDAV_PROXY_ENABLED} value="proxy">
-                    服务器代理
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {!WEBDAV_PROXY_ENABLED ? (
-                <p className="text-xs leading-5 text-muted-foreground">
-                  当前部署未开启代理。浏览器直连可能受 WebDAV 服务 CORS 限制。
-                </p>
-              ) : null}
             </Field>
             <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background p-3">
               <div>
@@ -691,7 +671,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="grid gap-3 text-sm leading-6 text-muted-foreground">
           <p>
-            DadKit 是一个开源待产准备清单工具，第一版不需要登录，数据保存在本地浏览器，不上传用户隐私数据。
+            DadKit 是一个开源待产准备清单工具，不需要登录，数据保存在本地浏览器，不上传用户隐私数据。
           </p>
           <p>
             医院模板用于帮助整理待确认事项。未核验模板不会作为官方入院要求，也不会写死医院一定提供某些物品。

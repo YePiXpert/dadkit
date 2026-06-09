@@ -41,6 +41,26 @@ function testItem(id = "item-1"): ChecklistItem {
   };
 }
 
+function testQuestion(id = "question-1"): ChecklistItem {
+  return {
+    ...testItem(id),
+    category: "hospital_questions",
+    itemKind: "question",
+    bag: "none",
+    timing: "confirm_with_hospital",
+  };
+}
+
+function testTask(id = "task-1"): ChecklistItem {
+  return {
+    ...testItem(id),
+    category: "partner",
+    itemKind: "task",
+    bag: "none",
+    timing: "prepare_now",
+  };
+}
+
 function testProfile(dueDate = "2026-07-21"): UserProfile {
   return {
     dueDate,
@@ -157,5 +177,31 @@ describe("store snapshots", () => {
     expect(snapshots[0]?.reason).toBe("修改个人资料前");
     expect(snapshots[0]?.data.userProfile).toEqual(profile);
     expect(snapshots[0]?.data.checklist).toEqual(checklist);
+  });
+
+  it("toggles question items between pending and confirmed", () => {
+    installLocalStorage();
+    const question = testQuestion();
+
+    useDadKitStore.setState({ checklist: [question], customItems: [] });
+
+    useDadKitStore.getState().cycleItemStatus(question.id);
+    expect(useDadKitStore.getState().checklist[0].status).toBe("packed");
+
+    useDadKitStore.getState().cycleItemStatus(question.id);
+    expect(useDadKitStore.getState().checklist[0].status).toBe("todo");
+  });
+
+  it("toggles task items between pending and done", () => {
+    installLocalStorage();
+    const task = testTask();
+
+    useDadKitStore.setState({ checklist: [task], customItems: [] });
+
+    useDadKitStore.getState().cycleItemStatus(task.id);
+    expect(useDadKitStore.getState().checklist[0].status).toBe("packed");
+
+    useDadKitStore.getState().cycleItemStatus(task.id);
+    expect(useDadKitStore.getState().checklist[0].status).toBe("todo");
   });
 });

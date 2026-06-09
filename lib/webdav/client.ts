@@ -293,7 +293,7 @@ async function webDavFetch(
   } catch (error) {
     if (error instanceof TypeError) {
       throw new Error(
-        "当前 WebDAV 服务未允许浏览器跨域访问。你可以改用支持 CORS 的 WebDAV 服务，或等待后续自托管代理能力。",
+        "当前 WebDAV 服务未允许浏览器跨域访问。请改用支持 CORS 的 WebDAV 服务，或使用 JSON 备份手动导入导出。",
       );
     }
 

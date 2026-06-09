@@ -1,5 +1,10 @@
 import { Badge } from "@/components/ui/badge";
-import { getStatusLabel, type ItemKind, type PackStatus } from "@/lib/types";
+import {
+  COMPLETED_STATUSES,
+  getStatusLabel,
+  type ItemKind,
+  type PackStatus,
+} from "@/lib/types";
 
 type StatusBadgeProps = {
   itemKind?: ItemKind;
@@ -8,7 +13,7 @@ type StatusBadgeProps = {
 
 export function StatusBadge({ itemKind = "item", status }: StatusBadgeProps) {
   const variant =
-    status === "packed" || status === "hospital_provided"
+    COMPLETED_STATUSES.includes(status)
       ? "calm"
       : status === "last_minute"
         ? "soft"

@@ -6,7 +6,6 @@ import {
   ArrowRight,
   CalendarClock,
   ClipboardList,
-  Eye,
   Hospital,
   Share2,
 } from "lucide-react";
@@ -117,12 +116,6 @@ export default function HomePage() {
               <Link href={profile ? "/checklist" : "/setup"}>
                 {profile ? "打开清单" : "开始创建清单"}
                 <ArrowRight className="size-4" />
-              </Link>
-            </Button>
-            <Button asChild className="h-9" variant="outline">
-              <Link href="/demo">
-                <Eye className="size-4" />
-                {profile ? "查看示例，不影响当前数据" : "查看示例"}
               </Link>
             </Button>
           </div>

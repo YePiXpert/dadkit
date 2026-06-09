@@ -35,7 +35,12 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
   const removeItem = useDadKitStore((state) => state.removeItem);
   const itemKind = item.itemKind ?? "item";
   const hasDetails = Boolean(item.note);
-  const isPacked = item.status === "packed";
+  const isDone =
+    itemKind === "question" || itemKind === "task"
+      ? item.status !== "todo"
+      : item.status === "packed";
+  const quickActionLabel = getQuickActionLabel(itemKind, isDone);
+  const statusOptions = getStatusOptions(itemKind);
   const rowTone =
     item.packTier === "confirm" || itemKind === "question"
       ? "border-amber/35 bg-amber-soft/55"
@@ -56,16 +61,16 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
         size="icon"
         className={cn(
           "mt-0.5 size-8 rounded-md border",
-          isPacked
+          isDone
             ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
             : "border-primary/40 bg-card text-primary hover:bg-secondary",
         )}
         variant="ghost"
-        title="切换到下一个状态"
+        title={quickActionLabel}
         onClick={() => cycleItemStatus(item.id)}
       >
-        {isPacked ? <RotateCcw className="size-4" /> : <CheckCircle2 className="size-4" />}
-        <span className="sr-only">切换状态</span>
+        {isDone ? <RotateCcw className="size-4" /> : <CheckCircle2 className="size-4" />}
+        <span className="sr-only">{quickActionLabel}</span>
       </Button>
       <div className="min-w-0 space-y-1.5">
         <div className="flex flex-wrap items-center gap-2">
@@ -108,7 +113,7 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {Object.keys(STATUS_LABELS).map((value) => (
+            {statusOptions.map((value) => (
               <SelectItem key={value} value={value}>
                 {getStatusLabel(value as PackStatus, itemKind)}
               </SelectItem>
@@ -131,4 +136,28 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
       </div>
     </div>
   );
+}
+
+function getQuickActionLabel(itemKind: ChecklistItem["itemKind"], isDone: boolean) {
+  if (itemKind === "question") {
+    return isDone ? "重新标为待确认" : "标记为已确认";
+  }
+
+  if (itemKind === "task") {
+    return isDone ? "重新标为待完成" : "标记为已完成";
+  }
+
+  return "切换到下一个状态";
+}
+
+function getStatusOptions(itemKind: ChecklistItem["itemKind"]): PackStatus[] {
+  if (itemKind === "question") {
+    return ["todo", "packed", "hospital_provided", "not_needed"];
+  }
+
+  if (itemKind === "task") {
+    return ["todo", "packed", "not_needed"];
+  }
+
+  return Object.keys(STATUS_LABELS) as PackStatus[];
 }

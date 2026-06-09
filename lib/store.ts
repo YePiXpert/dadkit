@@ -283,6 +283,11 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       return;
     }
 
+    if (item.itemKind === "question" || item.itemKind === "task") {
+      get().updateItem(id, { status: item.status === "todo" ? "packed" : "todo" });
+      return;
+    }
+
     const currentIndex = STATUS_FLOW.indexOf(item.status);
     const nextStatus = STATUS_FLOW[(currentIndex + 1) % STATUS_FLOW.length];
     get().updateItem(id, { status: nextStatus });
