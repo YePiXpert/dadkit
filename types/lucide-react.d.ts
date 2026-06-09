@@ -11,16 +11,19 @@ declare module "lucide-react" {
   >;
 
   export const AlertTriangle: LucideIcon;
+  export const ArrowLeft: LucideIcon;
   export const ArrowRight: LucideIcon;
   export const CalendarClock: LucideIcon;
   export const CalendarDays: LucideIcon;
   export const Check: LucideIcon;
   export const CheckCircle2: LucideIcon;
   export const ChevronDown: LucideIcon;
+  export const Cloud: LucideIcon;
   export const ClipboardList: LucideIcon;
   export const Copy: LucideIcon;
   export const Download: LucideIcon;
   export const Eye: LucideIcon;
+  export const History: LucideIcon;
   export const Home: LucideIcon;
   export const Hospital: LucideIcon;
   export const Info: LucideIcon;
@@ -34,6 +37,7 @@ declare module "lucide-react" {
   export const Settings: LucideIcon;
   export const Share2: LucideIcon;
   export const SlidersHorizontal: LucideIcon;
+  export const Sparkles: LucideIcon;
   export const Trash2: LucideIcon;
   export const Upload: LucideIcon;
   export const X: LucideIcon;
