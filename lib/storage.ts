@@ -4,6 +4,11 @@ import type {
   UserHospitalOverride,
   UserProfile,
 } from "@/lib/types";
+import {
+  DEFAULT_WEBDAV_CONFIG,
+  type WebDavConfig,
+  type WebDavSyncState,
+} from "@/lib/webdav/types";
 
 export const STORAGE_KEYS = {
   userProfile: "dadkit:user-profile",
@@ -13,7 +18,12 @@ export const STORAGE_KEYS = {
   hospitalOverrides: "dadkit:hospital-overrides",
   checklistMode: "dadkit:checklist-mode",
   snapshots: "dadkit:snapshots",
+  webDavConfig: "dadkit:webdav-config",
+  webDavSyncState: "dadkit:webdav-sync-state",
+  webDavSecret: "dadkit:webdav-secret",
 } as const;
+
+export const WEBDAV_SESSION_SECRET_KEY = "dadkit:webdav-session-secret";
 
 const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.userProfile,
@@ -22,6 +32,9 @@ const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.hiddenTemplateItems,
   STORAGE_KEYS.hospitalOverrides,
   STORAGE_KEYS.checklistMode,
+  STORAGE_KEYS.webDavConfig,
+  STORAGE_KEYS.webDavSyncState,
+  STORAGE_KEYS.webDavSecret,
 ];
 
 export type DadKitExportData = {
@@ -40,6 +53,10 @@ export type ImportResult = {
   message: string;
 };
 
+export type ImportValidationResult = ImportResult & {
+  data?: Partial<DadKitExportData> & Record<string, unknown>;
+};
+
 export type DadKitSnapshot = {
   id: string;
   createdAt: string;
@@ -49,6 +66,12 @@ export type DadKitSnapshot = {
 
 function canUseLocalStorage() {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+}
+
+function canUseSessionStorage() {
+  return (
+    typeof window !== "undefined" && typeof window.sessionStorage !== "undefined"
+  );
 }
 
 function readJson<T>(key: string, fallback: T): T {
@@ -75,6 +98,14 @@ function writeJson<T>(key: string, value: T) {
   }
 
   window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function deviceId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `device-${crypto.randomUUID()}`;
+  }
+
+  return `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 export function loadUserProfile() {
@@ -136,12 +167,138 @@ export function saveChecklistMode(mode: ChecklistMode) {
   writeJson(STORAGE_KEYS.checklistMode, mode);
 }
 
-export function resetAllData() {
-  if (!canUseLocalStorage()) {
-    return;
+export function loadWebDavConfig(): WebDavConfig {
+  const saved = readJson<Partial<WebDavConfig> | undefined>(
+    STORAGE_KEYS.webDavConfig,
+    undefined,
+  );
+
+  if (!saved || typeof saved !== "object") {
+    return DEFAULT_WEBDAV_CONFIG;
   }
 
-  DATA_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
+  return {
+    enabled:
+      typeof saved.enabled === "boolean"
+        ? saved.enabled
+        : DEFAULT_WEBDAV_CONFIG.enabled,
+    endpoint:
+      typeof saved.endpoint === "string"
+        ? saved.endpoint
+        : DEFAULT_WEBDAV_CONFIG.endpoint,
+    username:
+      typeof saved.username === "string"
+        ? saved.username
+        : DEFAULT_WEBDAV_CONFIG.username,
+    remoteDir:
+      typeof saved.remoteDir === "string" && saved.remoteDir.trim()
+        ? saved.remoteDir
+        : DEFAULT_WEBDAV_CONFIG.remoteDir,
+    filename:
+      typeof saved.filename === "string" && saved.filename.trim()
+        ? saved.filename
+        : DEFAULT_WEBDAV_CONFIG.filename,
+    authMode:
+      saved.authMode === "basic" || saved.authMode === "app_password"
+        ? saved.authMode
+        : DEFAULT_WEBDAV_CONFIG.authMode,
+    rememberSecret:
+      typeof saved.rememberSecret === "boolean"
+        ? saved.rememberSecret
+        : DEFAULT_WEBDAV_CONFIG.rememberSecret,
+  };
+}
+
+export function saveWebDavConfig(config: WebDavConfig) {
+  writeJson(STORAGE_KEYS.webDavConfig, config);
+}
+
+export function loadWebDavSyncState(): WebDavSyncState {
+  const saved = readJson<Partial<WebDavSyncState> | undefined>(
+    STORAGE_KEYS.webDavSyncState,
+    undefined,
+  );
+
+  if (saved && typeof saved.deviceId === "string" && saved.deviceId) {
+    return {
+      deviceId: saved.deviceId,
+      lastSyncAt:
+        typeof saved.lastSyncAt === "string" ? saved.lastSyncAt : undefined,
+      lastUploadAt:
+        typeof saved.lastUploadAt === "string" ? saved.lastUploadAt : undefined,
+      lastDownloadAt:
+        typeof saved.lastDownloadAt === "string"
+          ? saved.lastDownloadAt
+          : undefined,
+      lastRemoteUpdatedAt:
+        typeof saved.lastRemoteUpdatedAt === "string"
+          ? saved.lastRemoteUpdatedAt
+          : undefined,
+      lastError: typeof saved.lastError === "string" ? saved.lastError : undefined,
+    };
+  }
+
+  return { deviceId: deviceId() };
+}
+
+export function saveWebDavSyncState(state: WebDavSyncState) {
+  writeJson(STORAGE_KEYS.webDavSyncState, state);
+}
+
+export function loadWebDavSecret(rememberSecret = loadWebDavConfig().rememberSecret) {
+  if (canUseSessionStorage()) {
+    const sessionSecret = window.sessionStorage.getItem(WEBDAV_SESSION_SECRET_KEY);
+
+    if (sessionSecret) {
+      return sessionSecret;
+    }
+  }
+
+  if (!rememberSecret || !canUseLocalStorage()) {
+    return "";
+  }
+
+  return window.localStorage.getItem(STORAGE_KEYS.webDavSecret) ?? "";
+}
+
+export function saveWebDavSecret(secret: string, rememberSecret: boolean) {
+  if (canUseLocalStorage()) {
+    if (rememberSecret && secret) {
+      window.localStorage.setItem(STORAGE_KEYS.webDavSecret, secret);
+    } else {
+      window.localStorage.removeItem(STORAGE_KEYS.webDavSecret);
+    }
+  }
+
+  if (canUseSessionStorage()) {
+    if (!rememberSecret && secret) {
+      window.sessionStorage.setItem(WEBDAV_SESSION_SECRET_KEY, secret);
+    } else {
+      window.sessionStorage.removeItem(WEBDAV_SESSION_SECRET_KEY);
+    }
+  }
+}
+
+export function clearWebDavSettings() {
+  if (canUseLocalStorage()) {
+    window.localStorage.removeItem(STORAGE_KEYS.webDavConfig);
+    window.localStorage.removeItem(STORAGE_KEYS.webDavSyncState);
+    window.localStorage.removeItem(STORAGE_KEYS.webDavSecret);
+  }
+
+  if (canUseSessionStorage()) {
+    window.sessionStorage.removeItem(WEBDAV_SESSION_SECRET_KEY);
+  }
+}
+
+export function resetAllData() {
+  if (canUseLocalStorage()) {
+    DATA_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
+  }
+
+  if (canUseSessionStorage()) {
+    window.sessionStorage.removeItem(WEBDAV_SESSION_SECRET_KEY);
+  }
 }
 
 export function exportData(): DadKitExportData {
@@ -162,6 +319,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function importData(rawJson: string): ImportResult {
+  const validation = validateImportData(rawJson);
+
+  if (!validation.ok || !validation.data) {
+    return { ok: validation.ok, message: validation.message };
+  }
+
+  return applyImportData(validation.data);
+}
+
+export function validateImportData(rawJson: string): ImportValidationResult {
   let parsed: unknown;
 
   try {
@@ -208,6 +375,12 @@ export function importData(rawJson: string): ImportResult {
     };
   }
 
+  return { ok: true, message: "校验通过", data };
+}
+
+export function applyImportData(
+  data: Partial<DadKitExportData> & Record<string, unknown>,
+): ImportResult {
   if (data.userProfile) {
     saveUserProfile(data.userProfile);
   }
@@ -320,16 +493,32 @@ export function createSnapshot(reason: string): DadKitSnapshot | undefined {
   }
 }
 
-export function restoreSnapshot(id: string): ImportResult {
-  const snapshot = loadSnapshots().find((candidate) => candidate.id === id);
+export function restoreSnapshot(
+  id: string,
+  options: { snapshotBeforeRestore?: boolean } = {},
+): ImportResult {
+  const snapshotBeforeRestore = options.snapshotBeforeRestore ?? true;
+  const snapshotsBeforeRestore = loadSnapshots();
+  const snapshot = snapshotsBeforeRestore.find((candidate) => candidate.id === id);
 
   if (!snapshot) {
     return { ok: false, message: "未找到这份本地备份，未修改本地数据。" };
   }
 
   try {
-    return importData(JSON.stringify(snapshot.data));
+    if (snapshotBeforeRestore) {
+      createSnapshot("恢复本地备份前");
+    }
+
+    const result = importData(JSON.stringify(snapshot.data));
+
+    if (!result.ok) {
+      saveSnapshots(snapshotsBeforeRestore);
+    }
+
+    return result;
   } catch {
+    saveSnapshots(snapshotsBeforeRestore);
     return { ok: false, message: "恢复失败，未修改本地数据。" };
   }
 }

@@ -108,6 +108,18 @@ describe("store snapshots", () => {
     expect(snapshots[0]?.data.checklist).toEqual(checklist);
   });
 
+  it("does not create a snapshot when importJson validation fails", () => {
+    installLocalStorage();
+
+    saveUserProfile(testProfile());
+    saveChecklist([testItem("before-invalid-import")]);
+
+    const result = useDadKitStore.getState().importJson("{bad json");
+
+    expect(result.ok).toBe(false);
+    expect(loadSnapshots()).toEqual([]);
+  });
+
   it("creates a snapshot before createProfile replaces existing data", () => {
     installLocalStorage();
     const profile = testProfile();
@@ -125,6 +137,24 @@ describe("store snapshots", () => {
     const snapshots = loadSnapshots();
 
     expect(snapshots[0]?.reason).toBe("创建新清单前");
+    expect(snapshots[0]?.data.userProfile).toEqual(profile);
+    expect(snapshots[0]?.data.checklist).toEqual(checklist);
+  });
+
+  it("creates a snapshot before updateProfile persists profile changes", () => {
+    installLocalStorage();
+    const profile = testProfile();
+    const checklist = [testItem("before-update")];
+
+    saveUserProfile(profile);
+    saveChecklist(checklist);
+    useDadKitStore.setState({ profile, checklist });
+
+    useDadKitStore.getState().updateProfile({ dueDate: "2026-08-01" });
+
+    const snapshots = loadSnapshots();
+
+    expect(snapshots[0]?.reason).toBe("修改个人资料前");
     expect(snapshots[0]?.data.userProfile).toEqual(profile);
     expect(snapshots[0]?.data.checklist).toEqual(checklist);
   });

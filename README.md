@@ -20,6 +20,8 @@ DadKit 目前包含以下核心内容：
 - 物品/任务/问题分离：支付、押金、路线、电话、停车和安全座椅等事项作为任务或问题，不计入待产包打包进度。
 - 本地持久化：使用 `localStorage` 保存用户资料、清单状态、清单模式、自定义项和医院覆盖信息。
 - JSON 备份：导入前校验版本和字段结构，失败时不会覆盖当前本地数据。
+- 本地快照：在导入、重置、清空、恢复备份或创建新清单前自动保留最近 5 份本地快照。
+- WebDAV 手动备份：可把 DadKit JSON 备份手动上传到用户自己的 WebDAV 存储，也可手动下载后恢复。
 - PWA 支持：提供 manifest、图标和 service worker，支持安装到手机桌面与基础离线访问。
 - Docker 部署：提供非 root 生产镜像、Compose 健康检查和一键部署/升级脚本。
 
@@ -30,7 +32,7 @@ DadKit 目前包含以下核心内容：
 - `/checklist`：清单页，按分类、包位、优先级和状态管理待产事项。
 - `/hospital`：医院页，选择医院模板并记录医院提供物品与待确认事项。
 - `/share`：爸爸执行版/导出页，用于临场查看和复制清单文本。
-- `/settings`：设置页，管理本地数据和应用偏好。
+- `/settings`：设置页，管理本地数据、本地快照、JSON 备份和 WebDAV 手动备份。
 
 ## 适合场景
 
@@ -172,6 +174,16 @@ http://localhost:3333
 - ESLint
 - Vitest
 
+## WebDAV 备份
+
+DadKit 第一版 WebDAV 只做手动上传 / 下载，不做自动同步、后台同步或实时双向同步。上传会把当前 DadKit JSON 数据保存为一个 WebDAV 备份文件；下载成功后会先展示远端备份摘要，用户确认后才会覆盖本地数据。
+
+WebDAV 备份文件可能包含预产期、医院、备注、自定义清单等隐私信息。推荐使用自己信任的 WebDAV 服务，并优先使用应用密码，不要使用主密码。WebDAV 密码 / 应用密码默认只保存在 `sessionStorage`，只有用户打开“记住密码在本设备”后才会保存到 `localStorage`。只应在可信设备保存 WebDAV 凭据。
+
+浏览器直连 WebDAV 可能受 CORS 限制。如果 WebDAV 服务没有允许浏览器跨域访问，DadKit 会提示用户改用支持 CORS 的 WebDAV 服务，或等待后续自托管代理能力。
+
+服务端 WebDAV 代理当前版本未实现，默认关闭。后续如通过 `DADKIT_ENABLE_WEBDAV_PROXY=true` 开启代理，必须完整实现 SSRF 防护，包括限制协议、禁止内网地址、限制重定向、超时和响应大小，并且不能记录用户名、密码、Authorization header 或备份内容。
+
 ## 目录结构
 
 ```text
@@ -252,8 +264,18 @@ docker-compose.yml      Docker Compose 部署配置
 - `dadkit:hidden-template-items`
 - `dadkit:hospital-overrides`
 - `dadkit:checklist-mode`
+- `dadkit:snapshots`
+- `dadkit:webdav-config`
+- `dadkit:webdav-sync-state`
+- `dadkit:webdav-secret`，仅在用户选择记住 WebDAV 凭据时使用
+
+使用的 sessionStorage key：
+
+- `dadkit:webdav-session-secret`，默认用于保存当前会话的 WebDAV 密码 / 应用密码
 
 JSON 导入只支持 `version: 1`。`checklist`、`customItems`、`hiddenTemplateItemIds`、`hospitalOverrides` 如果存在必须是数组；`checklistMode` 如果存在必须是 `lean` 或 `full`。导入失败会返回明确错误，并保持本地数据不变。
+
+JSON 导入 / 导出不会包含 WebDAV 密码或应用密码。清空本地数据会清除 WebDAV 配置和本设备保存的 WebDAV 凭据，但不会删除最近本地快照，除非用户在设置页明确删除快照。
 
 ## 免责声明
 

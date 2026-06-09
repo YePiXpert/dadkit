@@ -180,4 +180,22 @@ describe("storage import/export", () => {
     expect(loadChecklist()).toEqual(checklist);
     expect(loadChecklistMode()).toBe("full");
   });
+
+  it("creates a snapshot before restoring a snapshot", () => {
+    installLocalStorage();
+
+    saveUserProfile(testProfile("2026-07-21"));
+    saveChecklist([testItem("original")]);
+    const snapshot = createSnapshot("要恢复的备份");
+
+    saveUserProfile(testProfile("2026-08-01"));
+    saveChecklist([testItem("current")]);
+
+    const result = restoreSnapshot(snapshot?.id ?? "");
+    const snapshots = loadSnapshots();
+
+    expect(result.ok).toBe(true);
+    expect(snapshots[0]?.reason).toBe("恢复本地备份前");
+    expect(snapshots[0]?.data.checklist).toEqual([testItem("current")]);
+  });
 });

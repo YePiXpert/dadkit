@@ -4,9 +4,9 @@ import { create } from "zustand";
 
 import { generateChecklist } from "@/lib/rules";
 import {
+  applyImportData,
   createSnapshot,
   exportData,
-  importData,
   loadChecklist,
   loadChecklistMode,
   loadCustomItems,
@@ -20,6 +20,7 @@ import {
   saveHiddenTemplateItemIds,
   saveHospitalOverrides,
   saveUserProfile,
+  validateImportData,
   type DadKitExportData,
   type ImportResult,
 } from "@/lib/storage";
@@ -213,6 +214,8 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     persistCoreState({ ...state, profile: updatedProfile, checklist });
   },
   updateProfile: (patch) => {
+    snapshotBeforeChange("修改个人资料前");
+
     const state = get();
     const profile = state.profile
       ? { ...state.profile, ...patch, updatedAt: nowIso() }
@@ -365,9 +368,15 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   },
   exportJson: () => JSON.stringify(exportData(), null, 2),
   importJson: (json) => {
+    const validation = validateImportData(json);
+
+    if (!validation.ok || !validation.data) {
+      return { ok: validation.ok, message: validation.message };
+    }
+
     snapshotBeforeChange("导入 JSON 前");
 
-    const result = importData(json);
+    const result = applyImportData(validation.data);
 
     if (result.ok) {
       get().hydrate();
