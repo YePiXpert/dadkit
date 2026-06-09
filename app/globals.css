@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 38 53% 94%;
+    --foreground: 176 16% 16%;
+    --card: 45 100% 98%;
+    --card-foreground: 176 16% 16%;
+    --popover: 45 100% 98%;
+    --popover-foreground: 176 16% 16%;
+    --primary: 176 46% 29%;
+    --primary-foreground: 45 100% 98%;
+    --secondary: 169 32% 90%;
+    --secondary-foreground: 176 46% 26%;
+    --muted: 37 29% 88%;
+    --muted-foreground: 170 5% 45%;
+    --accent: 45 100% 89%;
+    --accent-foreground: 39 54% 28%;
+    --amber: 41 86% 70%;
+    --amber-soft: 45 100% 89%;
+    --amber-foreground: 39 54% 28%;
+    --coral: 14 73% 68%;
+    --coral-soft: 16 82% 93%;
+    --coral-foreground: 11 42% 32%;
+    --destructive: 3 62% 45%;
+    --destructive-foreground: 45 100% 98%;
+    --border: 35 28% 84%;
+    --input: 35 26% 82%;
+    --ring: 176 46% 31%;
+    --radius: 1rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    min-height: 100vh;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .page-shell {
+    @apply mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pb-24 pt-4 sm:gap-5 sm:px-6 lg:px-8;
+  }
+
+  .field-grid {
+    @apply grid gap-4 sm:grid-cols-2;
+  }
+
+  .soft-panel {
+    @apply rounded-lg border border-border bg-card p-5 shadow-soft;
+  }
+
+  .mobile-shell {
+    @apply mx-auto w-full max-w-[480px];
+  }
+
+  .paper-card {
+    @apply rounded-lg border border-border bg-card shadow-soft;
+  }
+}
+
+@media print {
+  body {
+    background: white;
+  }
+
+  header,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  textarea {
+    border: 0 !important;
+    min-height: auto !important;
+  }
+}

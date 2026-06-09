@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title>DadKit</title>
+  <rect width="512" height="512" fill="#28706b"/>
+  <circle cx="256" cy="256" r="190" fill="#f7f2e8"/>
+  <path d="M150 198c0-34.2 27.8-62 62-62h88c34.2 0 62 27.8 62 62v18h24c24.3 0 44 19.7 44 44v96c0 24.3-19.7 44-44 44H126c-24.3 0-44-19.7-44-44v-96c0-24.3 19.7-44 44-44h24v-18Z" fill="#f3c6a5"/>
+  <path d="M188 216h136v-18c0-13.3-10.7-24-24-24h-88c-13.3 0-24 10.7-24 24v18Z" fill="#28706b"/>
+  <path d="M198 308l40 40 86-96" fill="none" stroke="#28706b" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
