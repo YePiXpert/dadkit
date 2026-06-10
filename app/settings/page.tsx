@@ -467,7 +467,7 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="grid gap-4">
               <p className="text-sm leading-6 text-muted-foreground">
-                手动上传或下载 JSON 备份，不会自动同步。
+                手动上传或下载 JSON 备份，不会自动同步。浏览器请求会经 DadKit 同源代理转发。
               </p>
 
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-3">

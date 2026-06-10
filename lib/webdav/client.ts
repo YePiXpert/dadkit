@@ -12,6 +12,9 @@ import type {
 } from "@/lib/webdav/types";
 
 const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
+const WEB_DAV_PROXY_PATH = "/api/webdav";
+const PROXY_HEADER = "x-dadkit-webdav-proxy";
+const PROXY_ERROR_HEADER = "x-dadkit-webdav-proxy-error";
 
 type UploadOptions = {
   deviceId?: string;
@@ -286,6 +289,10 @@ async function webDavFetch(
   input: string,
   init: RequestInit,
 ): Promise<Response> {
+  if (shouldUseWebDavProxy()) {
+    return webDavProxyFetch(input, init);
+  }
+
   try {
     return await fetch(input, {
       ...init,
@@ -299,6 +306,54 @@ async function webDavFetch(
 
     throw error;
   }
+}
+
+function shouldUseWebDavProxy() {
+  return typeof window !== "undefined";
+}
+
+async function webDavProxyFetch(
+  input: string,
+  init: RequestInit,
+): Promise<Response> {
+  try {
+    const response = await fetch(WEB_DAV_PROXY_PATH, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+      },
+      body: JSON.stringify({
+        url: input,
+        method: init.method ?? "GET",
+        headers: headersToRecord(init.headers),
+        body: typeof init.body === "string" ? init.body : undefined,
+      }),
+    });
+
+    if (response.headers.get(PROXY_HEADER) !== "1") {
+      throw new Error(
+        "WebDAV 同源代理不可用，请确认当前 DadKit 部署支持 API Route。",
+      );
+    }
+
+    if (response.headers.get(PROXY_ERROR_HEADER) === "1") {
+      const message = await response.text();
+
+      throw new Error(message || "WebDAV 同源代理请求失败。");
+    }
+
+    return response;
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error("WebDAV 同源代理请求失败，请检查 DadKit 部署状态。");
+    }
+
+    throw error;
+  }
+}
+
+function headersToRecord(headers: RequestInit["headers"]) {
+  return Object.fromEntries(new Headers(headers).entries());
 }
 
 function backupUrl(config: WebDavConfig) {
