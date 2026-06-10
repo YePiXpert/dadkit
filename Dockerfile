@@ -8,6 +8,8 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ARG DADKIT_BUILD_TIME=unknown
+ENV DADKIT_BUILD_TIME=${DADKIT_BUILD_TIME}
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -20,6 +22,8 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3333
+ARG DADKIT_BUILD_TIME=unknown
+ENV DADKIT_BUILD_TIME=${DADKIT_BUILD_TIME}
 
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs

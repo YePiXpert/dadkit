@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v20260609";
+const CACHE_NAME = "dadkit-v1.0.0";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icon.svg", "/maskable-icon.svg"];
 const STATIC_ASSETS = new Set(["/manifest.webmanifest", "/icon.svg", "/maskable-icon.svg"]);
 
@@ -8,7 +8,6 @@ self.addEventListener("install", (event) => {
       return cache.addAll(APP_SHELL);
     }),
   );
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {

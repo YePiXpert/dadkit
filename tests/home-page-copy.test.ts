@@ -13,11 +13,16 @@ describe("home page copy", () => {
   });
 
   it("uses the focused home actions and low-anxiety metrics", () => {
-    expect(homePage).toContain("打开我的清单");
-    expect(homePage).toContain("今日任务");
-    expect(homePage).toContain("临出门模式");
-    expect(homePage).toContain("今天优先做");
-    expect(homePage).toContain("准备时间线");
+    expect(homePage).toContain("创建清单");
+    expect(homePage).toContain("查看示例");
+    expect(homePage).toContain("医院确认");
+    expect(homePage).toContain("时间线");
+    expect(homePage).toContain("临出门");
+    expect(homePage).toContain("备份/设置");
+    expect(homePage).toContain("今天该做");
+    expect(homePage).toContain("当前阶段");
+    expect(homePage).not.toContain("宫缩记录\" />");
+    expect(homePage).not.toContain("分娩偏好卡\" />");
     expect(homePage).toContain("核心打包");
     expect(homePage).toContain("医院待问");
     expect(homePage).toContain("临出门");

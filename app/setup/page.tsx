@@ -52,6 +52,7 @@ export default function SetupPage() {
     createCustomHospitalProfile({ name: "自定义医院", city: "北京市" }),
   );
   const [otherProvided, setOtherProvided] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     if (!profile) {
@@ -102,6 +103,11 @@ export default function SetupPage() {
   }
 
   function submit() {
+    if (!draft.dueDate) {
+      setMessage("请先填写预产期，DadKit 会据此生成准备时间线。");
+      return;
+    }
+
     const providedIds = draft.hospitalProvidedItemIds.filter(
       (id) => id !== "other" && !id.startsWith("其他："),
     );
@@ -136,11 +142,16 @@ export default function SetupPage() {
             <div className="field-grid">
               <Field label="预产期">
                 <Input
+                  required
                   type="date"
                   value={draft.dueDate ?? ""}
-                  onChange={(event) =>
-                    setDraft({ ...draft, dueDate: event.target.value || undefined })
-                  }
+                  onChange={(event) => {
+                    setMessage("");
+                    setDraft({
+                      ...draft,
+                      dueDate: event.target.value || undefined,
+                    });
+                  }}
                 />
               </Field>
               <Field label="所在地区">
@@ -294,6 +305,11 @@ export default function SetupPage() {
             <Save className="size-4" />
             生成清单
           </Button>
+          {message ? (
+            <p className="rounded-lg bg-secondary px-3 py-2 text-sm text-primary">
+              {message}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
       <DisclaimerBox />

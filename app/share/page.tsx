@@ -9,10 +9,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   generateDadExecutionShareText,
+  generateGoShareText,
+  generateHospitalCommunicationShareText,
   generateLeanShareText,
   generateShareText,
   generateTimelineShareText,
 } from "@/lib/export";
+import {
+  generateBirthPlanShareText,
+  generateContractionsShareText,
+} from "@/lib/rc";
 import { useDadKitStore } from "@/lib/store";
 
 export default function SharePage() {
@@ -21,6 +27,8 @@ export default function SharePage() {
   const timelineTaskStatuses = useDadKitStore(
     (state) => state.timelineTaskStatuses,
   );
+  const contractions = useDadKitStore((state) => state.contractions);
+  const birthPlan = useDadKitStore((state) => state.birthPlan);
   const exportJson = useDadKitStore((state) => state.exportJson);
 
   if (!profile) {
@@ -39,6 +47,10 @@ export default function SharePage() {
   const leanText = generateLeanShareText(checklist, profile);
   const fullText = generateShareText(checklist, profile, "DadKit 完整待产准备清单");
   const dadText = generateDadExecutionShareText(checklist, profile);
+  const goText = generateGoShareText(profile, checklist, timelineTaskStatuses);
+  const hospitalText = generateHospitalCommunicationShareText(checklist, profile);
+  const birthPlanText = generateBirthPlanShareText(birthPlan);
+  const contractionsText = generateContractionsShareText(contractions);
   const timelineText = generateTimelineShareText(
     profile,
     checklist,
@@ -89,8 +101,12 @@ export default function SharePage() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="dad">
-            <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-5">
+            <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-9">
               <TabsTrigger value="dad">爸爸执行版</TabsTrigger>
+              <TabsTrigger value="go">临出门版</TabsTrigger>
+              <TabsTrigger value="hospital">医院沟通版</TabsTrigger>
+              <TabsTrigger value="birth-plan">分娩偏好卡</TabsTrigger>
+              <TabsTrigger value="contractions">宫缩记录</TabsTrigger>
               <TabsTrigger value="timeline">时间线</TabsTrigger>
               <TabsTrigger value="lean">精简版</TabsTrigger>
               <TabsTrigger value="full">完整版</TabsTrigger>
@@ -107,6 +123,18 @@ export default function SharePage() {
                 爸爸执行版只保留要拿、要问、要确认的事，适合直接复制给家人。
               </div>
               <ExportTextArea value={dadText} />
+            </TabsContent>
+            <TabsContent value="go">
+              <ExportTextArea value={goText} />
+            </TabsContent>
+            <TabsContent value="hospital">
+              <ExportTextArea value={hospitalText} />
+            </TabsContent>
+            <TabsContent value="birth-plan">
+              <ExportTextArea value={birthPlanText} />
+            </TabsContent>
+            <TabsContent value="contractions">
+              <ExportTextArea value={contractionsText} />
             </TabsContent>
             <TabsContent value="timeline">
               <ExportTextArea value={timelineText} />

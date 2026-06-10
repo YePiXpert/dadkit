@@ -12,27 +12,41 @@ import {
   applyImportData,
   createSnapshot,
   exportData,
+  loadBirthPlan,
   loadChecklist,
   loadChecklistMode,
+  loadContractions,
   loadCustomItems,
   loadHiddenTemplateItemIds,
   loadHospitalAnswers,
   loadHospitalOverrides,
+  loadPostpartumTasks,
   loadTimelineTaskStatuses,
   loadUserProfile,
   resetAllData,
+  saveBirthPlan as saveStoredBirthPlan,
   saveChecklist,
   saveChecklistMode,
+  saveContractions,
   saveCustomItems,
   saveHiddenTemplateItemIds,
   saveHospitalAnswers,
   saveHospitalOverrides,
+  savePostpartumTasks,
   saveUserProfile,
   updateTimelineTaskStatus as updateStoredTimelineTaskStatus,
   validateImportData,
   type DadKitExportData,
   type ImportResult,
 } from "@/lib/storage";
+import {
+  createContractionRecord,
+  mergeBirthPlan,
+  mergePostpartumTasks,
+  type BirthPlan,
+  type ContractionRecord,
+  type PostpartumTask,
+} from "@/lib/rc";
 import type { TimelineTaskStatus } from "@/lib/timeline";
 import type {
   ChecklistCategory,
@@ -64,6 +78,9 @@ type DadKitState = {
   hospitalOverrides: UserHospitalOverride[];
   hospitalAnswers: HospitalAnswer[];
   timelineTaskStatuses: TimelineTaskStatus[];
+  contractions: ContractionRecord[];
+  birthPlan: BirthPlan;
+  postpartumTasks: PostpartumTask[];
   filters: FilterState;
   hydrate: () => void;
   createProfile: (input?: CreateProfileInput) => UserProfile;
@@ -86,6 +103,18 @@ type DadKitState = {
   updateTimelineTaskStatus: (
     taskId: string,
     status: TimelineTaskStatus["status"],
+  ) => void;
+  addContraction: (input: {
+    startedAt: string;
+    endedAt: string;
+    note?: string;
+  }) => void;
+  deleteContraction: (id: string) => void;
+  clearContractions: () => void;
+  saveBirthPlan: (patch: Partial<BirthPlan>) => void;
+  updatePostpartumTask: (
+    id: string,
+    patch: Partial<Pick<PostpartumTask, "status" | "note">>,
   ) => void;
   exportJson: () => string;
   importJson: (json: string) => ImportResult;
@@ -222,6 +251,9 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   hospitalOverrides: [],
   hospitalAnswers: [],
   timelineTaskStatuses: [],
+  contractions: [],
+  birthPlan: mergeBirthPlan(),
+  postpartumTasks: mergePostpartumTasks(),
   filters: {
     category: "all",
     status: "all",
@@ -235,6 +267,9 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     const hospitalOverrides = loadHospitalOverrides();
     const hospitalAnswers = loadHospitalAnswers();
     const timelineTaskStatuses = loadTimelineTaskStatuses();
+    const contractions = loadContractions();
+    const birthPlan = loadBirthPlan();
+    const postpartumTasks = loadPostpartumTasks();
     const checklistMode = loadChecklistMode();
     const hydratedChecklist = profile
       ? generateChecklist(profile, {
@@ -255,6 +290,9 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       hospitalOverrides,
       hospitalAnswers,
       timelineTaskStatuses,
+      contractions,
+      birthPlan,
+      postpartumTasks,
     });
 
     if (profile) {
@@ -545,6 +583,65 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
 
     set({ timelineTaskStatuses });
   },
+  addContraction: (input) => {
+    const state = get();
+    const record = createContractionRecord(
+      {
+        id: itemId("contraction"),
+        ...input,
+      },
+      state.contractions,
+    );
+    const contractions = [...state.contractions, record].sort(
+      (left, right) =>
+        new Date(right.startedAt).getTime() - new Date(left.startedAt).getTime(),
+    );
+
+    set({ contractions });
+    saveContractions(contractions);
+  },
+  deleteContraction: (id) => {
+    const contractions = get().contractions.filter((record) => record.id !== id);
+
+    set({ contractions });
+    saveContractions(contractions);
+  },
+  clearContractions: () => {
+    set({ contractions: [] });
+    saveContractions([]);
+  },
+  saveBirthPlan: (patch) => {
+    const birthPlan = mergeBirthPlan({
+      ...get().birthPlan,
+      ...patch,
+    });
+
+    set({ birthPlan });
+    saveStoredBirthPlan(birthPlan);
+  },
+  updatePostpartumTask: (id, patch) => {
+    const postpartumTasks = mergePostpartumTasks(
+      get().postpartumTasks.map((task) => {
+        if (task.id !== id) {
+          return task;
+        }
+
+        const nextTask = {
+          ...task,
+          ...patch,
+        };
+
+        if ("note" in patch) {
+          nextTask.note = patch.note?.trim() || undefined;
+        }
+
+        return nextTask;
+      }),
+    );
+
+    set({ postpartumTasks });
+    savePostpartumTasks(postpartumTasks);
+  },
   exportJson: () => JSON.stringify(exportData(), null, 2),
   importJson: (json) => {
     const validation = validateImportData(json);
@@ -575,6 +672,9 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       hospitalOverrides: [],
       hospitalAnswers: [],
       timelineTaskStatuses: [],
+      contractions: [],
+      birthPlan: mergeBirthPlan(),
+      postpartumTasks: mergePostpartumTasks(),
       checklistMode: "lean",
       filters: {
         category: "all",

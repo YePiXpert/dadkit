@@ -5,6 +5,15 @@ import type {
   UserHospitalOverride,
   UserProfile,
 } from "@/lib/types";
+import {
+  DEFAULT_BIRTH_PLAN,
+  DEFAULT_POSTPARTUM_TASKS,
+  mergeBirthPlan,
+  mergePostpartumTasks,
+  type BirthPlan,
+  type ContractionRecord,
+  type PostpartumTask,
+} from "@/lib/rc";
 import type { TimelineTaskStatus } from "@/lib/timeline";
 import {
   DEFAULT_WEBDAV_CONFIG,
@@ -20,6 +29,9 @@ export const STORAGE_KEYS = {
   hospitalOverrides: "dadkit:hospital-overrides",
   hospitalAnswers: "dadkit:hospital-answers",
   timelineTaskStatuses: "dadkit:timeline-task-statuses",
+  contractions: "dadkit:contractions",
+  birthPlan: "dadkit:birth-plan",
+  postpartumTasks: "dadkit:postpartum-tasks",
   checklistMode: "dadkit:checklist-mode",
   snapshots: "dadkit:snapshots",
   webDavConfig: "dadkit:webdav-config",
@@ -37,6 +49,9 @@ const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.hospitalOverrides,
   STORAGE_KEYS.hospitalAnswers,
   STORAGE_KEYS.timelineTaskStatuses,
+  STORAGE_KEYS.contractions,
+  STORAGE_KEYS.birthPlan,
+  STORAGE_KEYS.postpartumTasks,
   STORAGE_KEYS.checklistMode,
   STORAGE_KEYS.webDavConfig,
   STORAGE_KEYS.webDavSyncState,
@@ -54,6 +69,9 @@ export type DadKitExportData = {
   hospitalOverrides: UserHospitalOverride[];
   hospitalAnswers: HospitalAnswer[];
   timelineTaskStatuses: TimelineTaskStatus[];
+  contractions: ContractionRecord[];
+  birthPlan: BirthPlan;
+  postpartumTasks: PostpartumTask[];
 };
 
 export type ImportResult = {
@@ -203,6 +221,39 @@ export function updateTimelineTaskStatus(
   saveTimelineTaskStatuses(statuses);
 
   return statuses;
+}
+
+export function loadContractions() {
+  const records = readJson<ContractionRecord[]>(STORAGE_KEYS.contractions, []);
+
+  return Array.isArray(records) ? records : [];
+}
+
+export function saveContractions(records: ContractionRecord[]) {
+  writeJson(STORAGE_KEYS.contractions, records);
+}
+
+export function loadBirthPlan() {
+  const saved = readJson<Partial<BirthPlan> | undefined>(
+    STORAGE_KEYS.birthPlan,
+    undefined,
+  );
+
+  return mergeBirthPlan(saved);
+}
+
+export function saveBirthPlan(plan: BirthPlan) {
+  writeJson(STORAGE_KEYS.birthPlan, mergeBirthPlan(plan));
+}
+
+export function loadPostpartumTasks() {
+  const tasks = readJson<PostpartumTask[]>(STORAGE_KEYS.postpartumTasks, []);
+
+  return mergePostpartumTasks(Array.isArray(tasks) ? tasks : []);
+}
+
+export function savePostpartumTasks(tasks: PostpartumTask[]) {
+  writeJson(STORAGE_KEYS.postpartumTasks, mergePostpartumTasks(tasks));
 }
 
 export function loadChecklistMode(): ChecklistMode {
@@ -361,6 +412,9 @@ export function exportData(): DadKitExportData {
     hospitalOverrides: loadHospitalOverrides(),
     hospitalAnswers: loadHospitalAnswers(),
     timelineTaskStatuses: loadTimelineTaskStatuses(),
+    contractions: loadContractions(),
+    birthPlan: loadBirthPlan(),
+    postpartumTasks: loadPostpartumTasks(),
   };
 }
 
@@ -403,7 +457,9 @@ export function validateImportData(rawJson: string): ImportValidationResult {
     | "hiddenTemplateItemIds"
     | "hospitalOverrides"
     | "hospitalAnswers"
-    | "timelineTaskStatuses",
+    | "timelineTaskStatuses"
+    | "contractions"
+    | "postpartumTasks",
     string,
   ]> = [
     ["checklist", "checklist 必须是数组"],
@@ -412,12 +468,25 @@ export function validateImportData(rawJson: string): ImportValidationResult {
     ["hospitalOverrides", "hospitalOverrides 必须是数组"],
     ["hospitalAnswers", "hospitalAnswers 必须是数组"],
     ["timelineTaskStatuses", "timelineTaskStatuses 必须是数组"],
+    ["contractions", "contractions 必须是数组"],
+    ["postpartumTasks", "postpartumTasks 必须是数组"],
   ];
 
   for (const [field, message] of arrayFields) {
     if (field in data && data[field] !== undefined && !Array.isArray(data[field])) {
       return { ok: false, message: `${message}，未修改本地数据。` };
     }
+  }
+
+  if (
+    "birthPlan" in data &&
+    data.birthPlan !== undefined &&
+    !isRecord(data.birthPlan)
+  ) {
+    return {
+      ok: false,
+      message: "birthPlan 必须是对象，未修改本地数据。",
+    };
   }
 
   if (
@@ -466,6 +535,18 @@ export function applyImportData(
     saveTimelineTaskStatuses(data.timelineTaskStatuses);
   }
 
+  if (Array.isArray(data.contractions)) {
+    saveContractions(data.contractions);
+  }
+
+  if (data.birthPlan && isRecord(data.birthPlan)) {
+    saveBirthPlan(mergeBirthPlan(data.birthPlan));
+  }
+
+  if (Array.isArray(data.postpartumTasks)) {
+    savePostpartumTasks(data.postpartumTasks);
+  }
+
   if (data.checklistMode === "lean" || data.checklistMode === "full") {
     saveChecklistMode(data.checklistMode);
   }
@@ -489,8 +570,31 @@ function hasSnapshotData(data: DadKitExportData) {
       data.hiddenTemplateItemIds.length > 0 ||
       data.hospitalOverrides.length > 0 ||
       data.hospitalAnswers.length > 0 ||
-      data.timelineTaskStatuses.length > 0,
+      data.timelineTaskStatuses.length > 0 ||
+      data.contractions.length > 0 ||
+      hasBirthPlanData(data.birthPlan) ||
+      hasPostpartumData(data.postpartumTasks),
   );
+}
+
+function hasBirthPlanData(plan: BirthPlan) {
+  return Object.entries(DEFAULT_BIRTH_PLAN).some(
+    ([key, value]) => plan[key as keyof BirthPlan] !== value,
+  );
+}
+
+function hasPostpartumData(tasks: PostpartumTask[]) {
+  const defaultsById = new Map(DEFAULT_POSTPARTUM_TASKS.map((task) => [task.id, task]));
+
+  return tasks.some((task) => {
+    const defaultTask = defaultsById.get(task.id);
+
+    if (!defaultTask) {
+      return true;
+    }
+
+    return task.status !== defaultTask.status || (task.note ?? "") !== (defaultTask.note ?? "");
+  });
 }
 
 function isSnapshot(value: unknown): value is DadKitSnapshot {

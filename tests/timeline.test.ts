@@ -14,6 +14,7 @@ import {
   generateGoModeTasks,
   generateTimeline,
   generateTodayTasks,
+  isTimelineTaskComplete,
 } from "@/lib/timeline";
 import type { ChecklistItem, UserProfile } from "@/lib/types";
 
@@ -205,6 +206,49 @@ describe("timeline", () => {
 
     expect(result.ok).toBe(true);
     expect(loadTimelineTaskStatuses()).toEqual(imported);
+  });
+
+  it("can toggle a timeline task from done and not_needed back to todo", () => {
+    installLocalStorage();
+    const profile = makeProfile();
+    const checklist = checklistFor(profile);
+    const task = generateGoModeTasks(profile, checklist).find(
+      (candidate) => candidate.id === "timeline-go-phone",
+    );
+
+    expect(task).toBeDefined();
+
+    let statuses = updateTimelineTaskStatus("timeline-go-phone", "done");
+    expect(isTimelineTaskComplete(task!, checklist, statuses)).toBe(true);
+
+    statuses = updateTimelineTaskStatus("timeline-go-phone", "todo");
+    expect(isTimelineTaskComplete(task!, checklist, statuses)).toBe(false);
+
+    statuses = updateTimelineTaskStatus("timeline-go-phone", "not_needed");
+    expect(isTimelineTaskComplete(task!, checklist, statuses)).toBe(true);
+
+    statuses = updateTimelineTaskStatus("timeline-go-phone", "todo");
+    expect(isTimelineTaskComplete(task!, checklist, statuses)).toBe(false);
+  });
+
+  it("shares the same timelineTaskStatuses for timeline and go mode tasks", () => {
+    installLocalStorage();
+    const profile = makeProfile();
+    const checklist = checklistFor(profile);
+    const timelineTask = generateTimeline(profile, checklist)
+      .flatMap((stage) => stage.tasks)
+      .find((task) => task.id === "timeline-go-car-seat");
+    const goTask = generateGoModeTasks(profile, checklist).find(
+      (task) => task.id === "timeline-go-car-seat",
+    );
+
+    expect(timelineTask).toBeDefined();
+    expect(goTask).toBeDefined();
+
+    const statuses = updateTimelineTaskStatus("timeline-go-car-seat", "done");
+
+    expect(isTimelineTaskComplete(timelineTask!, checklist, statuses)).toBe(true);
+    expect(isTimelineTaskComplete(goTask!, checklist, statuses)).toBe(true);
   });
 
   it("keeps timeline statuses when import omits them", () => {

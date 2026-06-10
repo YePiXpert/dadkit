@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        DADKIT_BUILD_TIME: "${DADKIT_BUILD_TIME:-unknown}"
     image: "${DADKIT_IMAGE:-dadkit:latest}"
     ports:
       - "${DADKIT_PORT:-3333}:${DADKIT_PORT:-3333}"
@@ -10,10 +12,11 @@ services:
       HOSTNAME: 0.0.0.0
       PORT: "${DADKIT_PORT:-3333}"
       NODE_ENV: production
+      DADKIT_BUILD_TIME: "${DADKIT_BUILD_TIME:-unknown}"
     healthcheck:
       test:
         - CMD-SHELL
-        - node -e "const http=require('http');const port=process.env.PORT||3333;http.get({host:'127.0.0.1',port,path:'/'},res=>process.exit(res.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+        - node -e "const http=require('http');const port=process.env.PORT||3333;http.get({host:'127.0.0.1',port,path:'/healthz'},res=>process.exit(res.statusCode===200?0:1)).on('error',()=>process.exit(1))"
       interval: 30s
       timeout: 5s
       retries: 3

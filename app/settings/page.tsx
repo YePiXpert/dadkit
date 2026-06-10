@@ -29,6 +29,12 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DEFAULT_BIRTH_PLAN,
+  DEFAULT_POSTPARTUM_TASKS,
+  type BirthPlan,
+  type PostpartumTask,
+} from "@/lib/rc";
 import { useDadKitStore } from "@/lib/store";
 import {
   clearSnapshots,
@@ -57,6 +63,12 @@ import {
   type WebDavSyncState,
 } from "@/lib/webdav/types";
 
+type ReleaseInfo = {
+  ok: boolean;
+  version: string;
+  buildTime: string;
+};
+
 export default function SettingsPage() {
   const clearAll = useDadKitStore((state) => state.clearAll);
   const exportJson = useDadKitStore((state) => state.exportJson);
@@ -66,6 +78,9 @@ export default function SettingsPage() {
   const checklist = useDadKitStore((state) => state.checklist);
   const checklistMode = useDadKitStore((state) => state.checklistMode);
   const customItems = useDadKitStore((state) => state.customItems);
+  const contractions = useDadKitStore((state) => state.contractions);
+  const birthPlan = useDadKitStore((state) => state.birthPlan);
+  const postpartumTasks = useDadKitStore((state) => state.postpartumTasks);
   const [importText, setImportText] = useState("");
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState<boolean | undefined>();
@@ -82,8 +97,18 @@ export default function SettingsPage() {
   const [pendingRemoteBackup, setPendingRemoteBackup] =
     useState<DadKitWebDavBackup>();
   const [uploadConflict, setUploadConflict] = useState(false);
+  const [releaseInfo, setReleaseInfo] = useState<ReleaseInfo>({
+    ok: true,
+    version: "1.0.0",
+    buildTime: "unknown",
+  });
   const hasLocalData =
-    Boolean(profile) || checklist.length > 0 || customItems.length > 0;
+    Boolean(profile) ||
+    checklist.length > 0 ||
+    customItems.length > 0 ||
+    contractions.length > 0 ||
+    hasBirthPlanData(birthPlan) ||
+    hasPostpartumData(postpartumTasks);
   const recentSnapshots = snapshots.slice(0, 2);
 
   function refreshSnapshots() {
@@ -103,6 +128,13 @@ export default function SettingsPage() {
   useEffect(() => {
     refreshSnapshots();
     refreshWebDavSettings();
+
+    void fetch("/healthz", { cache: "no-store" })
+      .then((response) => response.json() as Promise<ReleaseInfo>)
+      .then((data) => setReleaseInfo(data))
+      .catch(() => {
+        setReleaseInfo((current) => ({ ...current, ok: false }));
+      });
   }, []);
 
   function clearData() {
@@ -318,6 +350,12 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-semibold tracking-normal">设置</h1>
         <p className="text-sm leading-6 text-muted-foreground">
           数据保存在当前浏览器，可通过 JSON 或 WebDAV 手动备份。
+        </p>
+        <p className="text-xs leading-5 text-muted-foreground">
+          当前版本 v{releaseInfo.version} · 构建时间{" "}
+          {releaseInfo.buildTime === "unknown"
+            ? "本地开发 / 未注入"
+            : formatSnapshotTime(releaseInfo.buildTime)}
         </p>
       </div>
 
@@ -703,6 +741,23 @@ export default function SettingsPage() {
 
           <Card className="rounded-lg">
             <CardHeader>
+              <CardTitle>更多工具</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-3">
+              <Button asChild variant="outline">
+                <Link href="/contractions">宫缩记录</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/birth-plan">分娩偏好卡</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/postpartum">产后办理</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-lg">
+            <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Info className="size-4 text-primary" />
                 当前数据摘要
@@ -764,6 +819,21 @@ export default function SettingsPage() {
               <p>
                 医院模板用于帮助整理待确认事项。未核验模板不会作为官方入院要求，也不会写死医院一定提供某些物品。
               </p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <StatusTile label="版本" value={`v${releaseInfo.version}`} />
+                <StatusTile
+                  label="构建时间"
+                  value={
+                    releaseInfo.buildTime === "unknown"
+                      ? "本地开发 / 未注入"
+                      : formatSnapshotTime(releaseInfo.buildTime)
+                  }
+                />
+                <StatusTile
+                  label="健康检查"
+                  value={releaseInfo.ok ? "正常" : "未连接"}
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -839,4 +909,24 @@ function StatusTile({ label, value }: { label: string; value: string }) {
       <p className="mt-1 break-words font-semibold">{value}</p>
     </div>
   );
+}
+
+function hasBirthPlanData(plan: BirthPlan) {
+  return Object.entries(DEFAULT_BIRTH_PLAN).some(
+    ([key, value]) => plan[key as keyof BirthPlan] !== value,
+  );
+}
+
+function hasPostpartumData(tasks: PostpartumTask[]) {
+  const defaultsById = new Map(DEFAULT_POSTPARTUM_TASKS.map((task) => [task.id, task]));
+
+  return tasks.some((task) => {
+    const defaultTask = defaultsById.get(task.id);
+
+    if (!defaultTask) {
+      return true;
+    }
+
+    return task.status !== defaultTask.status || (task.note ?? "") !== (defaultTask.note ?? "");
+  });
 }

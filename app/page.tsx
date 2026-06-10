@@ -19,6 +19,7 @@ import { useDadKitStore } from "@/lib/store";
 import {
   TIMELINE_STAGE_TITLES,
   generateTodayTasks,
+  getCurrentTimelineStageId,
   getDaysUntilDue,
   type TimelineTask,
 } from "@/lib/timeline";
@@ -51,9 +52,13 @@ export default function HomePage() {
   );
   const summary = buildHomeSummary(checklist, hospitalAnswers);
   const daysLeft = profile ? getDaysUntilDue(profile) : undefined;
+  const currentStageId = profile ? getCurrentTimelineStageId(profile) : undefined;
   const todayTasks = profile
     ? generateTodayTasks(profile, checklist, timelineTaskStatuses).slice(0, 3)
     : [];
+  const currentStageTitle = currentStageId
+    ? TIMELINE_STAGE_TITLES[currentStageId]
+    : "未生成时间线";
 
   return (
     <div className="page-shell">
@@ -87,6 +92,9 @@ export default function HomePage() {
                     ? dueAdvice(daysLeft)
                     : "填写预产期后，DadKit 会自动生成准备时间线。"}
                 </p>
+                <p className="mt-3 inline-flex rounded-full bg-card/15 px-3 py-1 text-sm font-medium">
+                  当前阶段：{profile?.dueDate ? currentStageTitle : "待填写预产期"}
+                </p>
               </div>
               <Link
                 className="hidden rounded-2xl bg-card px-5 py-8 text-sm font-semibold text-primary sm:block"
@@ -100,10 +108,13 @@ export default function HomePage() {
           <div className="mt-4 grid gap-2 sm:grid-cols-3">
             <PrimaryHomeLink
               href={profile ? "/checklist" : "/setup"}
-              label="打开我的清单"
+              label={profile ? "清单" : "创建清单"}
             />
-            <PrimaryHomeLink href="/timeline" label="今日任务" />
-            <PrimaryHomeLink href="/go" label="临出门模式" />
+            {!profile ? <PrimaryHomeLink href="/example" label="查看示例" /> : null}
+            <PrimaryHomeLink href="/hospital" label="医院确认" />
+            <PrimaryHomeLink href="/timeline" label="时间线" />
+            <PrimaryHomeLink href="/go" label="临出门" />
+            <PrimaryHomeLink href="/settings" label="备份/设置" />
           </div>
         </div>
 
@@ -137,23 +148,23 @@ export default function HomePage() {
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-3">
         <ActionCard
-          description="按预产期看当前阶段、今日任务和每个阶段完成率。"
-          href="/timeline"
+          description="记录开始、结束、持续和间隔，导出给医生或家人。"
+          href="/contractions"
           icon={CalendarClock}
-          title="准备时间线"
+          title="宫缩记录"
           tone="amber"
         />
         <ActionCard
-          description="只看核心清单、购物清单和证件包检查。"
-          href="/checklist"
+          description="整理紧急联系人、陪产人、过敏用药和沟通偏好。"
+          href="/birth-plan"
           icon={ClipboardList}
-          title="打开清单"
+          title="分娩偏好卡"
         />
         <ActionCard
-          description="临产时打开，只保留现在出发前要拿、要确认的事项。"
-          href="/go"
+          description="把出生证明、结算、保险和复查事项做成待确认清单。"
+          href="/postpartum"
           icon={CheckCircle2}
-          title="临出门模式"
+          title="产后办理"
           tone="coral"
         />
       </section>
@@ -191,9 +202,9 @@ function TodayTasksCard({
       <CardContent className="grid gap-3 p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm text-muted-foreground">今天优先做</p>
+            <p className="text-sm text-muted-foreground">今天该做</p>
             <h2 className="mt-1 text-2xl font-semibold tracking-normal">
-              {profileReady ? "收口 3 件事" : "等待预产期"}
+              {profileReady ? "今天该做" : "等待预产期"}
             </h2>
           </div>
           <Button asChild variant="outline">

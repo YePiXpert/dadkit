@@ -4,18 +4,25 @@ import {
   createSnapshot,
   exportData,
   importData,
+  loadBirthPlan,
   loadChecklist,
   loadChecklistMode,
+  loadContractions,
   loadHospitalAnswers,
+  loadPostpartumTasks,
   loadSnapshots,
   loadUserProfile,
   restoreSnapshot,
+  saveBirthPlan,
   saveChecklist,
   saveChecklistMode,
+  saveContractions,
   saveHospitalAnswers,
+  savePostpartumTasks,
   saveUserProfile,
   STORAGE_KEYS,
 } from "@/lib/storage";
+import { DEFAULT_POSTPARTUM_TASKS, mergeBirthPlan } from "@/lib/rc";
 import type { ChecklistItem, HospitalAnswer, UserProfile } from "@/lib/types";
 
 function installLocalStorage(initial: Record<string, string> = {}) {
@@ -189,6 +196,101 @@ describe("storage import/export", () => {
 
     expect(result.ok).toBe(true);
     expect(loadHospitalAnswers()).toEqual(answers);
+  });
+
+  it("saves, loads, exports, and imports v0.4 local data", () => {
+    const store = installLocalStorage();
+    const contractions = [
+      {
+        id: "contraction-1",
+        startedAt: "2026-06-10T11:00:00.000Z",
+        endedAt: "2026-06-10T11:01:00.000Z",
+        durationSeconds: 60,
+      },
+    ];
+    const birthPlan = mergeBirthPlan({
+      emergencyContact: "爸爸 13800000000",
+      hospitalPhone: "产科电话",
+    });
+    const postpartumTasks = [
+      {
+        ...DEFAULT_POSTPARTUM_TASKS[0],
+        status: "done" as const,
+        note: "电话确认",
+      },
+    ];
+
+    saveContractions(contractions);
+    saveBirthPlan(birthPlan);
+    savePostpartumTasks(postpartumTasks);
+    store.set(STORAGE_KEYS.webDavSecret, "should-not-export");
+
+    const exported = exportData();
+
+    expect(exported.contractions).toEqual(contractions);
+    expect(exported.birthPlan).toEqual(birthPlan);
+    expect(exported.postpartumTasks[0]).toMatchObject(postpartumTasks[0]);
+    expect(JSON.stringify(exported)).not.toContain("should-not-export");
+
+    const nextContractions = [
+      {
+        id: "contraction-2",
+        startedAt: "2026-06-10T12:00:00.000Z",
+        endedAt: "2026-06-10T12:02:00.000Z",
+        durationSeconds: 120,
+      },
+    ];
+    const result = importData(
+      JSON.stringify({
+        version: 1,
+        exportedAt: "2026-06-10T00:00:00.000Z",
+        contractions: nextContractions,
+        birthPlan: { supportPerson: "爸爸" },
+        postpartumTasks,
+      }),
+    );
+
+    expect(result).toEqual({ ok: true, message: "导入成功" });
+    expect(loadContractions()).toEqual(nextContractions);
+    expect(loadBirthPlan().supportPerson).toBe("爸爸");
+    expect(loadPostpartumTasks()[0]).toMatchObject(postpartumTasks[0]);
+  });
+
+  it("does not clear v0.4 local data when old JSON omits new fields", () => {
+    installLocalStorage();
+    const contractions = [
+      {
+        id: "contraction-1",
+        startedAt: "2026-06-10T11:00:00.000Z",
+        endedAt: "2026-06-10T11:01:00.000Z",
+        durationSeconds: 60,
+      },
+    ];
+    const birthPlan = mergeBirthPlan({ emergencyContact: "爸爸" });
+    const postpartumTasks = [
+      {
+        ...DEFAULT_POSTPARTUM_TASKS[0],
+        status: "done" as const,
+        note: "已问",
+      },
+    ];
+
+    saveContractions(contractions);
+    saveBirthPlan(birthPlan);
+    savePostpartumTasks(postpartumTasks);
+
+    const result = importData(
+      JSON.stringify({
+        version: 1,
+        exportedAt: "2026-06-10T00:00:00.000Z",
+        checklistMode: "full",
+      }),
+    );
+
+    expect(result.ok).toBe(true);
+    expect(loadContractions()).toEqual(contractions);
+    expect(loadBirthPlan()).toEqual(birthPlan);
+    expect(loadPostpartumTasks()[0]).toMatchObject(postpartumTasks[0]);
   });
 
   it("keeps only the latest 5 snapshots", () => {

@@ -294,3 +294,52 @@ export function generateTimelineShareText(
       .join("\n"),
   ].join("\n");
 }
+
+export function generateGoShareText(
+  profile: UserProfile,
+  checklist: ChecklistItem[],
+  timelineTaskStatuses: TimelineTaskStatus[] = [],
+) {
+  const goTasks = generateGoModeTasks(profile, checklist);
+
+  return [
+    formatProfile(profile, "DadKit 临出门版"),
+    "\n## 现在就检查这些",
+    goTasks.length > 0
+      ? goTasks
+          .map((task) => lineForTimelineTask(task, checklist, timelineTaskStatuses))
+          .join("\n")
+      : "- 暂无临出门任务",
+    "\n提醒：临产时只看这张表，医院问题和购物清单先放一边。",
+  ].join("\n");
+}
+
+export function generateHospitalCommunicationShareText(
+  checklist: ChecklistItem[],
+  profile?: UserProfile,
+) {
+  const normalizedItems = checklist.map(normalizeChecklistItem);
+  const questions = normalizedItems.filter(
+    (item) => item.itemKind === "question" || item.category === "hospital_questions",
+  );
+  const routeAndContacts = normalizedItems.filter(
+    (item) =>
+      item.name.includes("电话") ||
+      item.name.includes("产科") ||
+      item.name.includes("住院处") ||
+      item.name.includes("入口") ||
+      item.name.includes("路线") ||
+      item.name.includes("停车") ||
+      item.name.includes("医保") ||
+      item.name.includes("押金") ||
+      item.name.includes("支付"),
+  );
+
+  return [
+    formatProfile(profile, "DadKit 医院沟通版"),
+    section("产检 / 入院待问", questions),
+    section("电话、路线和结算确认", routeAndContacts),
+  ]
+    .filter(Boolean)
+    .join("\n");
+}

@@ -190,7 +190,9 @@ function TimelineTaskRow({
       <div className="flex gap-2 sm:justify-end">
         <Button
           className="flex-1 sm:flex-none"
-          onClick={() => onChange(task.id, "done")}
+          onClick={() =>
+            onChange(task.id, explicitStatus === "done" ? "todo" : "done")
+          }
           size="sm"
           variant={done && explicitStatus !== "not_needed" ? "default" : "outline"}
         >
@@ -199,7 +201,12 @@ function TimelineTaskRow({
         </Button>
         <Button
           className="flex-1 sm:flex-none"
-          onClick={() => onChange(task.id, "not_needed")}
+          onClick={() =>
+            onChange(
+              task.id,
+              explicitStatus === "not_needed" ? "todo" : "not_needed",
+            )
+          }
           size="sm"
           variant={explicitStatus === "not_needed" ? "default" : "outline"}
         >

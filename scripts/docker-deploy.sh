@@ -6,7 +6,9 @@ APP_DIR="${DADKIT_DIR:-/opt/dadkit}"
 BRANCH="${DADKIT_BRANCH:-main}"
 DADKIT_PORT="${DADKIT_PORT:-3333}"
 DADKIT_FORCE_RESET="${DADKIT_FORCE_RESET:-0}"
+DADKIT_BUILD_TIME="${DADKIT_BUILD_TIME:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}"
 export DADKIT_PORT
+export DADKIT_BUILD_TIME
 
 need() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -54,4 +56,5 @@ fi
 compose up --build -d --remove-orphans
 
 echo "DadKit is running at http://localhost:${DADKIT_PORT}"
+echo "Health check: http://localhost:${DADKIT_PORT}/healthz"
 compose ps

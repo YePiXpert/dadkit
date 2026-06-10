@@ -4,7 +4,14 @@ import {
   loadSnapshots,
   saveChecklist,
   saveUserProfile,
+  STORAGE_KEYS,
 } from "@/lib/storage";
+import {
+  calculateContractionStats,
+  generateBirthPlanShareText,
+  mergeBirthPlan,
+  mergePostpartumTasks,
+} from "@/lib/rc";
 import { useDadKitStore } from "@/lib/store";
 import type {
   ChecklistItem,
@@ -92,6 +99,9 @@ function resetStoreState() {
     hospitalOverrides: [],
     hospitalAnswers: [],
     timelineTaskStatuses: [],
+    contractions: [],
+    birthPlan: mergeBirthPlan(),
+    postpartumTasks: mergePostpartumTasks(),
     filters: {
       category: "all",
       status: "all",
@@ -182,6 +192,79 @@ describe("store snapshots", () => {
 
     expect(snapshots).toEqual([]);
     expect(useDadKitStore.getState().profile?.dueDate).toBe("2026-08-01");
+  });
+
+  it("adds, deletes, and clears contraction records", () => {
+    installLocalStorage();
+
+    useDadKitStore.getState().addContraction({
+      startedAt: "2026-06-10T11:10:00.000Z",
+      endedAt: "2026-06-10T11:11:00.000Z",
+    });
+    useDadKitStore.getState().addContraction({
+      startedAt: "2026-06-10T11:20:00.000Z",
+      endedAt: "2026-06-10T11:22:00.000Z",
+    });
+
+    const records = useDadKitStore.getState().contractions;
+
+    expect(records).toHaveLength(2);
+    expect(calculateContractionStats(records, new Date("2026-06-10T11:30:00Z"))).toMatchObject({
+      averageDurationSeconds: 90,
+      averageIntervalSeconds: 600,
+    });
+
+    useDadKitStore.getState().deleteContraction(records[0].id);
+    expect(useDadKitStore.getState().contractions).toHaveLength(1);
+
+    useDadKitStore.getState().clearContractions();
+    expect(useDadKitStore.getState().contractions).toEqual([]);
+  });
+
+  it("saves birth-plan fields and exports them without WebDAV secrets", () => {
+    const store = installLocalStorage({
+      [STORAGE_KEYS.webDavSecret]: "secret-password",
+    });
+
+    useDadKitStore.getState().saveBirthPlan({
+      emergencyContact: "爸爸 13800000000",
+      supportPerson: "爸爸",
+    });
+
+    const plan = useDadKitStore.getState().birthPlan;
+    const exportedJson = useDadKitStore.getState().exportJson();
+
+    expect(plan.emergencyContact).toBe("爸爸 13800000000");
+    expect(generateBirthPlanShareText(plan)).toContain("爸爸 13800000000");
+    expect(JSON.parse(exportedJson).birthPlan.supportPerson).toBe("爸爸");
+    expect(exportedJson).not.toContain("secret-password");
+    expect(store.get(STORAGE_KEYS.webDavSecret)).toBe("secret-password");
+  });
+
+  it("saves postpartum task status and note", () => {
+    installLocalStorage();
+    const taskId = useDadKitStore.getState().postpartumTasks[0].id;
+
+    useDadKitStore.getState().updatePostpartumTask(taskId, {
+      status: "done",
+      note: "电话确认",
+    });
+
+    expect(useDadKitStore.getState().postpartumTasks[0]).toMatchObject({
+      id: taskId,
+      status: "done",
+      note: "电话确认",
+    });
+
+    useDadKitStore.getState().updatePostpartumTask(taskId, {
+      status: "not_needed",
+    });
+
+    expect(useDadKitStore.getState().postpartumTasks[0]).toMatchObject({
+      id: taskId,
+      status: "not_needed",
+      note: "电话确认",
+    });
   });
 
   it("toggles question items between pending and confirmed", () => {

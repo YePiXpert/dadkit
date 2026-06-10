@@ -105,7 +105,9 @@ function GoTaskButton({
     >
       <Button
         className="h-16 justify-start rounded-md px-4 text-left text-lg"
-        onClick={() => onChange(task.id, "done")}
+        onClick={() =>
+          onChange(task.id, explicitStatus === "done" ? "todo" : "done")
+        }
         variant={done ? "default" : "outline"}
       >
         <CheckCircle2 className={cn("size-6", !done && "opacity-35")} />
@@ -113,7 +115,12 @@ function GoTaskButton({
       </Button>
       <Button
         className="h-16 px-4"
-        onClick={() => onChange(task.id, "not_needed")}
+        onClick={() =>
+          onChange(
+            task.id,
+            explicitStatus === "not_needed" ? "todo" : "not_needed",
+          )
+        }
         title="标记不需要"
         variant={explicitStatus === "not_needed" ? "default" : "outline"}
       >
