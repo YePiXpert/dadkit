@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/select";
 import { useDadKitStore } from "@/lib/store";
 import {
+  PREPARATION_KIND_LABELS,
+  getQuickStatusOptionsForItem,
   getStatusLabelForItem,
   getStatusOptionsForItem,
   inferPreparationKind,
@@ -142,19 +144,8 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
   );
 }
 
-const PREPARATION_KIND_LABELS = {
-  buy_and_pack: "购买后打包",
-  pack_existing: "准备后打包",
-  wash_then_pack: "清洗后打包",
-  document: "整理证件",
-  last_minute: "临出门拿",
-  question: "医院确认",
-  task: "爸爸任务",
-  install_or_place: "安装/放车上",
-} satisfies Record<ReturnType<typeof inferPreparationKind>, string>;
-
 function getQuickActionLabel(item: ChecklistItem) {
-  const options = getStatusOptionsForItem(item);
+  const options = getQuickStatusOptionsForItem(item);
   const currentIndex = options.indexOf(item.status);
   const nextStatus = options[(currentIndex + 1) % options.length] ?? "todo";
 

@@ -23,11 +23,16 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  PREPARATION_KIND_LABELS,
+  inferPreparationKind,
+} from "@/lib/preparation";
+import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
   PRIORITY_LABELS,
   type ChecklistCategory,
   type ChecklistItem,
+  type PreparationKind,
   type Priority,
 } from "@/lib/types";
 import { useDadKitStore } from "@/lib/store";
@@ -42,8 +47,12 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
   const [name, setName] = useState(item.name);
   const [category, setCategory] = useState<ChecklistCategory>(item.category);
   const [priority, setPriority] = useState<Priority>(item.priority);
+  const [preparationKind, setPreparationKind] = useState<PreparationKind>(
+    inferPreparationKind(item),
+  );
   const [quantity, setQuantity] = useState(item.quantity ?? "");
   const [note, setNote] = useState(item.note ?? "");
+  const canEditPreparationKind = item.source === "user";
 
   useEffect(() => {
     if (!open) {
@@ -53,6 +62,7 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
     setName(item.name);
     setCategory(item.category);
     setPriority(item.priority);
+    setPreparationKind(inferPreparationKind(item));
     setQuantity(item.quantity ?? "");
     setNote(item.note ?? "");
   }, [item, open]);
@@ -66,6 +76,7 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
       name,
       category,
       priority,
+      ...(canEditPreparationKind ? { preparationKind } : {}),
       quantity: quantity || undefined,
       note: note || undefined,
     });
@@ -129,6 +140,27 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
               </Select>
             </Field>
           </div>
+          {canEditPreparationKind ? (
+            <Field label="动作类型">
+              <Select
+                value={preparationKind}
+                onValueChange={(value) =>
+                  setPreparationKind(value as PreparationKind)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(PREPARATION_KIND_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          ) : null}
           <Field label="数量">
             <Input
               value={quantity}

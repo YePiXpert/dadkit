@@ -22,11 +22,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { PREPARATION_KIND_LABELS } from "@/lib/preparation";
 import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
   PRIORITY_LABELS,
   type ChecklistCategory,
+  type PreparationKind,
   type Priority,
 } from "@/lib/types";
 import { useDadKitStore } from "@/lib/store";
@@ -41,6 +43,8 @@ export function AddItemDialog({ defaultCategory = "mom_labor" }: AddItemDialogPr
   const [name, setName] = useState("");
   const [category, setCategory] = useState<ChecklistCategory>(defaultCategory);
   const [priority, setPriority] = useState<Priority>("recommended");
+  const [preparationKind, setPreparationKind] =
+    useState<PreparationKind>("pack_existing");
   const [quantity, setQuantity] = useState("");
   const [note, setNote] = useState("");
 
@@ -53,10 +57,12 @@ export function AddItemDialog({ defaultCategory = "mom_labor" }: AddItemDialogPr
       name,
       category,
       priority,
+      preparationKind,
       quantity: quantity || undefined,
       note: note || undefined,
     });
     setName("");
+    setPreparationKind("pack_existing");
     setQuantity("");
     setNote("");
     setOpen(false);
@@ -114,6 +120,25 @@ export function AddItemDialog({ defaultCategory = "mom_labor" }: AddItemDialogPr
               </Select>
             </Field>
           </div>
+          <Field label="动作类型">
+            <Select
+              value={preparationKind}
+              onValueChange={(value) =>
+                setPreparationKind(value as PreparationKind)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(PREPARATION_KIND_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
           <Field label="数量">
             <Input
               value={quantity}

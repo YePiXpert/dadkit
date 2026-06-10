@@ -7,7 +7,7 @@ import {
   getProvidedIdForQuestion,
   mapHospitalAnswerStatusToPackStatus,
 } from "@/lib/hospital/answers";
-import { getStatusOptionsForItem } from "@/lib/preparation";
+import { getQuickStatusOptionsForItem } from "@/lib/preparation";
 import {
   applyImportData,
   createSnapshot,
@@ -348,7 +348,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     }
 
     const normalizedItem = normalizeChecklistItem(item);
-    const statusOptions = getStatusOptionsForItem(normalizedItem);
+    const statusOptions = getQuickStatusOptionsForItem(normalizedItem);
     const currentIndex = statusOptions.indexOf(normalizedItem.status);
     const nextStatus =
       statusOptions[(currentIndex + 1) % statusOptions.length] ?? "todo";

@@ -1,12 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  getQuickStatusOptionsForItem,
   getStatusLabelForItem,
   getStatusOptionsForItem,
   inferPreparationKind,
-  isShoppingListItem,
 } from "@/lib/preparation";
+import { filterItemsByVisualGroup } from "@/lib/presentation";
 import { generateChecklist } from "@/lib/rules";
+import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem, UserProfile } from "@/lib/types";
 
 function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
@@ -55,7 +57,73 @@ function generatedItem(id: string) {
   return item;
 }
 
+function installLocalStorage(initial: Record<string, string> = {}) {
+  const store = new Map(Object.entries(initial));
+  const localStorage = {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => store.set(key, value),
+    removeItem: (key: string) => store.delete(key),
+    clear: () => store.clear(),
+  };
+
+  vi.stubGlobal("window", { localStorage });
+
+  return store;
+}
+
+function resetStoreState() {
+  useDadKitStore.setState({
+    hydrated: false,
+    profile: undefined,
+    checklist: [],
+    checklistMode: "lean",
+    customItems: [],
+    hiddenTemplateItemIds: [],
+    hospitalOverrides: [],
+    hospitalAnswers: [],
+    filters: {
+      category: "all",
+      status: "all",
+      priority: "all",
+    },
+  });
+}
+
+afterEach(() => {
+  resetStoreState();
+  vi.unstubAllGlobals();
+});
+
 describe("preparation semantics", () => {
+  it("cycles buy-and-pack items through quick statuses only", () => {
+    installLocalStorage();
+    const item = generatedItem("general-postpartum-underwear");
+
+    useDadKitStore.setState({
+      checklist: [{ ...item, status: "todo" }],
+      customItems: [],
+    });
+
+    useDadKitStore.getState().cycleItemStatus(item.id);
+    expect(useDadKitStore.getState().checklist[0].status).toBe("bought");
+
+    useDadKitStore.getState().cycleItemStatus(item.id);
+    expect(useDadKitStore.getState().checklist[0].status).toBe("packed");
+
+    useDadKitStore.getState().cycleItemStatus(item.id);
+    expect(useDadKitStore.getState().checklist[0].status).toBe("todo");
+
+    expect(getQuickStatusOptionsForItem(item)).not.toContain("hospital_provided");
+    expect(getQuickStatusOptionsForItem(item)).not.toContain("not_needed");
+  });
+
+  it("keeps full buy-and-pack options for the dropdown", () => {
+    const item = generatedItem("general-postpartum-underwear");
+
+    expect(getStatusOptionsForItem(item)).toContain("hospital_provided");
+    expect(getStatusOptionsForItem(item)).toContain("not_needed");
+  });
+
   it("treats document items as document preparation", () => {
     const item = generatedItem("general-doc-id");
 
@@ -80,6 +148,20 @@ describe("preparation semantics", () => {
 
     expect(inferPreparationKind(item)).toBe("last_minute");
     expect(getStatusLabelForItem("todo", item)).not.toBe("待购买");
+  });
+
+  it("keeps last-minute family notifications out of shopping semantics", () => {
+    const item = generatedItem("general-partner-family-notice");
+
+    expect(["last_minute", "task"]).toContain(inferPreparationKind(item));
+    expect(getStatusLabelForItem("todo", item)).not.toBe("待购买");
+  });
+
+  it("uses a preparation fallback for existing items", () => {
+    const item = testItem({ preparationKind: "pack_existing" });
+
+    expect(getStatusLabelForItem("washed", item)).toBe("待准备");
+    expect(getStatusLabelForItem("washed", item)).not.toBe("待清洗");
   });
 
   it("treats car seat confirmation as install or place", () => {
@@ -117,10 +199,13 @@ describe("preparation semantics", () => {
       "general-labor-phone",
       "general-question-pads",
       "general-partner-save-phone",
+      "general-partner-family-notice",
+      "general-last-phone",
     ];
-    const shoppingIds = generateChecklist(makeProfile())
-      .filter(isShoppingListItem)
-      .map((item) => item.id);
+    const shoppingIds = filterItemsByVisualGroup(
+      generateChecklist(makeProfile()),
+      "shopping",
+    ).map((item) => item.id);
 
     for (const id of excludedIds) {
       expect(shoppingIds).not.toContain(id);
@@ -129,6 +214,49 @@ describe("preparation semantics", () => {
     expect(shoppingIds).toContain("general-postpartum-underwear");
     expect(shoppingIds).toContain("general-postpartum-pads");
     expect(shoppingIds).toContain("general-baby-diapers");
+  });
+
+  it("saves preparationKind when adding custom items", () => {
+    installLocalStorage();
+
+    useDadKitStore.getState().addCustomItem({
+      name: "自定义产褥垫",
+      category: "mom_postpartum",
+      priority: "must",
+      preparationKind: "buy_and_pack",
+    });
+
+    expect(useDadKitStore.getState().customItems[0]?.preparationKind).toBe(
+      "buy_and_pack",
+    );
+    expect(useDadKitStore.getState().checklist[0]?.preparationKind).toBe(
+      "buy_and_pack",
+    );
+  });
+
+  it("updates preparationKind when editing custom items", () => {
+    installLocalStorage();
+    const item = testItem({
+      id: "custom-item",
+      source: "user",
+      preparationKind: "pack_existing",
+    });
+
+    useDadKitStore.setState({
+      checklist: [item],
+      customItems: [item],
+    });
+
+    useDadKitStore.getState().updateItem(item.id, {
+      preparationKind: "last_minute",
+    });
+
+    expect(useDadKitStore.getState().customItems[0]?.preparationKind).toBe(
+      "last_minute",
+    );
+    expect(useDadKitStore.getState().checklist[0]?.preparationKind).toBe(
+      "last_minute",
+    );
   });
 
   it("infers preparation kind for legacy items without preparationKind", () => {

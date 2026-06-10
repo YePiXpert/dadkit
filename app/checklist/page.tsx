@@ -83,7 +83,7 @@ const VIEW_COPY: Record<
   },
   shopping: {
     title: "购物清单",
-    description: "只显示可能需要购买或补货的物品。证件、任务和医院问题不会出现在这里。",
+    description: "只显示可能需要购买或补货的物品。证件、任务、临出门拿和医院问题不会出现在这里。",
   },
   go: {
     title: "临出门检查",

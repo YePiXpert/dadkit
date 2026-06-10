@@ -17,14 +17,6 @@ const BUY_AND_PACK_KEYWORDS = [
 
 const GO_CHECK_KEYWORDS = [
   "证件包",
-  "身份证件",
-  "医保卡",
-  "社保卡",
-  "母子健康手册",
-  "孕产资料",
-  "产检资料",
-  "入院资料",
-  "住院单",
   "手机",
   "充电器",
   "充电线",
@@ -38,28 +30,37 @@ const GO_CHECK_KEYWORDS = [
   "关门窗水电燃气",
 ];
 
+const LAST_MINUTE_DOCUMENT_ITEM_KEYWORDS = [
+  "身份证件",
+  "医保卡",
+  "社保卡",
+  "母子健康手册",
+  "孕产资料",
+  "产检资料",
+];
+
+export const PREPARATION_KIND_LABELS: Record<PreparationKind, string> = {
+  buy_and_pack: "需要购买/补货",
+  pack_existing: "已有物品，直接打包",
+  wash_then_pack: "清洗后打包",
+  document: "证件/资料整理",
+  last_minute: "临出门拿",
+  question: "医院问题",
+  task: "爸爸任务",
+  install_or_place: "安装/放车上",
+};
+
 export function inferPreparationKind(item: ChecklistItem): PreparationKind {
   if (item.preparationKind) {
     return item.preparationKind;
-  }
-
-  if (item.category === "documents") {
-    return "document";
   }
 
   if (item.itemKind === "question" || item.category === "hospital_questions") {
     return "question";
   }
 
-  if (
-    item.itemKind === "task" &&
-    (item.bag === "car" || item.name.includes("安全座椅"))
-  ) {
+  if (shouldInstallOrPlace(item)) {
     return "install_or_place";
-  }
-
-  if (item.itemKind === "task") {
-    return "task";
   }
 
   if (
@@ -68,6 +69,14 @@ export function inferPreparationKind(item: ChecklistItem): PreparationKind {
     item.timing === "grab_before_leaving"
   ) {
     return "last_minute";
+  }
+
+  if (item.itemKind === "task") {
+    return "task";
+  }
+
+  if (item.category === "documents") {
+    return "document";
   }
 
   if (item.timing === "wash_before_pack") {
@@ -111,6 +120,24 @@ export function getStatusOptionsForItem(item: ChecklistItem): PackStatus[] {
   return ["todo", "packed", "not_needed"];
 }
 
+export function getQuickStatusOptionsForItem(item: ChecklistItem): PackStatus[] {
+  const preparationKind = inferPreparationKind(item);
+
+  if (preparationKind === "buy_and_pack") {
+    return ["todo", "bought", "packed"];
+  }
+
+  if (preparationKind === "wash_then_pack") {
+    return ["todo", "washed", "packed"];
+  }
+
+  if (preparationKind === "last_minute") {
+    return ["todo", "last_minute", "packed"];
+  }
+
+  return ["todo", "packed"];
+}
+
 export function getStatusLabelForItem(
   status: PackStatus,
   item: ChecklistItem,
@@ -148,7 +175,7 @@ export function getStatusLabelForItem(
         hospital_provided: "医院提供",
         not_needed: "不需要",
       } as Partial<Record<PackStatus, string>>
-    )[status] ?? "待清洗";
+    )[status] ?? "待准备";
   }
 
   if (preparationKind === "wash_then_pack") {
@@ -206,6 +233,10 @@ export function getStatusLabelForItem(
 
 export function isShoppingListItem(item: ChecklistItem) {
   return (
+    item.category !== "documents" &&
+    item.itemKind !== "question" &&
+    item.itemKind !== "task" &&
+    item.bag !== "last_minute" &&
     inferPreparationKind(item) === "buy_and_pack" &&
     item.status !== "packed" &&
     item.status !== "hospital_provided" &&
@@ -215,6 +246,15 @@ export function isShoppingListItem(item: ChecklistItem) {
 
 export function isGoCheckItem(item: ChecklistItem) {
   if (item.category === "documents") {
+    return false;
+  }
+
+  if (
+    !item.name.includes("证件包") &&
+    LAST_MINUTE_DOCUMENT_ITEM_KEYWORDS.some((keyword) =>
+      item.name.includes(keyword),
+    )
+  ) {
     return false;
   }
 
@@ -257,4 +297,13 @@ function fallbackStatusLabel(status: PackStatus) {
       not_needed: "不需要",
     } satisfies Record<PackStatus, string>
   )[status];
+}
+
+function shouldInstallOrPlace(item: ChecklistItem) {
+  return (
+    item.itemKind === "task" &&
+    (item.bag === "car" ||
+      item.name.includes("安全座椅") ||
+      item.name.includes("返家交通"))
+  );
 }
