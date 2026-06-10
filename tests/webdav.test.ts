@@ -17,7 +17,7 @@ import {
   isPrivateIpAddress,
   parseProxyPayload,
   sanitizeProxyHeaders,
-} from "@/app/api/webdav/route";
+} from "@/lib/webdav/proxy";
 import {
   buildAuthHeader,
   buildDadKitWebDavBackup,
