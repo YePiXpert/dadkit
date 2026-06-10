@@ -4,6 +4,7 @@ import {
   hospitalTemplates,
   regionTemplates,
 } from "@/lib/templates";
+import { inferPreparationKind } from "@/lib/preparation";
 import type {
   ChecklistBag,
   ChecklistCategory,
@@ -204,13 +205,21 @@ export function normalizeChecklistItem(item: ChecklistItem): ChecklistItem {
   const packTier = inferPackTier(item, itemKind);
   const bag = inferBag(item, itemKind);
   const bulk = inferBulk(item);
-
-  return {
+  const baseItem = {
     ...item,
     itemKind,
     packTier,
     bag,
     bulk,
+  };
+
+  return {
+    ...baseItem,
+    itemKind,
+    packTier,
+    bag,
+    bulk,
+    preparationKind: inferPreparationKind(baseItem),
   };
 }
 

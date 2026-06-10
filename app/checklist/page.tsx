@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { ArrowRight, Copy, RotateCcw, SlidersHorizontal } from "lucide-react";
 
 import { AddItemDialog } from "@/components/AddItemDialog";
 import { ChecklistCategoryCard } from "@/components/ChecklistCategoryCard";
@@ -29,7 +29,6 @@ import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
   PRIORITY_LABELS,
-  STATUS_LABELS,
   type ChecklistCategory,
   type PackStatus,
   type Priority,
@@ -37,13 +36,76 @@ import {
 import {
   filterItemsByVisualGroup,
   groupItemsForChecklist,
+  groupItemsForShopping,
   type ChecklistVisualGroup,
 } from "@/lib/presentation";
 
-type ChecklistGroupSummary = ReturnType<typeof groupItemsForChecklist>[number];
+type ChecklistGroupSummary =
+  | ReturnType<typeof groupItemsForChecklist>[number]
+  | ReturnType<typeof groupItemsForShopping>[number];
+
+const STATUS_FILTER_LABELS: Record<PackStatus, string> = {
+  todo: "待处理",
+  bought: "已购买",
+  washed: "已清洗",
+  packed: "已完成/已打包",
+  last_minute: "临出门拿",
+  hospital_provided: "医院提供",
+  not_needed: "不需要",
+};
+
+const VIEW_COPY: Record<
+  ChecklistVisualGroup,
+  {
+    title: string;
+    description: string;
+  }
+> = {
+  all: {
+    title: "我的待产准备",
+    description: "先看精简清单，把要拿、要问、要确认的事处理掉。",
+  },
+  documents_folder: {
+    title: "证件包检查",
+    description: "只看证件、医保卡、产检资料和入院资料，状态按整理证件处理。",
+  },
+  mom_bag: {
+    title: "妈妈包",
+    description: "区分需要购买、已有物品、清洗后打包和临出门拿。",
+  },
+  baby_bag: {
+    title: "宝宝包",
+    description: "宝宝衣物按清洗后打包处理，消耗品按购买补货处理。",
+  },
+  dad: {
+    title: "爸爸负责",
+    description: "只看需要确认、安装、放车上和临出门执行的任务。",
+  },
+  shopping: {
+    title: "购物清单",
+    description: "只显示可能需要购买或补货的物品。证件、任务和医院问题不会出现在这里。",
+  },
+  go: {
+    title: "临出门检查",
+    description: "只看证件包、手机、充电器、眼镜、常用药、妈妈包、宝宝包和安全座椅等临出门事项。",
+  },
+  questions: {
+    title: "下次产检要问",
+    description: "只看医院确认问题，状态按待问、已确认、医院提供和不适用处理。",
+  },
+  last_minute: {
+    title: "临出门拿",
+    description: "只看需要放到固定位置、临出门拿或最终确认的项目。",
+  },
+  going_home: {
+    title: "出院返家",
+    description: "只看返家交通、出院衣物和安全座椅等回家相关事项。",
+  },
+};
 
 export default function ChecklistPage() {
   const [visualGroup, setVisualGroup] = useState<ChecklistVisualGroup>("all");
+  const [copyMessage, setCopyMessage] = useState("");
   const profile = useDadKitStore((state) => state.profile);
   const checklist = useDadKitStore((state) => state.checklist);
   const checklistMode = useDadKitStore((state) => state.checklistMode);
@@ -83,13 +145,31 @@ export default function ChecklistPage() {
 
     return true;
   });
+  const viewCopy = VIEW_COPY[visualGroup];
+  const renderedGroups =
+    visualGroup === "shopping"
+      ? groupItemsForShopping(filteredItems)
+      : groupItemsForChecklist(filteredItems);
+
+  function copyShoppingList() {
+    const text = groupItemsForShopping(filteredItems)
+      .map((group) =>
+        [`${group.label}`, ...group.items.map((item) => `- ${item.name}`)].join(
+          "\n",
+        ),
+      )
+      .join("\n\n");
+
+    navigator.clipboard.writeText(text || "购物清单暂无待购买物品");
+    setCopyMessage("购物清单已复制");
+  }
 
   return (
     <div className="page-shell">
       <div className="mobile-shell grid gap-2 lg:max-w-none">
-        <h1 className="text-3xl font-semibold tracking-normal">我的待产准备</h1>
+        <h1 className="text-3xl font-semibold tracking-normal">{viewCopy.title}</h1>
         <p className="text-sm leading-6 text-muted-foreground">
-          先看精简清单，把要拿、要问、要确认的事处理掉。
+          {viewCopy.description}
         </p>
       </div>
 
@@ -138,7 +218,7 @@ export default function ChecklistPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">全部状态</SelectItem>
-                    {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                    {Object.entries(STATUS_FILTER_LABELS).map(([value, label]) => (
                       <SelectItem key={value} value={value}>
                         {label}
                       </SelectItem>
@@ -173,7 +253,16 @@ export default function ChecklistPage() {
                 <Button variant="outline" onClick={resetChecklist}>
                   重置
                 </Button>
+                {visualGroup === "shopping" ? (
+                  <Button variant="outline" onClick={copyShoppingList}>
+                    <Copy className="size-4" />
+                    复制购物清单
+                  </Button>
+                ) : null}
               </div>
+              {copyMessage ? (
+                <p className="text-sm text-muted-foreground">{copyMessage}</p>
+              ) : null}
             </div>
           </details>
         </CardContent>
@@ -186,16 +275,16 @@ export default function ChecklistPage() {
         />
       ) : visualGroup === "all" ? (
         <div className="grid gap-3 sm:grid-cols-2">
-          {groupItemsForChecklist(filteredItems).map((group) => (
+          {renderedGroups.map((group) => (
             <ChecklistGroupSummaryCard
               group={group}
               key={group.group}
-              onOpen={() => setVisualGroup(group.group)}
+              onOpen={() => setVisualGroup(group.group as ChecklistVisualGroup)}
             />
           ))}
         </div>
       ) : (
-        groupItemsForChecklist(filteredItems).map((group) => (
+        renderedGroups.map((group) => (
           <ChecklistCategoryCard
             defaultOpen
             items={group.items}

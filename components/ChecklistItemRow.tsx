@@ -15,11 +15,14 @@ import {
 } from "@/components/ui/select";
 import { useDadKitStore } from "@/lib/store";
 import {
+  getStatusLabelForItem,
+  getStatusOptionsForItem,
+  inferPreparationKind,
+} from "@/lib/preparation";
+import {
   BAG_LABELS,
   ITEM_KIND_LABELS,
-  STATUS_LABELS,
   TIMING_LABELS,
-  getStatusLabel,
   type ChecklistItem,
   type PackStatus,
 } from "@/lib/types";
@@ -34,13 +37,13 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
   const cycleItemStatus = useDadKitStore((state) => state.cycleItemStatus);
   const removeItem = useDadKitStore((state) => state.removeItem);
   const itemKind = item.itemKind ?? "item";
+  const preparationKind = inferPreparationKind(item);
   const hasDetails = Boolean(item.note);
-  const isDone =
-    itemKind === "question" || itemKind === "task"
-      ? item.status !== "todo"
-      : item.status === "packed";
-  const quickActionLabel = getQuickActionLabel(itemKind, isDone);
-  const statusOptions = getStatusOptions(itemKind);
+  const isDone = ["packed", "hospital_provided", "not_needed"].includes(
+    item.status,
+  );
+  const quickActionLabel = getQuickActionLabel(item);
+  const statusOptions = getStatusOptionsForItem(item);
   const rowTone =
     item.packTier === "confirm" || itemKind === "question"
       ? "border-amber/35 bg-amber-soft/55"
@@ -78,11 +81,12 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
             {item.name}
           </h3>
           <ItemTag item={item} />
-          <StatusBadge itemKind={itemKind} status={item.status} />
+          <StatusBadge item={item} itemKind={itemKind} status={item.status} />
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-muted-foreground">
           {item.quantity ? <span>数量：{item.quantity}</span> : null}
           <span>类型：{ITEM_KIND_LABELS[itemKind]}</span>
+          <span>动作：{PREPARATION_KIND_LABELS[preparationKind]}</span>
           {item.bag && item.bag !== "none" ? (
             <span>放置：{BAG_LABELS[item.bag]}</span>
           ) : null}
@@ -115,7 +119,7 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
           <SelectContent>
             {statusOptions.map((value) => (
               <SelectItem key={value} value={value}>
-                {getStatusLabel(value as PackStatus, itemKind)}
+                {getStatusLabelForItem(value as PackStatus, item)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -138,26 +142,21 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
   );
 }
 
-function getQuickActionLabel(itemKind: ChecklistItem["itemKind"], isDone: boolean) {
-  if (itemKind === "question") {
-    return isDone ? "重新标为待确认" : "标记为已确认";
-  }
+const PREPARATION_KIND_LABELS = {
+  buy_and_pack: "购买后打包",
+  pack_existing: "准备后打包",
+  wash_then_pack: "清洗后打包",
+  document: "整理证件",
+  last_minute: "临出门拿",
+  question: "医院确认",
+  task: "爸爸任务",
+  install_or_place: "安装/放车上",
+} satisfies Record<ReturnType<typeof inferPreparationKind>, string>;
 
-  if (itemKind === "task") {
-    return isDone ? "重新标为待完成" : "标记为已完成";
-  }
+function getQuickActionLabel(item: ChecklistItem) {
+  const options = getStatusOptionsForItem(item);
+  const currentIndex = options.indexOf(item.status);
+  const nextStatus = options[(currentIndex + 1) % options.length] ?? "todo";
 
-  return "切换到下一个状态";
-}
-
-function getStatusOptions(itemKind: ChecklistItem["itemKind"]): PackStatus[] {
-  if (itemKind === "question") {
-    return ["todo", "packed", "hospital_provided", "not_needed"];
-  }
-
-  if (itemKind === "task") {
-    return ["todo", "packed", "not_needed"];
-  }
-
-  return Object.keys(STATUS_LABELS) as PackStatus[];
+  return `切换为${getStatusLabelForItem(nextStatus, item)}`;
 }

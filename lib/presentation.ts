@@ -1,4 +1,9 @@
 import { normalizeChecklistItem } from "@/lib/rules";
+import {
+  getShoppingGroup,
+  isGoCheckItem,
+  isShoppingListItem,
+} from "@/lib/preparation";
 import type { ChecklistItem } from "@/lib/types";
 
 export type ChecklistVisualGroup =
@@ -7,6 +12,8 @@ export type ChecklistVisualGroup =
   | "mom_bag"
   | "baby_bag"
   | "dad"
+  | "shopping"
+  | "go"
   | "questions"
   | "last_minute"
   | "going_home";
@@ -16,21 +23,25 @@ export const CHECKLIST_VISUAL_GROUPS: Array<{
   label: string;
 }> = [
   { id: "all", label: "全部" },
-  { id: "documents_folder", label: "证件包" },
+  { id: "documents_folder", label: "证件包检查" },
   { id: "mom_bag", label: "妈妈包" },
   { id: "baby_bag", label: "宝宝包" },
+  { id: "shopping", label: "购物清单" },
   { id: "dad", label: "爸爸负责" },
   { id: "going_home", label: "出院返家" },
   { id: "questions", label: "下次产检问" },
+  { id: "go", label: "临出门检查" },
   { id: "last_minute", label: "临出门拿" },
 ];
 
 export const CHECKLIST_GROUP_LABELS: Record<ChecklistVisualGroup, string> = {
   all: "全部",
-  documents_folder: "证件包",
+  documents_folder: "证件包检查",
   mom_bag: "妈妈包",
   baby_bag: "宝宝包",
   dad: "爸爸负责",
+  shopping: "购物清单",
+  go: "临出门检查",
   questions: "到下次产检时问清楚",
   last_minute: "临出门拿",
   going_home: "出院返家",
@@ -91,6 +102,14 @@ export function filterItemsByVisualGroup(
     return items;
   }
 
+  if (visualGroup === "shopping") {
+    return items.map(normalizeChecklistItem).filter(isShoppingListItem);
+  }
+
+  if (visualGroup === "go") {
+    return items.map(normalizeChecklistItem).filter(isGoCheckItem);
+  }
+
   return items.filter((item) => getChecklistVisualGroup(item) === visualGroup);
 }
 
@@ -100,4 +119,21 @@ export function groupItemsForChecklist(items: ChecklistItem[]) {
     label: CHECKLIST_GROUP_LABELS[group],
     items: items.filter((item) => getChecklistVisualGroup(item) === group),
   })).filter((entry) => entry.items.length > 0);
+}
+
+export function groupItemsForShopping(items: ChecklistItem[]) {
+  const groups = [
+    { group: "mom_bag", label: "妈妈包" },
+    { group: "baby_bag", label: "宝宝包" },
+    { group: "nursing", label: "哺乳相关" },
+  ];
+
+  return groups
+    .map((group) => ({
+      ...group,
+      items: items
+        .map(normalizeChecklistItem)
+        .filter((item) => getShoppingGroup(item) === group.group),
+    }))
+    .filter((entry) => entry.items.length > 0);
 }

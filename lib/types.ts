@@ -57,6 +57,16 @@ export type ChecklistMode = "lean" | "full";
 
 export type ChecklistFilterValue = "all";
 
+export type PreparationKind =
+  | "buy_and_pack"
+  | "pack_existing"
+  | "wash_then_pack"
+  | "document"
+  | "last_minute"
+  | "question"
+  | "task"
+  | "install_or_place";
+
 export type HospitalAnswerStatus =
   | "todo"
   | "confirmed"
@@ -104,6 +114,7 @@ export type ChecklistItem = {
   removable: boolean;
   packTier?: PackTier;
   itemKind?: ItemKind;
+  preparationKind?: PreparationKind;
   bag?: ChecklistBag;
   bulk?: ItemBulk;
   appliesTo?: {

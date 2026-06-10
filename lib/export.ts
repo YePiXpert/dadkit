@@ -2,11 +2,11 @@ import {
   filterItemsForChecklistMode,
   normalizeChecklistItem,
 } from "@/lib/rules";
+import { getStatusLabelForItem } from "@/lib/preparation";
 import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
   PRIORITY_LABELS,
-  getStatusLabel,
   type ChecklistItem,
   type PackStatus,
   type UserProfile,
@@ -45,7 +45,7 @@ function formatProfile(profile: UserProfile | undefined, title: string) {
 function lineForItem(item: ChecklistItem) {
   const normalized = normalizeChecklistItem(item);
   const detail = [
-    getStatusLabel(normalized.status, normalized.itemKind),
+    getStatusLabelForItem(normalized.status, normalized),
     PRIORITY_LABELS[normalized.priority],
     normalized.quantity ? `数量：${normalized.quantity}` : undefined,
     normalized.note,

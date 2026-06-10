@@ -2,11 +2,12 @@
 
 import { create } from "zustand";
 
-import { generateChecklist } from "@/lib/rules";
+import { generateChecklist, normalizeChecklistItem } from "@/lib/rules";
 import {
   getProvidedIdForQuestion,
   mapHospitalAnswerStatusToPackStatus,
 } from "@/lib/hospital/answers";
+import { getStatusOptionsForItem } from "@/lib/preparation";
 import {
   applyImportData,
   createSnapshot,
@@ -164,6 +165,25 @@ function sameStringArray(left: string[], right: string[]) {
   );
 }
 
+function patchChecklistItem(
+  item: ChecklistItem,
+  patch: Partial<ChecklistItem>,
+) {
+  const shouldReinferPreparation =
+    !("preparationKind" in patch) &&
+    (["name", "category", "itemKind", "timing", "bag"] as const).some(
+      (key) => key in patch,
+    );
+
+  return normalizeChecklistItem({
+    ...item,
+    ...patch,
+    preparationKind: shouldReinferPreparation
+      ? undefined
+      : patch.preparationKind ?? item.preparationKind,
+  });
+}
+
 function removeProvidedStatusForId(items: ChecklistItem[], providedId?: string) {
   if (!providedId) {
     return items;
@@ -310,10 +330,10 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   updateItem: (id, patch) => {
     const state = get();
     const checklist = state.checklist.map((item) =>
-      item.id === id ? { ...item, ...patch } : item,
+      item.id === id ? patchChecklistItem(item, patch) : item,
     );
     const customItems = state.customItems.map((item) =>
-      item.id === id ? { ...item, ...patch } : item,
+      item.id === id ? patchChecklistItem(item, patch) : item,
     );
 
     set({ checklist, customItems });
@@ -327,18 +347,17 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       return;
     }
 
-    if (item.itemKind === "question" || item.itemKind === "task") {
-      get().updateItem(id, { status: item.status === "todo" ? "packed" : "todo" });
-      return;
-    }
+    const normalizedItem = normalizeChecklistItem(item);
+    const statusOptions = getStatusOptionsForItem(normalizedItem);
+    const currentIndex = statusOptions.indexOf(normalizedItem.status);
+    const nextStatus =
+      statusOptions[(currentIndex + 1) % statusOptions.length] ?? "todo";
 
-    const currentIndex = STATUS_FLOW.indexOf(item.status);
-    const nextStatus = STATUS_FLOW[(currentIndex + 1) % STATUS_FLOW.length];
     get().updateItem(id, { status: nextStatus });
   },
   addCustomItem: (item) => {
     const state = get();
-    const customItem: ChecklistItem = {
+    const customItem: ChecklistItem = normalizeChecklistItem({
       id: item.id ?? itemId(),
       name: item.name.trim(),
       category: item.category,
@@ -352,10 +371,11 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       removable: true,
       packTier: item.packTier ?? "core",
       itemKind: item.itemKind ?? "item",
+      preparationKind: item.preparationKind,
       bag: item.bag,
       bulk: item.bulk,
       timing: item.timing ?? "pack_now",
-    };
+    });
 
     const customItems = [...state.customItems, customItem];
     const checklist = state.profile
