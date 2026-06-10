@@ -86,6 +86,7 @@ function resetStoreState() {
     customItems: [],
     hiddenTemplateItemIds: [],
     hospitalOverrides: [],
+    hospitalAnswers: [],
     filters: {
       category: "all",
       status: "all",
@@ -203,5 +204,66 @@ describe("store snapshots", () => {
 
     useDadKitStore.getState().cycleItemStatus(task.id);
     expect(useDadKitStore.getState().checklist[0].status).toBe("todo");
+  });
+
+  it("adds hospital-provided id when a provided answer is saved", () => {
+    installLocalStorage();
+    const profile = testProfile();
+    const question = {
+      ...testQuestion("question-pad"),
+      name: "医院是否提供产褥垫？",
+    };
+
+    useDadKitStore.setState({ profile, checklist: [question], hospitalAnswers: [] });
+
+    useDadKitStore.getState().updateHospitalAnswer({
+      itemId: question.id,
+      name: question.name,
+      status: "provided",
+      updatedAt: "2026-06-09T00:00:00.000Z",
+    });
+
+    expect(
+      useDadKitStore.getState().profile?.hospitalProvidedItemIds,
+    ).toContain("postpartum-pads");
+    expect(useDadKitStore.getState().hospitalAnswers[0]).toMatchObject({
+      itemId: question.id,
+      status: "provided",
+    });
+    expect(loadSnapshots()).toEqual([]);
+  });
+
+  it("removes hospital-provided id when a not_provided answer is saved", () => {
+    installLocalStorage();
+    const profile = testProfile();
+    const question = {
+      ...testQuestion("question-pad"),
+      name: "医院是否提供产褥垫？",
+    };
+
+    useDadKitStore.setState({
+      profile: {
+        ...profile,
+        hospitalProvidedItemIds: ["postpartum-pads"],
+      },
+      checklist: [question],
+      hospitalAnswers: [],
+    });
+
+    useDadKitStore.getState().updateHospitalAnswer({
+      itemId: question.id,
+      name: question.name,
+      status: "not_provided",
+      updatedAt: "2026-06-09T00:00:00.000Z",
+    });
+
+    expect(
+      useDadKitStore.getState().profile?.hospitalProvidedItemIds,
+    ).not.toContain("postpartum-pads");
+    expect(useDadKitStore.getState().hospitalAnswers[0]).toMatchObject({
+      itemId: question.id,
+      status: "not_provided",
+    });
+    expect(loadSnapshots()).toEqual([]);
   });
 });

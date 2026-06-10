@@ -34,7 +34,7 @@ export function ExportTextArea({ value }: ExportTextAreaProps) {
   return (
     <div className="grid gap-3">
       <Textarea
-        className="min-h-[420px] resize-y bg-card font-mono text-sm leading-6"
+        className="max-h-[50dvh] min-h-64 resize-y overflow-y-auto bg-card font-mono text-sm leading-6"
         readOnly
         value={value}
       />

@@ -57,6 +57,22 @@ export type ChecklistMode = "lean" | "full";
 
 export type ChecklistFilterValue = "all";
 
+export type HospitalAnswerStatus =
+  | "todo"
+  | "confirmed"
+  | "provided"
+  | "not_provided"
+  | "partial"
+  | "not_needed";
+
+export type HospitalAnswer = {
+  itemId: string;
+  name: string;
+  status: HospitalAnswerStatus;
+  note?: string;
+  updatedAt: string;
+};
+
 export type UserProfile = {
   dueDate?: string;
   regionId: string;
@@ -185,6 +201,15 @@ export const STATUS_LABELS: Record<PackStatus, string> = {
   last_minute: "临出门拿",
   hospital_provided: "医院提供",
   not_needed: "不需要",
+};
+
+export const HOSPITAL_ANSWER_LABELS: Record<HospitalAnswerStatus, string> = {
+  todo: "待问",
+  confirmed: "已确认",
+  provided: "医院提供",
+  not_provided: "需自备",
+  partial: "部分提供",
+  not_needed: "不适用",
 };
 
 export const SOURCE_LABELS: Record<ItemSource, string> = {

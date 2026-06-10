@@ -4,6 +4,10 @@ import { create } from "zustand";
 
 import { generateChecklist } from "@/lib/rules";
 import {
+  getProvidedIdForQuestion,
+  mapHospitalAnswerStatusToPackStatus,
+} from "@/lib/hospital/answers";
+import {
   applyImportData,
   createSnapshot,
   exportData,
@@ -11,6 +15,7 @@ import {
   loadChecklistMode,
   loadCustomItems,
   loadHiddenTemplateItemIds,
+  loadHospitalAnswers,
   loadHospitalOverrides,
   loadUserProfile,
   resetAllData,
@@ -18,6 +23,7 @@ import {
   saveChecklistMode,
   saveCustomItems,
   saveHiddenTemplateItemIds,
+  saveHospitalAnswers,
   saveHospitalOverrides,
   saveUserProfile,
   validateImportData,
@@ -28,6 +34,7 @@ import type {
   ChecklistCategory,
   ChecklistMode,
   ChecklistItem,
+  HospitalAnswer,
   HospitalProfile,
   PackStatus,
   Priority,
@@ -51,6 +58,7 @@ type DadKitState = {
   customItems: ChecklistItem[];
   hiddenTemplateItemIds: string[];
   hospitalOverrides: UserHospitalOverride[];
+  hospitalAnswers: HospitalAnswer[];
   filters: FilterState;
   hydrate: () => void;
   createProfile: (input?: CreateProfileInput) => UserProfile;
@@ -68,6 +76,8 @@ type DadKitState = {
   ) => void;
   removeItem: (id: string) => void;
   updateHospitalOverride: (override: UserHospitalOverride) => void;
+  updateHospitalAnswer: (answer: HospitalAnswer) => void;
+  clearHospitalAnswer: (itemId: string) => void;
   exportJson: () => string;
   importJson: (json: string) => ImportResult;
   clearAll: () => void;
@@ -112,12 +122,14 @@ function persistCoreState(state: Pick<
   | "customItems"
   | "hiddenTemplateItemIds"
   | "hospitalOverrides"
+  | "hospitalAnswers"
 >) {
   saveUserProfile(state.profile);
   saveChecklist(state.checklist);
   saveCustomItems(state.customItems);
   saveHiddenTemplateItemIds(state.hiddenTemplateItemIds);
   saveHospitalOverrides(state.hospitalOverrides);
+  saveHospitalAnswers(state.hospitalAnswers);
 }
 
 function buildChecklist(
@@ -139,6 +151,39 @@ function snapshotBeforeChange(reason: string) {
   createSnapshot(reason);
 }
 
+const PROVIDED_ITEM_KEYWORDS: Record<string, string[]> = {
+  "postpartum-pads": ["产褥垫", "产后卫生巾"],
+  "baby-diapers": ["尿不湿", "宝宝尿不湿"],
+  "baby-clothes": ["宝宝衣物", "宝宝出院衣物", "宝宝住院衣物"],
+};
+
+function sameStringArray(left: string[], right: string[]) {
+  return (
+    left.length === right.length &&
+    left.every((value, index) => value === right[index])
+  );
+}
+
+function removeProvidedStatusForId(items: ChecklistItem[], providedId?: string) {
+  if (!providedId) {
+    return items;
+  }
+
+  const keywords = PROVIDED_ITEM_KEYWORDS[providedId] ?? [providedId];
+
+  return items.map((item) => {
+    if (
+      item.status !== "hospital_provided" ||
+      item.itemKind !== "item" ||
+      !keywords.some((keyword) => item.name.includes(keyword))
+    ) {
+      return item;
+    }
+
+    return { ...item, status: "todo" as const };
+  });
+}
+
 export const useDadKitStore = create<DadKitState>((set, get) => ({
   hydrated: false,
   profile: undefined,
@@ -147,6 +192,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   customItems: [],
   hiddenTemplateItemIds: [],
   hospitalOverrides: [],
+  hospitalAnswers: [],
   filters: {
     category: "all",
     status: "all",
@@ -158,6 +204,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     const customItems = loadCustomItems();
     const hiddenTemplateItemIds = loadHiddenTemplateItemIds();
     const hospitalOverrides = loadHospitalOverrides();
+    const hospitalAnswers = loadHospitalAnswers();
     const checklistMode = loadChecklistMode();
     const hydratedChecklist = profile
       ? generateChecklist(profile, {
@@ -176,6 +223,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       customItems,
       hiddenTemplateItemIds,
       hospitalOverrides,
+      hospitalAnswers,
     });
 
     if (profile) {
@@ -371,6 +419,97 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     saveHospitalOverrides(hospitalOverrides);
     saveChecklist(checklist);
   },
+  updateHospitalAnswer: (answer) => {
+    const state = get();
+    const normalizedAnswer: HospitalAnswer = {
+      ...answer,
+      name: answer.name.trim(),
+      note: answer.note?.trim() || undefined,
+      updatedAt: answer.updatedAt || nowIso(),
+    };
+    const hospitalAnswers = [
+      ...state.hospitalAnswers.filter(
+        (candidate) => candidate.itemId !== normalizedAnswer.itemId,
+      ),
+      normalizedAnswer,
+    ];
+    const providedId = getProvidedIdForQuestion(normalizedAnswer.name);
+    let profile = state.profile;
+    let profileChanged = false;
+
+    if (profile && providedId) {
+      const currentProvidedIds = profile.hospitalProvidedItemIds;
+      const nextProvidedIds = new Set(currentProvidedIds);
+
+      if (
+        normalizedAnswer.status === "provided" ||
+        normalizedAnswer.status === "partial"
+      ) {
+        nextProvidedIds.delete("unknown");
+        nextProvidedIds.add(providedId);
+      } else if (normalizedAnswer.status !== "todo") {
+        nextProvidedIds.delete(providedId);
+      }
+
+      const nextHospitalProvidedItemIds = Array.from(nextProvidedIds);
+      profileChanged = !sameStringArray(
+        currentProvidedIds,
+        nextHospitalProvidedItemIds,
+      );
+
+      if (profileChanged) {
+        profile = {
+          ...profile,
+          hospitalProvidedItemIds: nextHospitalProvidedItemIds,
+          updatedAt: nowIso(),
+        };
+      }
+    }
+
+    let checklist =
+      profile && profileChanged
+        ? buildChecklist(profile, state)
+        : state.checklist;
+
+    if (
+      providedId &&
+      normalizedAnswer.status !== "todo" &&
+      normalizedAnswer.status !== "provided" &&
+      normalizedAnswer.status !== "partial"
+    ) {
+      checklist = removeProvidedStatusForId(checklist, providedId);
+    }
+
+    checklist = checklist.map((item) =>
+      item.id === normalizedAnswer.itemId
+        ? {
+            ...item,
+            status: mapHospitalAnswerStatusToPackStatus(normalizedAnswer.status),
+          }
+        : item,
+    );
+
+    set({ profile, checklist, hospitalAnswers });
+    saveHospitalAnswers(hospitalAnswers);
+    saveChecklist(checklist);
+
+    if (profileChanged) {
+      saveUserProfile(profile);
+    }
+  },
+  clearHospitalAnswer: (itemId) => {
+    const state = get();
+    const hospitalAnswers = state.hospitalAnswers.filter(
+      (candidate) => candidate.itemId !== itemId,
+    );
+    const checklist = state.checklist.map((item) =>
+      item.id === itemId ? { ...item, status: "todo" as const } : item,
+    );
+
+    set({ hospitalAnswers, checklist });
+    saveHospitalAnswers(hospitalAnswers);
+    saveChecklist(checklist);
+  },
   exportJson: () => JSON.stringify(exportData(), null, 2),
   importJson: (json) => {
     const validation = validateImportData(json);
@@ -399,6 +538,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       customItems: [],
       hiddenTemplateItemIds: [],
       hospitalOverrides: [],
+      hospitalAnswers: [],
       checklistMode: "lean",
       filters: {
         category: "all",

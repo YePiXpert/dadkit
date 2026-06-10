@@ -6,15 +6,17 @@ import {
   importData,
   loadChecklist,
   loadChecklistMode,
+  loadHospitalAnswers,
   loadSnapshots,
   loadUserProfile,
   restoreSnapshot,
   saveChecklist,
   saveChecklistMode,
+  saveHospitalAnswers,
   saveUserProfile,
   STORAGE_KEYS,
 } from "@/lib/storage";
-import type { ChecklistItem, UserProfile } from "@/lib/types";
+import type { ChecklistItem, HospitalAnswer, UserProfile } from "@/lib/types";
 
 function installLocalStorage(initial: Record<string, string> = {}) {
   const store = new Map(Object.entries(initial));
@@ -61,6 +63,16 @@ function testProfile(dueDate = "2026-07-21"): UserProfile {
     coldWeather: false,
     hospitalProvidedItemIds: [],
     createdAt: "2026-06-09T00:00:00.000Z",
+    updatedAt: "2026-06-09T00:00:00.000Z",
+  };
+}
+
+function testHospitalAnswer(itemId = "question-1"): HospitalAnswer {
+  return {
+    itemId,
+    name: "医院是否提供产褥垫？",
+    status: "provided",
+    note: "产检电话确认",
     updatedAt: "2026-06-09T00:00:00.000Z",
   };
 }
@@ -135,6 +147,48 @@ describe("storage import/export", () => {
     expect(result.ok).toBe(true);
     expect(loadChecklist()).toEqual(existingChecklist);
     expect(loadChecklistMode()).toBe("full");
+  });
+
+  it("saves, loads, exports, and imports hospitalAnswers", () => {
+    installLocalStorage();
+    const answers = [testHospitalAnswer()];
+
+    saveHospitalAnswers(answers);
+
+    expect(loadHospitalAnswers()).toEqual(answers);
+    expect(exportData().hospitalAnswers).toEqual(answers);
+
+    const nextAnswers = [
+      { ...testHospitalAnswer("question-2"), status: "not_provided" as const },
+    ];
+    const result = importData(
+      JSON.stringify({
+        version: 1,
+        exportedAt: "2026-06-09T00:00:00.000Z",
+        hospitalAnswers: nextAnswers,
+      }),
+    );
+
+    expect(result).toEqual({ ok: true, message: "导入成功" });
+    expect(loadHospitalAnswers()).toEqual(nextAnswers);
+  });
+
+  it("does not clear hospitalAnswers when import omits hospitalAnswers", () => {
+    installLocalStorage();
+    const answers = [testHospitalAnswer()];
+
+    saveHospitalAnswers(answers);
+
+    const result = importData(
+      JSON.stringify({
+        version: 1,
+        exportedAt: "2026-06-09T00:00:00.000Z",
+        checklistMode: "full",
+      }),
+    );
+
+    expect(result.ok).toBe(true);
+    expect(loadHospitalAnswers()).toEqual(answers);
   });
 
   it("keeps only the latest 5 snapshots", () => {

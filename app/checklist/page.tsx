@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { RotateCcw, SlidersHorizontal } from "lucide-react";
+import { ArrowRight, RotateCcw, SlidersHorizontal } from "lucide-react";
 
 import { AddItemDialog } from "@/components/AddItemDialog";
 import { ChecklistCategoryCard } from "@/components/ChecklistCategoryCard";
@@ -20,7 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { filterItemsForChecklistMode, getHospitalForProfile } from "@/lib/rules";
+import {
+  calculateCompletion,
+  filterItemsForChecklistMode,
+  getHospitalForProfile,
+} from "@/lib/rules";
 import { useDadKitStore } from "@/lib/store";
 import {
   CATEGORY_LABELS,
@@ -36,6 +40,8 @@ import {
   groupItemsForChecklist,
   type ChecklistVisualGroup,
 } from "@/lib/presentation";
+
+type ChecklistGroupSummary = ReturnType<typeof groupItemsForChecklist>[number];
 
 export default function ChecklistPage() {
   const [visualGroup, setVisualGroup] = useState<ChecklistVisualGroup>("all");
@@ -186,14 +192,21 @@ export default function ChecklistPage() {
           title="没有符合筛选的物品"
           description="可以调整分类、状态或优先级筛选，也可以新增自定义项目。"
         />
+      ) : visualGroup === "all" ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {groupItemsForChecklist(filteredItems).map((group) => (
+            <ChecklistGroupSummaryCard
+              group={group}
+              key={group.group}
+              onOpen={() => setVisualGroup(group.group)}
+            />
+          ))}
+        </div>
       ) : (
         groupItemsForChecklist(filteredItems).map((group) => (
           <ChecklistCategoryCard
             defaultOpen={
-              visualGroup !== "all" ||
-              filters.category !== "all" ||
-              group.group === "documents_folder" ||
-              group.group === "dad"
+              visualGroup !== "all" || filters.category !== "all"
             }
             items={group.items}
             key={group.group}
@@ -204,5 +217,36 @@ export default function ChecklistPage() {
 
       <DisclaimerBox />
     </div>
+  );
+}
+
+function ChecklistGroupSummaryCard({
+  group,
+  onOpen,
+}: {
+  group: ChecklistGroupSummary;
+  onOpen: () => void;
+}) {
+  const completion = calculateCompletion(group.items);
+  const remaining = Math.max(0, completion.total - completion.completed);
+
+  return (
+    <button
+      className="rounded-lg border border-border bg-card p-4 text-left shadow-sm transition-colors hover:border-primary/40"
+      type="button"
+      onClick={onOpen}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-base font-semibold tracking-normal">{group.label}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            已完成 {completion.completed} 项 · 未完成 {remaining} 项
+          </p>
+        </div>
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-primary">
+          <ArrowRight className="size-4" />
+        </span>
+      </div>
+    </button>
   );
 }

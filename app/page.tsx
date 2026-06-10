@@ -174,11 +174,9 @@ export default function HomePage() {
         />
       </section>
 
-      <Card className="mobile-shell lg:max-w-none">
-        <CardContent className="p-5 text-sm leading-6 text-muted-foreground">
+      <p className="mobile-shell text-xs leading-5 text-muted-foreground lg:max-w-none">
           DadKit 不是医院官方清单，也不提供医疗诊断。医院要求可能变化，请以最近一次产检、入院须知或医院通知为准。
-        </CardContent>
-      </Card>
+      </p>
 
       <DisclaimerBox />
     </div>

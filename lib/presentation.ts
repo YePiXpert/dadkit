@@ -20,6 +20,7 @@ export const CHECKLIST_VISUAL_GROUPS: Array<{
   { id: "mom_bag", label: "妈妈包" },
   { id: "baby_bag", label: "宝宝包" },
   { id: "dad", label: "爸爸负责" },
+  { id: "going_home", label: "出院返家" },
   { id: "questions", label: "下次产检问" },
   { id: "last_minute", label: "临出门拿" },
 ];

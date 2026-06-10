@@ -418,7 +418,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="grid gap-4">
           <p className="text-sm leading-6 text-muted-foreground">
-            DadKit 可以把 JSON 备份保存到你自己的 WebDAV 存储。需要你手动上传或下载恢复，不会自动同步。
+            手动上传或下载 JSON 备份，不会自动同步。
           </p>
 
           <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background p-3">
@@ -433,88 +433,6 @@ export default function SettingsPage() {
               checked={webDavConfig.enabled}
               onCheckedChange={(checked) => updateWebDavConfig({ enabled: checked })}
             />
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="WebDAV 地址" htmlFor="webdav-endpoint">
-              <Input
-                id="webdav-endpoint"
-                placeholder="https://example.com/remote.php/dav/files/user"
-                type="url"
-                value={webDavConfig.endpoint}
-                onChange={(event) =>
-                  updateWebDavConfig({ endpoint: event.target.value })
-                }
-              />
-            </Field>
-            <Field label="用户名" htmlFor="webdav-username">
-              <Input
-                id="webdav-username"
-                value={webDavConfig.username}
-                onChange={(event) =>
-                  updateWebDavConfig({ username: event.target.value })
-                }
-              />
-            </Field>
-            <Field label="应用密码 / 密码" htmlFor="webdav-secret">
-              <Input
-                id="webdav-secret"
-                type="password"
-                value={webDavSecret}
-                onChange={(event) => updateWebDavSecret(event.target.value)}
-              />
-            </Field>
-            <Field label="凭据类型" htmlFor="webdav-auth-mode">
-              <Select
-                value={webDavConfig.authMode}
-                onValueChange={(value) =>
-                  updateWebDavConfig({
-                    authMode: value as WebDavConfig["authMode"],
-                  })
-                }
-              >
-                <SelectTrigger id="webdav-auth-mode">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="app_password">应用密码</SelectItem>
-                  <SelectItem value="basic">普通密码</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="远端目录" htmlFor="webdav-remote-dir">
-              <Input
-                id="webdav-remote-dir"
-                value={webDavConfig.remoteDir}
-                onChange={(event) =>
-                  updateWebDavConfig({ remoteDir: event.target.value })
-                }
-              />
-            </Field>
-            <Field label="文件名" htmlFor="webdav-filename">
-              <Input
-                id="webdav-filename"
-                value={webDavConfig.filename}
-                onChange={(event) =>
-                  updateWebDavConfig({ filename: event.target.value })
-                }
-              />
-            </Field>
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background p-3">
-              <div>
-                <Label htmlFor="webdav-remember-secret">记住密码在本设备</Label>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  只在可信设备保存 WebDAV 凭据。默认只保存到当前浏览器会话。
-                </p>
-              </div>
-              <Switch
-                id="webdav-remember-secret"
-                checked={webDavConfig.rememberSecret}
-                onCheckedChange={(checked) =>
-                  updateWebDavConfig({ rememberSecret: checked })
-                }
-              />
-            </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -537,6 +455,93 @@ export default function SettingsPage() {
               清除 WebDAV 配置
             </Button>
           </div>
+
+          <details className="rounded-xl border border-border bg-background p-3">
+            <summary className="cursor-pointer text-sm font-semibold">
+              连接设置
+            </summary>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <Field label="WebDAV 地址" htmlFor="webdav-endpoint">
+                <Input
+                  id="webdav-endpoint"
+                  placeholder="https://example.com/remote.php/dav/files/user"
+                  type="url"
+                  value={webDavConfig.endpoint}
+                  onChange={(event) =>
+                    updateWebDavConfig({ endpoint: event.target.value })
+                  }
+                />
+              </Field>
+              <Field label="用户名" htmlFor="webdav-username">
+                <Input
+                  id="webdav-username"
+                  value={webDavConfig.username}
+                  onChange={(event) =>
+                    updateWebDavConfig({ username: event.target.value })
+                  }
+                />
+              </Field>
+              <Field label="应用密码 / 密码" htmlFor="webdav-secret">
+                <Input
+                  id="webdav-secret"
+                  type="password"
+                  value={webDavSecret}
+                  onChange={(event) => updateWebDavSecret(event.target.value)}
+                />
+              </Field>
+              <Field label="凭据类型" htmlFor="webdav-auth-mode">
+                <Select
+                  value={webDavConfig.authMode}
+                  onValueChange={(value) =>
+                    updateWebDavConfig({
+                      authMode: value as WebDavConfig["authMode"],
+                    })
+                  }
+                >
+                  <SelectTrigger id="webdav-auth-mode">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="app_password">应用密码</SelectItem>
+                    <SelectItem value="basic">普通密码</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="远端目录" htmlFor="webdav-remote-dir">
+                <Input
+                  id="webdav-remote-dir"
+                  value={webDavConfig.remoteDir}
+                  onChange={(event) =>
+                    updateWebDavConfig({ remoteDir: event.target.value })
+                  }
+                />
+              </Field>
+              <Field label="文件名" htmlFor="webdav-filename">
+                <Input
+                  id="webdav-filename"
+                  value={webDavConfig.filename}
+                  onChange={(event) =>
+                    updateWebDavConfig({ filename: event.target.value })
+                  }
+                />
+              </Field>
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3">
+                <div>
+                  <Label htmlFor="webdav-remember-secret">记住密码在本设备</Label>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    默认只保存到当前浏览器会话。
+                  </p>
+                </div>
+                <Switch
+                  id="webdav-remember-secret"
+                  checked={webDavConfig.rememberSecret}
+                  onCheckedChange={(checked) =>
+                    updateWebDavConfig({ rememberSecret: checked })
+                  }
+                />
+              </div>
+            </div>
+          </details>
 
           {uploadConflict ? (
             <div className="grid gap-2 rounded-xl border border-amber/30 bg-amber-soft p-3 text-sm text-amber-foreground">
@@ -629,25 +634,32 @@ export default function SettingsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
-          <Textarea
-            className="min-h-[180px] font-mono text-sm"
-            placeholder="粘贴 DadKit JSON 备份"
-            value={importText}
-            onChange={(event) => setImportText(event.target.value)}
-          />
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={importData}>
-              <Upload className="size-4" />
-              校验并导入
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigator.clipboard.writeText(exportJson())}
-            >
-              <Copy className="size-4" />
-              复制当前 JSON
-            </Button>
-          </div>
+          <details className="rounded-xl border border-border bg-background p-3">
+            <summary className="cursor-pointer text-sm font-semibold">
+              导入 / 复制 JSON
+            </summary>
+            <div className="mt-3 grid gap-3">
+              <Textarea
+                className="max-h-[45dvh] min-h-40 overflow-y-auto font-mono text-sm"
+                placeholder="粘贴 DadKit JSON 备份"
+                value={importText}
+                onChange={(event) => setImportText(event.target.value)}
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={importData}>
+                  <Upload className="size-4" />
+                  校验并导入
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigator.clipboard.writeText(exportJson())}
+                >
+                  <Copy className="size-4" />
+                  复制当前 JSON
+                </Button>
+              </div>
+            </div>
+          </details>
           {message ? (
             <p
               className={`rounded-xl px-3 py-2 text-sm ${

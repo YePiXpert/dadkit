@@ -1,4 +1,5 @@
 import type {
+  HospitalAnswer,
   ChecklistMode,
   ChecklistItem,
   UserHospitalOverride,
@@ -16,6 +17,7 @@ export const STORAGE_KEYS = {
   customItems: "dadkit:custom-items",
   hiddenTemplateItems: "dadkit:hidden-template-items",
   hospitalOverrides: "dadkit:hospital-overrides",
+  hospitalAnswers: "dadkit:hospital-answers",
   checklistMode: "dadkit:checklist-mode",
   snapshots: "dadkit:snapshots",
   webDavConfig: "dadkit:webdav-config",
@@ -31,6 +33,7 @@ const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.customItems,
   STORAGE_KEYS.hiddenTemplateItems,
   STORAGE_KEYS.hospitalOverrides,
+  STORAGE_KEYS.hospitalAnswers,
   STORAGE_KEYS.checklistMode,
   STORAGE_KEYS.webDavConfig,
   STORAGE_KEYS.webDavSyncState,
@@ -46,6 +49,7 @@ export type DadKitExportData = {
   customItems: ChecklistItem[];
   hiddenTemplateItemIds: string[];
   hospitalOverrides: UserHospitalOverride[];
+  hospitalAnswers: HospitalAnswer[];
 };
 
 export type ImportResult = {
@@ -155,6 +159,14 @@ export function loadHospitalOverrides() {
 
 export function saveHospitalOverrides(overrides: UserHospitalOverride[]) {
   writeJson(STORAGE_KEYS.hospitalOverrides, overrides);
+}
+
+export function loadHospitalAnswers() {
+  return readJson<HospitalAnswer[]>(STORAGE_KEYS.hospitalAnswers, []);
+}
+
+export function saveHospitalAnswers(answers: HospitalAnswer[]) {
+  writeJson(STORAGE_KEYS.hospitalAnswers, answers);
 }
 
 export function loadChecklistMode(): ChecklistMode {
@@ -311,6 +323,7 @@ export function exportData(): DadKitExportData {
     customItems: loadCustomItems(),
     hiddenTemplateItemIds: loadHiddenTemplateItemIds(),
     hospitalOverrides: loadHospitalOverrides(),
+    hospitalAnswers: loadHospitalAnswers(),
   };
 }
 
@@ -348,13 +361,18 @@ export function validateImportData(rawJson: string): ImportValidationResult {
   }
 
   const arrayFields: Array<[
-    "checklist" | "customItems" | "hiddenTemplateItemIds" | "hospitalOverrides",
+    | "checklist"
+    | "customItems"
+    | "hiddenTemplateItemIds"
+    | "hospitalOverrides"
+    | "hospitalAnswers",
     string,
   ]> = [
     ["checklist", "checklist 必须是数组"],
     ["customItems", "customItems 必须是数组"],
     ["hiddenTemplateItemIds", "hiddenTemplateItemIds 必须是数组"],
     ["hospitalOverrides", "hospitalOverrides 必须是数组"],
+    ["hospitalAnswers", "hospitalAnswers 必须是数组"],
   ];
 
   for (const [field, message] of arrayFields) {
@@ -401,6 +419,10 @@ export function applyImportData(
     saveHospitalOverrides(data.hospitalOverrides);
   }
 
+  if (Array.isArray(data.hospitalAnswers)) {
+    saveHospitalAnswers(data.hospitalAnswers);
+  }
+
   if (data.checklistMode === "lean" || data.checklistMode === "full") {
     saveChecklistMode(data.checklistMode);
   }
@@ -422,7 +444,8 @@ function hasSnapshotData(data: DadKitExportData) {
       data.checklist.length > 0 ||
       data.customItems.length > 0 ||
       data.hiddenTemplateItemIds.length > 0 ||
-      data.hospitalOverrides.length > 0,
+      data.hospitalOverrides.length > 0 ||
+      data.hospitalAnswers.length > 0,
   );
 }
 
