@@ -205,9 +205,7 @@ export default function ChecklistPage() {
       ) : (
         groupItemsForChecklist(filteredItems).map((group) => (
           <ChecklistCategoryCard
-            defaultOpen={
-              visualGroup !== "all" || filters.category !== "all"
-            }
+            defaultOpen
             items={group.items}
             key={group.group}
             title={group.label}

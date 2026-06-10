@@ -6,7 +6,7 @@ import {
   ClipboardList,
   Hospital,
   Save,
-  Settings2,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 
@@ -164,6 +164,7 @@ export default function HospitalPage() {
     );
   }
 
+  const activeProfile = profile;
   const questionCandidates = checklist.filter(
     (item) =>
       item.itemKind === "question" || item.category === "hospital_questions",
@@ -195,7 +196,7 @@ export default function HospitalPage() {
       : Math.round((completedConfirmations / allConfirmationItems.length) * 100);
 
   function toggleProvidedItem(id: string) {
-    const current = new Set(profile.hospitalProvidedItemIds);
+    const current = new Set(activeProfile.hospitalProvidedItemIds);
 
     if (id === "unknown") {
       updateProfile({
@@ -335,7 +336,7 @@ export default function HospitalPage() {
                     通常不需要手动勾选，建议直接在上方问题里记录医院答复。
                   </p>
                   <ManualProvidedPicker
-                    selectedIds={profile.hospitalProvidedItemIds}
+                    selectedIds={activeProfile.hospitalProvidedItemIds}
                     onToggle={toggleProvidedItem}
                   />
                 </div>
@@ -349,7 +350,7 @@ export default function HospitalPage() {
             customHospital={customHospital}
             documentsOverride={documentsOverride}
             notesOverride={notesOverride}
-            profileHospitalMode={profile.hospitalMode}
+            profileHospitalMode={activeProfile.hospitalMode}
             providedOverride={providedOverride}
             onCustomHospitalChange={setCustomHospital}
             onDocumentsOverrideChange={setDocumentsOverride}
@@ -364,8 +365,8 @@ export default function HospitalPage() {
             onSaveCustomHospital={saveCustomHospital}
             onSaveOverride={saveOverride}
             hospitalSelectorValue={{
-              hospitalMode: profile.hospitalMode,
-              hospitalId: profile.hospitalId,
+              hospitalMode: activeProfile.hospitalMode,
+              hospitalId: activeProfile.hospitalId,
             }}
           />
         </TabsContent>
@@ -498,7 +499,7 @@ function AdvancedSettings({
       <Card className="rounded-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Settings2 className="size-5 text-primary" />
+            <Settings className="size-5 text-primary" />
             医院模式
           </CardTitle>
         </CardHeader>
