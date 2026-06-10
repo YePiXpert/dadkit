@@ -24,6 +24,12 @@ function testQuestion(name: string): ChecklistItem {
 
 describe("hospital answer helpers", () => {
   it("maps provided questions to provided item ids", () => {
+    expect(
+      getProvidedIdForQuestion(
+        "医院是否提供产褥垫？",
+        "question-provided-postpartum-pads",
+      ),
+    ).toBe("postpartum-pads");
     expect(getProvidedIdForQuestion("医院是否提供产褥垫？")).toBe(
       "postpartum-pads",
     );
@@ -49,4 +55,3 @@ describe("hospital answer helpers", () => {
     ]);
   });
 });
-

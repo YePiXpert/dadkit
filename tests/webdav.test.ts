@@ -171,6 +171,7 @@ describe("webdav helpers", () => {
       checklist: [testItem("remote")],
       customItems: [],
       hiddenTemplateItemIds: [],
+      hospitalAnswers: [],
       hospitalOverrides: [],
     };
     const backup = buildDadKitWebDavBackup(remoteData, "remote-device");

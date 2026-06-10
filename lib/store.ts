@@ -249,8 +249,6 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     return profile;
   },
   saveProfile: (profile) => {
-    snapshotBeforeChange("修改个人资料前");
-
     const updatedProfile = {
       ...profile,
       updatedAt: nowIso(),
@@ -262,8 +260,6 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     persistCoreState({ ...state, profile: updatedProfile, checklist });
   },
   updateProfile: (patch) => {
-    snapshotBeforeChange("修改个人资料前");
-
     const state = get();
     const profile = state.profile
       ? { ...state.profile, ...patch, updatedAt: nowIso() }
@@ -433,7 +429,10 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       ),
       normalizedAnswer,
     ];
-    const providedId = getProvidedIdForQuestion(normalizedAnswer.name);
+    const providedId = getProvidedIdForQuestion(
+      normalizedAnswer.name,
+      normalizedAnswer.itemId,
+    );
     let profile = state.profile;
     let profileChanged = false;
 
@@ -441,13 +440,14 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       const currentProvidedIds = profile.hospitalProvidedItemIds;
       const nextProvidedIds = new Set(currentProvidedIds);
 
-      if (
+      const providedByHospital =
         normalizedAnswer.status === "provided" ||
-        normalizedAnswer.status === "partial"
-      ) {
+        normalizedAnswer.status === "partial";
+
+      if (providedByHospital) {
         nextProvidedIds.delete("unknown");
         nextProvidedIds.add(providedId);
-      } else if (normalizedAnswer.status !== "todo") {
+      } else {
         nextProvidedIds.delete(providedId);
       }
 
@@ -473,7 +473,6 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
 
     if (
       providedId &&
-      normalizedAnswer.status !== "todo" &&
       normalizedAnswer.status !== "provided" &&
       normalizedAnswer.status !== "partial"
     ) {

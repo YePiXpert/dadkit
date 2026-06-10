@@ -8,18 +8,13 @@ import {
   ClipboardList,
   Hospital,
   Share2,
+  type LucideIcon,
 } from "lucide-react";
 
 import { ActionCard } from "@/components/ActionCard";
-import { DisclaimerBox } from "@/components/DisclaimerBox";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import {
-  calculateConfirmationCompletion,
-  calculateLastMinuteCompletion,
-  calculatePackingCompletion,
-} from "@/lib/rules";
+import { buildHomeSummary } from "@/lib/presentation/home-summary";
 import { useDadKitStore } from "@/lib/store";
 
 function dueAdvice(daysLeft: number) {
@@ -37,9 +32,8 @@ function dueAdvice(daysLeft: number) {
 export default function HomePage() {
   const profile = useDadKitStore((state) => state.profile);
   const checklist = useDadKitStore((state) => state.checklist);
-  const packing = calculatePackingCompletion(checklist);
-  const confirmation = calculateConfirmationCompletion(checklist);
-  const lastMinute = calculateLastMinuteCompletion(checklist);
+  const hospitalAnswers = useDadKitStore((state) => state.hospitalAnswers);
+  const summary = buildHomeSummary(checklist, hospitalAnswers);
   const daysLeft = profile?.dueDate
     ? differenceInCalendarDays(parseISO(profile.dueDate), new Date())
     : undefined;
@@ -48,7 +42,7 @@ export default function HomePage() {
     <div className="page-shell">
       <section className="mobile-shell grid gap-4 lg:max-w-none lg:grid-cols-[1fr_0.95fr] lg:items-start">
         <div className="rounded-[1.35rem] bg-card p-5 shadow-soft">
-          <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="mb-3">
             <div>
               <p className="text-sm font-medium text-primary">准爸爸任务控制台</p>
               <h1 className="mt-1 text-4xl font-semibold leading-tight tracking-normal sm:text-5xl">
@@ -58,19 +52,16 @@ export default function HomePage() {
                 先准备少数关键物品，再确认医院差异；不按电商大礼包打包。
               </p>
             </div>
-            <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-primary">
-              精简模式
-            </span>
           </div>
 
-          <div className="mb-3 flex flex-wrap gap-2 text-xs font-medium">
-            <span className="rounded-full bg-secondary px-3 py-1 text-primary">
+          <div className="mb-3 flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
+            <span className="rounded-full bg-secondary/70 px-3 py-1 text-primary">
               本地优先
             </span>
-            <span className="rounded-full bg-amber-soft px-3 py-1 text-amber-foreground">
+            <span className="rounded-full bg-secondary/70 px-3 py-1 text-primary">
               医院待确认
             </span>
-            <span className="rounded-full bg-coral-soft px-3 py-1 text-coral-foreground">
+            <span className="rounded-full bg-secondary/70 px-3 py-1 text-primary">
               爸爸任务流
             </span>
           </div>
@@ -104,47 +95,42 @@ export default function HomePage() {
           </div>
 
           <Link
-            className="mt-4 flex items-center justify-between rounded-lg bg-coral-soft px-3 py-2 text-sm font-medium text-coral-foreground"
-            href="/share"
+            className="mt-4 flex w-full items-center justify-between rounded-lg bg-primary px-4 py-3 text-base font-semibold text-primary-foreground shadow-soft"
+            href={profile ? "/checklist" : "/setup"}
           >
-            <span>爸爸今天负责</span>
-            <span className="text-xs">要拿 · 要问 · 要确认</span>
+            <span>{profile ? "打开我的清单" : "开始创建清单"}</span>
+            <ArrowRight className="size-5" />
           </Link>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button asChild className="h-9">
-              <Link href={profile ? "/checklist" : "/setup"}>
-                {profile ? "打开清单" : "开始创建清单"}
-                <ArrowRight className="size-4" />
-              </Link>
-            </Button>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+            <SecondaryHomeLink href="/hospital" label="医院确认" />
+            <SecondaryHomeLink href="/share" label="爸爸执行版" />
+            <SecondaryHomeLink
+              description="不影响当前数据"
+              href="/checklist"
+              label="查看示例"
+            />
           </div>
         </div>
 
         <div className="grid gap-3">
           <PackingProgressCard
-            completed={packing.completed}
             icon={ClipboardList}
-            label="打包进度"
-            percent={packing.percent}
-            total={packing.total}
+            label="核心打包"
+            percent={summary.corePacking.percent}
             tone="primary"
           />
           <div className="grid grid-cols-2 gap-3">
             <PackingProgressCard
-              completed={confirmation.completed}
               icon={Hospital}
-              label="医院确认"
-              percent={confirmation.percent}
-              total={confirmation.total}
+              label="医院待问"
+              percent={summary.hospitalQuestions.percent}
               tone="amber"
             />
             <PackingProgressCard
-              completed={lastMinute.completed}
               icon={CalendarClock}
-              label="临出门检查"
-              percent={lastMinute.percent}
-              total={lastMinute.total}
+              label="临出门"
+              percent={summary.lastMinute.percent}
               tone="coral"
             />
           </div>
@@ -154,7 +140,7 @@ export default function HomePage() {
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-3">
         <ActionCard
           description="陪产、入口、押金、提供物品，留到产检时问清楚。"
-          href="/checklist"
+          href="/hospital"
           icon={Hospital}
           title="到下次产检问清楚"
           tone="amber"
@@ -175,28 +161,44 @@ export default function HomePage() {
       </section>
 
       <p className="mobile-shell text-xs leading-5 text-muted-foreground lg:max-w-none">
-          DadKit 不是医院官方清单，也不提供医疗诊断。医院要求可能变化，请以最近一次产检、入院须知或医院通知为准。
+        非医疗建议，请以医院通知和产检确认结果为准。
       </p>
-
-      <DisclaimerBox />
     </div>
   );
 }
 
+function SecondaryHomeLink({
+  description,
+  href,
+  label,
+}: {
+  description?: string;
+  href: string;
+  label: string;
+}) {
+  return (
+    <Link
+      className="flex min-h-12 flex-col items-center justify-center rounded-lg border border-border bg-background px-2 text-center font-medium text-muted-foreground"
+      href={href}
+    >
+      <span>{label}</span>
+      {description ? (
+        <span className="text-[0.68rem] font-normal leading-4">{description}</span>
+      ) : null}
+    </Link>
+  );
+}
+
 function PackingProgressCard({
-  completed,
   icon: Icon,
   label,
   percent,
   tone,
-  total,
 }: {
-  completed: number;
-  icon: typeof ClipboardList;
+  icon: LucideIcon;
   label: string;
   percent: number;
   tone: "primary" | "amber" | "coral";
-  total: number;
 }) {
   const toneClass =
     tone === "primary"
@@ -225,17 +227,8 @@ function PackingProgressCard({
             <Icon className="size-5" />
           </span>
         </div>
-        <div className="mt-2 flex items-center gap-3">
+        <div className="mt-2">
           <Progress value={percent} />
-          <span
-            className={
-              tone === "primary"
-                ? "text-xs text-primary-foreground/80"
-                : "text-xs text-muted-foreground"
-            }
-          >
-            {completed}/{total}
-          </span>
         </div>
       </CardContent>
     </Card>

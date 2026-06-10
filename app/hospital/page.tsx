@@ -13,46 +13,32 @@ import {
 import { CustomHospitalForm } from "@/components/CustomHospitalForm";
 import { DisclaimerBox } from "@/components/DisclaimerBox";
 import { EmptyState } from "@/components/EmptyState";
-import { HospitalQuestionCard } from "@/components/HospitalQuestionCard";
+import {
+  HospitalQuestionCard,
+  type HospitalQuestionCardInput,
+} from "@/components/HospitalQuestionCard";
 import { HospitalSelector } from "@/components/HospitalSelector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DAD_ACTION_TASKS,
+  HOSPITAL_CONFIRMATION_GROUP_LABELS,
+  HOSPITAL_CONFIRMATION_QUESTIONS,
+  type HospitalConfirmationGroupId,
+} from "@/lib/hospital/confirmation-plan";
 import { getHospitalForProfile } from "@/lib/rules";
 import {
   createCustomHospitalProfile,
   useDadKitStore,
 } from "@/lib/store";
 import type {
-  ChecklistItem,
   HospitalAnswer,
   HospitalProfile,
   UserHospitalOverride,
 } from "@/lib/types";
-
-const NEXT_CHECKUP_KEYWORD_GROUPS = [
-  ["医院是否提供产褥垫"],
-  ["医院是否提供宝宝尿不湿"],
-  ["医院是否提供宝宝衣物"],
-  ["医院是否允许陪产"],
-  ["住院押金", "医保结算"],
-  ["夜间入院入口", "急诊入院路线"],
-  ["吸奶器"],
-  ["出生医学证明"],
-];
-
-const DAD_CONFIRM_KEYWORD_GROUPS = [
-  ["产科"],
-  ["入院入口"],
-  ["夜间"],
-  ["停车"],
-  ["支付"],
-  ["押金"],
-  ["医保结算"],
-  ["陪产人"],
-];
 
 const MANUAL_PROVIDED_OPTIONS = [
   ["postpartum-pads", "产褥垫"],
@@ -72,40 +58,36 @@ function textToLines(text: string) {
     .filter(Boolean);
 }
 
-function pickItemsByKeywordGroups(
-  items: ChecklistItem[],
-  groups: string[][],
-) {
-  const used = new Set<string>();
-  const picked: ChecklistItem[] = [];
-
-  for (const keywords of groups) {
-    const item = items.find(
-      (candidate) =>
-        !used.has(candidate.id) &&
-        keywords.every((keyword) => candidate.name.includes(keyword)),
-    );
-
-    if (item) {
-      used.add(item.id);
-      picked.push(item);
-    }
-  }
-
-  return picked;
+function isAnswerDone(answer?: HospitalAnswer) {
+  return Boolean(answer && answer.status !== "todo");
 }
 
-function isAnswerDone(item: ChecklistItem, answer?: HospitalAnswer) {
-  if (answer) {
-    return answer.status !== "todo";
-  }
+function questionToCardInput(
+  question: (typeof HOSPITAL_CONFIRMATION_QUESTIONS)[number],
+): HospitalQuestionCardInput {
+  return {
+    id: question.id,
+    name: question.title,
+    note: question.description,
+    kind: "question",
+    answerType: question.answerType,
+  };
+}
 
-  return ["packed", "hospital_provided", "not_needed"].includes(item.status);
+function taskToCardInput(
+  task: (typeof DAD_ACTION_TASKS)[number],
+): HospitalQuestionCardInput {
+  return {
+    id: task.id,
+    name: task.title,
+    note: task.description,
+    kind: "task",
+    answerType: "confirmation",
+  };
 }
 
 export default function HospitalPage() {
   const profile = useDadKitStore((state) => state.profile);
-  const checklist = useDadKitStore((state) => state.checklist);
   const updateProfile = useDadKitStore((state) => state.updateProfile);
   const hospitalOverrides = useDadKitStore((state) => state.hospitalOverrides);
   const updateHospitalOverride = useDadKitStore(
@@ -165,30 +147,11 @@ export default function HospitalPage() {
   }
 
   const activeProfile = profile;
-  const questionCandidates = checklist.filter(
-    (item) =>
-      item.itemKind === "question" || item.category === "hospital_questions",
-  );
-  const nextCheckupItems = pickItemsByKeywordGroups(
-    questionCandidates,
-    NEXT_CHECKUP_KEYWORD_GROUPS,
-  );
-  const dadConfirmItems = pickItemsByKeywordGroups(
-    checklist.filter(
-      (item) =>
-        item.itemKind === "task" ||
-        item.itemKind === "question" ||
-        item.category === "partner",
-    ),
-    DAD_CONFIRM_KEYWORD_GROUPS,
-  );
-  const allConfirmationItems = Array.from(
-    new Map(
-      [...nextCheckupItems, ...dadConfirmItems].map((item) => [item.id, item]),
-    ).values(),
-  );
+  const nextCheckupItems = HOSPITAL_CONFIRMATION_QUESTIONS.map(questionToCardInput);
+  const dadConfirmItems = DAD_ACTION_TASKS.map(taskToCardInput);
+  const allConfirmationItems = [...nextCheckupItems, ...dadConfirmItems];
   const completedConfirmations = allConfirmationItems.filter((item) =>
-    isAnswerDone(item, answersByItemId.get(item.id)),
+    isAnswerDone(answersByItemId.get(item.id)),
   ).length;
   const confirmationPercent =
     allConfirmationItems.length === 0
@@ -278,15 +241,12 @@ export default function HospitalPage() {
       </Card>
 
       <Tabs className="mobile-shell lg:max-w-none" defaultValue="next-checkup">
-        <TabsList className="grid h-auto w-full grid-cols-4 rounded-lg p-1">
+        <TabsList className="grid h-auto w-full grid-cols-3 rounded-lg p-1">
           <TabsTrigger className="px-2 text-xs" value="next-checkup">
             下次产检要问
           </TabsTrigger>
           <TabsTrigger className="px-2 text-xs" value="dad">
             爸爸要确认
-          </TabsTrigger>
-          <TabsTrigger className="px-2 text-xs" value="provided">
-            医院提供
           </TabsTrigger>
           <TabsTrigger className="px-2 text-xs" value="advanced">
             高级设置
@@ -298,6 +258,7 @@ export default function HospitalPage() {
             description="点开每一项记录医院答复，确认后会同步影响清单状态。"
             icon={ClipboardList}
             items={nextCheckupItems}
+            grouped
             title="下次产检要问"
             answersByItemId={answersByItemId}
             onChange={updateHospitalAnswer}
@@ -306,7 +267,7 @@ export default function HospitalPage() {
 
         <TabsContent value="dad">
           <QuestionSection
-            description="路线、电话、停车和支付信息都放在这里，方便临近入院前逐项确认。"
+            description="路线、电话、停车和证件包，是爸爸临近入院前要落实的行动。"
             icon={Hospital}
             items={dadConfirmItems}
             title="爸爸要确认"
@@ -315,40 +276,11 @@ export default function HospitalPage() {
           />
         </TabsContent>
 
-        <TabsContent value="provided">
-          <Card className="rounded-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <CheckCircle2 className="size-5 text-primary" />
-                医院提供
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3">
-              <p className="text-sm leading-6 text-muted-foreground">
-                建议优先在“下次产检要问”里记录医院答复；下面保留手动标记入口。
-              </p>
-              <details className="rounded-lg border border-border bg-background p-3">
-                <summary className="cursor-pointer text-sm font-semibold">
-                  高级：手动标记医院已确认提供的物品
-                </summary>
-                <div className="mt-3 grid gap-3">
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    通常不需要手动勾选，建议直接在上方问题里记录医院答复。
-                  </p>
-                  <ManualProvidedPicker
-                    selectedIds={activeProfile.hospitalProvidedItemIds}
-                    onToggle={toggleProvidedItem}
-                  />
-                </div>
-              </details>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="advanced">
           <AdvancedSettings
             customHospital={customHospital}
             documentsOverride={documentsOverride}
+            manualProvidedIds={activeProfile.hospitalProvidedItemIds}
             notesOverride={notesOverride}
             profileHospitalMode={activeProfile.hospitalMode}
             providedOverride={providedOverride}
@@ -360,6 +292,7 @@ export default function HospitalPage() {
                 hospitalId: value.hospitalId,
               })
             }
+            onManualProvidedToggle={toggleProvidedItem}
             onNotesOverrideChange={setNotesOverride}
             onProvidedOverrideChange={setProvidedOverride}
             onSaveCustomHospital={saveCustomHospital}
@@ -380,6 +313,7 @@ export default function HospitalPage() {
 function QuestionSection({
   answersByItemId,
   description,
+  grouped = false,
   icon: Icon,
   items,
   onChange,
@@ -387,11 +321,27 @@ function QuestionSection({
 }: {
   answersByItemId: Map<string, HospitalAnswer>;
   description: string;
+  grouped?: boolean;
   icon: LucideIcon;
-  items: ChecklistItem[];
+  items: HospitalQuestionCardInput[];
   onChange: (answer: HospitalAnswer) => void;
   title: string;
 }) {
+  const groupedItems = grouped
+    ? (Object.keys(HOSPITAL_CONFIRMATION_GROUP_LABELS) as HospitalConfirmationGroupId[])
+        .map((groupId) => ({
+          groupId,
+          label: HOSPITAL_CONFIRMATION_GROUP_LABELS[groupId],
+          items: items.filter((item) =>
+            HOSPITAL_CONFIRMATION_QUESTIONS.some(
+              (question) =>
+                question.id === item.id && question.groupId === groupId,
+            ),
+          ),
+        }))
+        .filter((group) => group.items.length > 0)
+    : [{ groupId: "admission_flow" as const, label: "", items }];
+
   return (
     <Card className="rounded-lg">
       <CardHeader>
@@ -407,13 +357,22 @@ function QuestionSection({
             暂时没有匹配的待确认事项。
           </p>
         ) : (
-          items.map((item) => (
-            <HospitalQuestionCard
-              answer={answersByItemId.get(item.id)}
-              item={item}
-              key={item.id}
-              onChange={onChange}
-            />
+          groupedItems.map((group) => (
+            <div className="grid gap-2" key={group.groupId}>
+              {group.label ? (
+                <p className="mt-2 text-xs font-semibold text-muted-foreground">
+                  {group.label}
+                </p>
+              ) : null}
+              {group.items.map((item) => (
+                <HospitalQuestionCard
+                  answer={answersByItemId.get(item.id)}
+                  item={item}
+                  key={item.id}
+                  onChange={onChange}
+                />
+              ))}
+            </div>
           ))
         )}
       </CardContent>
@@ -463,10 +422,12 @@ function AdvancedSettings({
   customHospital,
   documentsOverride,
   hospitalSelectorValue,
+  manualProvidedIds,
   notesOverride,
   onCustomHospitalChange,
   onDocumentsOverrideChange,
   onHospitalModeChange,
+  onManualProvidedToggle,
   onNotesOverrideChange,
   onProvidedOverrideChange,
   onSaveCustomHospital,
@@ -480,6 +441,7 @@ function AdvancedSettings({
     hospitalMode: HospitalProfile["mode"];
     hospitalId?: string;
   };
+  manualProvidedIds: string[];
   notesOverride: string;
   onCustomHospitalChange: (hospital: HospitalProfile) => void;
   onDocumentsOverrideChange: (value: string) => void;
@@ -487,6 +449,7 @@ function AdvancedSettings({
     hospitalMode: HospitalProfile["mode"];
     hospitalId?: string;
   }) => void;
+  onManualProvidedToggle: (id: string) => void;
   onNotesOverrideChange: (value: string) => void;
   onProvidedOverrideChange: (value: string) => void;
   onSaveCustomHospital: () => void;
@@ -574,6 +537,31 @@ function AdvancedSettings({
           </CardContent>
         </Card>
       )}
+
+      <Card className="rounded-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <CheckCircle2 className="size-5 text-primary" />
+            手动医院提供标记
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <details className="rounded-lg border border-border bg-background p-3">
+            <summary className="cursor-pointer text-sm font-semibold">
+              高级：手动标记医院已确认提供的物品
+            </summary>
+            <div className="mt-3 grid gap-3">
+              <p className="text-sm leading-6 text-muted-foreground">
+                通常不需要手动勾选，建议直接在“下次产检要问”里记录医院答复。
+              </p>
+              <ManualProvidedPicker
+                selectedIds={manualProvidedIds}
+                onToggle={onManualProvidedToggle}
+              />
+            </div>
+          </details>
+        </CardContent>
+      </Card>
     </div>
   );
 }

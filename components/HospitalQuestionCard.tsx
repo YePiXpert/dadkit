@@ -15,8 +15,16 @@ import {
   type PackStatus,
 } from "@/lib/types";
 
+export type HospitalQuestionCardInput = {
+  id: string;
+  name: string;
+  note?: string;
+  kind: "question" | "task";
+  answerType?: "provided_item" | "confirmation";
+};
+
 type HospitalQuestionCardProps = {
-  item: ChecklistItem;
+  item: HospitalQuestionCardInput | ChecklistItem;
   answer?: HospitalAnswer;
   onChange: (answer: HospitalAnswer) => void;
 };
@@ -46,28 +54,66 @@ function statusFromPackStatus(status: PackStatus): HospitalAnswerStatus {
   return "todo";
 }
 
+function normalizeInput(
+  item: HospitalQuestionCardInput | ChecklistItem,
+): HospitalQuestionCardInput & { status?: PackStatus } {
+  if ("kind" in item) {
+    return item;
+  }
+
+  return {
+    id: item.id,
+    name: item.name,
+    note: item.note,
+    kind: item.itemKind === "task" ? "task" : "question",
+    status: item.status,
+  };
+}
+
+function getStatusLabel(status: HospitalAnswerStatus, kind: "question" | "task") {
+  if (kind === "task") {
+    if (status === "todo") {
+      return "待确认";
+    }
+
+    if (status === "not_needed") {
+      return "不适用";
+    }
+
+    return "已确认";
+  }
+
+  return HOSPITAL_ANSWER_LABELS[status];
+}
+
 export function HospitalQuestionCard({
   answer,
   item,
   onChange,
 }: HospitalQuestionCardProps) {
-  const initialStatus = answer?.status ?? statusFromPackStatus(item.status);
+  const normalizedItem = useMemo(() => normalizeInput(item), [item]);
+  const initialStatus =
+    answer?.status ?? statusFromPackStatus(normalizedItem.status ?? "todo");
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<HospitalAnswerStatus>(initialStatus);
   const [note, setNote] = useState(answer?.note ?? "");
-  const options = useMemo(() => getHospitalAnswerOptions(item), [item]);
-  const savedStatus = answer?.status ?? statusFromPackStatus(item.status);
+  const options = useMemo(
+    () => getHospitalAnswerOptions(normalizedItem),
+    [normalizedItem],
+  );
+  const savedStatus =
+    answer?.status ?? statusFromPackStatus(normalizedItem.status ?? "todo");
   const previewNote = answer?.note?.trim();
 
   useEffect(() => {
-    setStatus(answer?.status ?? statusFromPackStatus(item.status));
+    setStatus(answer?.status ?? statusFromPackStatus(normalizedItem.status ?? "todo"));
     setNote(answer?.note ?? "");
-  }, [answer, item.status]);
+  }, [answer, normalizedItem.status]);
 
   function saveAnswer() {
     onChange({
-      itemId: item.id,
-      name: item.name,
+      itemId: normalizedItem.id,
+      name: normalizedItem.name,
       status,
       note: note.trim() || undefined,
       updatedAt: new Date().toISOString(),
@@ -83,14 +129,16 @@ export function HospitalQuestionCard({
         onClick={() => setOpen((value) => !value)}
       >
         <span className="min-w-0">
-          <span className="block text-sm font-semibold leading-5">{item.name}</span>
+          <span className="block text-sm font-semibold leading-5">
+            {normalizedItem.name}
+          </span>
           {previewNote ? (
             <span className="mt-1 line-clamp-2 block text-xs leading-5 text-muted-foreground">
               {previewNote}
             </span>
-          ) : item.note ? (
+          ) : normalizedItem.note ? (
             <span className="mt-1 line-clamp-2 block text-xs leading-5 text-muted-foreground">
-              {item.note}
+              {normalizedItem.note}
             </span>
           ) : null}
         </span>
@@ -98,10 +146,10 @@ export function HospitalQuestionCard({
           <span
             className={cn(
               "rounded-md border px-2 py-1 text-xs font-medium",
-              STATUS_BADGE_CLASSES[savedStatus],
+            STATUS_BADGE_CLASSES[savedStatus],
             )}
           >
-            {HOSPITAL_ANSWER_LABELS[savedStatus]}
+            {getStatusLabel(savedStatus, normalizedItem.kind)}
           </span>
           <ChevronDown
             className={cn(
@@ -128,7 +176,7 @@ export function HospitalQuestionCard({
                 onClick={() => setStatus(option)}
               >
                 {status === option ? <Check className="size-3.5" /> : null}
-                {HOSPITAL_ANSWER_LABELS[option]}
+                {getStatusLabel(option, normalizedItem.kind)}
               </button>
             ))}
           </div>

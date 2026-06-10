@@ -6,7 +6,11 @@ import {
   saveUserProfile,
 } from "@/lib/storage";
 import { useDadKitStore } from "@/lib/store";
-import type { ChecklistItem, UserProfile } from "@/lib/types";
+import type {
+  ChecklistItem,
+  HospitalAnswerStatus,
+  UserProfile,
+} from "@/lib/types";
 
 function installLocalStorage(initial: Record<string, string> = {}) {
   const store = new Map(Object.entries(initial));
@@ -162,7 +166,7 @@ describe("store snapshots", () => {
     expect(snapshots[0]?.data.checklist).toEqual(checklist);
   });
 
-  it("creates a snapshot before updateProfile persists profile changes", () => {
+  it("does not create a snapshot when updateProfile persists profile changes", () => {
     installLocalStorage();
     const profile = testProfile();
     const checklist = [testItem("before-update")];
@@ -175,9 +179,8 @@ describe("store snapshots", () => {
 
     const snapshots = loadSnapshots();
 
-    expect(snapshots[0]?.reason).toBe("修改个人资料前");
-    expect(snapshots[0]?.data.userProfile).toEqual(profile);
-    expect(snapshots[0]?.data.checklist).toEqual(checklist);
+    expect(snapshots).toEqual([]);
+    expect(useDadKitStore.getState().profile?.dueDate).toBe("2026-08-01");
   });
 
   it("toggles question items between pending and confirmed", () => {
@@ -233,6 +236,29 @@ describe("store snapshots", () => {
     expect(loadSnapshots()).toEqual([]);
   });
 
+  it("adds hospital-provided id when a partial answer is saved", () => {
+    installLocalStorage();
+    const profile = testProfile();
+    const question = {
+      ...testQuestion("question-provided-postpartum-pads"),
+      name: "医院是否提供产褥垫？",
+    };
+
+    useDadKitStore.setState({ profile, checklist: [question], hospitalAnswers: [] });
+
+    useDadKitStore.getState().updateHospitalAnswer({
+      itemId: question.id,
+      name: question.name,
+      status: "partial",
+      updatedAt: "2026-06-09T00:00:00.000Z",
+    });
+
+    expect(
+      useDadKitStore.getState().profile?.hospitalProvidedItemIds,
+    ).toContain("postpartum-pads");
+    expect(loadSnapshots()).toEqual([]);
+  });
+
   it("removes hospital-provided id when a not_provided answer is saved", () => {
     installLocalStorage();
     const profile = testProfile();
@@ -266,4 +292,41 @@ describe("store snapshots", () => {
     });
     expect(loadSnapshots()).toEqual([]);
   });
+
+  it.each(["todo", "not_needed", "confirmed"] satisfies HospitalAnswerStatus[])(
+    "removes hospital-provided id when a %s answer is saved",
+    (status) => {
+      installLocalStorage();
+      const profile = testProfile();
+      const question = {
+        ...testQuestion("question-provided-postpartum-pads"),
+        name: "医院是否提供产褥垫？",
+      };
+
+      useDadKitStore.setState({
+        profile: {
+          ...profile,
+          hospitalProvidedItemIds: ["postpartum-pads"],
+        },
+        checklist: [question],
+        hospitalAnswers: [],
+      });
+
+      useDadKitStore.getState().updateHospitalAnswer({
+        itemId: question.id,
+        name: question.name,
+        status,
+        updatedAt: "2026-06-09T00:00:00.000Z",
+      });
+
+      expect(
+        useDadKitStore.getState().profile?.hospitalProvidedItemIds,
+      ).not.toContain("postpartum-pads");
+      expect(useDadKitStore.getState().hospitalAnswers[0]).toMatchObject({
+        itemId: question.id,
+        status,
+      });
+      expect(loadSnapshots()).toEqual([]);
+    },
+  );
 });

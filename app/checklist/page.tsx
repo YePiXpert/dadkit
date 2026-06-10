@@ -23,7 +23,6 @@ import {
 import {
   calculateCompletion,
   filterItemsForChecklistMode,
-  getHospitalForProfile,
 } from "@/lib/rules";
 import { useDadKitStore } from "@/lib/store";
 import {
@@ -67,7 +66,6 @@ export default function ChecklistPage() {
     );
   }
 
-  const hospital = getHospitalForProfile(profile);
   const modeItems = filterItemsForChecklistMode(checklist, checklistMode);
   const groupedModeItems = filterItemsByVisualGroup(modeItems, visualGroup);
   const filteredItems = groupedModeItems.filter((item) => {
@@ -94,12 +92,6 @@ export default function ChecklistPage() {
           先看精简清单，把要拿、要问、要确认的事处理掉。
         </p>
       </div>
-
-      {hospital?.verificationStatus === "unverified" ? (
-        <div className="mobile-shell rounded-lg border border-amber/30 bg-amber-soft p-4 text-sm leading-6 text-amber-foreground lg:max-w-none">
-          该医院模板尚未核验，请以最近一次产检、入院须知或医院通知为准。
-        </div>
-      ) : null}
 
       <div className="mobile-shell grid gap-4 lg:max-w-none">
         <ModeToggle mode={checklistMode} onChange={setChecklistMode} />

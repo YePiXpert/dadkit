@@ -5,6 +5,11 @@ import type {
 } from "@/lib/types";
 
 const PROVIDED_QUESTION_KEYWORDS = ["提供", "产褥垫", "尿不湿", "宝宝衣物"];
+const PROVIDED_ID_BY_QUESTION_ID: Record<string, string> = {
+  "question-provided-postpartum-pads": "postpartum-pads",
+  "question-provided-baby-diapers": "baby-diapers",
+  "question-provided-baby-clothes": "baby-clothes",
+};
 
 const CONFIRMATION_QUESTION_KEYWORDS = [
   "入院入口",
@@ -32,8 +37,15 @@ const CONFIRMATION_STATUS_OPTIONS: HospitalAnswerStatus[] = [
 ];
 
 export function getHospitalAnswerOptions(
-  item: Pick<ChecklistItem, "name">,
+  item: Pick<ChecklistItem, "name"> & {
+    answerType?: "provided_item" | "confirmation";
+    kind?: "question" | "task";
+  },
 ): HospitalAnswerStatus[] {
+  if (item.answerType === "provided_item") {
+    return PROVIDED_STATUS_OPTIONS;
+  }
+
   if (PROVIDED_QUESTION_KEYWORDS.some((keyword) => item.name.includes(keyword))) {
     return PROVIDED_STATUS_OPTIONS;
   }
@@ -49,7 +61,11 @@ export function getHospitalAnswerOptions(
   return CONFIRMATION_STATUS_OPTIONS;
 }
 
-export function getProvidedIdForQuestion(name: string) {
+export function getProvidedIdForQuestion(name: string, itemId?: string) {
+  if (itemId && PROVIDED_ID_BY_QUESTION_ID[itemId]) {
+    return PROVIDED_ID_BY_QUESTION_ID[itemId];
+  }
+
   if (name.includes("产褥垫")) {
     return "postpartum-pads";
   }
@@ -82,4 +98,3 @@ export function mapHospitalAnswerStatusToPackStatus(
 
   return "packed";
 }
-
