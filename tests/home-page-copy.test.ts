@@ -14,10 +14,10 @@ describe("home page copy", () => {
 
   it("uses the focused home actions and low-anxiety metrics", () => {
     expect(homePage).toContain("打开我的清单");
-    expect(homePage).toContain("医院确认");
-    expect(homePage).toContain("爸爸执行版");
-    expect(homePage).toContain("查看示例");
-    expect(homePage).toContain("不影响当前数据");
+    expect(homePage).toContain("今日任务");
+    expect(homePage).toContain("临出门模式");
+    expect(homePage).toContain("今天优先做");
+    expect(homePage).toContain("准备时间线");
     expect(homePage).toContain("核心打包");
     expect(homePage).toContain("医院待问");
     expect(homePage).toContain("临出门");

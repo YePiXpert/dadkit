@@ -11,6 +11,16 @@ import {
   type PackStatus,
   type UserProfile,
 } from "@/lib/types";
+import {
+  TIMELINE_STAGE_TITLES,
+  generateGoModeTasks,
+  generateTimeline,
+  generateTodayTasks,
+  getCurrentTimelineStageId,
+  isTimelineTaskComplete,
+  type TimelineTask,
+  type TimelineTaskStatus,
+} from "@/lib/timeline";
 
 const DAD_EXECUTION_KEYWORDS = [
   "证件",
@@ -233,4 +243,54 @@ export function generatePartnerShareText(
   profile?: UserProfile,
 ) {
   return generateDadExecutionShareText(items, profile);
+}
+
+function lineForTimelineTask(
+  task: TimelineTask,
+  checklist: ChecklistItem[],
+  statuses: TimelineTaskStatus[],
+) {
+  const status = isTimelineTaskComplete(task, checklist, statuses)
+    ? "已完成"
+    : "待处理";
+
+  return `- [${status}] ${task.title}`;
+}
+
+export function generateTimelineShareText(
+  profile: UserProfile,
+  checklist: ChecklistItem[],
+  timelineTaskStatuses: TimelineTaskStatus[] = [],
+) {
+  const timeline = generateTimeline(profile, checklist);
+  const currentStageId = getCurrentTimelineStageId(profile);
+  const currentStage = timeline.find((stage) => stage.id === currentStageId);
+  const todayTasks = generateTodayTasks(
+    profile,
+    checklist,
+    timelineTaskStatuses,
+  ).slice(0, 5);
+  const goTasks = generateGoModeTasks(profile, checklist);
+
+  return [
+    formatProfile(profile, "DadKit 准备时间线"),
+    "\n## 当前阶段",
+    currentStage
+      ? `${currentStage.title}（${currentStage.subtitle}）`
+      : "填写预产期后自动计算",
+    "\n## 今日优先任务",
+    todayTasks.length > 0
+      ? todayTasks
+          .map((task) =>
+            `${lineForTimelineTask(task, checklist, timelineTaskStatuses)} · ${
+              TIMELINE_STAGE_TITLES[task.stageId]
+            }`,
+          )
+          .join("\n")
+      : "- 暂无",
+    "\n## 临出门检查",
+    goTasks
+      .map((task) => lineForTimelineTask(task, checklist, timelineTaskStatuses))
+      .join("\n"),
+  ].join("\n");
 }

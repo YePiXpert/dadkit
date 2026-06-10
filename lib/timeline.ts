@@ -1,0 +1,611 @@
+import { differenceInCalendarDays, parseISO } from "date-fns";
+
+import {
+  inferPreparationKind,
+  isGoCheckItem,
+  isShoppingListItem,
+} from "@/lib/preparation";
+import { normalizeChecklistItem } from "@/lib/rules";
+import type { ChecklistItem, Priority, UserProfile } from "@/lib/types";
+
+export type TimelineStageId =
+  | "six_weeks"
+  | "four_weeks"
+  | "three_weeks"
+  | "one_week"
+  | "go_time";
+
+export type TimelineTask = {
+  id: string;
+  stageId: TimelineStageId;
+  title: string;
+  description?: string;
+  relatedItemIds?: string[];
+  priority: Priority;
+  kind:
+    | "shopping"
+    | "washing"
+    | "packing"
+    | "documents"
+    | "hospital"
+    | "dad_task"
+    | "go";
+};
+
+export type TimelineStage = {
+  id: TimelineStageId;
+  title: string;
+  subtitle: string;
+  targetDaysBeforeDue: number;
+  tasks: TimelineTask[];
+};
+
+export type TimelineTaskStatus = {
+  taskId: string;
+  status: "todo" | "done" | "not_needed";
+  updatedAt: string;
+};
+
+export const TIMELINE_STAGE_TITLES: Record<TimelineStageId, string> = {
+  six_weeks: "先问清楚医院规则",
+  four_weeks: "购买和清洗",
+  three_weeks: "核心打包完成",
+  one_week: "入院动线再确认",
+  go_time: "现在就拿这些",
+};
+
+export const TIMELINE_KIND_LABELS: Record<TimelineTask["kind"], string> = {
+  shopping: "购买",
+  washing: "清洗",
+  packing: "打包",
+  documents: "证件",
+  hospital: "医院",
+  dad_task: "爸爸任务",
+  go: "临出门",
+};
+
+const COMPLETE_ITEM_STATUSES = ["packed", "hospital_provided", "not_needed"];
+
+function normalizeItems(checklist: ChecklistItem[]) {
+  return checklist.map(normalizeChecklistItem);
+}
+
+function task(
+  stageId: TimelineStageId,
+  id: string,
+  title: string,
+  kind: TimelineTask["kind"],
+  priority: Priority,
+  relatedItemIds: string[] = [],
+  description?: string,
+): TimelineTask {
+  return {
+    id,
+    stageId,
+    title,
+    description,
+    relatedItemIds,
+    priority,
+    kind,
+  };
+}
+
+function relatedIds(
+  items: ChecklistItem[],
+  matcher: (item: ChecklistItem) => boolean,
+) {
+  return items.filter(matcher).map((item) => item.id);
+}
+
+function nameIncludes(item: ChecklistItem, ...keywords: string[]) {
+  return keywords.some((keyword) => item.name.includes(keyword));
+}
+
+function itemComplete(item: ChecklistItem) {
+  return COMPLETE_ITEM_STATUSES.includes(item.status);
+}
+
+function activeShoppingItems(items: ChecklistItem[]) {
+  return items.filter(isShoppingListItem);
+}
+
+function activeWashingItems(items: ChecklistItem[]) {
+  return items.filter(
+    (item) => inferPreparationKind(item) === "wash_then_pack" && !itemComplete(item),
+  );
+}
+
+function statusForTask(taskId: string, statuses: TimelineTaskStatus[]) {
+  return statuses.find((candidate) => candidate.taskId === taskId)?.status;
+}
+
+function relatedChecklistItems(task: TimelineTask, checklist: ChecklistItem[]) {
+  const ids = new Set(task.relatedItemIds ?? []);
+
+  return normalizeItems(checklist).filter((item) => ids.has(item.id));
+}
+
+export function getDaysUntilDue(profile: UserProfile) {
+  if (!profile.dueDate) {
+    return undefined;
+  }
+
+  return differenceInCalendarDays(parseISO(profile.dueDate), new Date());
+}
+
+export function getCurrentTimelineStageId(profile: UserProfile) {
+  const daysLeft = getDaysUntilDue(profile);
+
+  if (typeof daysLeft !== "number") {
+    return undefined;
+  }
+
+  if (daysLeft <= 0) {
+    return "go_time";
+  }
+
+  if (daysLeft <= 7) {
+    return "one_week";
+  }
+
+  if (daysLeft <= 21) {
+    return "three_weeks";
+  }
+
+  if (daysLeft <= 28) {
+    return "four_weeks";
+  }
+
+  return "six_weeks";
+}
+
+export function generateGoModeTasks(
+  profile: UserProfile,
+  checklist: ChecklistItem[],
+) {
+  return generateTimeline(profile, checklist).find((stage) => stage.id === "go_time")
+    ?.tasks ?? [];
+}
+
+export function generateTimeline(
+  profile: UserProfile,
+  checklist: ChecklistItem[],
+): TimelineStage[] {
+  void profile;
+
+  const items = normalizeItems(checklist);
+  const shoppingIds = activeShoppingItems(items).map((item) => item.id);
+  const goItems = items.filter(isGoCheckItem);
+  const goIds = (matcher: (item: ChecklistItem) => boolean) =>
+    relatedIds(goItems, matcher);
+
+  return [
+    {
+      id: "six_weeks",
+      title: TIMELINE_STAGE_TITLES.six_weeks,
+      subtitle: "预产期前 6 周",
+      targetDaysBeforeDue: 42,
+      tasks: [
+        task("six_weeks", "timeline-confirm-hospital", "确认生产医院", "hospital", "must"),
+        task(
+          "six_weeks",
+          "timeline-question-pads",
+          "到下次产检问清楚医院是否提供产褥垫",
+          "hospital",
+          "must",
+          relatedIds(
+            items,
+            (item) => item.itemKind === "question" && nameIncludes(item, "产褥垫"),
+          ),
+        ),
+        task(
+          "six_weeks",
+          "timeline-question-diapers",
+          "到下次产检问清楚医院是否提供宝宝尿不湿",
+          "hospital",
+          "must",
+          relatedIds(
+            items,
+            (item) => item.itemKind === "question" && nameIncludes(item, "尿不湿"),
+          ),
+        ),
+        task(
+          "six_weeks",
+          "timeline-question-baby-clothes",
+          "到下次产检问清楚医院是否提供宝宝衣物",
+          "hospital",
+          "must",
+          relatedIds(
+            items,
+            (item) => item.itemKind === "question" && nameIncludes(item, "宝宝衣物"),
+          ),
+        ),
+        task(
+          "six_weeks",
+          "timeline-save-phone",
+          "保存产科/住院处电话",
+          "dad_task",
+          "must",
+          relatedIds(items, (item) => nameIncludes(item, "产科", "住院处")),
+        ),
+        task(
+          "six_weeks",
+          "timeline-entrance-parking",
+          "确认入院入口和停车方案",
+          "dad_task",
+          "must",
+          relatedIds(items, (item) => nameIncludes(item, "入院入口", "停车")),
+        ),
+      ],
+    },
+    {
+      id: "four_weeks",
+      title: TIMELINE_STAGE_TITLES.four_weeks,
+      subtitle: "预产期前 4 周",
+      targetDaysBeforeDue: 28,
+      tasks: [
+        task(
+          "four_weeks",
+          "timeline-shopping",
+          "处理购物清单中的未完成物品",
+          "shopping",
+          "must",
+          shoppingIds,
+          "只关联可能需要购买或补货的未完成物品。",
+        ),
+        task(
+          "four_weeks",
+          "timeline-wash-baby-clothes",
+          "清洗宝宝出院衣物",
+          "washing",
+          "must",
+          relatedIds(
+            items,
+            (item) =>
+              inferPreparationKind(item) === "wash_then_pack" &&
+              nameIncludes(item, "宝宝出院衣物"),
+          ),
+        ),
+        task(
+          "four_weeks",
+          "timeline-wash-blanket",
+          "清洗包被 / 小毯子",
+          "washing",
+          "must",
+          relatedIds(
+            items,
+            (item) =>
+              inferPreparationKind(item) === "wash_then_pack" &&
+              nameIncludes(item, "包被", "小毯子"),
+          ),
+        ),
+        task(
+          "four_weeks",
+          "timeline-wash-mom-clothes",
+          "清洗妈妈出院衣物",
+          "washing",
+          "must",
+          relatedIds(
+            items,
+            (item) =>
+              inferPreparationKind(item) === "wash_then_pack" &&
+              nameIncludes(item, "妈妈出院衣物"),
+          ),
+        ),
+        task(
+          "four_weeks",
+          "timeline-mom-core",
+          "准备妈妈包核心物品",
+          "packing",
+          "must",
+          relatedIds(
+            items,
+            (item) =>
+              item.bag === "mom_bag" &&
+              item.packTier === "core" &&
+              item.itemKind !== "question",
+          ),
+        ),
+      ],
+    },
+    {
+      id: "three_weeks",
+      title: TIMELINE_STAGE_TITLES.three_weeks,
+      subtitle: "预产期前 3 周",
+      targetDaysBeforeDue: 21,
+      tasks: [
+        task(
+          "three_weeks",
+          "timeline-documents-ready",
+          "证件包整理好",
+          "documents",
+          "must",
+          relatedIds(
+            items,
+            (item) => inferPreparationKind(item) === "document",
+          ),
+        ),
+        task(
+          "three_weeks",
+          "timeline-mom-packed",
+          "妈妈包核心物品完成打包",
+          "packing",
+          "must",
+          relatedIds(
+            items,
+            (item) =>
+              item.bag === "mom_bag" &&
+              item.packTier === "core" &&
+              item.itemKind !== "question",
+          ),
+        ),
+        task(
+          "three_weeks",
+          "timeline-baby-packed",
+          "宝宝包核心物品完成打包",
+          "packing",
+          "must",
+          relatedIds(
+            items,
+            (item) =>
+              item.bag === "baby_bag" &&
+              item.packTier === "core" &&
+              item.itemKind !== "question",
+          ),
+        ),
+        task(
+          "three_weeks",
+          "timeline-dad-backpack",
+          "爸爸背包准备好",
+          "packing",
+          "recommended",
+          relatedIds(
+            items,
+            (item) =>
+              item.bag === "dad_backpack" &&
+              item.packTier === "core" &&
+              item.itemKind !== "question",
+          ),
+        ),
+        task(
+          "three_weeks",
+          "timeline-hospital-questions-recorded",
+          "确认医院待问事项是否已经记录",
+          "hospital",
+          "recommended",
+          relatedIds(
+            items,
+            (item) => item.itemKind === "question" || item.category === "hospital_questions",
+          ),
+        ),
+      ],
+    },
+    {
+      id: "one_week",
+      title: TIMELINE_STAGE_TITLES.one_week,
+      subtitle: "预产期前 1 周",
+      targetDaysBeforeDue: 7,
+      tasks: [
+        task(
+          "one_week",
+          "timeline-night-route",
+          "确认夜间入院路线",
+          "dad_task",
+          "must",
+          relatedIds(items, (item) => nameIncludes(item, "夜间入院", "急诊入院")),
+        ),
+        task(
+          "one_week",
+          "timeline-parking",
+          "确认停车方案",
+          "dad_task",
+          "must",
+          relatedIds(items, (item) => nameIncludes(item, "停车")),
+        ),
+        task(
+          "one_week",
+          "timeline-payment-deposit",
+          "确认支付方式和住院押金",
+          "dad_task",
+          "must",
+          relatedIds(items, (item) => nameIncludes(item, "支付", "押金")),
+        ),
+        task(
+          "one_week",
+          "timeline-insurance-payment",
+          "确认医保结算方式",
+          "hospital",
+          "must",
+          relatedIds(
+            items,
+            (item) =>
+              item.itemKind === "question" && nameIncludes(item, "医保结算"),
+          ),
+        ),
+        task(
+          "one_week",
+          "timeline-partner-id",
+          "确认陪产人证件",
+          "dad_task",
+          "must",
+          relatedIds(items, (item) => nameIncludes(item, "陪产人", "身份证件")),
+        ),
+        task(
+          "one_week",
+          "timeline-car-seat-install",
+          "确认安全座椅安装",
+          "dad_task",
+          "must",
+          relatedIds(items, (item) => nameIncludes(item, "安全座椅")),
+        ),
+      ],
+    },
+    {
+      id: "go_time",
+      title: TIMELINE_STAGE_TITLES.go_time,
+      subtitle: "临出门",
+      targetDaysBeforeDue: 0,
+      tasks: [
+        task(
+          "go_time",
+          "timeline-go-documents",
+          "证件包",
+          "go",
+          "must",
+          goIds((item) => nameIncludes(item, "证件包")),
+        ),
+        task(
+          "go_time",
+          "timeline-go-phone",
+          "手机",
+          "go",
+          "must",
+          goIds((item) => item.name === "手机" || nameIncludes(item, "手机")),
+        ),
+        task(
+          "go_time",
+          "timeline-go-charger",
+          "充电器",
+          "go",
+          "must",
+          goIds((item) => nameIncludes(item, "充电器", "充电线")),
+        ),
+        task(
+          "go_time",
+          "timeline-go-glasses",
+          "眼镜 / 隐形眼镜",
+          "go",
+          "must",
+          goIds((item) => nameIncludes(item, "眼镜", "隐形眼镜")),
+        ),
+        task(
+          "go_time",
+          "timeline-go-medicine",
+          "常用药清单 / 医生确认用药",
+          "go",
+          "must",
+          goIds((item) => nameIncludes(item, "常用药", "医生确认用药")),
+        ),
+        task(
+          "go_time",
+          "timeline-go-mom-bag",
+          "妈妈包",
+          "go",
+          "must",
+          goIds((item) => nameIncludes(item, "妈妈包")),
+        ),
+        task(
+          "go_time",
+          "timeline-go-baby-bag",
+          "宝宝包",
+          "go",
+          "must",
+          goIds((item) => nameIncludes(item, "宝宝包")),
+        ),
+        task(
+          "go_time",
+          "timeline-go-car-seat",
+          "安全座椅确认",
+          "go",
+          "must",
+          goIds((item) => nameIncludes(item, "安全座椅")),
+        ),
+        task(
+          "go_time",
+          "timeline-go-home-check",
+          "关门窗水电燃气",
+          "go",
+          "must",
+          goIds((item) => nameIncludes(item, "关门窗水电燃气")),
+        ),
+      ],
+    },
+  ];
+}
+
+export function isTimelineTaskComplete(
+  task: TimelineTask,
+  checklist: ChecklistItem[],
+  statuses: TimelineTaskStatus[] = [],
+) {
+  const explicitStatus = statusForTask(task.id, statuses);
+
+  if (explicitStatus === "done" || explicitStatus === "not_needed") {
+    return true;
+  }
+
+  if (explicitStatus === "todo") {
+    return false;
+  }
+
+  const items = normalizeItems(checklist);
+
+  if (task.kind === "shopping") {
+    return activeShoppingItems(items).length === 0;
+  }
+
+  if (task.kind === "washing" && !task.relatedItemIds?.length) {
+    return activeWashingItems(items).length === 0;
+  }
+
+  const relatedItems = relatedChecklistItems(task, items);
+
+  if (task.kind === "documents" && relatedItems.length === 0) {
+    return items
+      .filter((item) => inferPreparationKind(item) === "document")
+      .every(itemComplete);
+  }
+
+  if (relatedItems.length === 0) {
+    return false;
+  }
+
+  return relatedItems.every(itemComplete);
+}
+
+export function generateTodayTasks(
+  profile: UserProfile,
+  checklist: ChecklistItem[],
+  statuses: TimelineTaskStatus[] = [],
+): TimelineTask[] {
+  const currentStageId = getCurrentTimelineStageId(profile);
+
+  if (!currentStageId) {
+    return [];
+  }
+
+  const timeline = generateTimeline(profile, checklist);
+  const currentStageIndex = timeline.findIndex((stage) => stage.id === currentStageId);
+  const stagesToScan =
+    currentStageIndex >= 0 ? timeline.slice(currentStageIndex) : timeline;
+  const pendingCurrentStageTasks =
+    stagesToScan[0]?.tasks.filter(
+      (candidate) => !isTimelineTaskComplete(candidate, checklist, statuses),
+    ) ?? [];
+
+  if (pendingCurrentStageTasks.length > 0) {
+    return pendingCurrentStageTasks;
+  }
+
+  return stagesToScan
+    .slice(1)
+    .flatMap((stage) => stage.tasks)
+    .filter((candidate) => !isTimelineTaskComplete(candidate, checklist, statuses));
+}
+
+export function calculateTimelineStageStatus(
+  stage: TimelineStage,
+  checklist: ChecklistItem[],
+  statuses: TimelineTaskStatus[] = [],
+) {
+  const total = stage.tasks.length;
+  const completed = stage.tasks.filter((taskItem) =>
+    isTimelineTaskComplete(taskItem, checklist, statuses),
+  ).length;
+
+  return {
+    total,
+    completed,
+    percent: total === 0 ? 0 : Math.round((completed / total) * 100),
+  };
+}

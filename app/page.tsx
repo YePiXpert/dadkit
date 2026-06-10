@@ -1,69 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import { differenceInCalendarDays, parseISO } from "date-fns";
 import {
   ArrowRight,
   CalendarClock,
+  CheckCircle2,
   ClipboardList,
   Hospital,
-  Share2,
   type LucideIcon,
 } from "lucide-react";
 
 import { ActionCard } from "@/components/ActionCard";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { buildHomeSummary } from "@/lib/presentation/home-summary";
 import { useDadKitStore } from "@/lib/store";
+import {
+  TIMELINE_STAGE_TITLES,
+  generateTodayTasks,
+  getDaysUntilDue,
+  type TimelineTask,
+} from "@/lib/timeline";
 
 function dueAdvice(daysLeft: number) {
   if (daysLeft > 35) {
-    return "可以先确认医院规则，逐步准备核心物品。";
+    return "先问清楚医院规则，确认哪些物品需要自己带。";
   }
 
   if (daysLeft > 21) {
-    return "建议开始打包核心物品。";
+    return "开始处理购买、清洗和核心打包。";
   }
 
-  return "建议把证件包、妈妈包、宝宝包和临出门物品放到固定位置。";
+  if (daysLeft > 7) {
+    return "把证件包、妈妈包、宝宝包和爸爸背包收口。";
+  }
+
+  return "重点确认入院动线和临出门要拿的物品。";
 }
 
 export default function HomePage() {
   const profile = useDadKitStore((state) => state.profile);
   const checklist = useDadKitStore((state) => state.checklist);
   const hospitalAnswers = useDadKitStore((state) => state.hospitalAnswers);
+  const timelineTaskStatuses = useDadKitStore(
+    (state) => state.timelineTaskStatuses,
+  );
+  const updateTimelineTaskStatus = useDadKitStore(
+    (state) => state.updateTimelineTaskStatus,
+  );
   const summary = buildHomeSummary(checklist, hospitalAnswers);
-  const daysLeft = profile?.dueDate
-    ? differenceInCalendarDays(parseISO(profile.dueDate), new Date())
-    : undefined;
+  const daysLeft = profile ? getDaysUntilDue(profile) : undefined;
+  const todayTasks = profile
+    ? generateTodayTasks(profile, checklist, timelineTaskStatuses).slice(0, 3)
+    : [];
 
   return (
     <div className="page-shell">
       <section className="mobile-shell grid gap-4 lg:max-w-none lg:grid-cols-[1fr_0.95fr] lg:items-start">
         <div className="rounded-[1.35rem] bg-card p-5 shadow-soft">
-          <div className="mb-3">
-            <div>
-              <p className="text-sm font-medium text-primary">准爸爸任务控制台</p>
-              <h1 className="mt-1 text-4xl font-semibold leading-tight tracking-normal sm:text-5xl">
-                DadKit
-              </h1>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                先准备少数关键物品，再确认医院差异；不按电商大礼包打包。
-              </p>
-            </div>
-          </div>
-
-          <div className="mb-3 flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
-            <span className="rounded-full bg-secondary/70 px-3 py-1 text-primary">
-              本地优先
-            </span>
-            <span className="rounded-full bg-secondary/70 px-3 py-1 text-primary">
-              医院待确认
-            </span>
-            <span className="rounded-full bg-secondary/70 px-3 py-1 text-primary">
-              爸爸任务流
-            </span>
+          <div>
+            <p className="text-sm font-medium text-primary">准爸爸任务控制台</p>
+            <h1 className="mt-1 text-4xl font-semibold leading-tight tracking-normal sm:text-5xl">
+              DadKit
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              从医院确认、购买清洗、核心打包到临出门检查，按预产期一步步收口。
+            </p>
           </div>
 
           <div className="mt-5 rounded-[1.35rem] bg-primary p-5 text-primary-foreground shadow-soft">
@@ -82,80 +85,75 @@ export default function HomePage() {
                 <p className="mt-2 text-sm leading-6 text-primary-foreground/80">
                   {typeof daysLeft === "number"
                     ? dueAdvice(daysLeft)
-                    : "先填写基础信息，之后都能修改。"}
+                    : "填写预产期后，DadKit 会自动生成准备时间线。"}
                 </p>
               </div>
               <Link
                 className="hidden rounded-2xl bg-card px-5 py-8 text-sm font-semibold text-primary sm:block"
-                href="/checklist"
+                href={profile ? "/timeline" : "/setup"}
               >
-                核心打包
+                时间线
               </Link>
             </div>
           </div>
 
-          <Link
-            className="mt-4 flex w-full items-center justify-between rounded-lg bg-primary px-4 py-3 text-base font-semibold text-primary-foreground shadow-soft"
-            href={profile ? "/checklist" : "/setup"}
-          >
-            <span>{profile ? "打开我的清单" : "开始创建清单"}</span>
-            <ArrowRight className="size-5" />
-          </Link>
-
-          <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
-            <SecondaryHomeLink href="/hospital" label="医院确认" />
-            <SecondaryHomeLink href="/share" label="爸爸执行版" />
-            <SecondaryHomeLink
-              description="不影响当前数据"
-              href="/checklist"
-              label="查看示例"
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <PrimaryHomeLink
+              href={profile ? "/checklist" : "/setup"}
+              label="打开我的清单"
             />
+            <PrimaryHomeLink href="/timeline" label="今日任务" />
+            <PrimaryHomeLink href="/go" label="临出门模式" />
           </div>
         </div>
 
-        <div className="grid gap-3">
-          <PackingProgressCard
-            icon={ClipboardList}
-            label="核心打包"
-            percent={summary.corePacking.percent}
-            tone="primary"
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <PackingProgressCard
-              icon={Hospital}
-              label="医院待问"
-              percent={summary.hospitalQuestions.percent}
-              tone="amber"
-            />
-            <PackingProgressCard
-              icon={CalendarClock}
-              label="临出门"
-              percent={summary.lastMinute.percent}
-              tone="coral"
-            />
-          </div>
-        </div>
+        <TodayTasksCard
+          onDone={(taskId) => updateTimelineTaskStatus(taskId, "done")}
+          profileReady={Boolean(profile?.dueDate)}
+          tasks={todayTasks}
+        />
+      </section>
+
+      <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-3">
+        <PackingProgressCard
+          icon={ClipboardList}
+          label="核心打包"
+          percent={summary.corePacking.percent}
+          tone="primary"
+        />
+        <PackingProgressCard
+          icon={Hospital}
+          label="医院待问"
+          percent={summary.hospitalQuestions.percent}
+          tone="amber"
+        />
+        <PackingProgressCard
+          icon={CalendarClock}
+          label="临出门"
+          percent={summary.lastMinute.percent}
+          tone="coral"
+        />
       </section>
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-3">
         <ActionCard
-          description="陪产、入口、押金、提供物品，留到产检时问清楚。"
-          href="/hospital"
-          icon={Hospital}
-          title="到下次产检问清楚"
+          description="按预产期看当前阶段、今日任务和每个阶段完成率。"
+          href="/timeline"
+          icon={CalendarClock}
+          title="准备时间线"
           tone="amber"
         />
         <ActionCard
-          description="只看核心物品，按证件包、妈妈包、宝宝包处理。"
+          description="只看核心清单、购物清单和证件包检查。"
           href="/checklist"
           icon={ClipboardList}
-          title="打开精简清单"
+          title="打开清单"
         />
         <ActionCard
-          description="生成要拿、要问、要确认的执行清单。"
-          href="/share"
-          icon={Share2}
-          title="生成爸爸执行版"
+          description="临产时打开，只保留现在出发前要拿、要确认的事项。"
+          href="/go"
+          icon={CheckCircle2}
+          title="临出门模式"
           tone="coral"
         />
       </section>
@@ -167,25 +165,75 @@ export default function HomePage() {
   );
 }
 
-function SecondaryHomeLink({
-  description,
-  href,
-  label,
-}: {
-  description?: string;
-  href: string;
-  label: string;
-}) {
+function PrimaryHomeLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
-      className="flex min-h-12 flex-col items-center justify-center rounded-lg border border-border bg-background px-2 text-center font-medium text-muted-foreground"
+      className="flex min-h-12 items-center justify-between rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-soft"
       href={href}
     >
       <span>{label}</span>
-      {description ? (
-        <span className="text-[0.68rem] font-normal leading-4">{description}</span>
-      ) : null}
+      <ArrowRight className="size-4" />
     </Link>
+  );
+}
+
+function TodayTasksCard({
+  onDone,
+  profileReady,
+  tasks,
+}: {
+  onDone: (taskId: string) => void;
+  profileReady: boolean;
+  tasks: TimelineTask[];
+}) {
+  return (
+    <Card>
+      <CardContent className="grid gap-3 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm text-muted-foreground">今天优先做</p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-normal">
+              {profileReady ? "收口 3 件事" : "等待预产期"}
+            </h2>
+          </div>
+          <Button asChild variant="outline">
+            <Link href={profileReady ? "/timeline" : "/setup"}>
+              {profileReady ? "全部" : "填写"}
+            </Link>
+          </Button>
+        </div>
+
+        {!profileReady ? (
+          <p className="rounded-lg bg-secondary px-3 py-3 text-sm leading-6 text-primary">
+            填写预产期后，DadKit 会自动生成准备时间线。
+          </p>
+        ) : tasks.length === 0 ? (
+          <p className="rounded-lg bg-secondary px-3 py-3 text-sm leading-6 text-primary">
+            当前阶段没有待处理任务。
+          </p>
+        ) : (
+          <div className="grid gap-2">
+            {tasks.map((task) => (
+              <div
+                className="grid gap-2 rounded-lg border border-border bg-background p-3"
+                key={task.id}
+              >
+                <div>
+                  <p className="font-medium">{task.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {TIMELINE_STAGE_TITLES[task.stageId]}
+                  </p>
+                </div>
+                <Button onClick={() => onDone(task.id)} size="sm" variant="outline">
+                  <CheckCircle2 className="size-4" />
+                  完成
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

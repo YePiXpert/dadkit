@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Home, Hospital, Settings, Share2 } from "lucide-react";
+import { CalendarClock, ClipboardList, Home, Hospital, Settings } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -10,7 +10,7 @@ const navItems = [
   { href: "/", label: "首页", icon: Home },
   { href: "/checklist", label: "清单", icon: ClipboardList },
   { href: "/hospital", label: "医院", icon: Hospital },
-  { href: "/share", label: "爸爸", icon: Share2 },
+  { href: "/timeline", label: "时间线", icon: CalendarClock },
   { href: "/settings", label: "设置", icon: Settings },
 ];
 

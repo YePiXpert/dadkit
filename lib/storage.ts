@@ -5,6 +5,7 @@ import type {
   UserHospitalOverride,
   UserProfile,
 } from "@/lib/types";
+import type { TimelineTaskStatus } from "@/lib/timeline";
 import {
   DEFAULT_WEBDAV_CONFIG,
   type WebDavConfig,
@@ -18,6 +19,7 @@ export const STORAGE_KEYS = {
   hiddenTemplateItems: "dadkit:hidden-template-items",
   hospitalOverrides: "dadkit:hospital-overrides",
   hospitalAnswers: "dadkit:hospital-answers",
+  timelineTaskStatuses: "dadkit:timeline-task-statuses",
   checklistMode: "dadkit:checklist-mode",
   snapshots: "dadkit:snapshots",
   webDavConfig: "dadkit:webdav-config",
@@ -34,6 +36,7 @@ const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.hiddenTemplateItems,
   STORAGE_KEYS.hospitalOverrides,
   STORAGE_KEYS.hospitalAnswers,
+  STORAGE_KEYS.timelineTaskStatuses,
   STORAGE_KEYS.checklistMode,
   STORAGE_KEYS.webDavConfig,
   STORAGE_KEYS.webDavSyncState,
@@ -50,6 +53,7 @@ export type DadKitExportData = {
   hiddenTemplateItemIds: string[];
   hospitalOverrides: UserHospitalOverride[];
   hospitalAnswers: HospitalAnswer[];
+  timelineTaskStatuses: TimelineTaskStatus[];
 };
 
 export type ImportResult = {
@@ -167,6 +171,38 @@ export function loadHospitalAnswers() {
 
 export function saveHospitalAnswers(answers: HospitalAnswer[]) {
   writeJson(STORAGE_KEYS.hospitalAnswers, answers);
+}
+
+export function loadTimelineTaskStatuses() {
+  const statuses = readJson<TimelineTaskStatus[]>(
+    STORAGE_KEYS.timelineTaskStatuses,
+    [],
+  );
+
+  return Array.isArray(statuses) ? statuses : [];
+}
+
+export function saveTimelineTaskStatuses(statuses: TimelineTaskStatus[]) {
+  writeJson(STORAGE_KEYS.timelineTaskStatuses, statuses);
+}
+
+export function updateTimelineTaskStatus(
+  taskId: string,
+  status: TimelineTaskStatus["status"],
+) {
+  const nextStatus: TimelineTaskStatus = {
+    taskId,
+    status,
+    updatedAt: new Date().toISOString(),
+  };
+  const statuses = [
+    ...loadTimelineTaskStatuses().filter((candidate) => candidate.taskId !== taskId),
+    nextStatus,
+  ];
+
+  saveTimelineTaskStatuses(statuses);
+
+  return statuses;
 }
 
 export function loadChecklistMode(): ChecklistMode {
@@ -324,6 +360,7 @@ export function exportData(): DadKitExportData {
     hiddenTemplateItemIds: loadHiddenTemplateItemIds(),
     hospitalOverrides: loadHospitalOverrides(),
     hospitalAnswers: loadHospitalAnswers(),
+    timelineTaskStatuses: loadTimelineTaskStatuses(),
   };
 }
 
@@ -365,7 +402,8 @@ export function validateImportData(rawJson: string): ImportValidationResult {
     | "customItems"
     | "hiddenTemplateItemIds"
     | "hospitalOverrides"
-    | "hospitalAnswers",
+    | "hospitalAnswers"
+    | "timelineTaskStatuses",
     string,
   ]> = [
     ["checklist", "checklist 必须是数组"],
@@ -373,6 +411,7 @@ export function validateImportData(rawJson: string): ImportValidationResult {
     ["hiddenTemplateItemIds", "hiddenTemplateItemIds 必须是数组"],
     ["hospitalOverrides", "hospitalOverrides 必须是数组"],
     ["hospitalAnswers", "hospitalAnswers 必须是数组"],
+    ["timelineTaskStatuses", "timelineTaskStatuses 必须是数组"],
   ];
 
   for (const [field, message] of arrayFields) {
@@ -423,6 +462,10 @@ export function applyImportData(
     saveHospitalAnswers(data.hospitalAnswers);
   }
 
+  if (Array.isArray(data.timelineTaskStatuses)) {
+    saveTimelineTaskStatuses(data.timelineTaskStatuses);
+  }
+
   if (data.checklistMode === "lean" || data.checklistMode === "full") {
     saveChecklistMode(data.checklistMode);
   }
@@ -445,7 +488,8 @@ function hasSnapshotData(data: DadKitExportData) {
       data.customItems.length > 0 ||
       data.hiddenTemplateItemIds.length > 0 ||
       data.hospitalOverrides.length > 0 ||
-      data.hospitalAnswers.length > 0,
+      data.hospitalAnswers.length > 0 ||
+      data.timelineTaskStatuses.length > 0,
   );
 }
 

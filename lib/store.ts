@@ -18,6 +18,7 @@ import {
   loadHiddenTemplateItemIds,
   loadHospitalAnswers,
   loadHospitalOverrides,
+  loadTimelineTaskStatuses,
   loadUserProfile,
   resetAllData,
   saveChecklist,
@@ -27,10 +28,12 @@ import {
   saveHospitalAnswers,
   saveHospitalOverrides,
   saveUserProfile,
+  updateTimelineTaskStatus as updateStoredTimelineTaskStatus,
   validateImportData,
   type DadKitExportData,
   type ImportResult,
 } from "@/lib/storage";
+import type { TimelineTaskStatus } from "@/lib/timeline";
 import type {
   ChecklistCategory,
   ChecklistMode,
@@ -60,6 +63,7 @@ type DadKitState = {
   hiddenTemplateItemIds: string[];
   hospitalOverrides: UserHospitalOverride[];
   hospitalAnswers: HospitalAnswer[];
+  timelineTaskStatuses: TimelineTaskStatus[];
   filters: FilterState;
   hydrate: () => void;
   createProfile: (input?: CreateProfileInput) => UserProfile;
@@ -79,6 +83,10 @@ type DadKitState = {
   updateHospitalOverride: (override: UserHospitalOverride) => void;
   updateHospitalAnswer: (answer: HospitalAnswer) => void;
   clearHospitalAnswer: (itemId: string) => void;
+  updateTimelineTaskStatus: (
+    taskId: string,
+    status: TimelineTaskStatus["status"],
+  ) => void;
   exportJson: () => string;
   importJson: (json: string) => ImportResult;
   clearAll: () => void;
@@ -213,6 +221,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   hiddenTemplateItemIds: [],
   hospitalOverrides: [],
   hospitalAnswers: [],
+  timelineTaskStatuses: [],
   filters: {
     category: "all",
     status: "all",
@@ -225,6 +234,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     const hiddenTemplateItemIds = loadHiddenTemplateItemIds();
     const hospitalOverrides = loadHospitalOverrides();
     const hospitalAnswers = loadHospitalAnswers();
+    const timelineTaskStatuses = loadTimelineTaskStatuses();
     const checklistMode = loadChecklistMode();
     const hydratedChecklist = profile
       ? generateChecklist(profile, {
@@ -244,6 +254,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       hiddenTemplateItemIds,
       hospitalOverrides,
       hospitalAnswers,
+      timelineTaskStatuses,
     });
 
     if (profile) {
@@ -529,6 +540,11 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     saveHospitalAnswers(hospitalAnswers);
     saveChecklist(checklist);
   },
+  updateTimelineTaskStatus: (taskId, status) => {
+    const timelineTaskStatuses = updateStoredTimelineTaskStatus(taskId, status);
+
+    set({ timelineTaskStatuses });
+  },
   exportJson: () => JSON.stringify(exportData(), null, 2),
   importJson: (json) => {
     const validation = validateImportData(json);
@@ -558,6 +574,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       hiddenTemplateItemIds: [],
       hospitalOverrides: [],
       hospitalAnswers: [],
+      timelineTaskStatuses: [],
       checklistMode: "lean",
       filters: {
         category: "all",

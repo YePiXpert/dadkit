@@ -1,7 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, Copy, RotateCcw, SlidersHorizontal } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarClock,
+  CheckCircle2,
+  Copy,
+  RotateCcw,
+  SlidersHorizontal,
+} from "lucide-react";
 
 import { AddItemDialog } from "@/components/AddItemDialog";
 import { ChecklistCategoryCard } from "@/components/ChecklistCategoryCard";
@@ -246,6 +254,18 @@ export default function ChecklistPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <AddItemDialog />
+                <Button asChild variant="outline">
+                  <Link href="/timeline">
+                    <CalendarClock className="size-4" />
+                    准备时间线
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/go">
+                    <CheckCircle2 className="size-4" />
+                    临出门模式
+                  </Link>
+                </Button>
                 <Button variant="outline" onClick={regenerateChecklist}>
                   <RotateCcw className="size-4" />
                   重新生成

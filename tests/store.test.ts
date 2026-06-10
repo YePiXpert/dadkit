@@ -91,6 +91,7 @@ function resetStoreState() {
     hiddenTemplateItemIds: [],
     hospitalOverrides: [],
     hospitalAnswers: [],
+    timelineTaskStatuses: [],
     filters: {
       category: "all",
       status: "all",

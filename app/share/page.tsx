@@ -11,12 +11,16 @@ import {
   generateDadExecutionShareText,
   generateLeanShareText,
   generateShareText,
+  generateTimelineShareText,
 } from "@/lib/export";
 import { useDadKitStore } from "@/lib/store";
 
 export default function SharePage() {
   const profile = useDadKitStore((state) => state.profile);
   const checklist = useDadKitStore((state) => state.checklist);
+  const timelineTaskStatuses = useDadKitStore(
+    (state) => state.timelineTaskStatuses,
+  );
   const exportJson = useDadKitStore((state) => state.exportJson);
 
   if (!profile) {
@@ -35,6 +39,11 @@ export default function SharePage() {
   const leanText = generateLeanShareText(checklist, profile);
   const fullText = generateShareText(checklist, profile, "DadKit 完整待产准备清单");
   const dadText = generateDadExecutionShareText(checklist, profile);
+  const timelineText = generateTimelineShareText(
+    profile,
+    checklist,
+    timelineTaskStatuses,
+  );
   const jsonText = exportJson();
 
   function downloadJson() {
@@ -80,8 +89,9 @@ export default function SharePage() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="dad">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-5">
               <TabsTrigger value="dad">爸爸执行版</TabsTrigger>
+              <TabsTrigger value="timeline">时间线</TabsTrigger>
               <TabsTrigger value="lean">精简版</TabsTrigger>
               <TabsTrigger value="full">完整版</TabsTrigger>
               <TabsTrigger value="json">JSON 备份</TabsTrigger>
@@ -97,6 +107,9 @@ export default function SharePage() {
                 爸爸执行版只保留要拿、要问、要确认的事，适合直接复制给家人。
               </div>
               <ExportTextArea value={dadText} />
+            </TabsContent>
+            <TabsContent value="timeline">
+              <ExportTextArea value={timelineText} />
             </TabsContent>
             <TabsContent value="json">
               <ExportTextArea value={jsonText} />
