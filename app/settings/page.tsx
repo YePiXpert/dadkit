@@ -99,7 +99,7 @@ export default function SettingsPage() {
   const [uploadConflict, setUploadConflict] = useState(false);
   const [releaseInfo, setReleaseInfo] = useState<ReleaseInfo>({
     ok: true,
-    version: "1.0.0",
+    version: "1.1.0",
     buildTime: "unknown",
   });
   const hasLocalData =

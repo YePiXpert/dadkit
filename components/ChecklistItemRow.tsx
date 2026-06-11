@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { memo } from "react";
 import { CheckCircle2, Hospital, RotateCcw, Trash2 } from "lucide-react";
 
 import { EditItemDialog } from "@/components/EditItemDialog";
@@ -24,7 +25,6 @@ import {
 } from "@/lib/preparation";
 import {
   BAG_LABELS,
-  ITEM_KIND_LABELS,
   TIMING_LABELS,
   type ChecklistItem,
   type PackStatus,
@@ -35,7 +35,9 @@ type ChecklistItemRowProps = {
   item: ChecklistItem;
 };
 
-export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
+export const ChecklistItemRow = memo(function ChecklistItemRow({
+  item,
+}: ChecklistItemRowProps) {
   const updateItem = useDadKitStore((state) => state.updateItem);
   const cycleItemStatus = useDadKitStore((state) => state.cycleItemStatus);
   const removeItem = useDadKitStore((state) => state.removeItem);
@@ -63,7 +65,7 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
   return (
     <div
       className={cn(
-        "grid grid-cols-[auto_1fr] gap-2 rounded-xl border border-border p-3 shadow-sm sm:grid-cols-[auto_1fr_auto] sm:items-center",
+        "grid grid-cols-[auto_1fr] gap-3 rounded-lg border border-border p-3 shadow-sm sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center",
         rowTone,
       )}
     >
@@ -92,7 +94,6 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-muted-foreground">
           {item.quantity ? <span>数量：{item.quantity}</span> : null}
-          <span>类型：{ITEM_KIND_LABELS[itemKind]}</span>
           <span>动作：{PREPARATION_KIND_LABELS[preparationKind]}</span>
           {item.bag && item.bag !== "none" ? (
             <span>放置：{BAG_LABELS[item.bag]}</span>
@@ -155,7 +156,9 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
       </div>
     </div>
   );
-}
+});
+
+ChecklistItemRow.displayName = "ChecklistItemRow";
 
 function getQuickActionLabel(item: ChecklistItem) {
   const options = getQuickStatusOptionsForItem(item);

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowRight,
   CalendarClock,
@@ -20,7 +20,6 @@ import { EmptyState } from "@/components/EmptyState";
 import { ModeToggle } from "@/components/ModeToggle";
 import { ProgressSummary } from "@/components/ProgressSummary";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -122,6 +121,44 @@ export default function ChecklistPage() {
   const setChecklistMode = useDadKitStore((state) => state.setChecklistMode);
   const regenerateChecklist = useDadKitStore((state) => state.regenerateChecklist);
   const resetChecklist = useDadKitStore((state) => state.resetChecklist);
+  const modeItems = useMemo(
+    () => filterItemsForChecklistMode(checklist, checklistMode),
+    [checklist, checklistMode],
+  );
+  const groupedModeItems = useMemo(
+    () => filterItemsByVisualGroup(modeItems, visualGroup),
+    [modeItems, visualGroup],
+  );
+  const filteredItems = useMemo(
+    () =>
+      groupedModeItems.filter((item) => {
+        if (filters.category !== "all" && item.category !== filters.category) {
+          return false;
+        }
+
+        if (filters.status !== "all" && item.status !== filters.status) {
+          return false;
+        }
+
+        if (filters.priority !== "all" && item.priority !== filters.priority) {
+          return false;
+        }
+
+        return true;
+      }),
+    [filters.category, filters.priority, filters.status, groupedModeItems],
+  );
+  const viewCopy = VIEW_COPY[visualGroup];
+  const renderedGroups = useMemo(
+    () =>
+      visualGroup === "shopping"
+        ? groupItemsForShopping(filteredItems)
+        : groupItemsForChecklist(filteredItems),
+    [filteredItems, visualGroup],
+  );
+  const completion = useMemo(() => calculateCompletion(filteredItems), [filteredItems]);
+  const remaining = Math.max(0, completion.total - completion.completed);
+  const emptyCopy = getEmptyStateCopy(visualGroup);
 
   if (!profile) {
     return (
@@ -135,29 +172,6 @@ export default function ChecklistPage() {
       </div>
     );
   }
-
-  const modeItems = filterItemsForChecklistMode(checklist, checklistMode);
-  const groupedModeItems = filterItemsByVisualGroup(modeItems, visualGroup);
-  const filteredItems = groupedModeItems.filter((item) => {
-    if (filters.category !== "all" && item.category !== filters.category) {
-      return false;
-    }
-
-    if (filters.status !== "all" && item.status !== filters.status) {
-      return false;
-    }
-
-    if (filters.priority !== "all" && item.priority !== filters.priority) {
-      return false;
-    }
-
-    return true;
-  });
-  const viewCopy = VIEW_COPY[visualGroup];
-  const renderedGroups =
-    visualGroup === "shopping"
-      ? groupItemsForShopping(filteredItems)
-      : groupItemsForChecklist(filteredItems);
 
   function copyShoppingList() {
     const text = groupItemsForShopping(filteredItems)
@@ -174,22 +188,30 @@ export default function ChecklistPage() {
 
   return (
     <div className="page-shell">
-      <div className="mobile-shell grid gap-2 lg:max-w-none">
-        <h1 className="text-3xl font-semibold tracking-normal">{viewCopy.title}</h1>
-        <p className="text-sm leading-6 text-muted-foreground">
-          {viewCopy.description}
-        </p>
+      <div className="mobile-shell grid gap-3 lg:max-w-none">
+        <div>
+          <p className="text-sm font-medium text-primary">清单工作台</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-normal">
+            {viewCopy.title}
+          </h1>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            {viewCopy.description}
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <MetricTile label="当前视图" value={`${filteredItems.length} 项`} />
+          <MetricTile label="已完成" value={`${completion.completed} 项`} />
+          <MetricTile label="待处理" value={`${remaining} 项`} />
+        </div>
       </div>
 
-      <div className="mobile-shell grid gap-4 lg:max-w-none">
-        <ModeToggle mode={checklistMode} onChange={setChecklistMode} />
-        <ChecklistModeNotice />
-        <ProgressSummary items={modeItems} />
-        <ChecklistGroupTabs value={visualGroup} onChange={setVisualGroup} />
-      </div>
-
-      <Card>
-        <CardContent className="grid gap-2 p-3">
+      <div className="sticky top-0 z-30 -mx-4 grid gap-3 border-y border-border bg-background/95 px-4 py-3 backdrop-blur sm:top-16 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <div className="mobile-shell grid gap-3 lg:max-w-none">
+          <div className="grid gap-3 lg:grid-cols-[auto_1fr] lg:items-center">
+            <ModeToggle mode={checklistMode} onChange={setChecklistMode} />
+            <ProgressSummary items={modeItems} />
+          </div>
+          <ChecklistGroupTabs value={visualGroup} onChange={setVisualGroup} />
           <details>
             <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium">
               <SlidersHorizontal className="size-4 text-primary" />
@@ -285,13 +307,14 @@ export default function ChecklistPage() {
               ) : null}
             </div>
           </details>
-        </CardContent>
-      </Card>
+          <ChecklistModeNotice />
+        </div>
+      </div>
 
       {filteredItems.length === 0 ? (
         <EmptyState
-          title="没有符合筛选的物品"
-          description="可以调整分类、状态或优先级筛选，也可以新增自定义项目。"
+          title={emptyCopy.title}
+          description={emptyCopy.description}
         />
       ) : visualGroup === "all" ? (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -317,6 +340,43 @@ export default function ChecklistPage() {
       <DisclaimerBox />
     </div>
   );
+}
+
+function MetricTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 text-lg font-semibold tracking-normal">{value}</p>
+    </div>
+  );
+}
+
+function getEmptyStateCopy(visualGroup: ChecklistVisualGroup) {
+  if (visualGroup === "shopping") {
+    return {
+      title: "当前没有待购买物品",
+      description: "购物清单只显示可能需要购买或补货、且尚未完成的物品。",
+    };
+  }
+
+  if (visualGroup === "questions") {
+    return {
+      title: "暂时没有待问事项",
+      description: "医院确认问题处理完后，这里会保持清爽。",
+    };
+  }
+
+  if (visualGroup === "go" || visualGroup === "last_minute") {
+    return {
+      title: "临出门事项已收口",
+      description: "可以回到全部清单查看其他准备项目。",
+    };
+  }
+
+  return {
+    title: "没有符合筛选的物品",
+    description: "可以调整分类、状态或优先级筛选，也可以新增自定义项目。",
+  };
 }
 
 function ChecklistGroupSummaryCard({

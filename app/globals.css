@@ -4,32 +4,32 @@
 
 @layer base {
   :root {
-    --background: 38 53% 94%;
+    --background: 210 24% 97%;
     --foreground: 176 16% 16%;
-    --card: 45 100% 98%;
+    --card: 0 0% 100%;
     --card-foreground: 176 16% 16%;
-    --popover: 45 100% 98%;
+    --popover: 0 0% 100%;
     --popover-foreground: 176 16% 16%;
     --primary: 176 46% 29%;
-    --primary-foreground: 45 100% 98%;
-    --secondary: 169 32% 90%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 174 45% 93%;
     --secondary-foreground: 176 46% 26%;
-    --muted: 37 29% 88%;
+    --muted: 214 20% 92%;
     --muted-foreground: 170 5% 45%;
-    --accent: 45 100% 89%;
-    --accent-foreground: 39 54% 28%;
+    --accent: 348 78% 94%;
+    --accent-foreground: 344 48% 34%;
     --amber: 41 86% 70%;
-    --amber-soft: 45 100% 89%;
+    --amber-soft: 42 93% 93%;
     --amber-foreground: 39 54% 28%;
     --coral: 14 73% 68%;
     --coral-soft: 16 82% 93%;
     --coral-foreground: 11 42% 32%;
     --destructive: 3 62% 45%;
-    --destructive-foreground: 45 100% 98%;
-    --border: 35 28% 84%;
-    --input: 35 26% 82%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 20% 88%;
+    --input: 214 18% 84%;
     --ring: 176 46% 31%;
-    --radius: 1rem;
+    --radius: 0.5rem;
   }
 
   * {
@@ -61,7 +61,7 @@
 
 @layer components {
   .page-shell {
-    @apply mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pb-24 pt-4 sm:gap-5 sm:px-6 lg:px-8;
+    @apply mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 pb-24 pt-4 sm:gap-5 sm:px-6 lg:px-8;
     padding-bottom: calc(6rem + env(safe-area-inset-bottom));
   }
 

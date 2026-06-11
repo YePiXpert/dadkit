@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import {
   ArrowRight,
   CalendarClock,
@@ -14,8 +15,18 @@ import { ActionCard } from "@/components/ActionCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import {
+  buildArchiveCards,
+  getCountdownLabel,
+  getPregnancyProgress,
+} from "@/lib/presentation/home-dashboard";
 import { buildHomeSummary } from "@/lib/presentation/home-summary";
+import { getHospitalForProfile } from "@/lib/rules";
 import { useDadKitStore } from "@/lib/store";
+import {
+  DELIVERY_MODE_LABELS,
+  type UserProfile,
+} from "@/lib/types";
 import {
   TIMELINE_STAGE_TITLES,
   generateTodayTasks,
@@ -50,73 +61,61 @@ export default function HomePage() {
   const updateTimelineTaskStatus = useDadKitStore(
     (state) => state.updateTimelineTaskStatus,
   );
-  const summary = buildHomeSummary(checklist, hospitalAnswers);
-  const daysLeft = profile ? getDaysUntilDue(profile) : undefined;
-  const currentStageId = profile ? getCurrentTimelineStageId(profile) : undefined;
-  const todayTasks = profile
-    ? generateTodayTasks(profile, checklist, timelineTaskStatuses).slice(0, 3)
-    : [];
+  const summary = useMemo(
+    () => buildHomeSummary(checklist, hospitalAnswers),
+    [checklist, hospitalAnswers],
+  );
+  const daysLeft = useMemo(
+    () => (profile ? getDaysUntilDue(profile) : undefined),
+    [profile],
+  );
+  const pregnancyProgress = useMemo(
+    () => getPregnancyProgress(daysLeft),
+    [daysLeft],
+  );
+  const currentStageId = useMemo(
+    () => (profile ? getCurrentTimelineStageId(profile) : undefined),
+    [profile],
+  );
+  const hospital = useMemo(
+    () => (profile ? getHospitalForProfile(profile) : undefined),
+    [profile],
+  );
+  const todayTasks = useMemo(
+    () =>
+      profile
+        ? generateTodayTasks(profile, checklist, timelineTaskStatuses).slice(0, 3)
+        : [],
+    [checklist, profile, timelineTaskStatuses],
+  );
   const currentStageTitle = currentStageId
     ? TIMELINE_STAGE_TITLES[currentStageId]
     : "未生成时间线";
+  const archiveCards = useMemo(
+    () =>
+      buildArchiveCards({
+        currentStageTitle: profile?.dueDate ? currentStageTitle : "待填写预产期",
+        deliveryModeLabel: profile
+          ? DELIVERY_MODE_LABELS[profile.deliveryMode]
+          : "待填写",
+        dueDate: profile?.dueDate,
+        hospitalName: hospital?.name,
+        summary,
+      }),
+    [currentStageTitle, hospital?.name, profile, summary],
+  );
 
   return (
     <div className="page-shell">
-      <section className="mobile-shell grid gap-4 lg:max-w-none lg:grid-cols-[1fr_0.95fr] lg:items-start">
-        <div className="rounded-[1.35rem] bg-card p-5 shadow-soft">
-          <div>
-            <p className="text-sm font-medium text-primary">准爸爸任务控制台</p>
-            <h1 className="mt-1 text-4xl font-semibold leading-tight tracking-normal sm:text-5xl">
-              DadKit
-            </h1>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              从医院确认、购买清洗、核心打包到临出门检查，按预产期一步步收口。
-            </p>
-          </div>
-
-          <div className="mt-5 rounded-[1.35rem] bg-primary p-5 text-primary-foreground shadow-soft">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-primary-foreground/80">
-                  距离预产期
-                </p>
-                <p className="mt-2 text-4xl font-semibold tracking-normal">
-                  {typeof daysLeft === "number"
-                    ? daysLeft >= 0
-                      ? `还有 ${daysLeft} 天`
-                      : "已经到预产期"
-                    : "未设置"}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-primary-foreground/80">
-                  {typeof daysLeft === "number"
-                    ? dueAdvice(daysLeft)
-                    : "填写预产期后，DadKit 会自动生成准备时间线。"}
-                </p>
-                <p className="mt-3 inline-flex rounded-full bg-card/15 px-3 py-1 text-sm font-medium">
-                  当前阶段：{profile?.dueDate ? currentStageTitle : "待填写预产期"}
-                </p>
-              </div>
-              <Link
-                className="hidden rounded-2xl bg-card px-5 py-8 text-sm font-semibold text-primary sm:block"
-                href={profile ? "/timeline" : "/setup"}
-              >
-                时间线
-              </Link>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            <PrimaryHomeLink
-              href={profile ? "/checklist" : "/setup"}
-              label={profile ? "清单" : "创建清单"}
-            />
-            <PrimaryHomeLink href="/hospital" label="医院确认" />
-            <PrimaryHomeLink href="/timeline" label="时间线" />
-            <PrimaryHomeLink href="/go" label="临出门" />
-            <PrimaryHomeLink href="/settings" label="备份/设置" />
-          </div>
-        </div>
-
+      <section className="mobile-shell grid gap-4 lg:max-w-none lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+        <PregnancyArchivePanel
+          archiveCards={archiveCards}
+          countdownLabel={getCountdownLabel(daysLeft)}
+          daysLeft={daysLeft}
+          pregnancyProgress={pregnancyProgress}
+          profile={profile}
+          stageTitle={profile?.dueDate ? currentStageTitle : "待填写预产期"}
+        />
         <TodayTasksCard
           onDone={(taskId) => updateTimelineTaskStatus(taskId, "done")}
           profileReady={Boolean(profile?.dueDate)}
@@ -125,6 +124,11 @@ export default function HomePage() {
       </section>
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-3">
+        <SectionHeader
+          className="lg:col-span-3"
+          eyebrow="关键进度"
+          title="今天最该盯住的三件事"
+        />
         <PackingProgressCard
           icon={ClipboardList}
           label="核心打包"
@@ -146,6 +150,11 @@ export default function HomePage() {
       </section>
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-3">
+        <SectionHeader
+          className="lg:col-span-3"
+          eyebrow="工具宫格"
+          title="记录、沟通和产后办理"
+        />
         <ActionCard
           description="记录开始、结束、持续和间隔，导出给医生或家人。"
           href="/contractions"
@@ -175,10 +184,112 @@ export default function HomePage() {
   );
 }
 
-function PrimaryHomeLink({ href, label }: { href: string; label: string }) {
+function PregnancyArchivePanel({
+  archiveCards,
+  countdownLabel,
+  daysLeft,
+  pregnancyProgress,
+  profile,
+  stageTitle,
+}: {
+  archiveCards: ReturnType<typeof buildArchiveCards>;
+  countdownLabel: string;
+  daysLeft?: number;
+  pregnancyProgress: ReturnType<typeof getPregnancyProgress>;
+  profile?: UserProfile;
+  stageTitle: string;
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="grid gap-5 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-primary">孕期档案</p>
+            <h1 className="mt-1 text-3xl font-semibold leading-tight tracking-normal sm:text-4xl">
+              DadKit 今日行动
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              从医院确认、购买清洗、核心打包到临出门检查，按预产期一步步收口。
+            </p>
+          </div>
+          <span className="hidden rounded-md bg-accent px-3 py-1 text-sm font-medium text-accent-foreground sm:inline-flex">
+            本地优先
+          </span>
+        </div>
+
+        <div className="rounded-lg bg-primary p-4 text-primary-foreground">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm text-primary-foreground/80">距离预产期</p>
+              <p className="mt-1 text-3xl font-semibold tracking-normal">
+                {countdownLabel}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-primary-foreground/80">
+                {typeof daysLeft === "number"
+                  ? dueAdvice(daysLeft)
+                  : "填写预产期后，DadKit 会自动生成准备时间线。"}
+              </p>
+            </div>
+            <div className="rounded-md bg-card/15 px-3 py-2 text-right">
+              <p className="text-xs text-primary-foreground/75">孕期进度</p>
+              <p className="mt-1 text-sm font-semibold">
+                {pregnancyProgress.label}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Progress value={pregnancyProgress.percent} />
+          </div>
+          <p className="mt-2 text-xs text-primary-foreground/75">
+            当前阶段：{stageTitle}
+          </p>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          {archiveCards.map((card) => (
+            <div
+              className="rounded-lg border border-border bg-background p-3"
+              key={card.label}
+            >
+              <p className="text-xs font-medium text-muted-foreground">
+                {card.label}
+              </p>
+              <p className="mt-1 truncate text-base font-semibold">{card.value}</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                {card.caption}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <PrimaryHomeLink
+            href={profile ? "/checklist" : "/setup"}
+            label={profile ? "继续今日任务" : "创建清单"}
+          />
+          <PrimaryHomeLink href="/go" label="临出门检查" variant="outline" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function PrimaryHomeLink({
+  href,
+  label,
+  variant = "default",
+}: {
+  href: string;
+  label: string;
+  variant?: "default" | "outline";
+}) {
   return (
     <Link
-      className="flex min-h-12 items-center justify-between rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-soft"
+      className={
+        variant === "default"
+          ? "flex min-h-12 items-center justify-between rounded-md bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-soft"
+          : "flex min-h-12 items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-sm font-semibold text-primary"
+      }
       href={href}
     >
       <span>{label}</span>
@@ -201,7 +312,7 @@ function TodayTasksCard({
       <CardContent className="grid gap-3 p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm text-muted-foreground">今天该做</p>
+            <p className="text-sm font-medium text-primary">今日行动</p>
             <h2 className="mt-1 text-2xl font-semibold tracking-normal">
               {profileReady ? "今天该做" : "等待预产期"}
             </h2>
@@ -244,6 +355,23 @@ function TodayTasksCard({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function SectionHeader({
+  className,
+  eyebrow,
+  title,
+}: {
+  className?: string;
+  eyebrow: string;
+  title: string;
+}) {
+  return (
+    <div className={className}>
+      <p className="text-sm font-medium text-primary">{eyebrow}</p>
+      <h2 className="mt-1 text-xl font-semibold tracking-normal">{title}</h2>
+    </div>
   );
 }
 

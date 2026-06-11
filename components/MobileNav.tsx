@@ -18,8 +18,8 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 sm:hidden">
-      <div className="mx-auto grid max-w-[430px] grid-cols-5 gap-1 rounded-full border border-border bg-card/95 p-1.5 shadow-soft backdrop-blur">
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1.5 shadow-soft backdrop-blur sm:hidden">
+      <div className="mx-auto grid max-w-[520px] grid-cols-5 gap-1 px-2">
         {navItems.map((item) => {
           const active =
             item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -28,7 +28,7 @@ export function MobileNav() {
           return (
             <Link
               className={cn(
-                "flex h-11 flex-col items-center justify-center gap-1 rounded-full text-xs text-muted-foreground transition-colors",
+                "relative flex h-12 flex-col items-center justify-center gap-1 rounded-md text-xs font-medium text-muted-foreground transition-colors",
                 active && "bg-secondary text-primary",
               )}
               href={item.href}

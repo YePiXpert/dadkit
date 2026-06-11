@@ -23,4 +23,17 @@ describe("checklist page copy", () => {
     expect(checklistItemRow).toContain('href="/hospital"');
     expect(checklistItemRow).toContain("去确认");
   });
+
+  it("uses an app-like sticky checklist tool area", () => {
+    expect(checklistPage).toContain("清单工作台");
+    expect(checklistPage).toContain("sticky top-0");
+    expect(checklistPage).toContain("当前视图");
+    expect(checklistPage).toContain("当前没有待购买物品");
+    expect(checklistPage).toContain("暂时没有待问事项");
+  });
+
+  it("memoizes checklist rows for item-level updates", () => {
+    expect(checklistItemRow).toContain("memo(function ChecklistItemRow");
+    expect(checklistItemRow).toContain("ChecklistItemRow.displayName");
+  });
 });

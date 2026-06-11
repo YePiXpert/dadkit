@@ -21,14 +21,14 @@ export function ActionCard({
   return (
     <Link
       className={cn(
-        "rounded-2xl border border-border bg-card p-4 shadow-soft transition-transform active:scale-[0.99]",
+        "grid min-h-[132px] gap-3 rounded-lg border border-border bg-card p-4 shadow-soft transition-colors active:scale-[0.99]",
         tone === "primary" && "hover:border-primary",
-        tone === "amber" && "bg-amber-soft/70",
-        tone === "coral" && "bg-coral-soft/80",
+        tone === "amber" && "border-amber/25 bg-amber-soft/55",
+        tone === "coral" && "border-coral/25 bg-coral-soft/70",
       )}
       href={href}
     >
-      <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
+      <div className="flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
         <Icon className="size-5" />
       </div>
       <h3 className="text-base font-semibold">{title}</h3>
