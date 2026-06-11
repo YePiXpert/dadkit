@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Copy,
   RotateCcw,
-  SlidersHorizontal,
 } from "lucide-react";
 
 import { AddItemDialog } from "@/components/AddItemDialog";
@@ -213,8 +212,7 @@ export default function ChecklistPage() {
           </div>
           <ChecklistGroupTabs value={visualGroup} onChange={setVisualGroup} />
           <details>
-            <summary className="flex cursor-pointer items-center gap-2 text-sm font-medium">
-              <SlidersHorizontal className="size-4 text-primary" />
+            <summary className="cursor-pointer text-sm font-medium">
               筛选与操作
             </summary>
             <div className="mt-3 grid gap-3">

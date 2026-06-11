@@ -11,6 +11,10 @@ const checklistItemRow = readFileSync(
   join(process.cwd(), "components", "ChecklistItemRow.tsx"),
   "utf8",
 );
+const checklistGroupTabs = readFileSync(
+  join(process.cwd(), "components", "ChecklistGroupTabs.tsx"),
+  "utf8",
+);
 
 describe("checklist page copy", () => {
   it("does not render the large unverified hospital warning", () => {
@@ -30,6 +34,14 @@ describe("checklist page copy", () => {
     expect(checklistPage).toContain("当前视图");
     expect(checklistPage).toContain("当前没有待购买物品");
     expect(checklistPage).toContain("暂时没有待问事项");
+  });
+
+  it("keeps checklist view choices visible without an embedded horizontal scroller", () => {
+    expect(checklistGroupTabs).toContain("grid grid-cols-2");
+    expect(checklistGroupTabs).toContain("min-h-11");
+    expect(checklistGroupTabs).not.toContain("overflow-x-auto");
+    expect(checklistGroupTabs).not.toContain("min-w-max");
+    expect(checklistPage).not.toContain("SlidersHorizontal");
   });
 
   it("memoizes checklist rows for item-level updates", () => {
