@@ -1,6 +1,7 @@
 "use client";
 
-import { CheckCircle2, RotateCcw, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, Hospital, RotateCcw, Trash2 } from "lucide-react";
 
 import { EditItemDialog } from "@/components/EditItemDialog";
 import { ItemTag } from "@/components/ItemTag";
@@ -44,6 +45,10 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
   const isDone = ["packed", "hospital_provided", "not_needed"].includes(
     item.status,
   );
+  const isHospitalConfirmation =
+    itemKind === "question" ||
+    item.timing === "confirm_with_hospital" ||
+    item.packTier === "confirm";
   const quickActionLabel = getQuickActionLabel(item);
   const statusOptions = getStatusOptionsForItem(item);
   const rowTone =
@@ -109,6 +114,14 @@ export function ChecklistItemRow({ item }: ChecklistItemRowProps) {
         ) : null}
       </div>
       <div className="col-span-2 flex items-center justify-end gap-1.5 sm:col-span-1">
+        {isHospitalConfirmation ? (
+          <Button asChild size="sm" variant="outline">
+            <Link href="/hospital">
+              <Hospital className="size-4" />
+              去确认
+            </Link>
+          </Button>
+        ) : null}
         <Select
           value={item.status}
           onValueChange={(value) =>

@@ -43,5 +43,6 @@ describe("settings page copy", () => {
     expect(settingsPage).toContain("关于 DadKit");
     expect(settingsPage).toContain("免责声明");
     expect(settingsPage).toContain("WebDAV 凭据说明");
+    expect(settingsPage).not.toContain("本地开发 / 未注入");
   });
 });

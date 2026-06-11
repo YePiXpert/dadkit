@@ -14,7 +14,8 @@ describe("home page copy", () => {
 
   it("uses the focused home actions and low-anxiety metrics", () => {
     expect(homePage).toContain("创建清单");
-    expect(homePage).toContain("查看示例");
+    expect(homePage).not.toContain("查看示例");
+    expect(homePage).not.toContain('href="/example"');
     expect(homePage).toContain("医院确认");
     expect(homePage).toContain("时间线");
     expect(homePage).toContain("临出门");

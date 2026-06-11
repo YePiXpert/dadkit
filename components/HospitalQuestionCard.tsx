@@ -110,24 +110,25 @@ export function HospitalQuestionCard({
     setNote(answer?.note ?? "");
   }, [answer, normalizedItem.status]);
 
-  function saveAnswer() {
+  function saveAnswer(nextStatus = status, nextNote = note) {
     onChange({
       itemId: normalizedItem.id,
       name: normalizedItem.name,
-      status,
-      note: note.trim() || undefined,
+      status: nextStatus,
+      note: nextNote.trim() || undefined,
       updatedAt: new Date().toISOString(),
     });
     setOpen(false);
   }
 
+  function chooseStatus(nextStatus: HospitalAnswerStatus) {
+    setStatus(nextStatus);
+    saveAnswer(nextStatus, note);
+  }
+
   return (
     <section className="rounded-lg border border-border bg-card shadow-sm">
-      <button
-        className="flex w-full items-start justify-between gap-3 px-3 py-3 text-left"
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-      >
+      <div className="flex w-full items-start justify-between gap-3 px-3 py-3">
         <span className="min-w-0">
           <span className="block text-sm font-semibold leading-5">
             {normalizedItem.name}
@@ -142,58 +143,70 @@ export function HospitalQuestionCard({
             </span>
           ) : null}
         </span>
-        <span className="flex shrink-0 items-center gap-2">
-          <span
-            className={cn(
-              "rounded-md border px-2 py-1 text-xs font-medium",
+        <span
+          className={cn(
+            "shrink-0 rounded-md border px-2 py-1 text-xs font-medium",
             STATUS_BADGE_CLASSES[savedStatus],
-            )}
-          >
-            {getStatusLabel(savedStatus, normalizedItem.kind)}
-          </span>
+          )}
+        >
+          {getStatusLabel(savedStatus, normalizedItem.kind)}
+        </span>
+      </div>
+
+      <div className="grid gap-3 px-3 pb-3">
+        <div
+          aria-label={`${normalizedItem.name}状态`}
+          className="flex flex-wrap gap-2"
+        >
+          {options.map((option) => (
+            <button
+              className={cn(
+                "inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors",
+                status === option
+                  ? STATUS_BADGE_CLASSES[option]
+                  : "border-border bg-background text-muted-foreground",
+              )}
+              key={option}
+              type="button"
+              onClick={() => chooseStatus(option)}
+            >
+              {status === option ? <Check className="size-3.5" /> : null}
+              {getStatusLabel(option, normalizedItem.kind)}
+            </button>
+          ))}
+        </div>
+
+        <button
+          className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-primary"
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+        >
+          <span>{previewNote ? "修改记录" : "补充记录"}</span>
           <ChevronDown
             className={cn(
               "size-4 text-muted-foreground transition-transform",
               open && "rotate-180",
             )}
           />
-        </span>
-      </button>
+        </button>
 
-      {open ? (
-        <div className="grid gap-3 border-t border-border px-3 pb-3 pt-3">
-          <div className="flex flex-wrap gap-2">
-            {options.map((option) => (
-              <button
-                className={cn(
-                  "inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors",
-                  status === option
-                    ? STATUS_BADGE_CLASSES[option]
-                    : "border-border bg-background text-muted-foreground",
-                )}
-                key={option}
-                type="button"
-                onClick={() => setStatus(option)}
-              >
-                {status === option ? <Check className="size-3.5" /> : null}
-                {getStatusLabel(option, normalizedItem.kind)}
-              </button>
-            ))}
+        {open ? (
+          <div className="grid gap-3 border-t border-border pt-3">
+            <Textarea
+              className="min-h-24 resize-y"
+              placeholder="记录医院答复、电话、入口、时间或需要下次再问的细节"
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+            />
+            <div className="flex justify-end">
+              <Button className="shrink-0" size="sm" onClick={() => saveAnswer()}>
+                <Save className="size-4" />
+                保存
+              </Button>
+            </div>
           </div>
-          <Textarea
-            className="min-h-24 resize-y"
-            placeholder="记录医院答复、电话、入口、时间或需要下次再问的细节"
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-          />
-          <div className="flex justify-end">
-            <Button className="shrink-0" size="sm" onClick={saveAnswer}>
-              <Save className="size-4" />
-              保存
-            </Button>
-          </div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </section>
   );
 }

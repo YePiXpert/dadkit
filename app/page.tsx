@@ -110,7 +110,6 @@ export default function HomePage() {
               href={profile ? "/checklist" : "/setup"}
               label={profile ? "清单" : "创建清单"}
             />
-            {!profile ? <PrimaryHomeLink href="/example" label="查看示例" /> : null}
             <PrimaryHomeLink href="/hospital" label="医院确认" />
             <PrimaryHomeLink href="/timeline" label="时间线" />
             <PrimaryHomeLink href="/go" label="临出门" />

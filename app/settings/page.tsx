@@ -354,7 +354,7 @@ export default function SettingsPage() {
         <p className="text-xs leading-5 text-muted-foreground">
           当前版本 v{releaseInfo.version} · 构建时间{" "}
           {releaseInfo.buildTime === "unknown"
-            ? "本地开发 / 未注入"
+            ? "暂未记录"
             : formatSnapshotTime(releaseInfo.buildTime)}
         </p>
       </div>
@@ -825,7 +825,7 @@ export default function SettingsPage() {
                   label="构建时间"
                   value={
                     releaseInfo.buildTime === "unknown"
-                      ? "本地开发 / 未注入"
+                      ? "暂未记录"
                       : formatSnapshotTime(releaseInfo.buildTime)
                   }
                 />

@@ -9,9 +9,10 @@ const examplePage = readFileSync(
 );
 
 describe("example page copy", () => {
-  it("makes clear that preview does not overwrite real data", () => {
-    expect(examplePage).toContain("只读预览");
-    expect(examplePage).toContain("不会覆盖或写入你的真实数据");
-    expect(examplePage).toContain("创建我的清单");
+  it("sends old example links to the setup flow without rendering demo data", () => {
+    expect(examplePage).toContain('redirect("/setup")');
+    expect(examplePage).not.toContain("generateChecklist");
+    expect(examplePage).not.toContain("createProfile");
+    expect(examplePage).not.toContain("localStorage");
   });
 });
