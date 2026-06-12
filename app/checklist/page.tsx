@@ -204,110 +204,108 @@ export default function ChecklistPage() {
         </div>
       </div>
 
-      <div className="sticky top-0 z-30 -mx-4 grid gap-3 border-y border-border bg-background/95 px-4 py-3 backdrop-blur sm:top-16 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        <div className="mobile-shell grid gap-3 lg:max-w-none">
-          <div className="grid gap-3 lg:grid-cols-[auto_1fr] lg:items-center">
-            <ModeToggle mode={checklistMode} onChange={setChecklistMode} />
-            <ProgressSummary items={modeItems} />
-          </div>
-          <ChecklistGroupTabs value={visualGroup} onChange={setVisualGroup} />
-          <details>
-            <summary className="cursor-pointer text-sm font-medium">
-              筛选与操作
-            </summary>
-            <div className="mt-3 grid gap-3">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Select
-                  value={filters.category}
-                  onValueChange={(value) =>
-                    setFilters({ category: value as ChecklistCategory | "all" })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全部分类</SelectItem>
-                    {CATEGORY_ORDER.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {CATEGORY_LABELS[category]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={filters.status}
-                  onValueChange={(value) =>
-                    setFilters({ status: value as PackStatus | "all" })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全部状态</SelectItem>
-                    {Object.entries(STATUS_FILTER_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={filters.priority}
-                  onValueChange={(value) =>
-                    setFilters({ priority: value as Priority | "all" })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全部优先级</SelectItem>
-                    {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <AddItemDialog />
-                <Button asChild variant="outline">
-                  <Link href="/timeline">
-                    <CalendarClock className="size-4" />
-                    准备时间线
-                  </Link>
+      <section className="mobile-shell grid gap-3 rounded-lg border border-border bg-card p-4 shadow-soft lg:max-w-none">
+        <div className="grid gap-3 lg:grid-cols-[auto_1fr] lg:items-center">
+          <ModeToggle mode={checklistMode} onChange={setChecklistMode} />
+          <ProgressSummary items={modeItems} />
+        </div>
+        <ChecklistGroupTabs value={visualGroup} onChange={setVisualGroup} />
+        <details>
+          <summary className="cursor-pointer text-sm font-medium">
+            筛选与操作
+          </summary>
+          <div className="mt-3 grid gap-3">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Select
+                value={filters.category}
+                onValueChange={(value) =>
+                  setFilters({ category: value as ChecklistCategory | "all" })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部分类</SelectItem>
+                  {CATEGORY_ORDER.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {CATEGORY_LABELS[category]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={filters.status}
+                onValueChange={(value) =>
+                  setFilters({ status: value as PackStatus | "all" })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部状态</SelectItem>
+                  {Object.entries(STATUS_FILTER_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={filters.priority}
+                onValueChange={(value) =>
+                  setFilters({ priority: value as Priority | "all" })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部优先级</SelectItem>
+                  {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <AddItemDialog />
+              <Button asChild variant="outline">
+                <Link href="/timeline">
+                  <CalendarClock className="size-4" />
+                  准备时间线
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/go">
+                  <CheckCircle2 className="size-4" />
+                  临出门模式
+                </Link>
+              </Button>
+              <Button variant="outline" onClick={regenerateChecklist}>
+                <RotateCcw className="size-4" />
+                重新生成
+              </Button>
+              <Button variant="outline" onClick={resetChecklist}>
+                重置
+              </Button>
+              {visualGroup === "shopping" ? (
+                <Button variant="outline" onClick={copyShoppingList}>
+                  <Copy className="size-4" />
+                  复制购物清单
                 </Button>
-                <Button asChild variant="outline">
-                  <Link href="/go">
-                    <CheckCircle2 className="size-4" />
-                    临出门模式
-                  </Link>
-                </Button>
-                <Button variant="outline" onClick={regenerateChecklist}>
-                  <RotateCcw className="size-4" />
-                  重新生成
-                </Button>
-                <Button variant="outline" onClick={resetChecklist}>
-                  重置
-                </Button>
-                {visualGroup === "shopping" ? (
-                  <Button variant="outline" onClick={copyShoppingList}>
-                    <Copy className="size-4" />
-                    复制购物清单
-                  </Button>
-                ) : null}
-              </div>
-              {copyMessage ? (
-                <p className="text-sm text-muted-foreground">{copyMessage}</p>
               ) : null}
             </div>
-          </details>
-          <ChecklistModeNotice />
-        </div>
-      </div>
+            {copyMessage ? (
+              <p className="text-sm text-muted-foreground">{copyMessage}</p>
+            ) : null}
+          </div>
+        </details>
+        <ChecklistModeNotice />
+      </section>
 
       {filteredItems.length === 0 ? (
         <EmptyState
@@ -315,7 +313,7 @@ export default function ChecklistPage() {
           description={emptyCopy.description}
         />
       ) : visualGroup === "all" ? (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="mobile-shell grid gap-3 sm:grid-cols-2 lg:max-w-none">
           {renderedGroups.map((group) => (
             <ChecklistGroupSummaryCard
               group={group}
@@ -325,14 +323,16 @@ export default function ChecklistPage() {
           ))}
         </div>
       ) : (
-        renderedGroups.map((group) => (
-          <ChecklistCategoryCard
-            defaultOpen
-            items={group.items}
-            key={group.group}
-            title={group.label}
-          />
-        ))
+        <div className="mobile-shell grid gap-3 lg:max-w-none">
+          {renderedGroups.map((group) => (
+            <ChecklistCategoryCard
+              defaultOpen
+              items={group.items}
+              key={group.group}
+              title={group.label}
+            />
+          ))}
+        </div>
       )}
 
       <DisclaimerBox />

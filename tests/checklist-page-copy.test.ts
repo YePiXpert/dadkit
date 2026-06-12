@@ -28,12 +28,15 @@ describe("checklist page copy", () => {
     expect(checklistItemRow).toContain("去确认");
   });
 
-  it("uses an app-like sticky checklist tool area", () => {
+  it("keeps checklist controls in the normal page flow", () => {
     expect(checklistPage).toContain("清单工作台");
-    expect(checklistPage).toContain("sticky top-0");
+    expect(checklistPage).toContain("筛选与操作");
     expect(checklistPage).toContain("当前视图");
     expect(checklistPage).toContain("当前没有待购买物品");
     expect(checklistPage).toContain("暂时没有待问事项");
+    expect(checklistPage).not.toContain("sticky top-0");
+    expect(checklistPage).not.toContain("z-30");
+    expect(checklistPage).not.toContain("backdrop-blur");
   });
 
   it("keeps checklist view choices visible without an embedded horizontal scroller", () => {
