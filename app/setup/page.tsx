@@ -7,6 +7,7 @@ import { Save } from "lucide-react";
 import { CustomHospitalForm } from "@/components/CustomHospitalForm";
 import { DisclaimerBox } from "@/components/DisclaimerBox";
 import { HospitalSelector } from "@/components/HospitalSelector";
+import { PageIntro } from "@/components/PageIntro";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -126,12 +127,11 @@ export default function SetupPage() {
 
   return (
     <div className="page-shell">
-      <div className="mobile-shell grid gap-2 lg:max-w-none">
-        <h1 className="text-3xl font-semibold tracking-normal">3 分钟生成清单</h1>
-        <p className="text-sm leading-6 text-muted-foreground">
-          只问必要信息，之后都能改。
-        </p>
-      </div>
+      <PageIntro
+        eyebrow="小马助手建档"
+        title="3 分钟生成清单"
+        description="只问必要信息，之后都能改。小马助手会按预产期把待产任务排好。"
+      />
 
       <Card className="mobile-shell lg:max-w-none">
         <CardHeader>

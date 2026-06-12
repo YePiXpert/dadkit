@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 
 import { EmptyState } from "@/components/EmptyState";
+import { PageIntro } from "@/components/PageIntro";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useDadKitStore } from "@/lib/store";
@@ -46,17 +47,18 @@ export default function GoPage() {
 
   return (
     <div className="page-shell">
-      <section className="mobile-shell grid gap-2 lg:max-w-none">
-        <h1 className="text-3xl font-semibold tracking-normal">临出门检查</h1>
-        <p className="text-sm leading-6 text-muted-foreground">
-          只保留现在出发前要拿、要确认的事项。
-        </p>
-      </section>
+      <PageIntro
+        eyebrow="出发前收口"
+        title="临出门检查"
+        description="只保留现在出发前要拿、要确认的事项。小马助手帮你把最后一遍检查跑完。"
+      />
 
-      <Card className="mobile-shell bg-primary text-primary-foreground lg:max-w-none">
+      <Card className="mobile-shell border-coral/25 bg-coral-soft text-coral-foreground lg:max-w-none">
         <CardContent className="flex items-center justify-between gap-4 p-5">
           <div>
-            <p className="text-sm text-primary-foreground/80">完成进度</p>
+            <p className="text-sm font-semibold text-coral-foreground/80">
+              完成进度
+            </p>
             <p className="mt-1 text-3xl font-semibold tracking-normal">
               {completedCount}/{tasks.length}
             </p>
@@ -99,12 +101,12 @@ function GoTaskButton({
   return (
     <div
       className={cn(
-        "grid gap-2 rounded-lg border border-border bg-card p-2 sm:grid-cols-[1fr_auto]",
-        done && "border-primary bg-secondary/60",
+        "grid gap-2 rounded-lg border border-white/80 bg-card/95 p-2 shadow-sm sm:grid-cols-[1fr_auto]",
+        done && "border-primary/30 bg-secondary/70",
       )}
     >
       <Button
-        className="h-16 justify-start rounded-md px-4 text-left text-lg"
+        className="h-16 justify-start rounded-lg px-4 text-left text-lg"
         onClick={() =>
           onChange(task.id, explicitStatus === "done" ? "todo" : "done")
         }

@@ -18,6 +18,7 @@ import {
   type HospitalQuestionCardInput,
 } from "@/components/HospitalQuestionCard";
 import { HospitalSelector } from "@/components/HospitalSelector";
+import { PageIntro } from "@/components/PageIntro";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -205,14 +206,13 @@ export default function HospitalPage() {
 
   return (
     <div className="page-shell">
-      <div className="mobile-shell grid gap-2 lg:max-w-none">
-        <h1 className="text-3xl font-semibold tracking-normal">医院确认</h1>
-        <p className="text-sm leading-6 text-muted-foreground">
-          记录下次产检要问的问题，确认后会同步影响清单。
-        </p>
-      </div>
+      <PageIntro
+        eyebrow="产检问清楚"
+        title="医院确认"
+        description="记录下次产检要问的问题，确认后会同步影响清单。小马助手会把答案带回待产包。"
+      />
 
-      <Card className="mobile-shell rounded-lg lg:max-w-none">
+      <Card className="mobile-shell lg:max-w-none">
         <CardContent className="grid gap-3 p-4">
           <div>
             <p className="text-sm text-muted-foreground">当前医院</p>
@@ -226,7 +226,7 @@ export default function HospitalPage() {
         </CardContent>
       </Card>
 
-      <Card className="mobile-shell rounded-lg lg:max-w-none">
+      <Card className="mobile-shell bg-secondary/75 lg:max-w-none">
         <CardContent className="flex items-center justify-between gap-4 p-4">
           <div>
             <p className="text-sm text-muted-foreground">确认进度</p>

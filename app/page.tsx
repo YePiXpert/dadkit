@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { ActionCard } from "@/components/ActionCard";
+import { CuteIllustration } from "@/components/CuteIllustration";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -200,38 +201,48 @@ function PregnancyArchivePanel({
   stageTitle: string;
 }) {
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden bg-card/95">
       <CardContent className="grid gap-5 p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-primary">孕期档案</p>
-            <h1 className="mt-1 text-3xl font-semibold leading-tight tracking-normal sm:text-4xl">
-              DadKit 今日行动
-            </h1>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              从医院确认、购买清洗、核心打包到临出门检查，按预产期一步步收口。
-            </p>
+        <div className="grid gap-4 xl:grid-cols-[1fr_0.88fr] xl:items-center">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="cute-eyebrow">孕期档案</p>
+              <h1 className="mt-1 text-3xl font-semibold leading-tight tracking-normal sm:text-4xl">
+                DadKit 今日行动
+              </h1>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                从医院确认、购买清洗、核心打包到临出门检查，按预产期一步步收口。
+              </p>
+            </div>
+            <span className="hidden rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-primary sm:inline-flex">
+              小马助手
+            </span>
           </div>
-          <span className="hidden rounded-md bg-accent px-3 py-1 text-sm font-medium text-accent-foreground sm:inline-flex">
-            本地优先
-          </span>
+          <CuteIllustration
+            className="min-h-48 xl:min-h-52"
+            priority
+            sizes="(min-width: 1280px) 420px, 100vw"
+            variant="family"
+          />
         </div>
 
-        <div className="rounded-lg bg-primary p-4 text-primary-foreground">
+        <div className="rounded-lg border border-coral/20 bg-accent p-4 text-accent-foreground">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm text-primary-foreground/80">距离预产期</p>
+              <p className="text-sm font-semibold text-accent-foreground/80">
+                距离预产期
+              </p>
               <p className="mt-1 text-3xl font-semibold tracking-normal">
                 {countdownLabel}
               </p>
-              <p className="mt-2 text-sm leading-6 text-primary-foreground/80">
+              <p className="mt-2 text-sm leading-6 text-accent-foreground/80">
                 {typeof daysLeft === "number"
                   ? dueAdvice(daysLeft)
                   : "填写预产期后，DadKit 会自动生成准备时间线。"}
               </p>
             </div>
-            <div className="rounded-md bg-card/15 px-3 py-2 text-right">
-              <p className="text-xs text-primary-foreground/75">孕期进度</p>
+            <div className="rounded-lg bg-card/80 px-3 py-2 text-right text-primary shadow-sm">
+              <p className="text-xs text-muted-foreground">孕期进度</p>
               <p className="mt-1 text-sm font-semibold">
                 {pregnancyProgress.label}
               </p>
@@ -240,7 +251,7 @@ function PregnancyArchivePanel({
           <div className="mt-4">
             <Progress value={pregnancyProgress.percent} />
           </div>
-          <p className="mt-2 text-xs text-primary-foreground/75">
+          <p className="mt-2 text-xs text-accent-foreground/75">
             当前阶段：{stageTitle}
           </p>
         </div>
@@ -248,7 +259,7 @@ function PregnancyArchivePanel({
         <div className="grid gap-2 sm:grid-cols-2">
           {archiveCards.map((card) => (
             <div
-              className="rounded-lg border border-border bg-background p-3"
+              className="rounded-lg border border-white/80 bg-background/80 p-3 shadow-sm"
               key={card.label}
             >
               <p className="text-xs font-medium text-muted-foreground">
@@ -287,8 +298,8 @@ function PrimaryHomeLink({
     <Link
       className={
         variant === "default"
-          ? "flex min-h-12 items-center justify-between rounded-md bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-soft"
-          : "flex min-h-12 items-center justify-between rounded-md border border-border bg-card px-4 py-3 text-sm font-semibold text-primary"
+          ? "flex min-h-12 items-center justify-between rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-soft transition-transform active:scale-[0.98]"
+          : "flex min-h-12 items-center justify-between rounded-full border border-border bg-card px-4 py-3 text-sm font-semibold text-primary transition-transform active:scale-[0.98]"
       }
       href={href}
     >
@@ -308,11 +319,11 @@ function TodayTasksCard({
   tasks: TimelineTask[];
 }) {
   return (
-    <Card>
+    <Card className="bg-card/95">
       <CardContent className="grid gap-3 p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-medium text-primary">今日行动</p>
+            <p className="cute-eyebrow">今日行动</p>
             <h2 className="mt-1 text-2xl font-semibold tracking-normal">
               {profileReady ? "今天该做" : "等待预产期"}
             </h2>
@@ -325,18 +336,18 @@ function TodayTasksCard({
         </div>
 
         {!profileReady ? (
-          <p className="rounded-lg bg-secondary px-3 py-3 text-sm leading-6 text-primary">
+          <p className="rounded-lg bg-secondary/80 px-3 py-3 text-sm leading-6 text-primary">
             填写预产期后，DadKit 会自动生成准备时间线。
           </p>
         ) : tasks.length === 0 ? (
-          <p className="rounded-lg bg-secondary px-3 py-3 text-sm leading-6 text-primary">
+          <p className="rounded-lg bg-secondary/80 px-3 py-3 text-sm leading-6 text-primary">
             当前阶段没有待处理任务。
           </p>
         ) : (
           <div className="grid gap-2">
             {tasks.map((task) => (
               <div
-                className="grid gap-2 rounded-lg border border-border bg-background p-3"
+                className="grid gap-2 rounded-lg border border-white/80 bg-background/80 p-3 shadow-sm"
                 key={task.id}
               >
                 <div>
@@ -369,7 +380,7 @@ function SectionHeader({
 }) {
   return (
     <div className={className}>
-      <p className="text-sm font-medium text-primary">{eyebrow}</p>
+      <p className="cute-eyebrow">{eyebrow}</p>
       <h2 className="mt-1 text-xl font-semibold tracking-normal">{title}</h2>
     </div>
   );
@@ -394,7 +405,15 @@ function PackingProgressCard({
         : "bg-coral-soft text-coral-foreground";
 
   return (
-    <Card className={tone === "primary" ? "bg-primary text-primary-foreground" : ""}>
+    <Card
+      className={
+        tone === "primary"
+          ? "bg-primary text-primary-foreground"
+          : tone === "amber"
+            ? "border-amber/35 bg-amber-soft/80"
+            : "border-coral/30 bg-coral-soft/80"
+      }
+    >
       <CardContent className="p-3.5">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -409,7 +428,7 @@ function PackingProgressCard({
             </p>
             <p className="mt-1 text-2xl font-semibold tracking-normal">{percent}%</p>
           </div>
-          <span className={`rounded-full p-2 ${toneClass}`}>
+          <span className={`rounded-lg p-2 ${toneClass}`}>
             <Icon className="size-5" />
           </span>
         </div>

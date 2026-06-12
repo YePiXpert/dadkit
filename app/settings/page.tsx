@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { DisclaimerBox } from "@/components/DisclaimerBox";
+import { PageIntro } from "@/components/PageIntro";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -346,18 +347,18 @@ export default function SettingsPage() {
 
   return (
     <div className="page-shell">
-      <div className="mobile-shell grid gap-2 lg:max-w-none">
-        <h1 className="text-3xl font-semibold tracking-normal">设置</h1>
-        <p className="text-sm leading-6 text-muted-foreground">
-          数据保存在当前浏览器，可通过 JSON 或 WebDAV 手动备份。
-        </p>
-        <p className="text-xs leading-5 text-muted-foreground">
+      <PageIntro
+        eyebrow="本地数据管家"
+        title="设置"
+        description="数据保存在当前浏览器，可通过 JSON 或 WebDAV 手动备份。"
+      >
+        <span className="inline-flex rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-primary">
           当前版本 v{releaseInfo.version} · 构建时间{" "}
           {releaseInfo.buildTime === "unknown"
             ? "暂未记录"
             : formatSnapshotTime(releaseInfo.buildTime)}
-        </p>
-      </div>
+        </span>
+      </PageIntro>
 
       <Tabs className="mobile-shell lg:max-w-none" defaultValue="backup">
         <TabsList className="grid h-auto w-full grid-cols-3 rounded-lg p-1">

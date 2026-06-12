@@ -3,6 +3,7 @@
 import { Info } from "lucide-react";
 
 import { ExportTextArea } from "@/components/ExportTextArea";
+import { PageIntro } from "@/components/PageIntro";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
@@ -31,17 +32,14 @@ export default function PostpartumPage() {
 
   return (
     <div className="page-shell">
-      <div className="mobile-shell grid gap-2 lg:max-w-none">
-        <h1 className="text-3xl font-semibold tracking-normal">
-          产后办理待确认
-        </h1>
-        <p className="text-sm leading-6 text-muted-foreground">
-          不写死政策，只把出生证明、结算、保险、户口和复查事项整理成待确认清单。
-        </p>
-      </div>
+      <PageIntro
+        eyebrow="产后待办"
+        title="产后办理待确认"
+        description="不写死政策，只把出生证明、结算、保险、户口和复查事项整理成待确认清单。"
+      />
 
       <section className="mobile-shell grid gap-3 lg:max-w-none">
-        <Card className="rounded-lg bg-secondary">
+        <Card className="bg-secondary/80">
           <CardContent className="flex gap-3 p-4 text-sm leading-6 text-primary">
             <Info className="mt-0.5 size-4 shrink-0" />
             <p>

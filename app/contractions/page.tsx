@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CalendarClock, Plus, RotateCcw, Trash2 } from "lucide-react";
 
 import { ExportTextArea } from "@/components/ExportTextArea";
+import { PageIntro } from "@/components/PageIntro";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -115,12 +116,11 @@ export default function ContractionsPage() {
 
   return (
     <div className="page-shell">
-      <div className="mobile-shell grid gap-2 lg:max-w-none">
-        <h1 className="text-3xl font-semibold tracking-normal">宫缩记录</h1>
-        <p className="text-sm leading-6 text-muted-foreground">
-          只记录开始、结束、持续和间隔，方便给医生或家人沟通。
-        </p>
-      </div>
+      <PageIntro
+        eyebrow="小马计时器"
+        title="宫缩记录"
+        description="只记录开始、结束、持续和间隔，方便给医生或家人沟通。"
+      />
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[0.9fr_1.1fr]">
         <Card className="rounded-lg">
@@ -131,9 +131,11 @@ export default function ContractionsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
-            <div className="rounded-lg bg-primary p-5 text-primary-foreground">
-              <p className="text-sm text-primary-foreground/80">本次持续</p>
-              <p className="mt-2 text-4xl font-semibold tracking-normal">
+            <div className="rounded-lg border border-coral/25 bg-accent p-5 text-accent-foreground">
+              <p className="text-sm font-semibold text-accent-foreground/75">
+                本次持续
+              </p>
+              <p className="mt-2 text-4xl font-semibold tracking-normal text-coral">
                 {formatDuration(elapsedSeconds)}
               </p>
             </div>
@@ -160,7 +162,7 @@ export default function ContractionsPage() {
               </Button>
             </div>
 
-            <p className="rounded-lg bg-secondary px-3 py-3 text-sm leading-6 text-primary">
+            <p className="rounded-lg bg-secondary/80 px-3 py-3 text-sm leading-6 text-primary">
               是否去医院以医生/医院要求为准；DadKit 只帮你保存记录。
             </p>
           </CardContent>
@@ -194,7 +196,7 @@ export default function ContractionsPage() {
               添加记录
             </Button>
             {message ? (
-              <p className="rounded-lg bg-secondary px-3 py-2 text-sm text-primary">
+              <p className="rounded-lg bg-secondary/80 px-3 py-2 text-sm text-primary">
                 {message}
               </p>
             ) : null}

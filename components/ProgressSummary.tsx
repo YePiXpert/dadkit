@@ -25,7 +25,7 @@ export function ProgressSummary({ items }: ProgressSummaryProps) {
   const categories = calculateCategoryCompletion(items).filter((item) => item.total > 0);
 
   return (
-    <Card className="rounded-2xl">
+    <Card className="bg-card/95">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-base">
           <span>核心打包进度</span>
@@ -49,7 +49,7 @@ export function ProgressSummary({ items }: ProgressSummaryProps) {
           />
         </div>
         {categories.length > 0 ? (
-          <details className="rounded-md border border-border bg-background">
+          <details className="rounded-lg border border-border bg-background/80">
             <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-muted-foreground">
               查看分类进度
             </summary>
@@ -83,7 +83,7 @@ function SummaryPill({
   total: number;
 }) {
   return (
-    <div className="rounded-xl bg-secondary p-2.5 text-sm">
+    <div className="rounded-lg bg-secondary/80 p-2.5 text-sm">
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="font-medium text-secondary-foreground">{label}</span>
         <span className="text-muted-foreground">
@@ -107,7 +107,7 @@ function CategoryProgress({
   total: number;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-background p-2.5">
+    <div className="rounded-lg border border-border bg-background/80 p-2.5">
       <div className="mb-2 flex items-center justify-between text-sm">
         <span className="font-medium">{CATEGORY_LABELS[category]}</span>
         <span className="text-muted-foreground">

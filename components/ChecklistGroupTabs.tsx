@@ -17,9 +17,9 @@ export function ChecklistGroupTabs({ value, onChange }: ChecklistGroupTabsProps)
       {CHECKLIST_VISUAL_GROUPS.map((group) => (
         <button
           className={cn(
-            "min-h-11 rounded-md border border-border bg-card px-2.5 py-2 text-center text-sm font-medium leading-5 text-muted-foreground shadow-sm transition-colors",
+            "min-h-11 rounded-lg border border-border bg-card/95 px-2.5 py-2 text-center text-sm font-semibold leading-5 text-muted-foreground shadow-sm transition-colors active:scale-[0.99]",
             value === group.id &&
-              "border-primary bg-primary text-primary-foreground",
+              "border-primary bg-primary text-primary-foreground shadow-soft",
           )}
           key={group.id}
           type="button"

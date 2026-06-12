@@ -10,7 +10,9 @@ const settingsPage = readFileSync(
 
 describe("settings page copy", () => {
   it("uses the settings tabs and top description", () => {
-    expect(settingsPage).toContain("<h1");
+    expect(settingsPage).toContain("<PageIntro");
+    expect(settingsPage).toContain('title="设置"');
+    expect(settingsPage).toContain('eyebrow="本地数据管家"');
     expect(settingsPage).toContain("设置");
     expect(settingsPage).toContain(
       "数据保存在当前浏览器，可通过 JSON 或 WebDAV 手动备份。",

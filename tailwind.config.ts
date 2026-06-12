@@ -48,6 +48,14 @@ const config: Config = {
           soft: "hsl(var(--coral-soft))",
           foreground: "hsl(var(--coral-foreground))",
         },
+        blush: {
+          DEFAULT: "hsl(var(--blush))",
+          foreground: "hsl(var(--blush-foreground))",
+        },
+        lavender: {
+          DEFAULT: "hsl(var(--lavender))",
+          foreground: "hsl(var(--lavender-foreground))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -67,7 +75,7 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        soft: "0 10px 28px rgba(38, 57, 77, 0.08)",
+        soft: "0 12px 34px rgba(88, 66, 58, 0.10)",
       },
     },
   },

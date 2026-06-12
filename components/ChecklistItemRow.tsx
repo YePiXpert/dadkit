@@ -65,14 +65,14 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   return (
     <div
       className={cn(
-        "grid grid-cols-[auto_1fr] gap-3 rounded-lg border border-border p-3 shadow-sm sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center",
+        "grid grid-cols-[auto_1fr] gap-3 rounded-lg border border-white/80 p-3 shadow-sm sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center",
         rowTone,
       )}
     >
       <Button
         size="icon"
         className={cn(
-          "mt-0.5 size-8 rounded-md border",
+          "mt-0.5 size-8 rounded-full border",
           isDone
             ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
             : "border-primary/40 bg-card text-primary hover:bg-secondary",
@@ -129,7 +129,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             updateItem(item.id, { status: value as PackStatus })
           }
         >
-          <SelectTrigger className="h-8 w-[116px] bg-card text-xs">
+          <SelectTrigger className="h-8 w-[116px] rounded-full bg-card text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

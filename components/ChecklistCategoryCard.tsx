@@ -34,7 +34,7 @@ export function ChecklistCategoryCard({
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-3 shadow-soft">
+    <section className="rounded-lg border border-white/80 bg-card/95 p-3 shadow-soft">
       <div className="space-y-2">
         <button
           className="flex w-full items-center justify-between gap-3 text-left"

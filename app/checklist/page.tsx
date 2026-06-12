@@ -17,6 +17,7 @@ import { ChecklistModeNotice } from "@/components/ChecklistModeNotice";
 import { DisclaimerBox } from "@/components/DisclaimerBox";
 import { EmptyState } from "@/components/EmptyState";
 import { ModeToggle } from "@/components/ModeToggle";
+import { PageIntro } from "@/components/PageIntro";
 import { ProgressSummary } from "@/components/ProgressSummary";
 import { Button } from "@/components/ui/button";
 import {
@@ -187,24 +188,19 @@ export default function ChecklistPage() {
 
   return (
     <div className="page-shell">
-      <div className="mobile-shell grid gap-3 lg:max-w-none">
-        <div>
-          <p className="text-sm font-medium text-primary">清单工作台</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-normal">
-            {viewCopy.title}
-          </h1>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            {viewCopy.description}
-          </p>
-        </div>
+      <PageIntro
+        eyebrow="清单工作台"
+        title={viewCopy.title}
+        description={viewCopy.description}
+      >
         <div className="grid grid-cols-3 gap-2">
           <MetricTile label="当前视图" value={`${filteredItems.length} 项`} />
           <MetricTile label="已完成" value={`${completion.completed} 项`} />
           <MetricTile label="待处理" value={`${remaining} 项`} />
         </div>
-      </div>
+      </PageIntro>
 
-      <section className="mobile-shell grid gap-3 rounded-lg border border-border bg-card p-4 shadow-soft lg:max-w-none">
+      <section className="mobile-shell grid gap-3 rounded-lg border border-white/80 bg-card/95 p-4 shadow-soft lg:max-w-none">
         <div className="grid gap-3 lg:grid-cols-[auto_1fr] lg:items-center">
           <ModeToggle mode={checklistMode} onChange={setChecklistMode} />
           <ProgressSummary items={modeItems} />
@@ -342,7 +338,7 @@ export default function ChecklistPage() {
 
 function MetricTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
+    <div className="rounded-lg border border-white/80 bg-card/95 p-3 shadow-sm">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 text-lg font-semibold tracking-normal">{value}</p>
     </div>
@@ -389,7 +385,7 @@ function ChecklistGroupSummaryCard({
 
   return (
     <button
-      className="rounded-lg border border-border bg-card p-4 text-left shadow-sm transition-colors hover:border-primary/40"
+      className="rounded-lg border border-white/80 bg-card/95 p-4 text-left shadow-soft transition-colors hover:border-primary/40"
       type="button"
       onClick={onOpen}
     >
@@ -400,7 +396,7 @@ function ChecklistGroupSummaryCard({
             已完成 {completion.completed} 项 · 未完成 {remaining} 项
           </p>
         </div>
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-primary">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
           <ArrowRight className="size-4" />
         </span>
       </div>

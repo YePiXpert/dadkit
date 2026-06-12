@@ -1,0 +1,285 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1540" height="2470" viewBox="0 0 1540 2470" role="img" aria-labelledby="title desc">
+  <title id="title">DadKit mobile UI color and screen map</title>
+  <desc id="desc">A multi-screen visual mockup for DadKit using a calm maternity app inspired palette.</desc>
+  <style>
+    .canvas{fill:#f6f8fa}
+    .ink{fill:#243231}
+    .muted{fill:#73817e}
+    .teal{fill:#257a73}
+    .mint{fill:#dff3ef}
+    .mint2{fill:#edf9f6}
+    .blush{fill:#ffe5e8}
+    .coral{fill:#f07d6f}
+    .amber{fill:#ffe7a3}
+    .lavender{fill:#eeeaff}
+    .line{stroke:#dce5e8;stroke-width:1.4}
+    .phone{fill:#fff;stroke:#d9e2e6;stroke-width:2}
+    .screen{fill:#f7faf9}
+    .card{fill:#fff;stroke:#dce5e8;stroke-width:1.2}
+    .soft{filter:url(#softShadow)}
+    .label{font:700 18px Arial,"Microsoft YaHei",sans-serif;fill:#257a73}
+    .h1{font:700 21px Arial,"Microsoft YaHei",sans-serif;fill:#243231}
+    .h2{font:700 15px Arial,"Microsoft YaHei",sans-serif;fill:#243231}
+    .body{font:500 12px Arial,"Microsoft YaHei",sans-serif;fill:#50605d}
+    .small{font:500 10.5px Arial,"Microsoft YaHei",sans-serif;fill:#73817e}
+    .tiny{font:500 9.5px Arial,"Microsoft YaHei",sans-serif;fill:#7f8f8c}
+    .tab{font:700 10.5px Arial,"Microsoft YaHei",sans-serif;fill:#73817e}
+    .tabOn{font:700 10.5px Arial,"Microsoft YaHei",sans-serif;fill:#257a73}
+    .white{fill:#fff}
+  </style>
+  <defs>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1f3b37" flood-opacity="0.10"/>
+    </filter>
+    <g id="bottomNav">
+      <rect x="16" y="548" width="288" height="30" rx="15" fill="#ffffff" stroke="#e1e9ec"/>
+      <text x="45" y="567" class="tabOn">首页</text>
+      <text x="100" y="567" class="tab">清单</text>
+      <text x="155" y="567" class="tab">医院</text>
+      <text x="210" y="567" class="tab">时间线</text>
+      <circle cx="270" cy="560" r="7" fill="#dff3ef"/>
+    </g>
+    <g id="phoneBase">
+      <rect x="0" y="0" width="320" height="600" rx="30" class="phone soft"/>
+      <rect x="12" y="12" width="296" height="576" rx="24" class="screen"/>
+      <rect x="118" y="22" width="84" height="5" rx="2.5" fill="#dce5e8"/>
+    </g>
+  </defs>
+  <rect width="1540" height="2470" class="canvas"/>
+
+  <g transform="translate(60 55)">
+    <text x="0" y="0" class="h1" style="font-size:34px">DadKit v1.2 视觉稿</text>
+    <text x="0" y="34" class="body" style="font-size:15px">参考成熟孕育工具的柔和阶段感和高频工具入口，保留 DadKit 本地优先、准爸爸任务工具定位。</text>
+    <text x="0" y="64" class="small">原则：浅灰白底、深青绿主行动、薄荷确认、珊瑚提醒、浅粉阶段感；页面内不做横向滑动和粘滞工具层。</text>
+  </g>
+
+  <g transform="translate(60 150)">
+    <text x="0" y="0" class="label">配色板</text>
+    <g transform="translate(0 26)">
+      <rect x="0" y="0" width="128" height="74" rx="8" fill="#257a73"/><text x="14" y="30" class="white h2">Primary</text><text x="14" y="52" class="white small">#257A73</text>
+      <rect x="146" y="0" width="128" height="74" rx="8" fill="#dff3ef"/><text x="160" y="30" class="h2" fill="#257a73">Mint</text><text x="160" y="52" class="small">#DFF3EF</text>
+      <rect x="292" y="0" width="128" height="74" rx="8" fill="#f07d6f"/><text x="306" y="30" class="white h2">Coral</text><text x="306" y="52" class="white small">#F07D6F</text>
+      <rect x="438" y="0" width="128" height="74" rx="8" fill="#ffe5e8"/><text x="452" y="30" class="h2">Blush</text><text x="452" y="52" class="small">#FFE5E8</text>
+      <rect x="584" y="0" width="128" height="74" rx="8" fill="#ffe7a3"/><text x="598" y="30" class="h2">Amber</text><text x="598" y="52" class="small">#FFE7A3</text>
+      <rect x="730" y="0" width="128" height="74" rx="8" fill="#f6f8fa" stroke="#dce5e8"/><text x="744" y="30" class="h2">Base</text><text x="744" y="52" class="small">#F6F8FA</text>
+    </g>
+  </g>
+
+  <!-- 01 Home -->
+  <g transform="translate(60 300)">
+    <text x="0" y="-18" class="label">01 首页</text>
+    <use href="#phoneBase"/>
+    <text x="26" y="58" class="small">孕期档案</text>
+    <text x="26" y="86" class="h1">DadKit 今日行动</text>
+    <rect x="226" y="47" width="64" height="25" rx="8" class="mint"/>
+    <text x="238" y="64" class="small" fill="#257a73">本地优先</text>
+    <rect x="24" y="110" width="272" height="128" rx="10" fill="#257a73"/>
+    <text x="42" y="142" class="white small">距离预产期</text>
+    <text x="42" y="182" class="white" style="font:700 36px Arial,'Microsoft YaHei'">84 天</text>
+    <text x="42" y="211" class="white small">孕 28 周 3 天 · 待产准备期</text>
+    <rect x="24" y="252" width="132" height="72" rx="8" class="card"/>
+    <text x="38" y="281" class="h2">今日 3 项</text>
+    <text x="38" y="303" class="small">医院确认优先</text>
+    <rect x="164" y="252" width="132" height="72" rx="8" class="card"/>
+    <text x="178" y="281" class="h2">打包 38%</text>
+    <rect x="178" y="296" width="92" height="6" rx="3" class="mint"/>
+    <rect x="178" y="296" width="36" height="6" rx="3" class="teal"/>
+    <text x="26" y="354" class="h2">工具宫格</text>
+    <rect x="24" y="372" width="82" height="68" rx="8" class="card"/><circle cx="65" cy="396" r="14" class="blush"/><text x="43" y="426" class="small">宫缩</text>
+    <rect x="118" y="372" width="82" height="68" rx="8" class="card"/><circle cx="159" cy="396" r="14" class="mint"/><text x="136" y="426" class="small">偏好卡</text>
+    <rect x="212" y="372" width="82" height="68" rx="8" class="card"/><circle cx="253" cy="396" r="14" class="amber"/><text x="230" y="426" class="small">产后办</text>
+    <rect x="24" y="462" width="272" height="54" rx="10" class="mint2"/>
+    <text x="42" y="494" class="h2" fill="#257a73">继续今日任务</text>
+    <use href="#bottomNav"/>
+  </g>
+
+  <!-- 02 Setup -->
+  <g transform="translate(420 300)">
+    <text x="0" y="-18" class="label">02 创建资料</text>
+    <use href="#phoneBase"/>
+    <text x="26" y="58" class="small">只需 2 分钟</text>
+    <text x="26" y="86" class="h1">创建我的清单</text>
+    <rect x="24" y="112" width="272" height="70" rx="8" class="card"/>
+    <text x="40" y="141" class="h2">预产期</text><text x="40" y="164" class="body">2026-09-04</text>
+    <rect x="24" y="194" width="272" height="70" rx="8" class="card"/>
+    <text x="40" y="223" class="h2">医院与地区</text><text x="40" y="246" class="body">杭州 · 市妇保</text>
+    <rect x="24" y="276" width="130" height="80" rx="8" class="mint"/>
+    <text x="42" y="307" class="h2" fill="#257a73">顺产准备</text><text x="42" y="331" class="small">默认可调整</text>
+    <rect x="166" y="276" width="130" height="80" rx="8" class="card"/>
+    <text x="184" y="307" class="h2">剖宫产</text><text x="184" y="331" class="small">增加专项项</text>
+    <rect x="24" y="382" width="272" height="58" rx="10" class="teal"/>
+    <text x="88" y="418" class="white h2">生成待产清单</text>
+    <rect x="24" y="462" width="272" height="54" rx="8" class="blush"/>
+    <text x="42" y="493" class="small" fill="#9c4a4f">资料只保存在当前浏览器</text>
+    <use href="#bottomNav"/>
+  </g>
+
+  <!-- 03 Checklist -->
+  <g transform="translate(780 300)">
+    <text x="0" y="-18" class="label">03 清单</text>
+    <use href="#phoneBase"/>
+    <text x="26" y="58" class="small">清单工作台</text>
+    <text x="26" y="86" class="h1">我的待产准备</text>
+    <rect x="24" y="106" width="272" height="92" rx="10" class="card"/>
+    <rect x="38" y="124" width="108" height="34" rx="17" class="teal"/>
+    <text x="66" y="146" class="white small">精简模式</text>
+    <rect x="150" y="124" width="104" height="34" rx="17" fill="#eef2f3"/>
+    <text x="176" y="146" class="small">完整模式</text>
+    <text x="38" y="180" class="small">核心打包进度 38%</text>
+    <rect x="24" y="214" width="272" height="132" rx="10" class="card"/>
+    <text x="38" y="238" class="h2">分类入口</text>
+    <rect x="38" y="254" width="116" height="32" rx="8" class="teal"/><text x="84" y="275" class="white small">全部</text>
+    <rect x="166" y="254" width="116" height="32" rx="8" class="mint"/><text x="198" y="275" class="small" fill="#257a73">证件包</text>
+    <rect x="38" y="296" width="116" height="32" rx="8" class="card"/><text x="78" y="317" class="small">妈妈包</text>
+    <rect x="166" y="296" width="116" height="32" rx="8" class="card"/><text x="206" y="317" class="small">宝宝包</text>
+    <text x="26" y="376" class="h2">分组概览</text>
+    <rect x="24" y="394" width="272" height="54" rx="8" class="card"/><text x="42" y="419" class="h2">临出门拿</text><text x="42" y="438" class="small">未完成 14 项</text>
+    <rect x="24" y="458" width="272" height="54" rx="8" class="card"/><text x="42" y="483" class="h2">爸爸负责</text><text x="42" y="502" class="small">未完成 11 项</text>
+    <use href="#bottomNav"/>
+  </g>
+
+  <!-- 04 Hospital -->
+  <g transform="translate(1140 300)">
+    <text x="0" y="-18" class="label">04 医院</text>
+    <use href="#phoneBase"/>
+    <text x="26" y="58" class="small">医院确认</text>
+    <text x="26" y="86" class="h1">下次产检问清楚</text>
+    <rect x="24" y="112" width="272" height="92" rx="10" class="mint"/>
+    <text x="42" y="144" class="h2" fill="#257a73">待确认 35 项</text>
+    <text x="42" y="168" class="small" fill="#257a73">陪产、待产包、入院动线</text>
+    <rect x="24" y="224" width="272" height="50" rx="8" class="card"/><text x="40" y="254" class="body">医院是否提供产褥垫？</text>
+    <rect x="24" y="286" width="272" height="50" rx="8" class="card"/><text x="40" y="316" class="body">爸爸能否全程陪产？</text>
+    <rect x="24" y="348" width="272" height="50" rx="8" class="card"/><text x="40" y="378" class="body">入院证件是否要复印？</text>
+    <rect x="24" y="430" width="130" height="42" rx="8" class="teal"/><text x="58" y="457" class="white small">已确认</text>
+    <rect x="166" y="430" width="130" height="42" rx="8" class="amber"/><text x="196" y="457" class="small">下次再问</text>
+    <use href="#bottomNav"/>
+  </g>
+
+  <!-- 05 Timeline -->
+  <g transform="translate(60 970)">
+    <text x="0" y="-18" class="label">05 时间线</text>
+    <use href="#phoneBase"/>
+    <text x="26" y="58" class="small">准备时间线</text>
+    <text x="26" y="86" class="h1">离预产期 84 天</text>
+    <line x1="52" y1="130" x2="52" y2="458" stroke="#b9dcd5" stroke-width="4"/>
+    <circle cx="52" cy="142" r="10" class="teal"/><rect x="74" y="116" width="210" height="66" rx="8" class="card"/><text x="92" y="145" class="h2">现在</text><text x="92" y="166" class="small">证件与医院确认</text>
+    <circle cx="52" cy="232" r="10" class="mint"/><rect x="74" y="206" width="210" height="66" rx="8" class="card"/><text x="92" y="235" class="h2">提前 6 周</text><text x="92" y="256" class="small">购买与清洗</text>
+    <circle cx="52" cy="322" r="10" class="amber"/><rect x="74" y="296" width="210" height="66" rx="8" class="card"/><text x="92" y="325" class="h2">提前 3 周</text><text x="92" y="346" class="small">打包装车</text>
+    <circle cx="52" cy="412" r="10" class="coral"/><rect x="74" y="386" width="210" height="66" rx="8" class="card"/><text x="92" y="415" class="h2">临出门</text><text x="92" y="436" class="small">证件手机常用药</text>
+    <use href="#bottomNav"/>
+  </g>
+
+  <!-- 06 Go -->
+  <g transform="translate(420 970)">
+    <text x="0" y="-18" class="label">06 临出门</text>
+    <use href="#phoneBase"/>
+    <text x="26" y="58" class="small">临出门检查</text>
+    <text x="26" y="86" class="h1">出门前 15 分钟</text>
+    <rect x="24" y="112" width="272" height="78" rx="10" class="coral"/>
+    <text x="42" y="146" class="white h2">先拿证件包</text><text x="42" y="168" class="white small">身份证、医保卡、产检资料</text>
+    <rect x="24" y="214" width="272" height="46" rx="8" class="card"/><circle cx="48" cy="237" r="9" class="mint"/><text x="68" y="242" class="body">手机和充电器</text>
+    <rect x="24" y="272" width="272" height="46" rx="8" class="card"/><circle cx="48" cy="295" r="9" fill="#fff" stroke="#dce5e8"/><text x="68" y="300" class="body">眼镜和常用药</text>
+    <rect x="24" y="330" width="272" height="46" rx="8" class="card"/><circle cx="48" cy="353" r="9" fill="#fff" stroke="#dce5e8"/><text x="68" y="358" class="body">妈妈包和宝宝包</text>
+    <rect x="24" y="388" width="272" height="46" rx="8" class="card"/><circle cx="48" cy="411" r="9" fill="#fff" stroke="#dce5e8"/><text x="68" y="416" class="body">门窗水电燃气</text>
+    <rect x="24" y="468" width="272" height="48" rx="10" class="teal"/><text x="102" y="499" class="white h2">全部确认</text>
+    <use href="#bottomNav"/>
+  </g>
+
+  <!-- 07 Contractions -->
+  <g transform="translate(780 970)">
+    <text x="0" y="-18" class="label">07 宫缩</text>
+    <use href="#phoneBase"/>
+    <text x="26" y="58" class="small">宫缩记录</text>
+    <text x="26" y="86" class="h1">只记录，不判断</text>
+    <circle cx="160" cy="202" r="82" class="blush"/>
+    <circle cx="160" cy="202" r="60" fill="#fff"/>
+    <text x="105" y="196" class="h1" style="font-size:28px">00:48</text>
+    <text x="124" y="224" class="small">本次持续</text>
+    <rect x="80" y="306" width="160" height="50" rx="25" class="teal"/><text x="118" y="337" class="white h2">开始记录</text>
+    <text x="26" y="398" class="h2">最近记录</text>
+    <rect x="24" y="416" width="272" height="42" rx="8" class="card"/><text x="42" y="442" class="body">持续 42 秒 · 间隔 8 分钟</text>
+    <rect x="24" y="468" width="272" height="42" rx="8" class="card"/><text x="42" y="494" class="body">持续 38 秒 · 间隔 10 分钟</text>
+    <use href="#bottomNav"/>
+  </g>
+
+  <!-- 08 Birth plan -->
+  <g transform="translate(1140 970)">
+    <text x="0" y="-18" class="label">08 分娩偏好</text>
+    <use href="#phoneBase"/>
+    <text x="26" y="58" class="small">入院沟通卡</text>
+    <text x="26" y="86" class="h1">分娩偏好</text>
+    <rect x="24" y="112" width="272" height="74" rx="10" class="mint"/>
+    <text x="42" y="142" class="h2" fill="#257a73">紧急联系人</text><text x="42" y="165" class="small" fill="#257a73">爸爸 · 138****0000</text>
+    <rect x="24" y="210" width="272" height="52" rx="8" class="card"/><text x="42" y="240" class="body">陪产人：爸爸</text>
+    <rect x="24" y="274" width="272" height="52" rx="8" class="card"/><text x="42" y="304" class="body">过敏/用药：待填写</text>
+    <rect x="24" y="338" width="272" height="52" rx="8" class="card"/><text x="42" y="368" class="body">沟通偏好：先解释再操作</text>
+    <rect x="24" y="428" width="272" height="52" rx="10" class="teal"/><text x="106" y="461" class="white h2">生成卡片</text>
+    <use href="#bottomNav"/>
+  </g>
+
+  <!-- 09 Postpartum -->
+  <g transform="translate(60 1640)">
+    <text x="0" y="-18" class="label">09 产后办理</text>
+    <use href="#phoneBase"/>
+    <text x="26" y="58" class="small">产后办理待确认</text>
+    <text x="26" y="86" class="h1">出院前后事项</text>
+    <rect x="24" y="116" width="272" height="54" rx="8" class="amber"/><text x="42" y="148" class="h2">出生医学证明</text>
+    <rect x="24" y="184" width="272" height="54" rx="8" class="card"/><text x="42" y="216" class="body">出院结算</text><rect x="224" y="201" width="50" height="20" rx="10" class="mint"/><text x="235" y="215" class="tiny" fill="#257a73">待办</text>
+    <rect x="24" y="252" width="272" height="54" rx="8" class="card"/><text x="42" y="284" class="body">医保/生育保险</text>
+    <rect x="24" y="320" width="272" height="54" rx="8" class="card"/><text x="42" y="352" class="body">户口/居住地</text>
+    <rect x="24" y="408" width="272" height="64" rx="10" class="mint2"/><text x="42" y="437" class="h2" fill="#257a73">窗口材料清单</text><text x="42" y="458" class="small" fill="#257a73">以当地窗口为准</text>
+    <use href="#bottomNav"/>
+  </g>
+
+  <!-- 10 Share -->
+  <g transform="translate(420 1640)">
+    <text x="0" y="-18" class="label">10 分享/备份</text>
+    <use href="#phoneBase"/>
+    <text x="26" y="58" class="small">导出与分享</text>
+    <text x="26" y="86" class="h1">爸爸执行版</text>
+    <rect x="24" y="112" width="272" height="70" rx="8" class="card"/><text x="42" y="143" class="h2">临出门版</text><text x="42" y="164" class="small">只保留最后检查</text>
+    <rect x="24" y="196" width="272" height="70" rx="8" class="card"/><text x="42" y="227" class="h2">医院沟通版</text><text x="42" y="248" class="small">问题和偏好卡</text>
+    <rect x="24" y="280" width="272" height="70" rx="8" class="card"/><text x="42" y="311" class="h2">JSON 备份</text><text x="42" y="332" class="small">本地导入导出</text>
+    <rect x="24" y="390" width="130" height="50" rx="8" class="teal"/><text x="60" y="421" class="white small">复制文本</text>
+    <rect x="166" y="390" width="130" height="50" rx="8" class="mint"/><text x="202" y="421" class="small" fill="#257a73">下载 JSON</text>
+    <use href="#bottomNav"/>
+  </g>
+
+  <!-- 11 Settings -->
+  <g transform="translate(780 1640)">
+    <text x="0" y="-18" class="label">11 设置</text>
+    <use href="#phoneBase"/>
+    <text x="26" y="58" class="small">设置</text>
+    <text x="26" y="86" class="h1">数据与备份</text>
+    <rect x="24" y="112" width="272" height="82" rx="10" class="mint"/>
+    <text x="42" y="145" class="h2" fill="#257a73">最近备份</text><text x="42" y="168" class="small" fill="#257a73">自动保留最近 5 份</text>
+    <rect x="24" y="216" width="272" height="54" rx="8" class="card"/><text x="42" y="248" class="body">导出 JSON</text>
+    <rect x="24" y="282" width="272" height="54" rx="8" class="card"/><text x="42" y="314" class="body">导入 JSON</text>
+    <rect x="24" y="348" width="272" height="54" rx="8" class="card"/><text x="42" y="380" class="body">WebDAV 手动备份</text>
+    <rect x="24" y="430" width="272" height="48" rx="8" class="blush"/><text x="42" y="460" class="small" fill="#9c4a4f">清空前会自动快照</text>
+    <use href="#bottomNav"/>
+  </g>
+
+  <!-- 12 Empty/Example redirect state -->
+  <g transform="translate(1140 1640)">
+    <text x="0" y="-18" class="label">12 空状态</text>
+    <use href="#phoneBase"/>
+    <text x="26" y="58" class="small">首次打开</text>
+    <text x="26" y="86" class="h1">还没有清单</text>
+    <circle cx="160" cy="178" r="58" class="mint"/>
+    <rect x="128" y="148" width="64" height="48" rx="10" fill="#fff"/>
+    <text x="72" y="274" class="h2">先创建资料</text>
+    <text x="58" y="302" class="small">DadKit 会按预产期生成可编辑清单</text>
+    <rect x="44" y="350" width="232" height="52" rx="10" class="teal"/>
+    <text x="108" y="383" class="white h2">开始创建</text>
+    <rect x="44" y="418" width="232" height="52" rx="10" class="card"/>
+    <text x="96" y="451" class="small">查看隐私说明</text>
+    <use href="#bottomNav"/>
+  </g>
+
+  <g transform="translate(60 2320)">
+    <text x="0" y="0" class="label">使用说明</text>
+    <text x="0" y="30" class="body">这是一张实施前视觉稿：逐页按这些颜色、层级和自然滚动结构改造。真实代码仍需按现有 Next.js/Tailwind 组件落地。</text>
+    <text x="0" y="56" class="small">参考锚点：美柚官网介绍女性健康多阶段服务；宝宝记介绍孕期记录和家庭共育。DadKit 不采用社区流、电商推荐或医疗判断。</text>
+  </g>
+</svg>

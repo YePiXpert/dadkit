@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 
 import { EmptyState } from "@/components/EmptyState";
+import { PageIntro } from "@/components/PageIntro";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -52,17 +53,18 @@ export default function TimelinePage() {
 
   return (
     <div className="page-shell">
-      <section className="mobile-shell grid gap-2 lg:max-w-none">
-        <h1 className="text-3xl font-semibold tracking-normal">准备时间线</h1>
-        <p className="text-sm leading-6 text-muted-foreground">
-          按预产期自动安排该问、该买、该洗、该打包的事项。
-        </p>
-      </section>
+      <PageIntro
+        eyebrow="阶段进度"
+        title="准备时间线"
+        description="按预产期自动安排该问、该买、该洗、该打包的事项。小马助手会提醒当前阶段重点。"
+      />
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[0.9fr_1.1fr]">
-        <Card className="bg-primary text-primary-foreground">
+        <Card className="border-coral/25 bg-accent text-accent-foreground">
           <CardContent className="grid gap-2 p-5">
-            <p className="text-sm text-primary-foreground/80">距离预产期</p>
+            <p className="text-sm font-semibold text-accent-foreground/75">
+              距离预产期
+            </p>
             <p className="text-4xl font-semibold tracking-normal">
               {typeof daysLeft === "number"
                 ? daysLeft > 0
@@ -96,7 +98,7 @@ export default function TimelinePage() {
 
           return (
             <Card
-              className={cn(isCurrent && "border-primary bg-secondary/40")}
+              className={cn(isCurrent && "border-primary/30 bg-secondary/55")}
               key={stage.id}
             >
               <details open={isCurrent ? true : undefined}>
