@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CalendarClock, Plus, RotateCcw, Trash2 } from "lucide-react";
 
+import { CuteIllustration } from "@/components/CuteIllustration";
 import { ExportTextArea } from "@/components/ExportTextArea";
 import { PageIntro } from "@/components/PageIntro";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,9 @@ export default function ContractionsPage() {
     () => generateContractionsShareText(contractions),
     [contractions],
   );
+  const timerProgress = activeStartedAt
+    ? Math.min(100, Math.round((elapsedSeconds / 90) * 100))
+    : 0;
 
   useEffect(() => {
     if (!activeStartedAt) {
@@ -123,21 +127,57 @@ export default function ContractionsPage() {
       />
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[0.9fr_1.1fr]">
-        <Card className="rounded-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarClock className="size-4 text-primary" />
-              计时记录
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <div className="rounded-lg border border-coral/25 bg-accent p-5 text-accent-foreground">
-              <p className="text-sm font-semibold text-accent-foreground/75">
-                本次持续
-              </p>
-              <p className="mt-2 text-4xl font-semibold tracking-normal text-coral">
-                {formatDuration(elapsedSeconds)}
-              </p>
+        <Card className="overflow-hidden border-coral/20 bg-card/95 shadow-soft">
+          <CardContent className="grid gap-4 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="section-kicker">本次持续时间</p>
+                <h2 className="mt-1 text-xl font-bold tracking-normal">
+                  {activeStartedAt ? "正在记录中" : "准备开始记录"}
+                </h2>
+              </div>
+              <CuteIllustration
+                className="size-16 border-coral/15 bg-blush"
+                imageClassName="object-contain p-1.5"
+                variant="horse"
+              />
+            </div>
+
+            <div
+              aria-label="本次宫缩计时圆盘"
+              className="mx-auto flex size-48 items-center justify-center rounded-full p-3 shadow-soft"
+              style={{
+                background: `conic-gradient(hsl(var(--coral)) ${timerProgress}%, hsl(var(--blush)) ${timerProgress}% 100%)`,
+              }}
+            >
+              <div className="flex size-full flex-col items-center justify-center rounded-full border border-white/90 bg-card text-center shadow-sm">
+                <CalendarClock className="mb-2 size-6 text-primary" />
+                <p className="text-4xl font-bold tracking-normal text-foreground">
+                  {formatDuration(elapsedSeconds)}
+                </p>
+                <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                  {activeStartedAt ? "正在记录中" : "点击开始计时"}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="soft-detail text-center">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  上次间隔
+                </p>
+                <p className="mt-1 text-xl font-bold tracking-normal">
+                  {formatDuration(stats.averageIntervalSeconds)}
+                </p>
+              </div>
+              <div className="soft-detail text-center">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  平均持续
+                </p>
+                <p className="mt-1 text-xl font-bold tracking-normal">
+                  {formatDuration(stats.averageDurationSeconds)}
+                </p>
+              </div>
             </div>
 
             <Textarea
@@ -162,13 +202,13 @@ export default function ContractionsPage() {
               </Button>
             </div>
 
-            <p className="rounded-lg bg-secondary/80 px-3 py-3 text-sm leading-6 text-primary">
+            <p className="macaron-note">
               是否去医院以医生/医院要求为准；DadKit 只帮你保存记录。
             </p>
           </CardContent>
         </Card>
 
-        <Card className="rounded-lg">
+        <Card className="macaron-panel">
           <CardHeader>
             <CardTitle>手动添加</CardTitle>
           </CardHeader>
@@ -196,7 +236,7 @@ export default function ContractionsPage() {
               添加记录
             </Button>
             {message ? (
-              <p className="rounded-lg bg-secondary/80 px-3 py-2 text-sm text-primary">
+              <p className="macaron-note">
                 {message}
               </p>
             ) : null}
@@ -217,7 +257,7 @@ export default function ContractionsPage() {
       </section>
 
       <section className="mobile-shell grid gap-3 lg:max-w-none">
-        <Card className="rounded-lg">
+        <Card className="macaron-panel">
           <CardHeader>
             <CardTitle>记录明细</CardTitle>
           </CardHeader>
@@ -229,7 +269,7 @@ export default function ContractionsPage() {
             ) : (
               contractions.map((record) => (
                 <div
-                  className="grid gap-2 rounded-lg border border-border bg-background p-3 sm:grid-cols-[1fr_auto]"
+                  className="soft-detail grid gap-2 sm:grid-cols-[1fr_auto]"
                   key={record.id}
                 >
                   <div className="min-w-0">
@@ -256,7 +296,7 @@ export default function ContractionsPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-lg">
+        <Card className="macaron-panel">
           <CardHeader>
             <CardTitle>导出给医生/家人</CardTitle>
           </CardHeader>
@@ -288,7 +328,7 @@ function Field({
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="rounded-lg">
+    <Card className="macaron-strip">
       <CardContent className="p-4">
         <p className="text-sm text-muted-foreground">{label}</p>
         <p className="mt-1 text-2xl font-semibold tracking-normal">{value}</p>

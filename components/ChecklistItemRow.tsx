@@ -114,9 +114,9 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
           </details>
         ) : null}
       </div>
-      <div className="col-span-2 flex items-center justify-end gap-1.5 sm:col-span-1">
+      <div className="col-span-2 flex flex-wrap items-center justify-end gap-1.5 sm:col-span-1 sm:flex-nowrap">
         {isHospitalConfirmation ? (
-          <Button asChild size="sm" variant="outline">
+          <Button asChild className="shrink-0" size="sm" variant="outline">
             <Link href="/hospital">
               <Hospital className="size-4" />
               去确认
@@ -129,7 +129,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             updateItem(item.id, { status: value as PackStatus })
           }
         >
-          <SelectTrigger className="h-8 w-[116px] rounded-full bg-card text-xs">
+          <SelectTrigger className="h-8 w-[116px] shrink-0 rounded-full bg-card text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

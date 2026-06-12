@@ -13,7 +13,7 @@ const hospitalQuestionCard = readFileSync(
 );
 
 describe("hospital page copy", () => {
-  it("uses the new hospital confirmation tab copy", () => {
+  it("uses the app-like hospital confirmation list copy", () => {
     expect(hospitalPage).not.toContain("高优先级问题");
     expect(hospitalPage).not.toContain("入院路线 / 电话 / 停车");
     expect(hospitalPage).not.toContain('value="provided"');
@@ -21,7 +21,10 @@ describe("hospital page copy", () => {
     expect(hospitalPage).toContain("下次产检要问");
     expect(hospitalPage).toContain("爸爸要确认");
     expect(hospitalPage).toContain("高级设置");
-    expect(hospitalPage.match(/<TabsTrigger/g) ?? []).toHaveLength(3);
+    expect(hospitalPage).toContain("lg:grid-cols-[1.15fr_0.85fr]");
+    expect(hospitalPage).toContain("macaron-panel p-4");
+    expect(hospitalPage).not.toContain("TabsTrigger");
+    expect(hospitalPage).not.toContain("TabsList");
   });
 
   it("keeps confirmation items directly actionable", () => {

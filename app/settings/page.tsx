@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {
+  ArrowRight,
   Cloud,
   Copy,
   Download,
@@ -28,7 +30,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   DEFAULT_BIRTH_PLAN,
@@ -352,7 +353,7 @@ export default function SettingsPage() {
         title="设置"
         description="数据保存在当前浏览器，可通过 JSON 或 WebDAV 手动备份。"
       >
-        <span className="inline-flex rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-primary">
+        <span className="inline-flex rounded-full border border-white/80 bg-mint px-3 py-1 text-xs font-semibold text-primary shadow-sm">
           当前版本 v{releaseInfo.version} · 构建时间{" "}
           {releaseInfo.buildTime === "unknown"
             ? "暂未记录"
@@ -360,15 +361,94 @@ export default function SettingsPage() {
         </span>
       </PageIntro>
 
-      <Tabs className="mobile-shell lg:max-w-none" defaultValue="backup">
-        <TabsList className="grid h-auto w-full grid-cols-3 rounded-lg p-1">
-          <TabsTrigger value="backup">备份</TabsTrigger>
-          <TabsTrigger value="profile">资料</TabsTrigger>
-          <TabsTrigger value="advanced">高级</TabsTrigger>
-        </TabsList>
+      <Card className="mobile-shell app-list-card lg:max-w-none">
+        <CardContent className="app-list-row p-3">
+          <span className="relative flex size-12 shrink-0 overflow-hidden rounded-full border border-white/80 bg-peach shadow-sm">
+            <Image
+              alt="准爸爸头像"
+              className="object-cover"
+              fill
+              sizes="48px"
+              src="/illustrations/dadkit-horse-mascot.webp"
+            />
+          </span>
+          <div className="min-w-0">
+            <p className="text-base font-semibold">准爸爸</p>
+            <p className="mt-1 truncate text-xs text-muted-foreground">
+              一起做好交接的我们
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
-        <TabsContent className="grid gap-3" value="backup">
-          <Card className="rounded-lg">
+      <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-2">
+        <Card className="app-list-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">数据与备份</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 p-2 pt-0">
+            <SettingsShortcutRow
+              caption="手动上传或下载远端备份"
+              href="#webdav-backup"
+              icon={<Cloud className="size-4" />}
+              title="WebDAV 备份"
+            />
+            <SettingsShortcutRow
+              caption="复制当前浏览器里的完整数据"
+              href="#json-backup"
+              icon={<Download className="size-4" />}
+              title="导出 JSON"
+            />
+            <SettingsShortcutRow
+              caption="从本地 JSON 文件恢复"
+              href="#json-backup"
+              icon={<Upload className="size-4" />}
+              title="导入 JSON"
+            />
+            <SettingsShortcutRow
+              caption={`${snapshots.length} 份本地自动快照`}
+              href="#local-snapshots"
+              icon={<History className="size-4" />}
+              title="最近备份"
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="app-list-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">更多</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 p-2 pt-0">
+            <SettingsShortcutRow
+              caption="预产期、医院和生产方式"
+              href="/setup"
+              icon={<Info className="size-4" />}
+              title="编辑资料"
+            />
+            <SettingsShortcutRow
+              caption="宫缩、偏好卡、产后办理"
+              href="#more-tools"
+              icon={<Cloud className="size-4" />}
+              title="更多工具"
+            />
+            <SettingsShortcutRow
+              caption="清空前会自动保留快照"
+              href="#danger-zone"
+              icon={<Trash2 className="size-4" />}
+              title="清空本地数据"
+            />
+            <SettingsShortcutRow
+              caption={`v${releaseInfo.version}`}
+              href="#about-dadkit"
+              icon={<Info className="size-4" />}
+              title="关于 DadKit"
+            />
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="mobile-shell grid gap-3 lg:max-w-none">
+        <Card className="macaron-panel" id="local-snapshots">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <History className="size-4 text-primary" />
@@ -385,7 +465,7 @@ export default function SettingsPage() {
                   <div className="grid gap-2">
                     {recentSnapshots.map((snapshot) => (
                       <div
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-background p-3"
+                        className="soft-detail flex flex-wrap items-center justify-between gap-3"
                         key={snapshot.id}
                       >
                         <div className="min-w-0">
@@ -407,14 +487,14 @@ export default function SettingsPage() {
                     ))}
                   </div>
 
-                  <details className="rounded-lg border border-border bg-background p-3">
+                  <details className="soft-detail">
                     <summary className="cursor-pointer text-sm font-semibold">
                       查看全部备份
                     </summary>
                     <div className="mt-3 grid gap-2">
                       {snapshots.map((snapshot) => (
                         <div
-                          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3"
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/80 bg-card/80 p-3 shadow-sm"
                           key={snapshot.id}
                         >
                           <div className="min-w-0">
@@ -449,7 +529,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-lg">
+          <Card className="macaron-panel" id="json-backup">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Upload className="size-4 text-primary" />
@@ -457,7 +537,7 @@ export default function SettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3">
-              <details className="rounded-lg border border-border bg-background p-3">
+              <details className="soft-detail">
                 <summary className="cursor-pointer text-sm font-semibold">
                   导入 / 复制 JSON
                 </summary>
@@ -497,7 +577,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-lg">
+          <Card className="macaron-panel" id="webdav-backup">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Cloud className="size-4 text-primary" />
@@ -509,7 +589,7 @@ export default function SettingsPage() {
                 手动上传或下载 JSON 备份，不会自动同步。浏览器请求会经 DadKit 同源代理转发。
               </p>
 
-              <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background p-3">
+              <div className="soft-detail flex items-center justify-between gap-3">
                 <div>
                   <Label htmlFor="webdav-enabled">启用 WebDAV 备份</Label>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -546,7 +626,7 @@ export default function SettingsPage() {
                 </Button>
               </div>
 
-              <details className="rounded-lg border border-border bg-background p-3">
+              <details className="soft-detail">
                 <summary className="cursor-pointer text-sm font-semibold">
                   连接设置
                 </summary>
@@ -615,7 +695,7 @@ export default function SettingsPage() {
                       }
                     />
                   </Field>
-                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3">
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-white/80 bg-card/80 p-3 shadow-sm">
                     <div>
                       <Label htmlFor="webdav-remember-secret">
                         记住密码在本设备
@@ -654,7 +734,7 @@ export default function SettingsPage() {
               ) : null}
 
               {pendingRemoteBackup ? (
-                <div className="grid gap-3 rounded-lg border border-border bg-background p-3 text-sm">
+                <div className="soft-detail grid gap-3 text-sm">
                   <div className="grid gap-2 sm:grid-cols-4">
                     <StatusTile
                       label="更新时间"
@@ -720,10 +800,7 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent className="grid gap-3" value="profile">
-          <Card className="rounded-lg">
+          <Card className="macaron-panel">
             <CardHeader>
               <CardTitle>资料</CardTitle>
             </CardHeader>
@@ -740,7 +817,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-lg">
+          <Card className="macaron-panel" id="more-tools">
             <CardHeader>
               <CardTitle>更多工具</CardTitle>
             </CardHeader>
@@ -757,7 +834,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-lg">
+          <Card className="macaron-panel">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Info className="size-4 text-primary" />
@@ -774,10 +851,7 @@ export default function SettingsPage() {
               <StatusTile label="自定义项" value={`${customItems.length} 项`} />
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent className="grid gap-3" value="advanced">
-          <Card className="rounded-lg">
+          <Card className="macaron-panel" id="danger-zone">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <RotateCcw className="size-4 text-primary" />
@@ -806,7 +880,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-lg">
+          <Card className="macaron-panel" id="about-dadkit">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Info className="size-4 text-primary" />
@@ -838,7 +912,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-lg">
+          <Card className="macaron-panel">
             <CardHeader>
               <CardTitle>免责声明</CardTitle>
             </CardHeader>
@@ -847,7 +921,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-lg">
+          <Card className="macaron-panel">
             <CardHeader>
               <CardTitle>WebDAV 凭据说明</CardTitle>
             </CardHeader>
@@ -860,9 +934,33 @@ export default function SettingsPage() {
               </p>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+      </section>
     </div>
+  );
+}
+
+function SettingsShortcutRow({
+  caption,
+  href,
+  icon,
+  title,
+}: {
+  caption: string;
+  href: string;
+  icon: ReactNode;
+  title: string;
+}) {
+  return (
+    <Link className="app-list-row min-h-16 bg-card/90" href={href}>
+      <span className="app-icon-tile size-9 rounded-md">{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-bold leading-5">{title}</span>
+        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+          {caption}
+        </span>
+      </span>
+      <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+    </Link>
   );
 }
 
@@ -905,7 +1003,7 @@ function Field({
 
 function StatusTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-background px-3 py-2">
+    <div className="rounded-lg border border-white/80 bg-cream/70 px-3 py-2 shadow-sm">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 break-words font-semibold">{value}</p>
     </div>

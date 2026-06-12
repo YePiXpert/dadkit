@@ -21,8 +21,15 @@ const desktopNavItems = [
   { href: "/checklist", label: "清单", icon: ClipboardList },
   { href: "/hospital", label: "医院", icon: Hospital },
   { href: "/timeline", label: "时间线", icon: CalendarClock },
-  { href: "/settings", label: "设置", icon: Settings },
+  { href: "/settings", label: "我的", icon: Settings },
 ];
+
+const secondaryRouteOwners: Record<string, string[]> = {
+  "/checklist": ["/go", "/share"],
+  "/hospital": ["/birth-plan"],
+  "/timeline": ["/contractions"],
+  "/settings": ["/postpartum"],
+};
 
 export function AppHeader() {
   const profile = useDadKitStore((state) => state.profile);
@@ -46,7 +53,7 @@ export function AppHeader() {
               DadKit
             </span>
             <span className="hidden text-xs font-medium text-muted-foreground sm:block">
-              温柔待产任务档案
+              准爸爸好帮手
             </span>
           </span>
         </Link>
@@ -55,7 +62,10 @@ export function AppHeader() {
             const active =
               item.href === "/"
                 ? pathname === "/"
-                : pathname.startsWith(item.href);
+                : pathname.startsWith(item.href) ||
+                  secondaryRouteOwners[item.href]?.some((route) =>
+                    pathname.startsWith(route),
+                  );
             const Icon = item.icon;
 
             return (

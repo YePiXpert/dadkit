@@ -41,6 +41,7 @@ import {
   type Priority,
 } from "@/lib/types";
 import {
+  CHECKLIST_VISUAL_GROUPS,
   filterItemsByVisualGroup,
   groupItemsForChecklist,
   groupItemsForShopping,
@@ -149,6 +150,24 @@ export default function ChecklistPage() {
     [filters.category, filters.priority, filters.status, groupedModeItems],
   );
   const viewCopy = VIEW_COPY[visualGroup];
+  const groupCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        CHECKLIST_VISUAL_GROUPS.map((group) => {
+          const items = filterItemsByVisualGroup(modeItems, group.id);
+          const stats = calculateCompletion(items);
+
+          return [
+            group.id,
+            {
+              remaining: Math.max(0, stats.total - stats.completed),
+              total: stats.total,
+            },
+          ];
+        }),
+      ) as Record<ChecklistVisualGroup, { total: number; remaining: number }>,
+    [modeItems],
+  );
   const renderedGroups = useMemo(
     () =>
       visualGroup === "shopping"
@@ -189,25 +208,29 @@ export default function ChecklistPage() {
   return (
     <div className="page-shell">
       <PageIntro
-        eyebrow="清单工作台"
-        title={viewCopy.title}
+        eyebrow="待产包整理"
+        title="清单工作台"
         description={viewCopy.description}
       >
         <div className="grid grid-cols-3 gap-2">
-          <MetricTile label="当前视图" value={`${filteredItems.length} 项`} />
+          <MetricTile label="当前视图" value={viewCopy.title} />
           <MetricTile label="已完成" value={`${completion.completed} 项`} />
           <MetricTile label="待处理" value={`${remaining} 项`} />
         </div>
       </PageIntro>
 
-      <section className="mobile-shell grid gap-3 rounded-lg border border-white/80 bg-card/95 p-4 shadow-soft lg:max-w-none">
+      <section className="mobile-shell macaron-panel grid gap-3 p-4 lg:max-w-none">
         <div className="grid gap-3 lg:grid-cols-[auto_1fr] lg:items-center">
           <ModeToggle mode={checklistMode} onChange={setChecklistMode} />
           <ProgressSummary items={modeItems} />
         </div>
-        <ChecklistGroupTabs value={visualGroup} onChange={setVisualGroup} />
+        <ChecklistGroupTabs
+          counts={groupCounts}
+          value={visualGroup}
+          onChange={setVisualGroup}
+        />
         <details>
-          <summary className="cursor-pointer text-sm font-medium">
+          <summary className="cursor-pointer text-sm font-semibold text-primary">
             筛选与操作
           </summary>
           <div className="mt-3 grid gap-3">
@@ -296,7 +319,7 @@ export default function ChecklistPage() {
               ) : null}
             </div>
             {copyMessage ? (
-              <p className="text-sm text-muted-foreground">{copyMessage}</p>
+              <p className="macaron-note">{copyMessage}</p>
             ) : null}
           </div>
         </details>
@@ -338,9 +361,11 @@ export default function ChecklistPage() {
 
 function MetricTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-white/80 bg-card/95 p-3 shadow-sm">
+    <div className="macaron-strip">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-semibold tracking-normal">{value}</p>
+      <p className="mt-1 break-words text-base font-semibold tracking-normal sm:text-lg">
+        {value}
+      </p>
     </div>
   );
 }
@@ -385,7 +410,7 @@ function ChecklistGroupSummaryCard({
 
   return (
     <button
-      className="rounded-lg border border-white/80 bg-card/95 p-4 text-left shadow-soft transition-colors hover:border-primary/40"
+      className="rounded-lg border border-white/90 bg-card/95 p-4 text-left shadow-sm transition-colors hover:border-primary/40"
       type="button"
       onClick={onOpen}
     >
@@ -396,7 +421,7 @@ function ChecklistGroupSummaryCard({
             已完成 {completion.completed} 项 · 未完成 {remaining} 项
           </p>
         </div>
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-peach text-peach-foreground">
           <ArrowRight className="size-4" />
         </span>
       </div>

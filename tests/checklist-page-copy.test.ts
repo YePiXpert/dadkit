@@ -11,6 +11,10 @@ const checklistItemRow = readFileSync(
   join(process.cwd(), "components", "ChecklistItemRow.tsx"),
   "utf8",
 );
+const checklistCategoryCard = readFileSync(
+  join(process.cwd(), "components", "ChecklistCategoryCard.tsx"),
+  "utf8",
+);
 const checklistGroupTabs = readFileSync(
   join(process.cwd(), "components", "ChecklistGroupTabs.tsx"),
   "utf8",
@@ -41,7 +45,10 @@ describe("checklist page copy", () => {
 
   it("keeps checklist view choices visible without an embedded horizontal scroller", () => {
     expect(checklistGroupTabs).toContain("grid grid-cols-2");
-    expect(checklistGroupTabs).toContain("min-h-11");
+    expect(checklistGroupTabs).toContain("min-h-20");
+    expect(checklistGroupTabs).toContain("groupIcons");
+    expect(checklistGroupTabs).toContain("未完成 {count.remaining} 项");
+    expect(checklistPage).toContain("groupCounts");
     expect(checklistGroupTabs).not.toContain("overflow-x-auto");
     expect(checklistGroupTabs).not.toContain("min-w-max");
     expect(checklistPage).not.toContain("SlidersHorizontal");
@@ -50,5 +57,15 @@ describe("checklist page copy", () => {
   it("memoizes checklist rows for item-level updates", () => {
     expect(checklistItemRow).toContain("memo(function ChecklistItemRow");
     expect(checklistItemRow).toContain("ChecklistItemRow.displayName");
+  });
+
+  it("uses app-like category cards and stable action rows", () => {
+    expect(checklistCategoryCard).toContain("app-list-row");
+    expect(checklistCategoryCard).toContain("app-icon-tile");
+    expect(checklistCategoryCard).toContain("completion.percent");
+    expect(checklistCategoryCard).toContain("未完成");
+    expect(checklistItemRow).toContain("flex-wrap items-center justify-end");
+    expect(checklistItemRow).toContain("sm:flex-nowrap");
+    expect(checklistItemRow).toContain("shrink-0");
   });
 });

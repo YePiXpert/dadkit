@@ -17,12 +17,12 @@ import {
   HospitalQuestionCard,
   type HospitalQuestionCardInput,
 } from "@/components/HospitalQuestionCard";
+import { CuteIllustration } from "@/components/CuteIllustration";
 import { HospitalSelector } from "@/components/HospitalSelector";
 import { PageIntro } from "@/components/PageIntro";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   DAD_ACTION_TASKS,
@@ -212,71 +212,77 @@ export default function HospitalPage() {
         description="记录下次产检要问的问题，确认后会同步影响清单。小马助手会把答案带回待产包。"
       />
 
-      <Card className="mobile-shell lg:max-w-none">
-        <CardContent className="grid gap-3 p-4">
-          <div>
-            <p className="text-sm text-muted-foreground">当前医院</p>
-            <h2 className="mt-1 text-xl font-semibold tracking-normal">
-              {hospital?.name ?? "暂未确定医院"}
-            </h2>
+      <Card className="mobile-shell app-list-card lg:max-w-none">
+        <CardContent className="p-0">
+          <div className="app-list-row">
+            <span className="app-icon-tile">
+              <Hospital className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="section-kicker">当前医院</p>
+              <h2 className="mt-1 truncate text-xl font-semibold tracking-normal">
+                {hospital?.name ?? "暂未确定医院"}
+              </h2>
+            </div>
           </div>
-          <p className="text-xs leading-5 text-muted-foreground">
+          <p className="px-3 pb-2 pt-3 text-xs leading-5 text-muted-foreground">
             非官方模板，仅用于整理待确认事项。请以最近一次产检、入院须知或医院通知为准。
           </p>
         </CardContent>
       </Card>
 
-      <Card className="mobile-shell bg-secondary/75 lg:max-w-none">
-        <CardContent className="flex items-center justify-between gap-4 p-4">
-          <div>
-            <p className="text-sm text-muted-foreground">确认进度</p>
-            <p className="mt-1 text-2xl font-semibold tracking-normal">
+      <Card className="mobile-shell overflow-hidden border-coral/20 bg-blush/85 shadow-soft lg:max-w-none">
+        <CardContent className="grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-blush-foreground/75">
+              确认进度
+            </p>
+            <p className="mt-1 text-3xl font-bold tracking-normal text-blush-foreground">
               {completedConfirmations}/{allConfirmationItems.length}
             </p>
+            <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-card/80">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${confirmationPercent}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs font-semibold text-blush-foreground/70">
+              产检时逐项确认，回家后清单会同步变轻。
+            </p>
           </div>
-          <div className="flex size-16 items-center justify-center rounded-full bg-secondary text-lg font-semibold text-primary">
-            {confirmationPercent}%
-          </div>
+          <CuteIllustration
+            className="mx-auto size-24 border-coral/15 bg-card sm:mx-0"
+            imageClassName="object-contain p-2"
+            variant="horse"
+          />
         </CardContent>
       </Card>
 
-      <Tabs className="mobile-shell lg:max-w-none" defaultValue="next-checkup">
-        <TabsList className="grid h-auto w-full grid-cols-3 rounded-lg p-1">
-          <TabsTrigger className="px-2 text-xs" value="next-checkup">
-            下次产检要问
-          </TabsTrigger>
-          <TabsTrigger className="px-2 text-xs" value="dad">
-            爸爸要确认
-          </TabsTrigger>
-          <TabsTrigger className="px-2 text-xs" value="advanced">
-            高级设置
-          </TabsTrigger>
-        </TabsList>
+      <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[1.15fr_0.85fr]">
+        <QuestionSection
+          description="点开每一项记录医院答复，确认后会同步影响清单状态。"
+          icon={ClipboardList}
+          items={nextCheckupItems}
+          grouped
+          title="下次产检要问"
+          answersByItemId={answersByItemId}
+          onChange={updateHospitalAnswer}
+        />
+        <QuestionSection
+          description="路线、电话、停车和证件包，是爸爸临近入院前要落实的行动。"
+          icon={Hospital}
+          items={dadConfirmItems}
+          title="爸爸要确认"
+          answersByItemId={answersByItemId}
+          onChange={updateHospitalAnswer}
+        />
+      </section>
 
-        <TabsContent value="next-checkup">
-          <QuestionSection
-            description="点开每一项记录医院答复，确认后会同步影响清单状态。"
-            icon={ClipboardList}
-            items={nextCheckupItems}
-            grouped
-            title="下次产检要问"
-            answersByItemId={answersByItemId}
-            onChange={updateHospitalAnswer}
-          />
-        </TabsContent>
-
-        <TabsContent value="dad">
-          <QuestionSection
-            description="路线、电话、停车和证件包，是爸爸临近入院前要落实的行动。"
-            icon={Hospital}
-            items={dadConfirmItems}
-            title="爸爸要确认"
-            answersByItemId={answersByItemId}
-            onChange={updateHospitalAnswer}
-          />
-        </TabsContent>
-
-        <TabsContent value="advanced">
+      <details className="mobile-shell macaron-panel p-4 lg:max-w-none">
+        <summary className="cursor-pointer text-base font-bold">
+          高级设置
+        </summary>
+        <div className="mt-3">
           <AdvancedSettings
             customHospital={customHospital}
             documentsOverride={documentsOverride}
@@ -302,8 +308,8 @@ export default function HospitalPage() {
               hospitalId: activeProfile.hospitalId,
             }}
           />
-        </TabsContent>
-      </Tabs>
+        </div>
+      </details>
 
       <DisclaimerBox />
     </div>
@@ -343,7 +349,7 @@ function QuestionSection({
     : [{ groupId: "admission_flow" as const, label: "", items }];
 
   return (
-    <Card className="rounded-lg">
+    <Card className="macaron-panel">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Icon className="size-5 text-primary" />
@@ -351,9 +357,9 @@ function QuestionSection({
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-2">
-        <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+        <p className="macaron-note">{description}</p>
         {items.length === 0 ? (
-          <p className="rounded-lg border border-border bg-background p-3 text-sm text-muted-foreground">
+          <p className="soft-detail text-sm text-muted-foreground">
             暂时没有匹配的待确认事项。
           </p>
         ) : (
@@ -394,8 +400,8 @@ function ManualProvidedPicker({
 
         return (
           <button
-            className={`flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-left text-sm font-medium ${
-              checked ? "border-primary text-primary" : "border-border"
+            className={`flex items-center gap-2 rounded-lg border bg-cream/85 px-3 py-2 text-left text-sm font-semibold ${
+              checked ? "border-primary bg-mint text-primary" : "border-white/80"
             }`}
             key={id}
             type="button"
@@ -459,7 +465,7 @@ function AdvancedSettings({
 }) {
   return (
     <div className="grid gap-3">
-      <Card className="rounded-lg">
+      <Card className="macaron-panel">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Settings className="size-5 text-primary" />
@@ -478,7 +484,7 @@ function AdvancedSettings({
       </Card>
 
       {profileHospitalMode === "custom" ? (
-        <Card className="rounded-lg">
+        <Card className="macaron-panel">
           <CardHeader>
             <CardTitle className="text-lg">自定义医院信息</CardTitle>
           </CardHeader>
@@ -496,7 +502,7 @@ function AdvancedSettings({
       ) : null}
 
       {profileHospitalMode !== "unknown" ? (
-        <Card className="rounded-lg">
+        <Card className="macaron-panel">
           <CardHeader>
             <CardTitle className="text-lg">用户覆盖信息</CardTitle>
           </CardHeader>
@@ -531,14 +537,14 @@ function AdvancedSettings({
           </CardContent>
         </Card>
       ) : (
-        <Card className="rounded-lg">
+        <Card className="macaron-panel">
           <CardContent className="p-4 text-sm leading-6 text-muted-foreground">
             暂未确定医院时，DadKit 会保留医院相关待确认事项。确定医院后，可以在这里选择模板或填写自定义医院。
           </CardContent>
         </Card>
       )}
 
-      <Card className="rounded-lg">
+      <Card className="macaron-panel">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <CheckCircle2 className="size-5 text-primary" />
@@ -546,7 +552,7 @@ function AdvancedSettings({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <details className="rounded-lg border border-border bg-background p-3">
+          <details className="soft-detail">
             <summary className="cursor-pointer text-sm font-semibold">
               高级：手动标记医院已确认提供的物品
             </summary>

@@ -11,7 +11,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { ActionCard } from "@/components/ActionCard";
 import { CuteIllustration } from "@/components/CuteIllustration";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -150,32 +149,34 @@ export default function HomePage() {
         />
       </section>
 
-      <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-3">
+      <section className="mobile-shell grid gap-3 lg:max-w-none">
         <SectionHeader
-          className="lg:col-span-3"
           eyebrow="工具宫格"
           title="记录、沟通和产后办理"
         />
-        <ActionCard
-          description="记录开始、结束、持续和间隔，导出给医生或家人。"
-          href="/contractions"
-          icon={CalendarClock}
-          title="宫缩记录"
-          tone="amber"
-        />
-        <ActionCard
-          description="整理紧急联系人、陪产人、过敏用药和沟通偏好。"
-          href="/birth-plan"
-          icon={ClipboardList}
-          title="分娩偏好卡"
-        />
-        <ActionCard
-          description="把出生证明、结算、保险和复查事项做成待确认清单。"
-          href="/postpartum"
-          icon={CheckCircle2}
-          title="产后办理"
-          tone="coral"
-        />
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <ToolGridLink
+            caption="记录节奏"
+            href="/contractions"
+            icon={CalendarClock}
+            title="宫缩记录"
+            tone="coral"
+          />
+          <ToolGridLink
+            caption="沟通偏好"
+            href="/birth-plan"
+            icon={ClipboardList}
+            title="分娩偏好卡"
+            tone="mint"
+          />
+          <ToolGridLink
+            caption="手续材料"
+            href="/postpartum"
+            icon={CheckCircle2}
+            title="产后办理"
+            tone="amber"
+          />
+        </div>
       </section>
 
       <p className="mobile-shell text-xs leading-5 text-muted-foreground lg:max-w-none">
@@ -202,73 +203,66 @@ function PregnancyArchivePanel({
 }) {
   return (
     <Card className="overflow-hidden bg-card/95">
-      <CardContent className="grid gap-5 p-5">
-        <div className="grid gap-4 xl:grid-cols-[1fr_0.88fr] xl:items-center">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="cute-eyebrow">孕期档案</p>
-              <h1 className="mt-1 text-3xl font-semibold leading-tight tracking-normal sm:text-4xl">
-                DadKit 今日行动
-              </h1>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                从医院确认、购买清洗、核心打包到临出门检查，按预产期一步步收口。
-              </p>
+      <CardContent className="grid gap-4 p-4 sm:p-5">
+        <section className="app-hero-card grid min-h-56 gap-4 overflow-hidden p-4 sm:grid-cols-[minmax(0,1fr)_11rem] sm:items-end">
+          <div className="relative z-10">
+            <p className="text-sm font-semibold text-primary-foreground/75">
+              DadKit 今日行动
+            </p>
+            <h1 className="mt-2 text-4xl font-bold leading-tight tracking-normal">
+              {countdownLabel}
+            </h1>
+            <p className="mt-2 text-sm font-semibold text-primary-foreground/80">
+              {profile?.dueDate ? `预产期：${profile.dueDate}` : "预产期待填写"}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-primary-foreground/80">
+              {pregnancyProgress.label}
+            </p>
+            <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-card/25">
+              <div
+                className="h-full rounded-full bg-peach transition-all"
+                style={{ width: `${pregnancyProgress.percent}%` }}
+              />
             </div>
-            <span className="hidden rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-primary sm:inline-flex">
-              小马助手
-            </span>
+            <p className="mt-3 text-sm leading-6 text-primary-foreground/80">
+              {typeof daysLeft === "number"
+                ? dueAdvice(daysLeft)
+                : "填写预产期后，DadKit 会自动生成准备时间线。"}
+            </p>
+            <p className="mt-1 text-xs font-semibold text-primary-foreground/65">
+              当前阶段：{stageTitle}
+            </p>
           </div>
           <CuteIllustration
-            className="min-h-48 xl:min-h-52"
+            className="mx-auto min-h-32 w-full max-w-44 border-white/60 bg-card/15 sm:mx-0"
+            imageClassName="object-contain p-1"
             priority
-            sizes="(min-width: 1280px) 420px, 100vw"
+            sizes="(min-width: 1280px) 180px, 45vw"
             variant="family"
           />
-        </div>
+        </section>
 
-        <div className="rounded-lg border border-coral/20 bg-accent p-4 text-accent-foreground">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-accent-foreground/80">
-                距离预产期
-              </p>
-              <p className="mt-1 text-3xl font-semibold tracking-normal">
-                {countdownLabel}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-accent-foreground/80">
-                {typeof daysLeft === "number"
-                  ? dueAdvice(daysLeft)
-                  : "填写预产期后，DadKit 会自动生成准备时间线。"}
-              </p>
-            </div>
-            <div className="rounded-lg bg-card/80 px-3 py-2 text-right text-primary shadow-sm">
-              <p className="text-xs text-muted-foreground">孕期进度</p>
-              <p className="mt-1 text-sm font-semibold">
-                {pregnancyProgress.label}
-              </p>
-            </div>
-          </div>
-          <div className="mt-4">
-            <Progress value={pregnancyProgress.percent} />
-          </div>
-          <p className="mt-2 text-xs text-accent-foreground/75">
-            当前阶段：{stageTitle}
-          </p>
-        </div>
-
+        <p className="section-kicker">孕期档案</p>
         <div className="grid gap-2 sm:grid-cols-2">
           {archiveCards.map((card) => (
             <div
-              className="rounded-lg border border-white/80 bg-background/80 p-3 shadow-sm"
+              className="app-list-row items-start bg-background/80"
               key={card.label}
             >
-              <p className="text-xs font-medium text-muted-foreground">
-                {card.label}
-              </p>
-              <p className="mt-1 truncate text-base font-semibold">{card.value}</p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                {card.caption}
-              </p>
+              <span className="app-icon-tile size-9 rounded-md">
+                <CalendarClock className="size-4" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-xs font-semibold text-muted-foreground">
+                  {card.label}
+                </span>
+                <span className="mt-1 block truncate text-base font-bold">
+                  {card.value}
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                  {card.caption}
+                </span>
+              </span>
             </div>
           ))}
         </div>
@@ -323,12 +317,12 @@ function TodayTasksCard({
       <CardContent className="grid gap-3 p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="cute-eyebrow">今日行动</p>
+            <p className="section-kicker">今日行动 3 项</p>
             <h2 className="mt-1 text-2xl font-semibold tracking-normal">
               {profileReady ? "今天该做" : "等待预产期"}
             </h2>
           </div>
-          <Button asChild variant="outline">
+          <Button asChild size="sm" variant="outline">
             <Link href={profileReady ? "/timeline" : "/setup"}>
               {profileReady ? "全部" : "填写"}
             </Link>
@@ -346,21 +340,34 @@ function TodayTasksCard({
         ) : (
           <div className="grid gap-2">
             {tasks.map((task) => (
-              <div
-                className="grid gap-2 rounded-lg border border-white/80 bg-background/80 p-3 shadow-sm"
+              <article
+                className="app-list-row items-start bg-background/80"
                 key={task.id}
               >
-                <div>
-                  <p className="font-medium">{task.title}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                <span className="app-icon-tile size-9 rounded-md">
+                  <ClipboardList className="size-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold leading-5">
+                    {task.title}
+                  </span>
+                  <span className="mt-1 block text-xs font-semibold text-coral-foreground">
+                    建议今天完成
+                  </span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
                     {TIMELINE_STAGE_TITLES[task.stageId]}
-                  </p>
-                </div>
-                <Button onClick={() => onDone(task.id)} size="sm" variant="outline">
+                  </span>
+                </span>
+                <Button
+                  className="size-9 shrink-0 rounded-full px-0"
+                  onClick={() => onDone(task.id)}
+                  size="sm"
+                  variant="outline"
+                >
                   <CheckCircle2 className="size-4" />
-                  完成
+                  <span className="sr-only">完成</span>
                 </Button>
-              </div>
+              </article>
             ))}
           </div>
         )}
@@ -383,6 +390,42 @@ function SectionHeader({
       <p className="cute-eyebrow">{eyebrow}</p>
       <h2 className="mt-1 text-xl font-semibold tracking-normal">{title}</h2>
     </div>
+  );
+}
+
+function ToolGridLink({
+  caption,
+  href,
+  icon: Icon,
+  title,
+  tone,
+}: {
+  caption: string;
+  href: string;
+  icon: LucideIcon;
+  title: string;
+  tone: "amber" | "coral" | "mint";
+}) {
+  const toneClass =
+    tone === "coral"
+      ? "bg-coral-soft text-coral-foreground"
+      : tone === "amber"
+        ? "bg-amber-soft text-amber-foreground"
+        : "bg-mint text-primary";
+
+  return (
+    <Link
+      className="app-list-card grid min-h-24 place-items-center gap-2 p-3 text-center transition-transform active:scale-[0.99]"
+      href={href}
+    >
+      <span
+        className={`flex size-11 items-center justify-center rounded-lg shadow-sm ${toneClass}`}
+      >
+        <Icon className="size-5" />
+      </span>
+      <span className="text-sm font-bold leading-5">{title}</span>
+      <span className="text-xs font-semibold text-muted-foreground">{caption}</span>
+    </Link>
   );
 }
 

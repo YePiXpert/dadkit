@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { CheckCircle2, ChevronDown, ClipboardList } from "lucide-react";
 
 import { ChecklistItemRow } from "@/components/ChecklistItemRow";
 import { Button } from "@/components/ui/button";
@@ -34,25 +34,38 @@ export function ChecklistCategoryCard({
   }
 
   return (
-    <section className="rounded-lg border border-white/80 bg-card/95 p-3 shadow-soft">
-      <div className="space-y-2">
+    <section className="macaron-panel p-3">
+      <div className="space-y-3">
         <button
-          className="flex w-full items-center justify-between gap-3 text-left"
+          className="app-list-row w-full bg-card/90 text-left"
           type="button"
           onClick={() => setOpen((value) => !value)}
         >
-          <span className="flex min-w-0 items-center gap-2">
+          <span className="app-icon-tile size-10 rounded-md">
+            {completion.percent === 100 ? (
+              <CheckCircle2 className="size-5" />
+            ) : (
+              <ClipboardList className="size-5" />
+            )}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-base font-bold tracking-normal">
+              {title}
+            </span>
+            <span className="mt-1 block text-xs font-semibold text-muted-foreground">
+              已完成 {completion.completed} 项 · 未完成{" "}
+              {Math.max(0, completion.total - completion.completed)} 项
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-2">
+            <span className="rounded-full bg-mint px-2.5 py-1 text-sm font-semibold text-mint-foreground">
+              {completion.percent}%
+            </span>
             <ChevronDown
               className={`size-4 shrink-0 text-muted-foreground transition-transform ${
                 open ? "" : "-rotate-90"
               }`}
             />
-            <span className="truncate text-base font-semibold tracking-normal">
-              {title}
-            </span>
-          </span>
-          <span className="shrink-0 text-sm text-muted-foreground">
-            {completion.completed}/{completion.total}
           </span>
         </button>
         <div className="flex items-center gap-3">

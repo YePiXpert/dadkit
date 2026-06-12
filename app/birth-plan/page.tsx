@@ -95,7 +95,7 @@ export default function BirthPlanPage() {
       />
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[1fr_0.9fr]">
-        <Card className="rounded-lg">
+        <Card className="macaron-panel">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ClipboardList className="size-4 text-primary" />
@@ -135,14 +135,14 @@ export default function BirthPlanPage() {
               </Field>
             ))}
 
-            <p className="inline-flex items-center gap-2 rounded-lg bg-secondary px-3 py-2 text-sm text-primary">
+            <p className="macaron-note inline-flex items-center gap-2">
               <Save className="size-4" />
               已自动保存到当前浏览器。
             </p>
           </CardContent>
         </Card>
 
-        <Card className="rounded-lg">
+        <Card className="macaron-panel">
           <CardHeader>
             <CardTitle>复制 / 导出沟通卡</CardTitle>
           </CardHeader>

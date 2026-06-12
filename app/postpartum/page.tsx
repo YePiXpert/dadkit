@@ -39,9 +39,11 @@ export default function PostpartumPage() {
       />
 
       <section className="mobile-shell grid gap-3 lg:max-w-none">
-        <Card className="bg-secondary/80">
-          <CardContent className="flex gap-3 p-4 text-sm leading-6 text-primary">
-            <Info className="mt-0.5 size-4 shrink-0" />
+        <Card className="app-list-card">
+          <CardContent className="app-list-row p-3 text-sm leading-6 text-primary">
+            <span className="app-icon-tile">
+              <Info className="size-4" />
+            </span>
             <p>
               北京、玉泉等具体场景可以写进备注；最终以医院、窗口和官方渠道要求为准。
             </p>
@@ -56,14 +58,14 @@ export default function PostpartumPage() {
           const tasks = postpartumTasks.filter((task) => task.group === group);
 
           return (
-            <Card className="rounded-lg" key={group}>
+            <Card className="macaron-panel" key={group}>
               <CardHeader>
                 <CardTitle>{label}</CardTitle>
               </CardHeader>
               <CardContent className="grid gap-3">
                 {tasks.map((task) => (
                   <div
-                    className="grid gap-3 rounded-lg border border-border bg-background p-3 lg:grid-cols-[1fr_11rem]"
+                    className="soft-detail grid gap-3 lg:grid-cols-[1fr_11rem]"
                     key={task.id}
                   >
                     <div className="grid gap-2">
@@ -113,7 +115,7 @@ export default function PostpartumPage() {
           );
         })}
 
-        <Card className="rounded-lg">
+        <Card className="macaron-panel">
           <CardHeader>
             <CardTitle>导出待确认清单</CardTitle>
           </CardHeader>

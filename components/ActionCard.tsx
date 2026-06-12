@@ -22,9 +22,9 @@ export function ActionCard({
     <Link
       className={cn(
         "grid min-h-[132px] gap-3 rounded-lg border border-white/80 bg-card/95 p-4 shadow-soft transition-all active:scale-[0.99]",
-        tone === "primary" && "hover:border-primary/40 hover:bg-secondary/40",
+        tone === "primary" && "bg-mint/55 hover:border-primary/40 hover:bg-mint/75",
         tone === "amber" && "border-amber/35 bg-amber-soft/65",
-        tone === "coral" && "border-coral/30 bg-coral-soft/75",
+        tone === "coral" && "border-coral/30 bg-peach/75",
       )}
       href={href}
     >

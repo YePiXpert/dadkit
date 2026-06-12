@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronDown, Save } from "lucide-react";
+import { Check, ChevronDown, ClipboardList, Hospital, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,12 +30,12 @@ type HospitalQuestionCardProps = {
 };
 
 const STATUS_BADGE_CLASSES: Record<HospitalAnswerStatus, string> = {
-  todo: "border-border bg-muted text-muted-foreground",
-  confirmed: "border-primary/20 bg-secondary text-primary",
-  provided: "border-primary/20 bg-secondary text-primary",
+  todo: "border-white/80 bg-cream text-muted-foreground",
+  confirmed: "border-primary/20 bg-mint text-primary",
+  provided: "border-primary/20 bg-mint text-primary",
   not_provided: "border-amber/40 bg-amber-soft text-amber-foreground",
   partial: "border-amber/40 bg-amber-soft text-amber-foreground",
-  not_needed: "border-border bg-muted text-muted-foreground",
+  not_needed: "border-white/80 bg-lavender text-lavender-foreground",
 };
 
 function statusFromPackStatus(status: PackStatus): HospitalAnswerStatus {
@@ -127,25 +127,34 @@ export function HospitalQuestionCard({
   }
 
   return (
-    <section className="rounded-lg border border-border bg-card shadow-sm">
+    <section className="rounded-lg border border-white/90 bg-card/95 shadow-sm">
       <div className="flex w-full items-start justify-between gap-3 px-3 py-3">
-        <span className="min-w-0">
-          <span className="block text-sm font-semibold leading-5">
-            {normalizedItem.name}
+        <span className="flex min-w-0 gap-3">
+          <span className="app-icon-tile size-9 rounded-md">
+            {normalizedItem.kind === "task" ? (
+              <Hospital className="size-4" />
+            ) : (
+              <ClipboardList className="size-4" />
+            )}
           </span>
-          {previewNote ? (
-            <span className="mt-1 line-clamp-2 block text-xs leading-5 text-muted-foreground">
-              {previewNote}
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold leading-5">
+              {normalizedItem.name}
             </span>
-          ) : normalizedItem.note ? (
-            <span className="mt-1 line-clamp-2 block text-xs leading-5 text-muted-foreground">
-              {normalizedItem.note}
-            </span>
-          ) : null}
+            {previewNote ? (
+              <span className="mt-1 line-clamp-2 block text-xs leading-5 text-muted-foreground">
+                {previewNote}
+              </span>
+            ) : normalizedItem.note ? (
+              <span className="mt-1 line-clamp-2 block text-xs leading-5 text-muted-foreground">
+                {normalizedItem.note}
+              </span>
+            ) : null}
+          </span>
         </span>
         <span
           className={cn(
-            "shrink-0 rounded-md border px-2 py-1 text-xs font-medium",
+            "shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold",
             STATUS_BADGE_CLASSES[savedStatus],
           )}
         >
@@ -161,10 +170,10 @@ export function HospitalQuestionCard({
           {options.map((option) => (
             <button
               className={cn(
-                "inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors",
+                "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition-colors",
                 status === option
                   ? STATUS_BADGE_CLASSES[option]
-                  : "border-border bg-background text-muted-foreground",
+                  : "border-white/80 bg-cream/70 text-muted-foreground",
               )}
               key={option}
               type="button"
@@ -177,7 +186,7 @@ export function HospitalQuestionCard({
         </div>
 
         <button
-          className="flex items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-primary"
+          className="flex items-center justify-between rounded-lg border border-white/80 bg-peach/55 px-3 py-2 text-sm font-semibold text-primary"
           type="button"
           onClick={() => setOpen((value) => !value)}
         >
@@ -191,7 +200,7 @@ export function HospitalQuestionCard({
         </button>
 
         {open ? (
-          <div className="grid gap-3 border-t border-border pt-3">
+          <div className="grid gap-3 border-t border-white/80 pt-3">
             <Textarea
               className="min-h-24 resize-y"
               placeholder="记录医院答复、电话、入口、时间或需要下次再问的细节"

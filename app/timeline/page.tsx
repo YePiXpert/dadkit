@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { CheckCircle2 } from "lucide-react";
 
+import { CuteIllustration } from "@/components/CuteIllustration";
 import { EmptyState } from "@/components/EmptyState";
 import { PageIntro } from "@/components/PageIntro";
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,22 @@ export default function TimelinePage() {
   const updateTimelineTaskStatus = useDadKitStore(
     (state) => state.updateTimelineTaskStatus,
   );
+  const timeline = useMemo(
+    () => (profile?.dueDate ? generateTimeline(profile, checklist) : []),
+    [checklist, profile],
+  );
+  const currentStageId = useMemo(
+    () => (profile?.dueDate ? getCurrentTimelineStageId(profile) : undefined),
+    [profile],
+  );
+  const currentStage = useMemo(
+    () => timeline.find((stage) => stage.id === currentStageId),
+    [currentStageId, timeline],
+  );
+  const daysLeft = useMemo(
+    () => (profile?.dueDate ? getDaysUntilDue(profile) : undefined),
+    [profile],
+  );
 
   if (!profile?.dueDate) {
     return (
@@ -46,11 +64,6 @@ export default function TimelinePage() {
     );
   }
 
-  const timeline = generateTimeline(profile, checklist);
-  const currentStageId = getCurrentTimelineStageId(profile);
-  const currentStage = timeline.find((stage) => stage.id === currentStageId);
-  const daysLeft = getDaysUntilDue(profile);
-
   return (
     <div className="page-shell">
       <PageIntro
@@ -60,21 +73,31 @@ export default function TimelinePage() {
       />
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[0.9fr_1.1fr]">
-        <Card className="border-coral/25 bg-accent text-accent-foreground">
-          <CardContent className="grid gap-2 p-5">
-            <p className="text-sm font-semibold text-accent-foreground/75">
-              距离预产期
-            </p>
-            <p className="text-4xl font-semibold tracking-normal">
-              {typeof daysLeft === "number"
-                ? daysLeft > 0
-                  ? `还有 ${daysLeft} 天`
-                  : "已经到预产期"
-                : "未设置"}
-            </p>
+        <Card className="app-hero-card">
+          <CardContent className="grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_5rem] sm:items-center">
+            <div>
+              <p className="text-sm font-semibold text-primary-foreground/75">
+                小马倒计时
+              </p>
+              <p className="mt-1 text-4xl font-semibold tracking-normal">
+                {typeof daysLeft === "number"
+                  ? daysLeft > 0
+                    ? `还有 ${daysLeft} 天`
+                    : "已经到预产期"
+                  : "未设置"}
+              </p>
+              <p className="mt-3 rounded-full bg-card/20 px-3 py-1 text-xs font-semibold text-primary-foreground/80">
+                预产期 {profile.dueDate}
+              </p>
+            </div>
+            <CuteIllustration
+              className="mx-auto size-20 border-white/60 bg-card/20 sm:mx-0"
+              imageClassName="object-contain p-1.5"
+              variant="horse"
+            />
           </CardContent>
         </Card>
-        <Card>
+        <Card className="macaron-panel">
           <CardContent className="grid gap-2 p-5">
             <p className="text-sm text-muted-foreground">当前阶段</p>
             <p className="text-2xl font-semibold tracking-normal">
@@ -87,7 +110,8 @@ export default function TimelinePage() {
         </Card>
       </section>
 
-      <section className="mobile-shell grid gap-3 lg:max-w-none">
+      <section className="mobile-shell relative grid gap-3 lg:max-w-none">
+        <div className="absolute bottom-5 left-[1.125rem] top-5 w-px bg-gradient-to-b from-mint via-coral/45 to-lavender" />
         {timeline.map((stage) => {
           const stageStatus = calculateTimelineStageStatus(
             stage,
@@ -97,40 +121,63 @@ export default function TimelinePage() {
           const isCurrent = stage.id === currentStageId;
 
           return (
-            <Card
-              className={cn(isCurrent && "border-primary/30 bg-secondary/55")}
+            <div
+              className="relative grid grid-cols-[2.25rem_1fr] gap-2"
               key={stage.id}
             >
-              <details open={isCurrent ? true : undefined}>
-                <summary className="cursor-pointer list-none">
-                  <CardHeader className="gap-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">
-                          {stage.subtitle}
-                        </p>
-                        <CardTitle className="mt-1">{stage.title}</CardTitle>
+              <div className="relative z-10 flex justify-center pt-4">
+                <span
+                  className={cn(
+                    "flex size-9 items-center justify-center rounded-full border border-white/90 bg-card text-primary shadow-sm",
+                    isCurrent && "bg-primary text-primary-foreground",
+                    stageStatus.percent === 100 && "bg-mint text-primary",
+                  )}
+                >
+                  {stageStatus.percent === 100 || isCurrent ? (
+                    <CheckCircle2 className="size-4" />
+                  ) : (
+                    <span className="size-2 rounded-full bg-current" />
+                  )}
+                </span>
+              </div>
+
+              <Card
+                className={cn(
+                  "macaron-panel",
+                  isCurrent && "border-primary/30 bg-mint/80",
+                )}
+              >
+                <details open={isCurrent ? true : undefined}>
+                  <summary className="cursor-pointer list-none">
+                    <CardHeader className="gap-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground">
+                            {stage.subtitle}
+                          </p>
+                          <CardTitle className="mt-1">{stage.title}</CardTitle>
+                        </div>
+                        <span className="rounded-full bg-card px-3 py-1 text-sm font-semibold text-primary shadow-sm">
+                          {stageStatus.percent}%
+                        </span>
                       </div>
-                      <span className="rounded-full bg-background px-3 py-1 text-sm font-semibold text-primary">
-                        {stageStatus.percent}%
-                      </span>
-                    </div>
-                    <Progress value={stageStatus.percent} />
-                  </CardHeader>
-                </summary>
-                <CardContent className="grid gap-2">
-                  {stage.tasks.map((task) => (
-                    <TimelineTaskRow
-                      checklist={checklist}
-                      key={task.id}
-                      onChange={updateTimelineTaskStatus}
-                      statuses={timelineTaskStatuses}
-                      task={task}
-                    />
-                  ))}
-                </CardContent>
-              </details>
-            </Card>
+                      <Progress value={stageStatus.percent} />
+                    </CardHeader>
+                  </summary>
+                  <CardContent className="grid gap-2">
+                    {stage.tasks.map((task) => (
+                      <TimelineTaskRow
+                        checklist={checklist}
+                        key={task.id}
+                        onChange={updateTimelineTaskStatus}
+                        statuses={timelineTaskStatuses}
+                        task={task}
+                      />
+                    ))}
+                  </CardContent>
+                </details>
+              </Card>
+            </div>
           );
         })}
       </section>
@@ -163,7 +210,7 @@ function TimelineTaskRow({
   const relatedCount = task.relatedItemIds?.length ?? 0;
 
   return (
-    <div className="grid gap-3 rounded-lg border border-border bg-card p-3 sm:grid-cols-[1fr_auto] sm:items-center">
+    <div className="soft-detail grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
       <div className="flex gap-3">
         {done ? (
           <CheckCircle2 className="mt-0.5 size-5 text-primary" />
@@ -173,7 +220,7 @@ function TimelineTaskRow({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <p className="font-medium">{task.title}</p>
-            <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-primary">
+            <span className="rounded-full bg-lavender px-2 py-0.5 text-xs font-semibold text-lavender-foreground">
               {TIMELINE_KIND_LABELS[task.kind]}
             </span>
           </div>

@@ -29,6 +29,12 @@ describe("home page copy", () => {
     expect(homePage).toContain("核心打包");
     expect(homePage).toContain("医院待问");
     expect(homePage).toContain("临出门");
+    expect(homePage).toContain("app-hero-card");
+    expect(homePage).toContain("预产期：");
+    expect(homePage).toContain("建议今天完成");
+    expect(homePage).toContain("app-list-row");
+    expect(homePage).toContain("ToolGridLink");
+    expect(homePage).toContain("grid grid-cols-2 gap-2 sm:grid-cols-3");
     expect(homePage).not.toContain("completed/");
   });
 });

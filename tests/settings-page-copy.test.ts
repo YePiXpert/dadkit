@@ -9,7 +9,7 @@ const settingsPage = readFileSync(
 );
 
 describe("settings page copy", () => {
-  it("uses the settings tabs and top description", () => {
+  it("uses a mobile app settings header and single-page sections", () => {
     expect(settingsPage).toContain("<PageIntro");
     expect(settingsPage).toContain('title="设置"');
     expect(settingsPage).toContain('eyebrow="本地数据管家"');
@@ -17,12 +17,15 @@ describe("settings page copy", () => {
     expect(settingsPage).toContain(
       "数据保存在当前浏览器，可通过 JSON 或 WebDAV 手动备份。",
     );
-    expect(settingsPage).toContain('value="backup"');
-    expect(settingsPage).toContain('value="profile"');
-    expect(settingsPage).toContain('value="advanced"');
-    expect(settingsPage).toContain(">备份</TabsTrigger>");
-    expect(settingsPage).toContain(">资料</TabsTrigger>");
-    expect(settingsPage).toContain(">高级</TabsTrigger>");
+    expect(settingsPage).toContain("准爸爸头像");
+    expect(settingsPage).toContain("一起做好交接的我们");
+    expect(settingsPage).toContain("app-list-card");
+    expect(settingsPage).toContain("SettingsShortcutRow");
+    expect(settingsPage).toContain("数据与备份");
+    expect(settingsPage).toContain('href="#webdav-backup"');
+    expect(settingsPage).toContain('href="#json-backup"');
+    expect(settingsPage).toContain('id="local-snapshots"');
+    expect(settingsPage).not.toContain("TabsTrigger");
   });
 
   it("shows only two recent backups before the full backup details", () => {
@@ -36,7 +39,7 @@ describe("settings page copy", () => {
     expect(settingsPage).toMatch(/<details[\s\S]*连接设置/);
   });
 
-  it("moves profile and high-risk settings into the right tabs", () => {
+  it("keeps profile and high-risk settings visible in the settings list", () => {
     expect(settingsPage).toContain("修改个人资料");
     expect(settingsPage).toContain("修改地区医院");
     expect(settingsPage).toContain("编辑医院信息");

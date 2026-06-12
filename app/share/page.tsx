@@ -77,11 +77,11 @@ export default function SharePage() {
         description="只保留要拿、要问、要确认的事，适合复制给自己或家人。"
       />
 
-      <Card className="mobile-shell border-coral/25 bg-accent text-accent-foreground lg:max-w-none">
+      <Card className="mobile-shell app-hero-card lg:max-w-none">
         <CardContent className="flex items-center justify-between gap-4 p-5">
           <div>
             <p className="text-2xl font-semibold tracking-normal">今天先完成 3 件事</p>
-            <p className="mt-2 text-sm leading-6 text-accent-foreground/75">
+            <p className="mt-2 text-sm leading-6 text-primary-foreground/75">
               保存电话 · 确认路线 · 确认证件包
             </p>
           </div>
@@ -95,7 +95,7 @@ export default function SharePage() {
         </CardContent>
       </Card>
 
-      <Card className="mobile-shell lg:max-w-none">
+      <Card className="mobile-shell macaron-panel lg:max-w-none">
         <CardHeader>
           <CardTitle>导出清单</CardTitle>
         </CardHeader>
@@ -119,7 +119,7 @@ export default function SharePage() {
               <ExportTextArea value={fullText} />
             </TabsContent>
             <TabsContent value="dad">
-              <div className="mb-3 rounded-lg bg-coral-soft px-3 py-2 text-sm leading-6 text-coral-foreground">
+              <div className="macaron-note mb-3">
                 爸爸执行版只保留要拿、要问、要确认的事，适合直接复制给家人。
               </div>
               <ExportTextArea value={dadText} />
