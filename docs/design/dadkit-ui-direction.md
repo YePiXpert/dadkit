@@ -5,7 +5,7 @@
 - 美柚：多阶段女性健康服务，强调经期、备孕、怀孕、育儿的身份切换和工具入口密度。
 - 宝宝记：孕育记录和家庭共育工具，适合参考温和、可信、轻记录的页面节奏。
 - DadKit 保持本地优先、准爸爸任务工具定位，不引入社区流、电商推荐或医疗诊断视觉。
-- 宝宝属马，本轮建立“小马助手”插画 IP：首页使用孕妈妈、爸爸和小马一起整理清单的家庭主视觉，工具页和空状态使用拿清单的小马贴纸。
+- 本轮建立透明插画体系：首页使用孕妈妈和准爸爸一起整理清单的家庭主视觉，工具页、头像和空状态使用拿清单的小熊助手贴纸。
 
 ## Palette
 
@@ -19,9 +19,9 @@
 
 ## Illustration system
 
-- 主视觉：`public/illustrations/dadkit-horse-family.webp`，用于首页首屏，强调小人、小马和待产整理场景。
-- 贴纸：`public/illustrations/dadkit-horse-mascot.webp`，用于页面头部、空状态和轻提示。
-- 页面内不使用兔子或兔子玩偶，避免和属马设定冲突。
+- 主视觉：`public/illustrations/dadkit-family-transparent.png`，用于首页首屏，强调准爸爸、孕妈妈和待产整理场景。
+- 贴纸：`public/illustrations/dadkit-bear-transparent.png`，用于页面头部、头像、空状态和轻提示。
+- 插画资源使用透明 alpha PNG，保持矢量感和柔和母婴 App 气质，避免矩形背景破坏卡片融合。
 - 插画不承载医疗判断，不放文字、Logo 或品牌符号，作为温和引导和情绪缓冲。
 
 ## Interaction rules
