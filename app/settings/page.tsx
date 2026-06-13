@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 
 import { DisclaimerBox } from "@/components/DisclaimerBox";
-import { PageIntro } from "@/components/PageIntro";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -348,36 +347,27 @@ export default function SettingsPage() {
 
   return (
     <div className="page-shell">
-      <PageIntro
-        eyebrow="本地数据管家"
-        title="设置"
-        description="数据保存在当前浏览器，可通过 JSON 或 WebDAV 手动备份。"
-      >
-        <span className="inline-flex rounded-full border border-white/80 bg-mint px-3 py-1 text-xs font-semibold text-primary shadow-sm">
-          当前版本 v{releaseInfo.version} · 构建时间{" "}
-          {releaseInfo.buildTime === "unknown"
-            ? "暂未记录"
-            : formatSnapshotTime(releaseInfo.buildTime)}
-        </span>
-      </PageIntro>
-
       <Card className="mobile-shell app-list-card lg:max-w-none">
         <CardContent className="app-list-row p-3">
-          <span className="relative flex size-12 shrink-0 overflow-hidden rounded-full border border-white/80 bg-peach shadow-sm">
+          <span className="relative flex size-14 shrink-0 overflow-hidden rounded-full border border-white/80 bg-peach shadow-sm">
             <Image
               alt="准爸爸头像"
               className="object-contain p-0.5"
               fill
-              sizes="48px"
-              src="/illustrations/dadkit-bear-transparent.png"
+              priority
+              sizes="56px"
+              src="/illustrations/dadkit-dad-avatar.png"
             />
           </span>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-base font-semibold">准爸爸</p>
             <p className="mt-1 truncate text-xs text-muted-foreground">
               一起做好交接的我们
             </p>
           </div>
+          <span className="shrink-0 rounded-full bg-mint px-3 py-1 text-xs font-bold text-primary">
+            v{releaseInfo.version}
+          </span>
         </CardContent>
       </Card>
 

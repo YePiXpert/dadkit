@@ -1,11 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CalendarClock, Plus, RotateCcw, Trash2 } from "lucide-react";
 
-import { CuteIllustration } from "@/components/CuteIllustration";
 import { ExportTextArea } from "@/components/ExportTextArea";
-import { PageIntro } from "@/components/PageIntro";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -120,11 +119,12 @@ export default function ContractionsPage() {
 
   return (
     <div className="page-shell">
-      <PageIntro
-        eyebrow="宫缩计时器"
-        title="宫缩记录"
-        description="只记录开始、结束、持续和间隔，方便给医生或家人沟通。"
-      />
+      <section className="mobile-shell grid gap-1 lg:max-w-none">
+        <h1 className="text-2xl font-black tracking-normal">宫缩记录</h1>
+        <p className="text-sm font-medium leading-6 text-muted-foreground">
+          记录每一次，为顺利分娩助力 💪
+        </p>
+      </section>
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[0.9fr_1.1fr]">
         <Card className="overflow-hidden border-coral/20 bg-card/95 shadow-soft">
@@ -136,29 +136,34 @@ export default function ContractionsPage() {
                   {activeStartedAt ? "正在记录中" : "准备开始记录"}
                 </h2>
               </div>
-              <CuteIllustration
-                className="size-16 border-coral/15 bg-blush"
-                imageClassName="object-contain p-1.5"
-                variant="helper"
-              />
             </div>
 
-            <div
-              aria-label="本次宫缩计时圆盘"
-              className="mx-auto flex size-48 items-center justify-center rounded-full p-3 shadow-soft"
-              style={{
-                background: `conic-gradient(hsl(var(--coral)) ${timerProgress}%, hsl(var(--blush)) ${timerProgress}% 100%)`,
-              }}
-            >
-              <div className="flex size-full flex-col items-center justify-center rounded-full border border-white/90 bg-card text-center shadow-sm">
-                <CalendarClock className="mb-2 size-6 text-primary" />
-                <p className="text-4xl font-bold tracking-normal text-foreground">
-                  {formatDuration(elapsedSeconds)}
-                </p>
-                <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                  {activeStartedAt ? "正在记录中" : "点击开始计时"}
-                </p>
+            <div className="relative mx-auto w-full max-w-72 pb-8">
+              <div
+                aria-label="本次宫缩计时圆盘"
+                className="mx-auto flex size-48 items-center justify-center rounded-full p-3 shadow-soft"
+                style={{
+                  background: `conic-gradient(hsl(var(--coral)) ${timerProgress}%, hsl(var(--blush)) ${timerProgress}% 100%)`,
+                }}
+              >
+                <div className="flex size-full flex-col items-center justify-center rounded-full border border-white/90 bg-card text-center shadow-sm">
+                  <CalendarClock className="mb-2 size-6 text-primary" />
+                  <p className="text-4xl font-bold tracking-normal text-foreground">
+                    {formatDuration(elapsedSeconds)}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                    {activeStartedAt ? "正在记录中" : "点击开始计时"}
+                  </p>
+                </div>
               </div>
+              <Image
+                alt="女宝宫缩记录助手"
+                className="absolute -bottom-1 right-0 h-24 w-32 object-contain drop-shadow-sm"
+                height={96}
+                priority
+                src="/illustrations/dadkit-baby-girl-timer.png"
+                width={128}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-2">

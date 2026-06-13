@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  ArrowRight,
   CheckCircle2,
   ClipboardList,
   Hospital,
@@ -17,9 +19,7 @@ import {
   HospitalQuestionCard,
   type HospitalQuestionCardInput,
 } from "@/components/HospitalQuestionCard";
-import { CuteIllustration } from "@/components/CuteIllustration";
 import { HospitalSelector } from "@/components/HospitalSelector";
-import { PageIntro } from "@/components/PageIntro";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -158,6 +158,56 @@ export default function HospitalPage() {
     allConfirmationItems.length === 0
       ? 0
       : Math.round((completedConfirmations / allConfirmationItems.length) * 100);
+  const quickConfirmRows: HospitalQuickRowInput[] = [
+    {
+      done: Boolean(hospital),
+      icon: Hospital,
+      tone: "lavender",
+      title: "待产医院与病区",
+    },
+    {
+      done: completedConfirmations > 0,
+      icon: ClipboardList,
+      tone: "mint",
+      title: "入院流程与所需材料",
+    },
+    {
+      done: Boolean(
+        answersByItemId.get("hospital-bag-location") &&
+          isAnswerDone(answersByItemId.get("hospital-bag-location")),
+      ),
+      icon: ClipboardList,
+      tone: "coral",
+      title: "待产包存放位置",
+    },
+    {
+      done: Boolean(
+        answersByItemId.get("partner-policy") &&
+          isAnswerDone(answersByItemId.get("partner-policy")),
+      ),
+      icon: CheckCircle2,
+      tone: "amber",
+      title: "陪产与探视规定",
+    },
+    {
+      done: Boolean(
+        answersByItemId.get("postpartum-care") &&
+          isAnswerDone(answersByItemId.get("postpartum-care")),
+      ),
+      icon: CheckCircle2,
+      tone: "coral",
+      title: "产后病房与护理",
+    },
+    {
+      done: Boolean(
+        answersByItemId.get("discharge-documents") &&
+          isAnswerDone(answersByItemId.get("discharge-documents")),
+      ),
+      icon: ClipboardList,
+      tone: "peach",
+      title: "出院结算与证件",
+    },
+  ];
 
   function toggleProvidedItem(id: string) {
     const current = new Set(activeProfile.hospitalProvidedItemIds);
@@ -206,57 +256,62 @@ export default function HospitalPage() {
 
   return (
     <div className="page-shell">
-      <PageIntro
-        eyebrow="产检问清楚"
-        title="医院确认"
-        description="记录下次产检要问的问题，确认后会同步影响清单。DadKit 会把答案带回待产包。"
-      />
+      <section className="mobile-shell grid gap-0 lg:max-w-none">
+        <h1 className="text-2xl font-black tracking-normal">医院确认</h1>
+        <p className="text-sm font-medium leading-6 text-muted-foreground">
+          确认产检医院与入院准备
+        </p>
+      </section>
 
-      <Card className="mobile-shell app-list-card lg:max-w-none">
-        <CardContent className="p-0">
-          <div className="app-list-row">
-            <span className="app-icon-tile">
-              <Hospital className="size-5" />
-            </span>
-            <div className="min-w-0">
-              <p className="section-kicker">当前医院</p>
-              <h2 className="mt-1 truncate text-xl font-semibold tracking-normal">
-                {hospital?.name ?? "暂未确定医院"}
-              </h2>
-            </div>
-          </div>
-          <p className="px-3 pb-2 pt-3 text-xs leading-5 text-muted-foreground">
-            非官方模板，仅用于整理待确认事项。请以最近一次产检、入院须知或医院通知为准。
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card className="mobile-shell overflow-hidden border-coral/20 bg-blush/85 shadow-soft lg:max-w-none">
-        <CardContent className="grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-blush-foreground/75">
+      <Card className="mobile-shell overflow-hidden border-[#ffd4d9] bg-gradient-to-br from-[#fff4f5] via-[#ffe7eb] to-[#fff8f4] shadow-soft lg:max-w-none">
+        <CardContent className="relative min-h-[10rem] p-3">
+          <span className="pointer-events-none absolute right-8 top-5 text-2xl text-blush-foreground/25">
+            ✿
+          </span>
+          <span className="pointer-events-none absolute right-24 top-14 text-lg text-coral">
+            ❤
+          </span>
+          <div className="relative z-10 max-w-[62%] pt-2">
+            <p className="text-sm font-black leading-6 text-blush-foreground">
+              趁早确认，入院更从容~
+            </p>
+            <p className="mt-1 truncate text-xs font-medium text-blush-foreground/70">
+              当前医院：{hospital?.name ?? "暂未确定医院"}
+            </p>
+            <p className="mt-3 text-xs font-bold text-blush-foreground/75">
               确认进度
             </p>
-            <p className="mt-1 text-3xl font-bold tracking-normal text-blush-foreground">
-              {completedConfirmations}/{allConfirmationItems.length}
-            </p>
-            <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-card/80">
+            <div className="mt-1 flex items-end gap-1.5">
+              <span className="text-3xl font-black leading-none tracking-normal text-primary">
+                {completedConfirmations}
+              </span>
+              <span className="pb-0.5 text-sm font-bold text-muted-foreground">
+                /{allConfirmationItems.length}
+              </span>
+            </div>
+            <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-card/85">
               <div
                 className="h-full rounded-full bg-primary transition-all"
                 style={{ width: `${confirmationPercent}%` }}
               />
             </div>
-            <p className="mt-2 text-xs font-semibold text-blush-foreground/70">
-              产检时逐项确认，回家后清单会同步变轻。
-            </p>
           </div>
-          <CuteIllustration
-            className="mx-auto size-24 border-coral/15 bg-card sm:mx-0"
-            imageClassName="object-contain p-2"
-            variant="helper"
+          <Image
+            alt="医院确认剪贴板"
+            className="absolute right-6 top-4 h-28 w-28 object-contain drop-shadow-sm"
+            height={132}
+            priority
+            src="/illustrations/dadkit-hospital-clipboard.png"
+            width={132}
           />
         </CardContent>
       </Card>
+
+      <section className="mobile-shell grid gap-2 lg:max-w-none">
+        {quickConfirmRows.map((item) => (
+          <HospitalQuickRow item={item} key={item.title} />
+        ))}
+      </section>
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[1.15fr_0.85fr]">
         <QuestionSection
@@ -383,6 +438,39 @@ function QuestionSection({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+type HospitalQuickRowInput = {
+  done: boolean;
+  icon: LucideIcon;
+  title: string;
+  tone: "mint" | "lavender" | "coral" | "amber" | "peach";
+};
+
+function HospitalQuickRow({ item }: { item: HospitalQuickRowInput }) {
+  const Icon = item.icon;
+  const toneClass = {
+    amber: "bg-amber-soft text-amber-foreground",
+    coral: "bg-coral-soft text-coral-foreground",
+    lavender: "bg-lavender text-lavender-foreground",
+    mint: "bg-mint text-primary",
+    peach: "bg-peach text-peach-foreground",
+  }[item.tone];
+
+  return (
+    <article className="app-list-row min-h-[3.25rem] bg-card/95 p-2.5">
+      <span className={`app-icon-tile size-8 rounded-md ${toneClass}`}>
+        <Icon className="size-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-bold">{item.title}</span>
+      </span>
+      <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+        {item.done ? "已确认" : "待确认"}
+      </span>
+      <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+    </article>
   );
 }
 

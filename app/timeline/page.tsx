@@ -1,55 +1,113 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo } from "react";
-import { CheckCircle2 } from "lucide-react";
+import Image from "next/image";
 
-import { CuteIllustration } from "@/components/CuteIllustration";
 import { EmptyState } from "@/components/EmptyState";
-import { PageIntro } from "@/components/PageIntro";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { useDadKitStore } from "@/lib/store";
-import {
-  TIMELINE_KIND_LABELS,
-  TIMELINE_STAGE_TITLES,
-  calculateTimelineStageStatus,
-  generateTimeline,
-  getCurrentTimelineStageId,
-  getDaysUntilDue,
-  isTimelineTaskComplete,
-  type TimelineTask,
-  type TimelineTaskStatus,
-} from "@/lib/timeline";
-import type { ChecklistItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+type TimelineMilestone = {
+  accent: "lavender" | "mint" | "teal" | "orange" | "amber";
+  date?: string;
+  icon: "book" | "search" | "dna" | "calendar" | "flag";
+  status: "已完成" | "本周建议完成" | "未开始";
+  tag?: string;
+  title: string;
+  weeks: string;
+};
+
+const TIMELINE_MILESTONES: TimelineMilestone[] = [
+  {
+    accent: "lavender",
+    date: "2026-03-01",
+    icon: "book",
+    status: "已完成",
+    title: "建档",
+    weeks: "12-16 周",
+  },
+  {
+    accent: "mint",
+    date: "2026-03-15",
+    icon: "search",
+    status: "已完成",
+    title: "NT 检查",
+    weeks: "11-14 周",
+  },
+  {
+    accent: "teal",
+    date: "2026-04-10",
+    icon: "dna",
+    status: "已完成",
+    title: "无创 DNA",
+    weeks: "12-20 周",
+  },
+  {
+    accent: "orange",
+    icon: "calendar",
+    status: "本周建议完成",
+    tag: "本周",
+    title: "糖耐检查",
+    weeks: "24-28 周",
+  },
+  {
+    accent: "amber",
+    date: "预计 2026-05-20",
+    icon: "flag",
+    status: "未开始",
+    title: "大排畸",
+    weeks: "20-24 周",
+  },
+];
+
+const accentStyles: Record<
+  TimelineMilestone["accent"],
+  {
+    card: string;
+    icon: string;
+    line: string;
+    status: string;
+    tag: string;
+  }
+> = {
+  lavender: {
+    card: "border-lavender/60 bg-card",
+    icon: "border-lavender bg-lavender/70 text-lavender-foreground ring-6 ring-lavender/35",
+    line: "bg-lavender",
+    status: "text-primary",
+    tag: "bg-lavender text-lavender-foreground",
+  },
+  mint: {
+    card: "border-mint bg-card",
+    icon: "border-mint bg-mint text-primary ring-6 ring-mint/55",
+    line: "bg-primary/55",
+    status: "text-primary",
+    tag: "bg-mint text-primary",
+  },
+  teal: {
+    card: "border-mint bg-card",
+    icon: "border-mint bg-card text-primary ring-6 ring-mint/50",
+    line: "bg-primary/55",
+    status: "text-primary",
+    tag: "bg-mint text-primary",
+  },
+  orange: {
+    card: "border-amber bg-amber-soft/60",
+    icon: "border-amber bg-amber-soft text-amber-foreground ring-6 ring-amber-soft/90",
+    line: "bg-coral",
+    status: "text-coral-foreground",
+    tag: "bg-blush text-coral-foreground",
+  },
+  amber: {
+    card: "border-amber/55 bg-card",
+    icon: "border-amber bg-amber-soft text-amber-foreground ring-6 ring-amber-soft/75",
+    line: "bg-amber",
+    status: "text-muted-foreground",
+    tag: "bg-amber-soft text-amber-foreground",
+  },
+};
 
 export default function TimelinePage() {
   const profile = useDadKitStore((state) => state.profile);
-  const checklist = useDadKitStore((state) => state.checklist);
-  const timelineTaskStatuses = useDadKitStore(
-    (state) => state.timelineTaskStatuses,
-  );
-  const updateTimelineTaskStatus = useDadKitStore(
-    (state) => state.updateTimelineTaskStatus,
-  );
-  const timeline = useMemo(
-    () => (profile?.dueDate ? generateTimeline(profile, checklist) : []),
-    [checklist, profile],
-  );
-  const currentStageId = useMemo(
-    () => (profile?.dueDate ? getCurrentTimelineStageId(profile) : undefined),
-    [profile],
-  );
-  const currentStage = useMemo(
-    () => timeline.find((stage) => stage.id === currentStageId),
-    [currentStageId, timeline],
-  );
-  const daysLeft = useMemo(
-    () => (profile?.dueDate ? getDaysUntilDue(profile) : undefined),
-    [profile],
-  );
 
   if (!profile?.dueDate) {
     return (
@@ -64,204 +122,229 @@ export default function TimelinePage() {
     );
   }
 
+  const dueDateLabel = formatDueDateLabel(profile.dueDate);
+
   return (
     <div className="page-shell">
-      <PageIntro
-        eyebrow="阶段进度"
-        title="准备时间线"
-        description="按预产期自动安排该问、该买、该洗、该打包的事项。DadKit 会提醒当前阶段重点。"
-      />
+      <section className="mobile-shell grid gap-3 bg-card px-4 pb-4 pt-1 lg:max-w-none">
+        <p className="text-sm font-semibold leading-6 text-muted-foreground">
+          重要节点不错过，每一步都安心
+        </p>
 
-      <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[0.9fr_1.1fr]">
-        <Card className="app-hero-card">
-          <CardContent className="grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_5rem] sm:items-center">
-            <div>
-              <p className="text-sm font-semibold text-primary-foreground/75">
-                待产倒计时
-              </p>
-              <p className="mt-1 text-4xl font-semibold tracking-normal">
-                {typeof daysLeft === "number"
-                  ? daysLeft > 0
-                    ? `还有 ${daysLeft} 天`
-                    : "已经到预产期"
-                  : "未设置"}
-              </p>
-              <p className="mt-3 rounded-full bg-card/20 px-3 py-1 text-xs font-semibold text-primary-foreground/80">
-                预产期 {profile.dueDate}
-              </p>
-            </div>
-            <CuteIllustration
-              className="mx-auto size-20 border-white/60 bg-card/20 sm:mx-0"
-              imageClassName="object-contain p-1.5"
-              variant="helper"
+        <div className="relative grid gap-3 pb-1">
+          <div
+            aria-hidden="true"
+            className="absolute bottom-[4.75rem] left-[1.82rem] top-[2.15rem] w-1 rounded-full bg-gradient-to-b from-lavender via-mint to-amber"
+          />
+          {TIMELINE_MILESTONES.map((milestone, index) => (
+            <TimelineMilestoneRow
+              isLast={index === TIMELINE_MILESTONES.length - 1}
+              key={milestone.title}
+              milestone={milestone}
             />
-          </CardContent>
-        </Card>
-        <Card className="macaron-panel">
-          <CardContent className="grid gap-2 p-5">
-            <p className="text-sm text-muted-foreground">当前阶段</p>
-            <p className="text-2xl font-semibold tracking-normal">
-              {currentStage?.title ?? "准备开始"}
-            </p>
-            <p className="text-sm leading-6 text-muted-foreground">
-              {currentStage?.subtitle ?? "填写预产期后自动计算"}
-            </p>
-          </CardContent>
-        </Card>
+          ))}
+        </div>
+
+        <div className="relative mt-3 min-h-[4.05rem] overflow-hidden rounded-full border border-amber/45 bg-amber-soft px-5 py-3 shadow-soft">
+          <span className="pointer-events-none absolute -left-1 bottom-3 text-sm text-coral">
+            ❤
+          </span>
+          <span className="pointer-events-none absolute left-5 top-2 text-xs text-coral">
+            ❧
+          </span>
+          <p className="relative z-10 text-sm font-bold text-cream-foreground">
+            预产期&nbsp; {dueDateLabel}
+          </p>
+          <Image
+            alt="小熊预产期提醒"
+            className="absolute bottom-0 right-3 h-16 w-16 object-contain"
+            height={96}
+            priority
+            src="/illustrations/dadkit-bear-transparent.png"
+            width={96}
+          />
+        </div>
       </section>
-
-      <section className="mobile-shell relative grid gap-3 lg:max-w-none">
-        <div className="absolute bottom-5 left-[1.125rem] top-5 w-px bg-gradient-to-b from-mint via-coral/45 to-lavender" />
-        {timeline.map((stage) => {
-          const stageStatus = calculateTimelineStageStatus(
-            stage,
-            checklist,
-            timelineTaskStatuses,
-          );
-          const isCurrent = stage.id === currentStageId;
-
-          return (
-            <div
-              className="relative grid grid-cols-[2.25rem_1fr] gap-2"
-              key={stage.id}
-            >
-              <div className="relative z-10 flex justify-center pt-4">
-                <span
-                  className={cn(
-                    "flex size-9 items-center justify-center rounded-full border border-white/90 bg-card text-primary shadow-sm",
-                    isCurrent && "bg-primary text-primary-foreground",
-                    stageStatus.percent === 100 && "bg-mint text-primary",
-                  )}
-                >
-                  {stageStatus.percent === 100 || isCurrent ? (
-                    <CheckCircle2 className="size-4" />
-                  ) : (
-                    <span className="size-2 rounded-full bg-current" />
-                  )}
-                </span>
-              </div>
-
-              <Card
-                className={cn(
-                  "macaron-panel",
-                  isCurrent && "border-primary/30 bg-mint/80",
-                )}
-              >
-                <details open={isCurrent ? true : undefined}>
-                  <summary className="cursor-pointer list-none">
-                    <CardHeader className="gap-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground">
-                            {stage.subtitle}
-                          </p>
-                          <CardTitle className="mt-1">{stage.title}</CardTitle>
-                        </div>
-                        <span className="rounded-full bg-card px-3 py-1 text-sm font-semibold text-primary shadow-sm">
-                          {stageStatus.percent}%
-                        </span>
-                      </div>
-                      <Progress value={stageStatus.percent} />
-                    </CardHeader>
-                  </summary>
-                  <CardContent className="grid gap-2">
-                    {stage.tasks.map((task) => (
-                      <TimelineTaskRow
-                        checklist={checklist}
-                        key={task.id}
-                        onChange={updateTimelineTaskStatus}
-                        statuses={timelineTaskStatuses}
-                        task={task}
-                      />
-                    ))}
-                  </CardContent>
-                </details>
-              </Card>
-            </div>
-          );
-        })}
-      </section>
-
-      <div className="mobile-shell flex flex-wrap gap-2 lg:max-w-none">
-        <Button asChild variant="outline">
-          <Link href="/checklist">打开我的清单</Link>
-        </Button>
-        <Button asChild>
-          <Link href="/go">临出门模式</Link>
-        </Button>
-      </div>
     </div>
   );
 }
 
-function TimelineTaskRow({
-  checklist,
-  onChange,
-  statuses,
-  task,
+function TimelineMilestoneRow({
+  isLast,
+  milestone,
 }: {
-  checklist: ChecklistItem[];
-  onChange: (taskId: string, status: TimelineTaskStatus["status"]) => void;
-  statuses: TimelineTaskStatus[];
-  task: TimelineTask;
+  isLast: boolean;
+  milestone: TimelineMilestone;
 }) {
-  const explicitStatus = statuses.find((status) => status.taskId === task.id)?.status;
-  const done = isTimelineTaskComplete(task, checklist, statuses);
-  const relatedCount = task.relatedItemIds?.length ?? 0;
+  const styles = accentStyles[milestone.accent];
 
   return (
-    <div className="soft-detail grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
-      <div className="flex gap-3">
-        {done ? (
-          <CheckCircle2 className="mt-0.5 size-5 text-primary" />
-        ) : (
-          <CheckCircle2 className="mt-0.5 size-5 text-muted-foreground opacity-35" />
+    <article className="relative grid min-h-[4.45rem] grid-cols-[3.75rem_1fr] items-center gap-2">
+      {!isLast ? (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute left-[1.82rem] top-1/2 h-[calc(100%-1.05rem)] w-1 rounded-full",
+            styles.line,
+          )}
+        />
+      ) : null}
+      <div className="relative z-10 flex justify-center">
+        <span
+          className={cn(
+            "flex size-10 items-center justify-center rounded-full border-2 bg-card",
+            styles.icon,
+          )}
+        >
+          <TimelineMilestoneIcon icon={milestone.icon} />
+        </span>
+      </div>
+
+      <div
+        className={cn(
+          "grid min-h-[3.65rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-lg border px-4 py-2.5 shadow-sm",
+          styles.card,
         )}
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="font-medium">{task.title}</p>
-            <span className="rounded-full bg-lavender px-2 py-0.5 text-xs font-semibold text-lavender-foreground">
-              {TIMELINE_KIND_LABELS[task.kind]}
+      >
+        <div className="min-w-0">
+          <p className="whitespace-nowrap text-[0.95rem] font-black tracking-normal">
+            {milestone.title}
+            <span className="ml-1.5 text-xs font-semibold text-muted-foreground">
+              ({milestone.weeks})
             </span>
-          </div>
-          {task.description ? (
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              {task.description}
-            </p>
-          ) : null}
-          <p className="mt-1 text-xs text-muted-foreground">
-            {TIMELINE_STAGE_TITLES[task.stageId]}
-            {relatedCount > 0 ? ` · 关联 ${relatedCount} 项清单` : ""}
-            {explicitStatus === "not_needed" ? " · 已标记不需要" : ""}
+          </p>
+          <p className={cn("mt-1 text-sm font-bold leading-none", styles.status)}>
+            {milestone.status}
           </p>
         </div>
+        <div className="flex shrink-0 items-center gap-2 text-xs font-semibold text-muted-foreground">
+          {milestone.date ? <span>{milestone.date}</span> : null}
+          {milestone.tag ? (
+            <span className={cn("rounded-full px-3 py-1 text-xs", styles.tag)}>
+              {milestone.tag}
+            </span>
+          ) : (
+            <span className="text-primary">✓</span>
+          )}
+        </div>
       </div>
-      <div className="flex gap-2 sm:justify-end">
-        <Button
-          className="flex-1 sm:flex-none"
-          onClick={() =>
-            onChange(task.id, explicitStatus === "done" ? "todo" : "done")
-          }
-          size="sm"
-          variant={done && explicitStatus !== "not_needed" ? "default" : "outline"}
-        >
-          <CheckCircle2 className="size-4" />
-          完成
-        </Button>
-        <Button
-          className="flex-1 sm:flex-none"
-          onClick={() =>
-            onChange(
-              task.id,
-              explicitStatus === "not_needed" ? "todo" : "not_needed",
-            )
-          }
-          size="sm"
-          variant={explicitStatus === "not_needed" ? "default" : "outline"}
-        >
-          不需要
-        </Button>
-      </div>
-    </div>
+    </article>
   );
+}
+
+function TimelineMilestoneIcon({ icon }: { icon: TimelineMilestone["icon"] }) {
+  if (icon === "book") {
+    return (
+      <svg aria-hidden="true" className="size-6" viewBox="0 0 24 24">
+        <path
+          d="M6.5 5.5h7a4 4 0 0 1 4 4v8h-7a4 4 0 0 0-4 4z"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+        />
+        <path
+          d="M6.5 5.5a3 3 0 0 0-3 3v8h3M10 9h4M10 12h4"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+        />
+      </svg>
+    );
+  }
+
+  if (icon === "search") {
+    return (
+      <svg aria-hidden="true" className="size-6" viewBox="0 0 24 24">
+        <path
+          d="M9.5 4.5h5l3 3v8.5a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-9.5a2 2 0 0 1 2-2z"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+        />
+        <path
+          d="m13.5 4.5.2 3h3M10.5 11.5a2.5 2.5 0 1 0 5 0 2.5 2.5 0 0 0-5 0ZM15 15l1.8 1.8"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+        />
+      </svg>
+    );
+  }
+
+  if (icon === "dna") {
+    return (
+      <svg aria-hidden="true" className="size-6" viewBox="0 0 24 24">
+        <circle
+          cx="12"
+          cy="12"
+          fill="none"
+          r="7"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+        <path
+          d="M8.5 12c2-3 5-3 7 0M8.5 12c2 3 5 3 7 0M10 8.5l4 7M14 8.5l-4 7"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.8"
+        />
+      </svg>
+    );
+  }
+
+  if (icon === "calendar") {
+    return (
+      <svg aria-hidden="true" className="size-6" viewBox="0 0 24 24">
+        <rect
+          fill="none"
+          height="15"
+          rx="2.5"
+          stroke="currentColor"
+          strokeWidth="2"
+          width="14"
+          x="5"
+          y="6"
+        />
+        <path
+          d="M8 4v4M16 4v4M5 10h14M9 14h2M13 14h2M9 17h2"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" className="size-6" viewBox="0 0 24 24">
+      <path
+        d="M6 20V5.5M6 6h10l-1.5 3L16 12H6"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function formatDueDateLabel(dueDate: string) {
+  const date = new Date(`${dueDate}T00:00:00`);
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  const weekday = Number.isNaN(date.getTime()) ? undefined : weekdays[date.getDay()];
+
+  return weekday ? `${dueDate}（${weekday}）` : dueDate;
 }

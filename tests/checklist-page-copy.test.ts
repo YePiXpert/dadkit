@@ -35,9 +35,11 @@ describe("checklist page copy", () => {
   it("keeps checklist controls in the normal page flow", () => {
     expect(checklistPage).toContain("清单工作台");
     expect(checklistPage).toContain("筛选与操作");
-    expect(checklistPage).toContain("当前视图");
+    expect(checklistPage).toContain("ChecklistProgressCard");
+    expect(checklistPage).toContain("分类入口");
     expect(checklistPage).toContain("当前没有待购买物品");
     expect(checklistPage).toContain("暂时没有待问事项");
+    expect(checklistPage).not.toContain("PageIntro");
     expect(checklistPage).not.toContain("sticky top-0");
     expect(checklistPage).not.toContain("z-30");
     expect(checklistPage).not.toContain("backdrop-blur");
@@ -45,8 +47,9 @@ describe("checklist page copy", () => {
 
   it("keeps checklist view choices visible without an embedded horizontal scroller", () => {
     expect(checklistGroupTabs).toContain("grid grid-cols-2");
-    expect(checklistGroupTabs).toContain("min-h-20");
-    expect(checklistGroupTabs).toContain("groupIcons");
+    expect(checklistGroupTabs).toContain("min-h-[4.75rem]");
+    expect(checklistGroupTabs).toContain("ChecklistGroupIcon");
+    expect(checklistGroupTabs).toContain("<svg");
     expect(checklistGroupTabs).toContain("未完成 {count.remaining} 项");
     expect(checklistPage).toContain("groupCounts");
     expect(checklistGroupTabs).not.toContain("overflow-x-auto");

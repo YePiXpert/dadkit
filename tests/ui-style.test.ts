@@ -103,6 +103,13 @@ describe("cute maternity app visual direction", () => {
     expect(mobileTopBar).toContain("{copy.title}");
     expect(mobileTopBar).toContain("{copy.subtitle}");
     expect(mobileTopBar).toContain("生成专属待产清单");
+    expect(mobileTopBar).toContain("contentFirstRoutes");
+    expect(mobileTopBar).toContain('"/checklist"');
+    expect(mobileTopBar).toContain('"/hospital"');
+    expect(mobileTopBar).toContain('"/timeline"');
+    expect(mobileTopBar).toContain('"/go"');
+    expect(mobileTopBar).toContain('"/contractions"');
+    expect(mobileTopBar).toContain('"/settings"');
     expect(mobileTopBar).toContain("ArrowRight");
     expect(mobileTopBar).toContain("CalendarClock");
   });
@@ -128,6 +135,36 @@ describe("cute maternity app visual direction", () => {
         ),
       ),
     ).toBe(true);
+    expect(
+      existsSync(
+        join(
+          process.cwd(),
+          "public",
+          "illustrations",
+          "dadkit-go-bunny.png",
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      existsSync(
+        join(
+          process.cwd(),
+          "public",
+          "illustrations",
+          "dadkit-baby-girl-timer.png",
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      existsSync(
+        join(
+          process.cwd(),
+          "public",
+          "illustrations",
+          "dadkit-dad-avatar.png",
+        ),
+      ),
+    ).toBe(true);
     expect(cuteIllustration).toContain("dadkit-family-transparent.png");
     expect(cuteIllustration).toContain("dadkit-bear-transparent.png");
     expect(cuteIllustration).toContain("小熊助手");
@@ -142,7 +179,8 @@ describe("cute maternity app visual direction", () => {
   });
 
   it("extends the cute macaron treatment beyond the home page", () => {
-    expect(checklistPage).toContain("macaron-panel");
+    expect(checklistPage).toContain("ChecklistProgressCard");
+    expect(checklistPage).toContain("ChecklistGroupSummaryCard");
     expect(hospitalPage).toContain("macaron-panel");
     expect(settingsPage).toContain("macaron-panel");
     expect(checklistPage).toContain("macaron-note");
@@ -152,12 +190,17 @@ describe("cute maternity app visual direction", () => {
 
   it("uses app-like hero, checklist and timer patterns on action pages", () => {
     expect(goPage).toContain("准备就绪度");
+    expect(goPage).toContain("必带物品");
+    expect(goPage).toContain("GO_DISPLAY_ITEMS");
     expect(goPage).toContain("全部 OK，出发！");
     expect(goPage).toContain("markAllDone");
-    expect(goPage).toContain("CuteIllustration");
+    expect(goPage).toContain("bg-[linear-gradient(100deg,#ff8385");
+    expect(goPage).toContain("dadkit-go-bunny.png");
+    expect(goPage).not.toContain("CuteIllustration");
     expect(contractionsPage).toContain("本次宫缩计时圆盘");
     expect(contractionsPage).toContain("conic-gradient");
-    expect(contractionsPage).toContain("CuteIllustration");
+    expect(contractionsPage).toContain("dadkit-baby-girl-timer.png");
+    expect(contractionsPage).not.toContain("CuteIllustration");
   });
 
   it("keeps setup and hospital confirmation close to the mobile app mockups", () => {
@@ -170,7 +213,12 @@ describe("cute maternity app visual direction", () => {
     expect(setupPage).toContain("更多医院信息（可选）");
     expect(setupPage).toContain("SegmentButton");
     expect(setupPage).toContain("grid grid-cols-2");
-    expect(hospitalPage).toContain("bg-blush/85");
+    expect(hospitalPage).toContain("bg-gradient-to-br from-[#fff4f5]");
+    expect(hospitalPage).toContain("min-h-[10rem]");
+    expect(hospitalPage).toContain("趁早确认，入院更从容");
+    expect(hospitalPage).toContain("dadkit-hospital-clipboard.png");
+    expect(hospitalPage).toContain("HospitalQuickRow");
+    expect(hospitalPage).not.toContain("CuteIllustration");
     expect(hospitalPage).not.toContain("TabsTrigger");
     expect(hospitalQuestionCard).toContain("app-icon-tile");
     expect(hospitalQuestionCard).toContain("ClipboardList");
@@ -178,12 +226,17 @@ describe("cute maternity app visual direction", () => {
   });
 
   it("uses app-like timeline and profile navigation patterns", () => {
-    expect(timelinePage).toContain("bg-gradient-to-b from-mint");
-    expect(timelinePage).toContain("grid-cols-[2.25rem_1fr]");
-    expect(timelinePage).toContain("stageStatus.percent === 100");
-    expect(timelinePage).toContain("预产期 {profile.dueDate}");
-    expect(timelinePage).toContain("CuteIllustration");
+    expect(timelinePage).toContain("TIMELINE_MILESTONES");
+    expect(timelinePage).toContain("TimelineMilestoneRow");
+    expect(timelinePage).toContain("grid-cols-[3.75rem_1fr]");
+    expect(timelinePage).toContain("糖耐检查");
+    expect(timelinePage).toContain("formatDueDateLabel");
+    expect(timelinePage).toContain("预产期&nbsp; {dueDateLabel}");
+    expect(timelinePage).toContain("dadkit-bear-transparent.png");
+    expect(timelinePage).toContain("重要节点不错过");
+    expect(timelinePage).not.toContain("CuteIllustration");
     expect(settingsPage).toContain("准爸爸头像");
+    expect(settingsPage).toContain("dadkit-dad-avatar.png");
     expect(settingsPage).toContain("数据与备份");
   });
 

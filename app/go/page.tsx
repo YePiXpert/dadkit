@@ -1,19 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo } from "react";
-import Link from "next/link";
-import {
-  ArrowRight,
-  CalendarClock,
-  Check,
-  CheckCircle2,
-} from "lucide-react";
+import { Check } from "lucide-react";
 
-import { CuteIllustration } from "@/components/CuteIllustration";
 import { EmptyState } from "@/components/EmptyState";
-import { PageIntro } from "@/components/PageIntro";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { useDadKitStore } from "@/lib/store";
 import {
   generateGoModeTasks,
@@ -23,6 +15,45 @@ import {
 } from "@/lib/timeline";
 import type { ChecklistItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+type GoChecklistDisplayItem = {
+  accent: "teal" | "pink";
+  taskIds: string[];
+  title: string;
+};
+
+const GO_DISPLAY_ITEMS: GoChecklistDisplayItem[] = [
+  {
+    accent: "teal",
+    taskIds: ["timeline-go-documents"],
+    title: "证件包（身份证、医保卡等）",
+  },
+  {
+    accent: "teal",
+    taskIds: ["timeline-go-phone", "timeline-go-charger"],
+    title: "手机 + 充电器",
+  },
+  {
+    accent: "teal",
+    taskIds: ["timeline-go-wallet"],
+    title: "钱包 / 现金",
+  },
+  {
+    accent: "teal",
+    taskIds: ["timeline-go-medical-card"],
+    title: "医保卡 / 就诊卡",
+  },
+  {
+    accent: "pink",
+    taskIds: ["timeline-go-mom-bag", "timeline-go-baby-bag"],
+    title: "待产包（妈妈包 + 宝宝包）",
+  },
+  {
+    accent: "teal",
+    taskIds: ["timeline-go-water-cup"],
+    title: "水杯 / 吸管杯",
+  },
+];
 
 export default function GoPage() {
   const profile = useDadKitStore((state) => state.profile);
@@ -37,6 +68,10 @@ export default function GoPage() {
     () => (profile ? generateGoModeTasks(profile, checklist) : []),
     [checklist, profile],
   );
+  const taskById = useMemo(
+    () => new Map(tasks.map((task) => [task.id, task])),
+    [tasks],
+  );
   const completedCount = useMemo(
     () =>
       tasks.filter((task) =>
@@ -48,11 +83,31 @@ export default function GoPage() {
   const progressPercent =
     tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
 
+  function displayItemDone(item: GoChecklistDisplayItem) {
+    return item.taskIds.every((taskId) =>
+      isDisplayTaskDone(taskId, taskById, checklist, timelineTaskStatuses),
+    );
+  }
+
+  function toggleDisplayItem(item: GoChecklistDisplayItem) {
+    const nextStatus = displayItemDone(item) ? "todo" : "done";
+
+    item.taskIds.forEach((taskId) => updateTimelineTaskStatus(taskId, nextStatus));
+  }
+
   function markAllDone() {
     tasks.forEach((task) => {
       if (!isTimelineTaskComplete(task, checklist, timelineTaskStatuses)) {
         updateTimelineTaskStatus(task.id, "done");
       }
+    });
+
+    GO_DISPLAY_ITEMS.forEach((item) => {
+      item.taskIds.forEach((taskId) => {
+        if (!taskById.has(taskId)) {
+          updateTimelineTaskStatus(taskId, "done");
+        }
+      });
     });
   }
 
@@ -71,147 +126,126 @@ export default function GoPage() {
 
   return (
     <div className="page-shell">
-      <PageIntro
-        eyebrow="出发前收口"
-        title="临出门检查"
-        description="只保留现在出发前要拿、要确认的事项。DadKit 帮你把最后一遍检查跑完。"
-      />
+      <section className="mobile-shell grid gap-4 bg-card px-4 pb-4 pt-1 lg:max-w-none">
+        <div className="grid gap-1">
+          <h1 className="text-[1.7rem] font-black leading-tight tracking-normal">
+            临出门检查
+          </h1>
+          <p className="text-sm font-semibold leading-6 text-muted-foreground">
+            出门前 15 分钟快速确认💛
+          </p>
+        </div>
 
-      <Card className="mobile-shell overflow-hidden border-coral/20 bg-coral-soft/80 shadow-soft lg:max-w-none">
-        <CardContent className="grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-coral-foreground/75">
-              准备就绪度
-            </p>
-            <p className="mt-1 text-4xl font-bold tracking-normal text-coral-foreground">
+        <div className="relative min-h-[8.25rem] overflow-hidden rounded-lg bg-[linear-gradient(100deg,#ff8385_0%,#ffa1ad_50%,#ffe4e8_100%)] p-4 shadow-sm">
+          <span className="pointer-events-none absolute right-[7.2rem] top-5 text-lg text-amber">
+            ★
+          </span>
+          <span className="pointer-events-none absolute right-[5.8rem] top-9 text-xs text-coral">
+            ❤
+          </span>
+          <span className="pointer-events-none absolute right-8 top-4 text-xs text-blush">
+            ❤
+          </span>
+          <div className="relative z-10 max-w-[58%]">
+            <p className="text-sm font-bold text-white/85">准备就绪度</p>
+            <p className="mt-1 text-4xl font-black leading-none tracking-normal text-white">
               {progressPercent}%
             </p>
-            <p className="mt-1 text-sm font-semibold text-coral-foreground/75">
-              已完成 {completedCount} 项 / 共 {tasks.length} 项
+            <p className="mt-2 text-sm font-bold text-white/90">
+              已完成 {completedCount} / 共 {tasks.length} 项
             </p>
-            <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-card/80">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
-              <span className="rounded-full bg-card/80 px-3 py-1 text-primary">
-                还剩 {remainingCount} 项
-              </span>
-              <span className="rounded-full bg-card/80 px-3 py-1 text-coral-foreground">
-                出门前 15 分钟复查
-              </span>
-            </div>
           </div>
-          <CuteIllustration
-            className="mx-auto size-28 border-white/70 bg-blush sm:mx-0"
-            imageClassName="object-contain p-2"
-            variant="helper"
+          <Image
+            alt="兔子临出门检查助手"
+            className="absolute bottom-0 right-0 h-32 w-36 object-contain object-bottom"
+            height={160}
+            priority
+            src="/illustrations/dadkit-go-bunny.png"
+            width={180}
           />
-        </CardContent>
-      </Card>
-
-      <section className="mobile-shell grid gap-2 lg:max-w-none">
-        <div className="mb-1 flex items-center justify-between gap-3">
-          <div>
-            <p className="section-kicker">必带物品</p>
-            <h2 className="text-xl font-bold tracking-normal">最后一遍核对</h2>
-          </div>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/timeline">
-              <CalendarClock className="size-4" />
-              时间线
-            </Link>
-          </Button>
         </div>
-        {tasks.map((task) => (
-          <GoTaskButton
-            checklist={checklist}
-            key={task.id}
-            onChange={updateTimelineTaskStatus}
-            statuses={timelineTaskStatuses}
-            task={task}
-          />
-        ))}
-      </section>
 
-      <section className="mobile-shell grid gap-2 lg:max-w-none">
+        <section className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
+          <div className="border-b border-border/80 px-4 py-3">
+            <h2 className="text-base font-black tracking-normal">
+              必带物品
+              <span className="ml-2 text-sm font-semibold text-muted-foreground">
+                （部分示例）
+              </span>
+            </h2>
+          </div>
+          <div className="grid divide-y divide-border/70">
+            {GO_DISPLAY_ITEMS.map((item) => (
+              <GoChecklistRow
+                done={displayItemDone(item)}
+                item={item}
+                key={item.title}
+                onToggle={() => toggleDisplayItem(item)}
+              />
+            ))}
+          </div>
+        </section>
+
         <Button
-          className="h-14 w-full bg-primary text-base shadow-soft"
+          className="h-14 w-full rounded-lg bg-primary text-base font-black shadow-soft"
+          disabled={tasks.length === 0 && remainingCount === 0}
           onClick={markAllDone}
-          disabled={tasks.length === 0 || remainingCount === 0}
         >
-          <ArrowRight className="size-5" />
-          {remainingCount === 0 ? "已经全部 OK" : "全部 OK，出发！"}
+          全部 OK，出发！
         </Button>
-        <p className="text-center text-xs leading-5 text-muted-foreground">
-          这只是出门前核对清单，入院决定仍以医生和医院要求为准。
-        </p>
       </section>
     </div>
   );
 }
 
-function GoTaskButton({
-  checklist,
-  onChange,
-  statuses,
-  task,
+function GoChecklistRow({
+  done,
+  item,
+  onToggle,
 }: {
-  checklist: ChecklistItem[];
-  onChange: (taskId: string, status: TimelineTaskStatus["status"]) => void;
-  statuses: TimelineTaskStatus[];
-  task: TimelineTask;
+  done: boolean;
+  item: GoChecklistDisplayItem;
+  onToggle: () => void;
 }) {
-  const explicitStatus = statuses.find((status) => status.taskId === task.id)?.status;
-  const done = isTimelineTaskComplete(task, checklist, statuses);
-
   return (
-    <article
-      className={cn(
-        "app-list-row min-h-[4.25rem] items-start bg-card/95 p-3",
-        done && "border-primary/30 bg-mint/85",
-      )}
+    <button
+      className="grid min-h-[3.35rem] grid-cols-[2rem_1fr_2rem] items-center gap-2 px-4 text-left transition hover:bg-muted/45"
+      onClick={onToggle}
+      type="button"
     >
-      <button
-        className="flex min-w-0 flex-1 items-start gap-3 text-left"
-        onClick={() =>
-          onChange(task.id, explicitStatus === "done" ? "todo" : "done")
-        }
-        type="button"
+      <span
+        className={cn(
+          "flex size-5 items-center justify-center rounded-md border-2",
+          item.accent === "pink"
+            ? "border-coral/65 text-coral-foreground"
+            : "border-primary/60 text-primary",
+        )}
       >
-        <span
-          className={cn(
-            "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md border",
-            done
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-primary/35 bg-card text-transparent",
-          )}
-        >
-          {done ? <Check className="size-4" /> : <CheckCircle2 className="size-4" />}
-        </span>
-        <span className="min-w-0">
-          <span className="block text-base font-bold leading-6">{task.title}</span>
-          <span className="mt-0.5 block text-xs font-semibold text-muted-foreground">
-            {done ? "已确认" : "出门前确认"}
-          </span>
-        </span>
-      </button>
-      <Button
-        className="size-10 shrink-0 rounded-full px-0"
-        onClick={() =>
-          onChange(
-            task.id,
-            explicitStatus === "not_needed" ? "todo" : "not_needed",
-          )
-        }
-        title="标记不需要"
-        variant={explicitStatus === "not_needed" ? "default" : "outline"}
-      >
-        <ArrowRight className="size-4" />
-        <span className="sr-only">不需要</span>
-      </Button>
-    </article>
+        {done ? <Check className="size-3.5 stroke-[3]" /> : null}
+      </span>
+      <span className="min-w-0 truncate text-base font-bold tracking-normal">
+        {item.title}
+      </span>
+      <span className="justify-self-end text-primary">
+        <Check className="size-4 stroke-[3]" />
+      </span>
+    </button>
   );
+}
+
+function isDisplayTaskDone(
+  taskId: string,
+  taskById: Map<string, TimelineTask>,
+  checklist: ChecklistItem[],
+  statuses: TimelineTaskStatus[],
+) {
+  const task = taskById.get(taskId);
+
+  if (task) {
+    return isTimelineTaskComplete(task, checklist, statuses);
+  }
+
+  const explicitStatus = statuses.find((status) => status.taskId === taskId)?.status;
+
+  return explicitStatus === "done" || explicitStatus === "not_needed";
 }

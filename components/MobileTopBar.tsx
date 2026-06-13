@@ -23,7 +23,24 @@ export function MobileTopBar() {
   const router = useRouter();
   const copy = pageTitles[pathname] ?? { title: "DadKit", subtitle: "准爸爸好帮手" };
   const isHome = pathname === "/";
+  const contentFirstRoutes = [
+    "/checklist",
+    "/hospital",
+    "/timeline",
+    "/go",
+    "/contractions",
+    "/settings",
+  ];
   const showInlineCopy = pathname !== "/setup";
+  const showRightAvatar = isHome || pathname === "/setup";
+
+  if (isHome) {
+    return null;
+  }
+
+  if (contentFirstRoutes.some((route) => pathname.startsWith(route))) {
+    return null;
+  }
 
   function goBack() {
     if (window.history.length > 1) {
@@ -81,15 +98,17 @@ export function MobileTopBar() {
               <CalendarClock className="size-4" />
             </button>
           ) : null}
-          <span className="relative flex size-9 overflow-hidden rounded-full border border-white/80 bg-peach shadow-sm">
-            <Image
-              alt="小熊头像"
-              className="object-contain p-0.5"
-              fill
-              sizes="36px"
-              src="/illustrations/dadkit-bear-transparent.png"
-            />
-          </span>
+          {showRightAvatar ? (
+            <span className="relative flex size-9 overflow-hidden rounded-full border border-white/80 bg-peach shadow-sm">
+              <Image
+                alt="小熊头像"
+                className="object-contain p-0.5"
+                fill
+                sizes="36px"
+                src="/illustrations/dadkit-bear-transparent.png"
+              />
+            </span>
+          ) : null}
         </div>
       </div>
     </header>

@@ -17,9 +17,8 @@ import { ChecklistModeNotice } from "@/components/ChecklistModeNotice";
 import { DisclaimerBox } from "@/components/DisclaimerBox";
 import { EmptyState } from "@/components/EmptyState";
 import { ModeToggle } from "@/components/ModeToggle";
-import { PageIntro } from "@/components/PageIntro";
-import { ProgressSummary } from "@/components/ProgressSummary";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -29,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import {
   calculateCompletion,
+  calculatePackingCompletion,
   filterItemsForChecklistMode,
 } from "@/lib/rules";
 import { useDadKitStore } from "@/lib/store";
@@ -62,55 +62,6 @@ const STATUS_FILTER_LABELS: Record<PackStatus, string> = {
   not_needed: "不需要",
 };
 
-const VIEW_COPY: Record<
-  ChecklistVisualGroup,
-  {
-    title: string;
-    description: string;
-  }
-> = {
-  all: {
-    title: "我的待产准备",
-    description: "先看精简清单，把要拿、要问、要确认的事处理掉。",
-  },
-  documents_folder: {
-    title: "证件包检查",
-    description: "只看证件、医保卡、产检资料和入院资料，状态按整理证件处理。",
-  },
-  mom_bag: {
-    title: "妈妈包",
-    description: "区分需要购买、已有物品、清洗后打包和临出门拿。",
-  },
-  baby_bag: {
-    title: "宝宝包",
-    description: "宝宝衣物按清洗后打包处理，消耗品按购买补货处理。",
-  },
-  dad: {
-    title: "爸爸负责",
-    description: "只看需要确认、安装、放车上和临出门执行的任务。",
-  },
-  shopping: {
-    title: "购物清单",
-    description: "只显示可能需要购买或补货的物品。证件、任务、临出门拿和医院问题不会出现在这里。",
-  },
-  go: {
-    title: "临出门检查",
-    description: "只看证件包、手机、充电器、眼镜、常用药、妈妈包、宝宝包和安全座椅等临出门事项。",
-  },
-  questions: {
-    title: "下次产检要问",
-    description: "只看医院确认问题，状态按待问、已确认、医院提供和不适用处理。",
-  },
-  last_minute: {
-    title: "临出门拿",
-    description: "只看需要放到固定位置、临出门拿或最终确认的项目。",
-  },
-  going_home: {
-    title: "出院返家",
-    description: "只看返家交通、出院衣物和安全座椅等回家相关事项。",
-  },
-};
-
 export default function ChecklistPage() {
   const [visualGroup, setVisualGroup] = useState<ChecklistVisualGroup>("all");
   const [copyMessage, setCopyMessage] = useState("");
@@ -126,6 +77,7 @@ export default function ChecklistPage() {
     () => filterItemsForChecklistMode(checklist, checklistMode),
     [checklist, checklistMode],
   );
+  const packing = useMemo(() => calculatePackingCompletion(modeItems), [modeItems]);
   const groupedModeItems = useMemo(
     () => filterItemsByVisualGroup(modeItems, visualGroup),
     [modeItems, visualGroup],
@@ -149,7 +101,6 @@ export default function ChecklistPage() {
       }),
     [filters.category, filters.priority, filters.status, groupedModeItems],
   );
-  const viewCopy = VIEW_COPY[visualGroup];
   const groupCounts = useMemo(
     () =>
       Object.fromEntries(
@@ -175,8 +126,6 @@ export default function ChecklistPage() {
         : groupItemsForChecklist(filteredItems),
     [filteredItems, visualGroup],
   );
-  const completion = useMemo(() => calculateCompletion(filteredItems), [filteredItems]);
-  const remaining = Math.max(0, completion.total - completion.completed);
   const emptyCopy = getEmptyStateCopy(visualGroup);
 
   if (!profile) {
@@ -207,33 +156,45 @@ export default function ChecklistPage() {
 
   return (
     <div className="page-shell">
-      <PageIntro
-        eyebrow="待产包整理"
-        title="清单工作台"
-        description={viewCopy.description}
-      >
-        <div className="grid grid-cols-3 gap-2">
-          <MetricTile label="当前视图" value={viewCopy.title} />
-          <MetricTile label="已完成" value={`${completion.completed} 项`} />
-          <MetricTile label="待处理" value={`${remaining} 项`} />
+      <section className="mobile-shell grid gap-3 lg:max-w-none">
+        <div className="flex items-start justify-between gap-3 px-1">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-black leading-tight tracking-normal">
+              清单工作台
+            </h1>
+            <p className="mt-1 text-sm font-medium leading-6 text-muted-foreground">
+              按分类整理，逐项打包不遗漏 ✨
+            </p>
+          </div>
+          <span className="mt-1 flex size-14 shrink-0 items-center justify-center rounded-lg bg-amber-soft text-amber-foreground shadow-sm">
+            <span className="text-3xl leading-none">★</span>
+          </span>
         </div>
-      </PageIntro>
 
-      <section className="mobile-shell macaron-panel grid gap-3 p-4 lg:max-w-none">
-        <div className="grid gap-3 lg:grid-cols-[auto_1fr] lg:items-center">
-          <ModeToggle mode={checklistMode} onChange={setChecklistMode} />
-          <ProgressSummary items={modeItems} />
+        <ChecklistProgressCard packing={packing} />
+
+        <div className="grid gap-2">
+          <div className="flex items-center justify-between px-1">
+            <p className="text-sm font-bold">分类入口</p>
+            <p className="text-xs font-semibold text-muted-foreground">
+              共 {CHECKLIST_VISUAL_GROUPS.length} 类
+            </p>
+          </div>
+          <ChecklistGroupTabs
+            counts={groupCounts}
+            value={visualGroup}
+            onChange={setVisualGroup}
+          />
         </div>
-        <ChecklistGroupTabs
-          counts={groupCounts}
-          value={visualGroup}
-          onChange={setVisualGroup}
-        />
-        <details>
+      </section>
+
+      <section className="mobile-shell grid gap-3 lg:max-w-none">
+        <details className="rounded-lg border border-white/90 bg-card/90 p-3 shadow-sm">
           <summary className="cursor-pointer text-sm font-semibold text-primary">
             筛选与操作
           </summary>
           <div className="mt-3 grid gap-3">
+            <ModeToggle mode={checklistMode} onChange={setChecklistMode} />
             <div className="grid gap-3 sm:grid-cols-3">
               <Select
                 value={filters.category}
@@ -359,14 +320,24 @@ export default function ChecklistPage() {
   );
 }
 
-function MetricTile({ label, value }: { label: string; value: string }) {
+function ChecklistProgressCard({
+  packing,
+}: {
+  packing: { completed: number; percent: number; total: number };
+}) {
   return (
-    <div className="macaron-strip">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 break-words text-base font-semibold tracking-normal sm:text-lg">
-        {value}
+    <section className="rounded-lg border border-white/90 bg-card/95 p-4 shadow-soft">
+      <p className="text-xs font-bold text-muted-foreground">打包总进度</p>
+      <div className="mt-1 flex items-end gap-2">
+        <span className="text-3xl font-black leading-none text-foreground">
+          {packing.percent}%
+        </span>
+      </div>
+      <Progress className="mt-3 h-2" value={packing.percent} />
+      <p className="mt-2 text-xs font-semibold text-muted-foreground">
+        已打包 {packing.completed} / 全部 {packing.total}
       </p>
-    </div>
+    </section>
   );
 }
 
