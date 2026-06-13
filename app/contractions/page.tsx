@@ -121,7 +121,7 @@ export default function ContractionsPage() {
   return (
     <div className="page-shell">
       <PageIntro
-        eyebrow="小马计时器"
+        eyebrow="宫缩计时器"
         title="宫缩记录"
         description="只记录开始、结束、持续和间隔，方便给医生或家人沟通。"
       />
@@ -139,7 +139,7 @@ export default function ContractionsPage() {
               <CuteIllustration
                 className="size-16 border-coral/15 bg-blush"
                 imageClassName="object-contain p-1.5"
-                variant="horse"
+                variant="helper"
               />
             </div>
 

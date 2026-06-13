@@ -74,7 +74,7 @@ export default function GoPage() {
       <PageIntro
         eyebrow="出发前收口"
         title="临出门检查"
-        description="只保留现在出发前要拿、要确认的事项。小马助手帮你把最后一遍检查跑完。"
+        description="只保留现在出发前要拿、要确认的事项。DadKit 帮你把最后一遍检查跑完。"
       />
 
       <Card className="mobile-shell overflow-hidden border-coral/20 bg-coral-soft/80 shadow-soft lg:max-w-none">
@@ -107,7 +107,7 @@ export default function GoPage() {
           <CuteIllustration
             className="mx-auto size-28 border-white/70 bg-blush sm:mx-0"
             imageClassName="object-contain p-2"
-            variant="horse"
+            variant="helper"
           />
         </CardContent>
       </Card>

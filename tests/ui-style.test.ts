@@ -107,20 +107,30 @@ describe("cute maternity app visual direction", () => {
     expect(mobileTopBar).toContain("CalendarClock");
   });
 
-  it("ships the Year-of-the-Horse illustration system used by page headers", () => {
+  it("ships transparent cute illustration assets used by page headers", () => {
     expect(
       existsSync(
-        join(process.cwd(), "public", "illustrations", "dadkit-horse-family.webp"),
+        join(
+          process.cwd(),
+          "public",
+          "illustrations",
+          "dadkit-family-transparent.png",
+        ),
       ),
     ).toBe(true);
     expect(
       existsSync(
-        join(process.cwd(), "public", "illustrations", "dadkit-horse-mascot.webp"),
+        join(
+          process.cwd(),
+          "public",
+          "illustrations",
+          "dadkit-bear-transparent.png",
+        ),
       ),
     ).toBe(true);
-    expect(cuteIllustration).toContain("dadkit-horse-family.webp");
-    expect(cuteIllustration).toContain("dadkit-horse-mascot.webp");
-    expect(cuteIllustration).toContain("小马助手");
+    expect(cuteIllustration).toContain("dadkit-family-transparent.png");
+    expect(cuteIllustration).toContain("dadkit-bear-transparent.png");
+    expect(cuteIllustration).toContain("小熊助手");
     expect(pageIntro).toContain("CuteIllustration");
     expect(pageIntro).toContain("sm:hidden");
     expect(pageIntro).toContain("sm:block");
@@ -153,9 +163,13 @@ describe("cute maternity app visual direction", () => {
   it("keeps setup and hospital confirmation close to the mobile app mockups", () => {
     expect(setupPage).toContain("只需 2 分钟");
     expect(setupPage).toContain("SetupFieldRow");
-    expect(setupPage).toContain("app-list-row flex-col items-stretch");
+    expect(setupPage).toContain("SetupHeader");
+    expect(setupPage).toContain("完善信息，生成专属待产方案");
+    expect(setupPage).toContain("生成我的待产清单");
+    expect(setupPage).toContain("首次生产？");
+    expect(setupPage).toContain("更多医院信息（可选）");
     expect(setupPage).toContain("SegmentButton");
-    expect(setupPage).toContain("grid grid-cols-3");
+    expect(setupPage).toContain("grid grid-cols-2");
     expect(hospitalPage).toContain("bg-blush/85");
     expect(hospitalPage).not.toContain("TabsTrigger");
     expect(hospitalQuestionCard).toContain("app-icon-tile");

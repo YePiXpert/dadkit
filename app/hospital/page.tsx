@@ -209,7 +209,7 @@ export default function HospitalPage() {
       <PageIntro
         eyebrow="产检问清楚"
         title="医院确认"
-        description="记录下次产检要问的问题，确认后会同步影响清单。小马助手会把答案带回待产包。"
+        description="记录下次产检要问的问题，确认后会同步影响清单。DadKit 会把答案带回待产包。"
       />
 
       <Card className="mobile-shell app-list-card lg:max-w-none">
@@ -253,7 +253,7 @@ export default function HospitalPage() {
           <CuteIllustration
             className="mx-auto size-24 border-coral/15 bg-card sm:mx-0"
             imageClassName="object-contain p-2"
-            variant="horse"
+            variant="helper"
           />
         </CardContent>
       </Card>

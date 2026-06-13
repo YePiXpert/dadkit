@@ -23,6 +23,7 @@ export function MobileTopBar() {
   const router = useRouter();
   const copy = pageTitles[pathname] ?? { title: "DadKit", subtitle: "准爸爸好帮手" };
   const isHome = pathname === "/";
+  const showInlineCopy = pathname !== "/setup";
 
   function goBack() {
     if (window.history.length > 1) {
@@ -40,11 +41,11 @@ export function MobileTopBar() {
           {isHome ? (
             <span className="relative flex size-11 shrink-0 overflow-hidden rounded-lg border border-coral/20 bg-accent shadow-sm">
               <Image
-                alt="DadKit 小马助手"
-                className="object-cover"
+                alt="DadKit 小熊助手"
+                className="object-contain p-0.5"
                 fill
                 sizes="44px"
-                src="/illustrations/dadkit-horse-mascot.webp"
+                src="/illustrations/dadkit-bear-transparent.png"
               />
             </span>
           ) : (
@@ -58,14 +59,16 @@ export function MobileTopBar() {
             </button>
           )}
 
-          <div className="min-w-0">
-            <p className="truncate text-lg font-bold leading-tight text-primary">
-              {copy.title}
-            </p>
-            <p className="truncate text-xs font-medium text-muted-foreground">
-              {copy.subtitle}
-            </p>
-          </div>
+          {showInlineCopy ? (
+            <div className="min-w-0">
+              <p className="truncate text-lg font-bold leading-tight text-primary">
+                {copy.title}
+              </p>
+              <p className="truncate text-xs font-medium text-muted-foreground">
+                {copy.subtitle}
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -80,11 +83,11 @@ export function MobileTopBar() {
           ) : null}
           <span className="relative flex size-9 overflow-hidden rounded-full border border-white/80 bg-peach shadow-sm">
             <Image
-              alt="小马头像"
-              className="object-cover"
+              alt="小熊头像"
+              className="object-contain p-0.5"
               fill
               sizes="36px"
-              src="/illustrations/dadkit-horse-mascot.webp"
+              src="/illustrations/dadkit-bear-transparent.png"
             />
           </span>
         </div>

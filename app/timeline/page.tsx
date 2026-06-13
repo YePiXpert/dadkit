@@ -69,7 +69,7 @@ export default function TimelinePage() {
       <PageIntro
         eyebrow="阶段进度"
         title="准备时间线"
-        description="按预产期自动安排该问、该买、该洗、该打包的事项。小马助手会提醒当前阶段重点。"
+        description="按预产期自动安排该问、该买、该洗、该打包的事项。DadKit 会提醒当前阶段重点。"
       />
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[0.9fr_1.1fr]">
@@ -77,7 +77,7 @@ export default function TimelinePage() {
           <CardContent className="grid gap-3 p-5 sm:grid-cols-[minmax(0,1fr)_5rem] sm:items-center">
             <div>
               <p className="text-sm font-semibold text-primary-foreground/75">
-                小马倒计时
+                待产倒计时
               </p>
               <p className="mt-1 text-4xl font-semibold tracking-normal">
                 {typeof daysLeft === "number"
@@ -93,7 +93,7 @@ export default function TimelinePage() {
             <CuteIllustration
               className="mx-auto size-20 border-white/60 bg-card/20 sm:mx-0"
               imageClassName="object-contain p-1.5"
-              variant="horse"
+              variant="helper"
             />
           </CardContent>
         </Card>

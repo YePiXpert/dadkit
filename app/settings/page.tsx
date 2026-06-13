@@ -366,10 +366,10 @@ export default function SettingsPage() {
           <span className="relative flex size-12 shrink-0 overflow-hidden rounded-full border border-white/80 bg-peach shadow-sm">
             <Image
               alt="准爸爸头像"
-              className="object-cover"
+              className="object-contain p-0.5"
               fill
               sizes="48px"
-              src="/illustrations/dadkit-horse-mascot.webp"
+              src="/illustrations/dadkit-bear-transparent.png"
             />
           </span>
           <div className="min-w-0">

@@ -18,9 +18,14 @@ type HospitalSelectorValue = {
 type HospitalSelectorProps = {
   value: HospitalSelectorValue;
   onChange: (value: HospitalSelectorValue) => void;
+  triggerClassName?: string;
 };
 
-export function HospitalSelector({ value, onChange }: HospitalSelectorProps) {
+export function HospitalSelector({
+  value,
+  onChange,
+  triggerClassName,
+}: HospitalSelectorProps) {
   const selectValue =
     value.hospitalMode === "preset"
       ? value.hospitalId ?? "cn-bj-general-hospital"
@@ -38,7 +43,7 @@ export function HospitalSelector({ value, onChange }: HospitalSelectorProps) {
         onChange({ hospitalMode: "preset", hospitalId: nextValue });
       }}
     >
-      <SelectTrigger>
+      <SelectTrigger className={triggerClassName}>
         <SelectValue placeholder="选择生产医院" />
       </SelectTrigger>
       <SelectContent>

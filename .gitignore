@@ -26,6 +26,7 @@ pnpm-debug.log*
 # test/cache
 coverage
 .vitest
+.visual-screenshots
 
 # local coding assistants
 .serena/

@@ -41,11 +41,11 @@ export function AppHeader() {
         <Link className="flex min-w-0 items-center gap-2" href="/">
           <span className="relative flex size-10 items-center justify-center overflow-hidden rounded-lg border border-coral/20 bg-accent shadow-soft">
             <Image
-              alt="DadKit 小马助手"
-              className="object-cover"
+              alt="DadKit 小熊助手"
+              className="object-contain p-0.5"
               fill
               sizes="40px"
-              src="/illustrations/dadkit-horse-mascot.webp"
+              src="/illustrations/dadkit-bear-transparent.png"
             />
           </span>
           <span className="min-w-0">

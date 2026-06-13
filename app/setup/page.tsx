@@ -2,15 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Save } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 
 import { CustomHospitalForm } from "@/components/CustomHospitalForm";
 import { CuteIllustration } from "@/components/CuteIllustration";
-import { DisclaimerBox } from "@/components/DisclaimerBox";
 import { HospitalSelector } from "@/components/HospitalSelector";
-import { PageIntro } from "@/components/PageIntro";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -28,11 +25,10 @@ import {
   useDadKitStore,
 } from "@/lib/store";
 import { getHospitalForProfile } from "@/lib/rules";
-import {
-  DELIVERY_MODE_LABELS,
-  type DeliveryMode,
-  type HospitalProfile,
-  type UserProfile,
+import type {
+  DeliveryMode,
+  HospitalProfile,
+  UserProfile,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -46,15 +42,22 @@ const PROVIDED_OPTIONS = [
   { id: "unknown", label: "不确定" },
 ];
 
+const DELIVERY_SEGMENTS: Array<{ label: string; value: DeliveryMode }> = [
+  { label: "顺产", value: "vaginal" },
+  { label: "剖宫产", value: "c_section" },
+];
+
 export default function SetupPage() {
   const router = useRouter();
   const profile = useDadKitStore((state) => state.profile);
+  const createProfile = useDadKitStore((state) => state.createProfile);
   const saveProfile = useDadKitStore((state) => state.saveProfile);
   const [draft, setDraft] = useState<UserProfile>(() => createDefaultProfile());
   const [customHospital, setCustomHospital] = useState<HospitalProfile>(() =>
     createCustomHospitalProfile({ name: "自定义医院", city: "北京市" }),
   );
   const [otherProvided, setOtherProvided] = useState("");
+  const [firstBaby, setFirstBaby] = useState(true);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -91,7 +94,10 @@ export default function SetupPage() {
     const ids = new Set(draft.hospitalProvidedItemIds);
 
     if (id === "unknown") {
-      setDraft({ ...draft, hospitalProvidedItemIds: ids.has("unknown") ? [] : ["unknown"] });
+      setDraft({
+        ...draft,
+        hospitalProvidedItemIds: ids.has("unknown") ? [] : ["unknown"],
+      });
       return;
     }
 
@@ -119,96 +125,122 @@ export default function SetupPage() {
       providedIds.push(otherProvided.trim() || "other");
     }
 
-    saveProfile({
+    const nextProfile = {
       ...draft,
       customHospital: draft.hospitalMode === "custom" ? customHospital : undefined,
       hospitalProvidedItemIds: Array.from(new Set(providedIds)),
-    });
+    };
+
+    if (profile) {
+      saveProfile(nextProfile);
+    } else {
+      createProfile(nextProfile);
+    }
+
     router.push("/checklist");
   }
 
   return (
     <div className="page-shell">
-      <PageIntro
-        eyebrow="小马助手建档"
-        title="创建资料"
-        description="只问必要信息，之后都能改。小马助手会按预产期把待产任务排好。"
-      />
+      <section className="mobile-shell grid gap-4">
+        <SetupHeader />
 
-      <Card className="mobile-shell overflow-hidden border-white/90 bg-card/95 shadow-soft lg:max-w-none">
-        <CardHeader className="grid grid-cols-[minmax(0,1fr)_4.5rem] items-center gap-3">
-          <div className="min-w-0">
-            <p className="section-kicker">只需 2 分钟</p>
-            <CardTitle className="mt-1 text-2xl">生成我的待产清单</CardTitle>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              填完信息后，DadKit 会自动生成按阶段整理的准备清单。
-            </p>
-          </div>
-          <CuteIllustration
-            className="size-[4.5rem] border-peach/40 bg-peach"
-            imageClassName="object-contain p-1.5"
-            variant="horse"
-          />
-        </CardHeader>
-        <CardContent className="grid gap-5">
-          <SetupSection number="01" title="基本信息">
-            <div className="grid gap-2">
-              <SetupFieldRow
-                caption="用于计算孕周、倒计时和准备时间线"
-                label="预产期"
-              >
-                <Input
-                  required
-                  type="date"
-                  value={draft.dueDate ?? ""}
-                  onChange={(event) => {
-                    setMessage("");
-                    setDraft({
-                      ...draft,
-                      dueDate: event.target.value || undefined,
-                    });
-                  }}
-                />
-              </SetupFieldRow>
-              <SetupFieldRow
-                caption="当前先提供北京通用规则，其他地区可保留通用模板"
-                label="所在地区"
-              >
-                <Select
-                  value={draft.regionId}
-                  onValueChange={(regionId) => setDraft({ ...draft, regionId })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cn-bj-general">北京市</SelectItem>
-                    <SelectItem value="other">其他地区</SelectItem>
-                  </SelectContent>
-                </Select>
-              </SetupFieldRow>
-            </div>
-          </SetupSection>
+        <section className="grid gap-3 rounded-lg border border-white/90 bg-card/95 p-3 shadow-soft">
+          <SetupFieldRow
+            label="预产期"
+            valueHint={draft.dueDate || "请选择"}
+          >
+            <Input
+              required
+              className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus-visible:ring-0"
+              type="date"
+              value={draft.dueDate ?? ""}
+              onChange={(event) => {
+                setMessage("");
+                setDraft({
+                  ...draft,
+                  dueDate: event.target.value || undefined,
+                });
+              }}
+            />
+          </SetupFieldRow>
 
-          <SetupSection number="02" title="医院">
-            <SetupFieldRow
-              caption="可选择已收录医院、暂不确定或填写自定义医院"
-              label="生产医院"
+          <SetupFieldRow label="所在地" valueHint="北京市">
+            <Select
+              value={draft.regionId}
+              onValueChange={(regionId) => setDraft({ ...draft, regionId })}
             >
-              <HospitalSelector
-                value={{
-                  hospitalMode: draft.hospitalMode,
-                  hospitalId: draft.hospitalId,
-                }}
-                onChange={(value) =>
-                  setDraft({
-                    ...draft,
-                    hospitalMode: value.hospitalMode,
-                    hospitalId: value.hospitalId,
-                  })
+              <SelectTrigger className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus:ring-0 [&>svg]:hidden">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cn-bj-general">北京市</SelectItem>
+                <SelectItem value="other">其他地区</SelectItem>
+              </SelectContent>
+            </Select>
+          </SetupFieldRow>
+
+          <SetupFieldRow
+            label="选择医院（可选）"
+            valueHint={selectedHospital?.name ?? "我还没确定医院"}
+          >
+            <HospitalSelector
+              triggerClassName="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus:ring-0 [&>svg]:hidden"
+              value={{
+                hospitalMode: draft.hospitalMode,
+                hospitalId: draft.hospitalId,
+              }}
+              onChange={(value) =>
+                setDraft({
+                  ...draft,
+                  hospitalMode: value.hospitalMode,
+                  hospitalId: value.hospitalId,
+                })
+              }
+            />
+          </SetupFieldRow>
+
+          <SegmentField label="生产方式">
+            {DELIVERY_SEGMENTS.map((option) => (
+              <SegmentButton
+                active={draft.deliveryMode === option.value}
+                key={option.value}
+                label={option.label}
+                onClick={() =>
+                  setDraft({ ...draft, deliveryMode: option.value })
                 }
               />
-            </SetupFieldRow>
+            ))}
+          </SegmentField>
+
+          <SegmentField label="首次生产？">
+            <SegmentButton
+              active={firstBaby}
+              label="是"
+              onClick={() => setFirstBaby(true)}
+            />
+            <SegmentButton
+              active={!firstBaby}
+              label="否"
+              onClick={() => setFirstBaby(false)}
+            />
+          </SegmentField>
+        </section>
+
+        <Button className="h-14 w-full bg-primary text-base shadow-soft" onClick={submit}>
+          生成我的待产清单
+        </Button>
+        <p className="text-center text-xs font-medium text-muted-foreground">
+          只需 2 分钟，后续可随时修改
+        </p>
+
+        {message ? <p className="macaron-note">{message}</p> : null}
+
+        <details className="rounded-lg border border-white/90 bg-card/90 p-3 shadow-sm">
+          <summary className="cursor-pointer text-sm font-bold text-primary">
+            更多医院信息（可选）
+          </summary>
+          <div className="mt-4 grid gap-4">
             {selectedHospital?.verificationStatus === "unverified" ? (
               <p className="rounded-lg border border-amber/35 bg-amber-soft px-3 py-2 text-sm leading-6 text-amber-foreground">
                 该医院模板尚未核验，请以最近一次产检、入院须知或医院通知为准。
@@ -220,46 +252,23 @@ export default function SetupPage() {
                 onChange={setCustomHospital}
               />
             ) : null}
-          </SetupSection>
 
-          <SetupSection number="03" title="生产条件">
+            <SetupFieldRow label="预计住院天数" valueHint={`${draft.expectedStayDays} 天`}>
+              <Input
+                className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus-visible:ring-0"
+                min={1}
+                type="number"
+                value={draft.expectedStayDays}
+                onChange={(event) =>
+                  setDraft({
+                    ...draft,
+                    expectedStayDays: Number(event.target.value) || 1,
+                  })
+                }
+              />
+            </SetupFieldRow>
+
             <div className="grid gap-2">
-              <SetupFieldRow
-                caption="不确定也没关系，之后可以随时修改"
-                label="生产方式"
-              >
-                <div className="grid grid-cols-3 gap-2">
-                  {Object.entries(DELIVERY_MODE_LABELS).map(([value, label]) => (
-                    <SegmentButton
-                      active={draft.deliveryMode === value}
-                      key={value}
-                      label={label}
-                      onClick={() =>
-                        setDraft({ ...draft, deliveryMode: value as DeliveryMode })
-                      }
-                    />
-                  ))}
-                </div>
-              </SetupFieldRow>
-              <SetupFieldRow
-                caption="影响消耗品和换洗物品数量建议"
-                label="预计住院天数"
-              >
-                <Input
-                  min={1}
-                  type="number"
-                  value={draft.expectedStayDays}
-                  onChange={(event) =>
-                    setDraft({
-                      ...draft,
-                      expectedStayDays: Number(event.target.value) || 1,
-                    })
-                  }
-                />
-              </SetupFieldRow>
-            </div>
-
-            <div className="macaron-strip grid gap-3">
               <SwitchField
                 checked={draft.breastfeeding}
                 label="计划哺乳"
@@ -282,103 +291,115 @@ export default function SetupPage() {
                 }
               />
             </div>
-          </SetupSection>
 
-          <SetupSection number="04" title="医院明确提供哪些物品？">
-            <p className="text-sm leading-6 text-muted-foreground">
-              只有已经从医院确认过的物品才勾选。拿不准就选不确定。
-            </p>
-            <div className="grid gap-2 rounded-lg border border-white/80 bg-cream/70 p-3 shadow-sm sm:grid-cols-2">
-              {PROVIDED_OPTIONS.map((option) => (
-                <label
-                  className="flex items-center gap-2 rounded-md px-2 py-2 text-sm"
-                  key={option.id}
-                >
-                  <input
-                    checked={selectedProvided.has(option.id)}
-                    className="size-4 accent-primary"
-                    type="checkbox"
-                    onChange={() => toggleProvided(option.id)}
-                  />
-                  {option.label}
-                </label>
-              ))}
-            </div>
-            {selectedProvided.has("other") ? (
-              <Input
-                className="mt-2"
-                value={otherProvided}
-                onChange={(event) => setOtherProvided(event.target.value)}
-                placeholder="补充已确认由医院提供的其他物品"
+            <section className="grid gap-3">
+              <div>
+                <p className="text-sm font-bold">医院明确提供哪些物品？</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  只有已经从医院确认过的物品才勾选。拿不准就选不确定。
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {PROVIDED_OPTIONS.map((option) => (
+                  <button
+                    className={cn(
+                      "min-h-10 rounded-lg border border-white/90 bg-background/75 px-3 text-left text-sm font-semibold shadow-sm",
+                      selectedProvided.has(option.id) &&
+                        "border-primary/40 bg-mint text-primary",
+                    )}
+                    key={option.id}
+                    type="button"
+                    onClick={() => toggleProvided(option.id)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              {selectedProvided.has("other") ? (
+                <Input
+                  value={otherProvided}
+                  onChange={(event) => setOtherProvided(event.target.value)}
+                  placeholder="补充已确认由医院提供的其他物品"
+                />
+              ) : null}
+            </section>
+
+            <Field label="医院备注">
+              <Textarea
+                value={draft.hospitalNotes ?? ""}
+                onChange={(event) =>
+                  setDraft({ ...draft, hospitalNotes: event.target.value })
+                }
+                placeholder="例如：产检时听到的入院入口、护士提醒、需要再次确认的事项"
               />
-            ) : null}
-          </SetupSection>
-
-          <Field label="医院备注">
-            <Textarea
-              value={draft.hospitalNotes ?? ""}
-              onChange={(event) =>
-                setDraft({ ...draft, hospitalNotes: event.target.value })
-              }
-              placeholder="例如：产检时听到的入院入口、护士提醒、需要再次确认的事项"
-            />
-          </Field>
-
-          <Button className="w-full sm:w-fit" onClick={submit}>
-            <Save className="size-4" />
-            生成清单
-          </Button>
-          {message ? (
-            <p className="macaron-note">
-              {message}
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
-      <DisclaimerBox />
+            </Field>
+          </div>
+        </details>
+      </section>
     </div>
   );
 }
 
-function SetupSection({
-  children,
-  number,
-  title,
-}: {
-  children: React.ReactNode;
-  number: string;
-  title: string;
-}) {
+function SetupHeader() {
   return (
-    <section className="grid gap-4 rounded-lg border border-white/90 bg-cream/55 p-4 shadow-sm">
-      <div className="flex items-center gap-2">
-        <span className="flex size-7 items-center justify-center rounded-full bg-peach text-xs font-semibold text-peach-foreground">
-          {number}
-        </span>
-        <h2 className="text-base font-semibold">{title}</h2>
+    <section className="relative grid min-h-24 grid-cols-[minmax(0,1fr)_5.5rem] items-center gap-3">
+      <div className="min-w-0">
+        <h1 className="text-2xl font-black leading-tight tracking-normal">
+          创建资料
+        </h1>
+        <p className="mt-1 text-sm font-medium leading-6 text-muted-foreground">
+          完善信息，生成专属待产方案 ✨
+        </p>
       </div>
-      {children}
+      <div className="relative h-24">
+        <span className="absolute left-0 top-2 rounded-full border border-peach/40 bg-card px-3 py-1 text-lg text-coral shadow-sm">
+          ☁
+        </span>
+        <CuteIllustration
+          className="absolute bottom-0 right-0 size-24 border-transparent bg-transparent shadow-none"
+          imageClassName="object-contain"
+          variant="helper"
+        />
+      </div>
     </section>
   );
 }
 
 function SetupFieldRow({
-  caption,
+  children,
+  label,
+  valueHint,
+}: {
+  children: React.ReactNode;
+  label: string;
+  valueHint: string;
+}) {
+  return (
+    <div className="grid min-h-[4.1rem] grid-cols-[minmax(0,1fr)_minmax(8.5rem,42%)] items-center gap-3 rounded-lg border border-white/90 bg-background/70 px-3 py-2 shadow-sm">
+      <div className="min-w-0">
+        <p className="text-sm font-bold leading-5">{label}</p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">{valueHint}</p>
+      </div>
+      <div className="flex min-w-0 items-center justify-end gap-1">
+        {children}
+        <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+      </div>
+    </div>
+  );
+}
+
+function SegmentField({
   children,
   label,
 }: {
-  caption: string;
   children: React.ReactNode;
   label: string;
 }) {
   return (
-    <div className="app-list-row flex-col items-stretch bg-card/90 sm:flex-row sm:items-center">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold leading-5">{label}</p>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">{caption}</p>
-      </div>
-      <div className="w-full min-w-0 sm:max-w-xs">{children}</div>
-    </div>
+    <section className="grid gap-2 rounded-lg border border-white/90 bg-background/70 p-3 shadow-sm">
+      <p className="text-sm font-bold leading-5">{label}</p>
+      <div className="grid grid-cols-2 gap-2">{children}</div>
+    </section>
   );
 }
 
@@ -394,7 +415,7 @@ function SegmentButton({
   return (
     <button
       className={cn(
-        "flex min-h-12 items-center justify-center gap-1 rounded-lg border px-2 text-sm font-bold shadow-sm transition-colors",
+        "flex min-h-12 items-center justify-center gap-1 rounded-lg border px-3 text-sm font-bold shadow-sm transition-colors",
         active
           ? "border-primary bg-primary text-primary-foreground"
           : "border-white/90 bg-card text-muted-foreground hover:bg-mint/70",
@@ -433,7 +454,7 @@ function SwitchField({
   onCheckedChange: (value: boolean) => void;
 }) {
   return (
-    <div className="app-list-row min-h-12 bg-card/80 px-3 py-2">
+    <div className="flex min-h-12 items-center justify-between gap-3 rounded-lg border border-white/90 bg-background/75 px-3 py-2 shadow-sm">
       <Label className="font-semibold">{label}</Label>
       <Switch checked={checked} onCheckedChange={onCheckedChange} />
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
 import {
@@ -11,22 +12,16 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { CuteIllustration } from "@/components/CuteIllustration";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
   buildArchiveCards,
   getCountdownLabel,
   getPregnancyProgress,
 } from "@/lib/presentation/home-dashboard";
-import { buildHomeSummary } from "@/lib/presentation/home-summary";
+import { buildHomeSummary, type HomeSummary } from "@/lib/presentation/home-summary";
 import { getHospitalForProfile } from "@/lib/rules";
 import { useDadKitStore } from "@/lib/store";
-import {
-  DELIVERY_MODE_LABELS,
-  type UserProfile,
-} from "@/lib/types";
+import { DELIVERY_MODE_LABELS, type UserProfile } from "@/lib/types";
 import {
   TIMELINE_STAGE_TITLES,
   generateTodayTasks,
@@ -51,15 +46,29 @@ function dueAdvice(daysLeft: number) {
   return "重点确认入院动线和临出门要拿的物品。";
 }
 
+function overallProgress(summary: HomeSummary) {
+  const total =
+    summary.corePacking.total +
+    summary.hospitalQuestions.total +
+    summary.lastMinute.total;
+  const completed =
+    summary.corePacking.completed +
+    summary.hospitalQuestions.completed +
+    summary.lastMinute.completed;
+
+  return {
+    completed,
+    percent: total === 0 ? 0 : Math.round((completed / total) * 100),
+    total,
+  };
+}
+
 export default function HomePage() {
   const profile = useDadKitStore((state) => state.profile);
   const checklist = useDadKitStore((state) => state.checklist);
   const hospitalAnswers = useDadKitStore((state) => state.hospitalAnswers);
   const timelineTaskStatuses = useDadKitStore(
     (state) => state.timelineTaskStatuses,
-  );
-  const updateTimelineTaskStatus = useDadKitStore(
-    (state) => state.updateTimelineTaskStatus,
   );
   const summary = useMemo(
     () => buildHomeSummary(checklist, hospitalAnswers),
@@ -104,381 +113,331 @@ export default function HomePage() {
       }),
     [currentStageTitle, hospital?.name, profile, summary],
   );
+  const readyProgress = useMemo(() => overallProgress(summary), [summary]);
 
   return (
     <div className="page-shell">
-      <section className="mobile-shell grid gap-4 lg:max-w-none lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
-        <PregnancyArchivePanel
-          archiveCards={archiveCards}
+      <section className="mobile-shell grid gap-3">
+        <HomeHeroCard
           countdownLabel={getCountdownLabel(daysLeft)}
           daysLeft={daysLeft}
           pregnancyProgress={pregnancyProgress}
           profile={profile}
-          stageTitle={profile?.dueDate ? currentStageTitle : "待填写预产期"}
         />
-        <TodayTasksCard
-          onDone={(taskId) => updateTimelineTaskStatus(taskId, "done")}
+        <TodayActionsPanel
           profileReady={Boolean(profile?.dueDate)}
           tasks={todayTasks}
         />
+        <OverallProgressPanel progress={readyProgress} />
+        <TrustPillStrip />
+        <ProfileArchiveList archiveCards={archiveCards} />
       </section>
 
-      <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-3">
-        <SectionHeader
-          className="lg:col-span-3"
-          eyebrow="关键进度"
-          title="今天最该盯住的三件事"
-        />
-        <PackingProgressCard
-          icon={ClipboardList}
-          label="核心打包"
-          percent={summary.corePacking.percent}
-          tone="primary"
-        />
-        <PackingProgressCard
-          icon={Hospital}
-          label="医院待问"
-          percent={summary.hospitalQuestions.percent}
-          tone="amber"
-        />
-        <PackingProgressCard
-          icon={CalendarClock}
-          label="临出门"
-          percent={summary.lastMinute.percent}
-          tone="coral"
-        />
-      </section>
-
-      <section className="mobile-shell grid gap-3 lg:max-w-none">
-        <SectionHeader
-          eyebrow="工具宫格"
-          title="记录、沟通和产后办理"
-        />
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <ToolGridLink
-            caption="记录节奏"
-            href="/contractions"
-            icon={CalendarClock}
-            title="宫缩记录"
-            tone="coral"
-          />
-          <ToolGridLink
-            caption="沟通偏好"
-            href="/birth-plan"
-            icon={ClipboardList}
-            title="分娩偏好卡"
-            tone="mint"
-          />
-          <ToolGridLink
-            caption="手续材料"
-            href="/postpartum"
-            icon={CheckCircle2}
-            title="产后办理"
-            tone="amber"
-          />
-        </div>
-      </section>
-
-      <p className="mobile-shell text-xs leading-5 text-muted-foreground lg:max-w-none">
+      <p className="mobile-shell text-center text-xs leading-5 text-muted-foreground">
         非医疗建议，请以医院通知和产检确认结果为准。
       </p>
     </div>
   );
 }
 
-function PregnancyArchivePanel({
-  archiveCards,
+function HomeHeroCard({
   countdownLabel,
   daysLeft,
   pregnancyProgress,
   profile,
-  stageTitle,
 }: {
-  archiveCards: ReturnType<typeof buildArchiveCards>;
   countdownLabel: string;
   daysLeft?: number;
   pregnancyProgress: ReturnType<typeof getPregnancyProgress>;
   profile?: UserProfile;
-  stageTitle: string;
 }) {
+  const countdownNumber = countdownLabel.match(/\d+/)?.[0];
+
   return (
-    <Card className="overflow-hidden bg-card/95">
-      <CardContent className="grid gap-4 p-4 sm:p-5">
-        <section className="app-hero-card grid min-h-56 gap-4 overflow-hidden p-4 sm:grid-cols-[minmax(0,1fr)_11rem] sm:items-end">
-          <div className="relative z-10">
-            <p className="text-sm font-semibold text-primary-foreground/75">
-              DadKit 今日行动
-            </p>
-            <h1 className="mt-2 text-4xl font-bold leading-tight tracking-normal">
-              {countdownLabel}
-            </h1>
-            <p className="mt-2 text-sm font-semibold text-primary-foreground/80">
-              {profile?.dueDate ? `预产期：${profile.dueDate}` : "预产期待填写"}
-            </p>
-            <p className="mt-1 text-sm font-semibold text-primary-foreground/80">
-              {pregnancyProgress.label}
-            </p>
-            <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-card/25">
-              <div
-                className="h-full rounded-full bg-peach transition-all"
-                style={{ width: `${pregnancyProgress.percent}%` }}
-              />
-            </div>
-            <p className="mt-3 text-sm leading-6 text-primary-foreground/80">
-              {typeof daysLeft === "number"
-                ? dueAdvice(daysLeft)
-                : "填写预产期后，DadKit 会自动生成准备时间线。"}
-            </p>
-            <p className="mt-1 text-xs font-semibold text-primary-foreground/65">
-              当前阶段：{stageTitle}
-            </p>
-          </div>
-          <CuteIllustration
-            className="mx-auto min-h-32 w-full max-w-44 border-white/60 bg-card/15 sm:mx-0"
-            imageClassName="object-contain p-1"
-            priority
-            sizes="(min-width: 1280px) 180px, 45vw"
-            variant="family"
-          />
-        </section>
+    <section className="relative min-h-[11.25rem] overflow-hidden rounded-lg bg-primary p-4 text-primary-foreground shadow-soft">
+      <span className="pointer-events-none absolute right-7 top-5 text-xl text-peach">
+        ❤
+      </span>
+      <span className="pointer-events-none absolute right-28 top-11 text-sm text-amber">
+        ✦
+      </span>
+      <span className="pointer-events-none absolute right-36 bottom-8 text-base text-blush">
+        ❤
+      </span>
 
-        <p className="section-kicker">孕期档案</p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {archiveCards.map((card) => (
-            <div
-              className="app-list-row items-start bg-background/80"
-              key={card.label}
-            >
-              <span className="app-icon-tile size-9 rounded-md">
-                <CalendarClock className="size-4" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-xs font-semibold text-muted-foreground">
-                  {card.label}
-                </span>
-                <span className="mt-1 block truncate text-base font-bold">
-                  {card.value}
-                </span>
-                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                  {card.caption}
-                </span>
-              </span>
-            </div>
-          ))}
-        </div>
+      <div className="relative z-10 max-w-[52%]">
+        <p className="text-xs font-bold text-primary-foreground/80">
+          距离预产期还剩
+        </p>
+        <h1 className="mt-2 flex items-end gap-1 text-4xl font-black leading-none tracking-normal">
+          {countdownNumber ? (
+            <>
+              <span>{countdownNumber}</span>
+              <span className="mb-1 text-base font-bold">天</span>
+            </>
+          ) : (
+            <span className="text-3xl">{countdownLabel}</span>
+          )}
+        </h1>
+        <p className="mt-2 text-xs font-bold text-primary-foreground/85">
+          预产期：{profile?.dueDate ?? "待填写"}
+        </p>
+        <p className="mt-1 text-xs font-bold text-primary-foreground/85">
+          {pregnancyProgress.label}
+        </p>
+        <p className="mt-2 text-[11px] leading-5 text-primary-foreground/75">
+          {typeof daysLeft === "number"
+            ? dueAdvice(daysLeft)
+            : "填写后自动生成准备时间线"}
+        </p>
+      </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          <PrimaryHomeLink
-            href={profile ? "/checklist" : "/setup"}
-            label={profile ? "继续今日任务" : "创建清单"}
-          />
-          <PrimaryHomeLink href="/go" label="临出门检查" variant="outline" />
-        </div>
-      </CardContent>
-    </Card>
+      <div className="pointer-events-none absolute -bottom-2 -right-4 h-full w-[64%]">
+        <Image
+          alt="准爸爸和孕妈妈一起整理待产包"
+          className="object-contain object-bottom"
+          fill
+          priority
+          sizes="260px"
+          src="/illustrations/dadkit-family-transparent.png"
+        />
+      </div>
+    </section>
   );
 }
 
-function PrimaryHomeLink({
-  href,
-  label,
-  variant = "default",
-}: {
-  href: string;
-  label: string;
-  variant?: "default" | "outline";
-}) {
-  return (
-    <Link
-      className={
-        variant === "default"
-          ? "flex min-h-12 items-center justify-between rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-soft transition-transform active:scale-[0.98]"
-          : "flex min-h-12 items-center justify-between rounded-full border border-border bg-card px-4 py-3 text-sm font-semibold text-primary transition-transform active:scale-[0.98]"
-      }
-      href={href}
-    >
-      <span>{label}</span>
-      <ArrowRight className="size-4" />
-    </Link>
-  );
-}
-
-function TodayTasksCard({
-  onDone,
+function TodayActionsPanel({
   profileReady,
   tasks,
 }: {
-  onDone: (taskId: string) => void;
   profileReady: boolean;
   tasks: TimelineTask[];
 }) {
-  return (
-    <Card className="bg-card/95">
-      <CardContent className="grid gap-3 p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="section-kicker">今日行动 3 项</p>
-            <h2 className="mt-1 text-2xl font-semibold tracking-normal">
-              {profileReady ? "今天该做" : "等待预产期"}
-            </h2>
-          </div>
-          <Button asChild size="sm" variant="outline">
-            <Link href={profileReady ? "/timeline" : "/setup"}>
-              {profileReady ? "全部" : "填写"}
-            </Link>
-          </Button>
-        </div>
+  const fallbackActions = [
+    {
+      href: "/setup",
+      icon: CalendarClock,
+      subtitle: "建议今天完成",
+      title: "填写预产期和生产信息",
+      tone: "coral" as const,
+    },
+    {
+      href: "/setup",
+      icon: Hospital,
+      subtitle: "建议今天完成",
+      title: "选择或确认生产医院",
+      tone: "blue" as const,
+    },
+    {
+      href: "/checklist",
+      icon: ClipboardList,
+      subtitle: "创建后自动生成",
+      title: "生成待产包清单",
+      tone: "mint" as const,
+    },
+  ];
 
-        {!profileReady ? (
-          <p className="rounded-lg bg-secondary/80 px-3 py-3 text-sm leading-6 text-primary">
-            填写预产期后，DadKit 会自动生成准备时间线。
-          </p>
-        ) : tasks.length === 0 ? (
-          <p className="rounded-lg bg-secondary/80 px-3 py-3 text-sm leading-6 text-primary">
-            当前阶段没有待处理任务。
-          </p>
-        ) : (
-          <div className="grid gap-2">
-            {tasks.map((task) => (
-              <article
-                className="app-list-row items-start bg-background/80"
-                key={task.id}
-              >
-                <span className="app-icon-tile size-9 rounded-md">
-                  <ClipboardList className="size-4" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-bold leading-5">
-                    {task.title}
-                  </span>
-                  <span className="mt-1 block text-xs font-semibold text-coral-foreground">
-                    建议今天完成
-                  </span>
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    {TIMELINE_STAGE_TITLES[task.stageId]}
-                  </span>
-                </span>
-                <Button
-                  className="size-9 shrink-0 rounded-full px-0"
-                  onClick={() => onDone(task.id)}
-                  size="sm"
-                  variant="outline"
-                >
-                  <CheckCircle2 className="size-4" />
-                  <span className="sr-only">完成</span>
-                </Button>
-              </article>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+  const actions = profileReady
+    ? tasks.map((task, index) => ({
+        href: taskHref(task),
+        icon: taskIcon(task),
+        subtitle: "建议今天完成",
+        title: task.title,
+        tone: (["coral", "blue", "mint"] as const)[index % 3],
+      }))
+    : fallbackActions;
+
+  return (
+    <section className="grid gap-2">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold tracking-normal">今日行动 3 项</h2>
+        <Link
+          className="inline-flex items-center gap-1 text-xs font-bold text-primary"
+          href={profileReady ? "/timeline" : "/setup"}
+        >
+          查看全部
+          <ArrowRight className="size-3.5" />
+        </Link>
+      </div>
+      <div className="grid gap-2 rounded-lg border border-white/90 bg-card/95 p-2 shadow-soft">
+        {actions.map((action) => (
+          <HomeActionRow action={action} key={`${action.href}-${action.title}`} />
+        ))}
+      </div>
+    </section>
   );
 }
 
-function SectionHeader({
-  className,
-  eyebrow,
-  title,
+function HomeActionRow({
+  action,
 }: {
-  className?: string;
-  eyebrow: string;
-  title: string;
+  action: {
+    href: string;
+    icon: LucideIcon;
+    subtitle: string;
+    title: string;
+    tone: "blue" | "coral" | "mint";
+  };
 }) {
-  return (
-    <div className={className}>
-      <p className="cute-eyebrow">{eyebrow}</p>
-      <h2 className="mt-1 text-xl font-semibold tracking-normal">{title}</h2>
-    </div>
-  );
-}
-
-function ToolGridLink({
-  caption,
-  href,
-  icon: Icon,
-  title,
-  tone,
-}: {
-  caption: string;
-  href: string;
-  icon: LucideIcon;
-  title: string;
-  tone: "amber" | "coral" | "mint";
-}) {
+  const Icon = action.icon;
   const toneClass =
-    tone === "coral"
+    action.tone === "coral"
       ? "bg-coral-soft text-coral-foreground"
-      : tone === "amber"
-        ? "bg-amber-soft text-amber-foreground"
+      : action.tone === "blue"
+        ? "bg-lavender text-lavender-foreground"
         : "bg-mint text-primary";
 
   return (
     <Link
-      className="app-list-card grid min-h-24 place-items-center gap-2 p-3 text-center transition-transform active:scale-[0.99]"
-      href={href}
+      className="flex min-h-[3.6rem] items-center gap-3 rounded-lg bg-background/80 px-3 py-2.5 transition-transform active:scale-[0.99]"
+      href={action.href}
     >
       <span
-        className={`flex size-11 items-center justify-center rounded-lg shadow-sm ${toneClass}`}
+        className={`flex size-9 shrink-0 items-center justify-center rounded-md ${toneClass}`}
       >
-        <Icon className="size-5" />
+        <Icon className="size-4" />
       </span>
-      <span className="text-sm font-bold leading-5">{title}</span>
-      <span className="text-xs font-semibold text-muted-foreground">{caption}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-bold leading-5">
+          {action.title}
+        </span>
+        <span className="mt-0.5 block text-xs font-semibold text-coral-foreground">
+          {action.subtitle}
+        </span>
+      </span>
+      <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
     </Link>
   );
 }
 
-function PackingProgressCard({
-  icon: Icon,
-  label,
-  percent,
-  tone,
+function OverallProgressPanel({
+  progress,
 }: {
-  icon: LucideIcon;
-  label: string;
-  percent: number;
-  tone: "primary" | "amber" | "coral";
+  progress: { completed: number; percent: number; total: number };
 }) {
-  const toneClass =
-    tone === "primary"
-      ? "bg-primary text-primary-foreground"
-      : tone === "amber"
-        ? "bg-amber-soft text-amber-foreground"
-        : "bg-coral-soft text-coral-foreground";
+  return (
+    <section className="rounded-lg border border-white/90 bg-card/95 p-3 shadow-soft">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-bold tracking-normal">整体准备进度</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            已完成 {progress.completed} 项 / 全部 {progress.total} 项
+          </p>
+        </div>
+        <span className="text-sm font-black text-primary">{progress.percent}%</span>
+      </div>
+      <div className="mt-3 grid grid-cols-[1fr_4.25rem] items-end gap-3">
+        <Progress className="h-2.5" value={progress.percent} />
+        <Image
+          alt="小熊助手提醒准备进度"
+          className="ml-auto object-contain"
+          height={68}
+          src="/illustrations/dadkit-bear-transparent.png"
+          width={68}
+        />
+      </div>
+    </section>
+  );
+}
+
+function TrustPillStrip() {
+  const items = [
+    {
+      icon: CheckCircle2,
+      text: "贴心可靠",
+      tone: "bg-coral-soft text-coral-foreground",
+    },
+    {
+      icon: Hospital,
+      text: "有序不慌",
+      tone: "bg-mint text-primary",
+    },
+    {
+      icon: ClipboardList,
+      text: "一起协作",
+      tone: "bg-amber-soft text-amber-foreground",
+    },
+  ];
 
   return (
-    <Card
-      className={
-        tone === "primary"
-          ? "bg-primary text-primary-foreground"
-          : tone === "amber"
-            ? "border-amber/35 bg-amber-soft/80"
-            : "border-coral/30 bg-coral-soft/80"
-      }
-    >
-      <CardContent className="p-3.5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p
-              className={
-                tone === "primary"
-                  ? "text-sm text-primary-foreground/80"
-                  : "text-sm text-muted-foreground"
-              }
+    <section className="grid w-full grid-cols-3 gap-1.5 overflow-hidden">
+      {items.map((item) => {
+        const Icon = item.icon;
+
+        return (
+          <div
+            className="min-w-0 rounded-lg border border-white/90 bg-card/90 p-1.5 text-center shadow-sm"
+            key={item.text}
+          >
+            <span
+              className={`mx-auto flex size-8 items-center justify-center rounded-full ${item.tone}`}
             >
-              {label}
+              <Icon className="size-4" />
+            </span>
+            <p className="mt-1 truncate text-[11px] font-bold text-primary">
+              {item.text}
             </p>
-            <p className="mt-1 text-2xl font-semibold tracking-normal">{percent}%</p>
           </div>
-          <span className={`rounded-lg p-2 ${toneClass}`}>
-            <Icon className="size-5" />
-          </span>
-        </div>
-        <div className="mt-2">
-          <Progress value={percent} />
-        </div>
-      </CardContent>
-    </Card>
+        );
+      })}
+    </section>
   );
+}
+
+function ProfileArchiveList({
+  archiveCards,
+}: {
+  archiveCards: ReturnType<typeof buildArchiveCards>;
+}) {
+  return (
+    <details className="rounded-lg border border-white/90 bg-card/85 p-3 shadow-sm">
+      <summary className="cursor-pointer text-sm font-bold text-primary">
+        孕期档案
+      </summary>
+      <div className="mt-3 grid gap-2">
+        {archiveCards.map((card) => (
+          <div className="flex items-center gap-3 rounded-lg bg-background/80 p-3" key={card.label}>
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-mint text-primary">
+              <CheckCircle2 className="size-4" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-xs font-semibold text-muted-foreground">
+                {card.label}
+              </span>
+              <span className="mt-0.5 block truncate text-sm font-bold">
+                {card.value}
+              </span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {card.caption}
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+function taskHref(task: TimelineTask) {
+  if (task.kind === "hospital") {
+    return "/hospital";
+  }
+
+  if (task.kind === "go") {
+    return "/go";
+  }
+
+  return "/checklist";
+}
+
+function taskIcon(task: TimelineTask): LucideIcon {
+  if (task.kind === "hospital") {
+    return Hospital;
+  }
+
+  if (task.kind === "go") {
+    return CheckCircle2;
+  }
+
+  return ClipboardList;
 }

@@ -4,16 +4,16 @@ import { cn } from "@/lib/utils";
 
 const ILLUSTRATIONS = {
   family: {
-    alt: "孕妈妈、爸爸和小马助手一起整理待产清单",
-    height: 720,
-    src: "/illustrations/dadkit-horse-family.webp",
-    width: 1280,
+    alt: "准爸爸和孕妈妈一起整理待产清单",
+    height: 1024,
+    src: "/illustrations/dadkit-family-transparent.png",
+    width: 1536,
   },
-  horse: {
-    alt: "拿着清单的小马助手",
-    height: 640,
-    src: "/illustrations/dadkit-horse-mascot.webp",
-    width: 640,
+  helper: {
+    alt: "拿着清单的小熊助手",
+    height: 1254,
+    src: "/illustrations/dadkit-bear-transparent.png",
+    width: 1254,
   },
 };
 
@@ -26,7 +26,7 @@ type CuteIllustrationProps = {
 };
 
 export function CuteIllustration({
-  variant = "horse",
+  variant = "helper",
   className,
   imageClassName,
   priority = false,
@@ -39,14 +39,14 @@ export function CuteIllustration({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-lg border border-white/80 bg-accent shadow-soft",
+        "relative overflow-hidden rounded-lg border border-white/80 bg-accent/70 shadow-soft",
         defaultShape,
         className,
       )}
     >
       <Image
         alt={illustration.alt}
-        className={cn("object-cover", imageClassName)}
+        className={cn("object-contain", imageClassName)}
         fill
         priority={priority}
         sizes={sizes ?? (variant === "family" ? "100vw" : "160px")}
