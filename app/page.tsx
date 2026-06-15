@@ -74,7 +74,6 @@ export default function HomePage() {
   return (
     <div className="page-shell">
       <section className="mobile-shell grid gap-3">
-        <HomeAppHeader />
         <HomeHeroCard
           countdownLabel={getCountdownLabel(daysLeft)}
           pregnancyProgress={pregnancyProgress}
@@ -90,38 +89,6 @@ export default function HomePage() {
       <p className="mobile-shell text-center text-xs leading-5 text-muted-foreground">
         非医疗建议，请以医院通知和产检确认结果为准。
       </p>
-    </div>
-  );
-}
-
-function HomeAppHeader() {
-  return (
-    <div className="flex items-center justify-between gap-3 px-1 pt-1">
-      <div>
-        <p className="text-lg font-black leading-tight text-primary">DadKit</p>
-        <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
-          准爸爸好帮手
-        </p>
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          aria-label="查看提醒"
-          className="flex size-9 items-center justify-center rounded-full bg-card text-foreground shadow-sm"
-          type="button"
-        >
-          <CalendarClock className="size-4" />
-        </button>
-        <span className="relative flex size-9 overflow-hidden rounded-full bg-peach shadow-sm">
-          <Image
-            alt="准爸爸头像"
-            className="object-contain p-0.5"
-            fill
-            priority
-            sizes="36px"
-            src="/illustrations/dadkit-dad-avatar.png"
-          />
-        </span>
-      </div>
     </div>
   );
 }

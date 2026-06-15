@@ -61,10 +61,6 @@ const mobileNav = readFileSync(
   join(process.cwd(), "components", "MobileNav.tsx"),
   "utf8",
 );
-const mobileTopBar = readFileSync(
-  join(process.cwd(), "components", "MobileTopBar.tsx"),
-  "utf8",
-);
 const emptyState = readFileSync(
   join(process.cwd(), "components", "EmptyState.tsx"),
   "utf8",
@@ -96,22 +92,11 @@ describe("cute maternity app visual direction", () => {
     expect(mobileNav).toContain('"/go"');
     expect(header).toContain('label: "我的"');
     expect(header).toContain("secondaryRouteOwners");
-    expect(layout).toContain("<MobileTopBar");
-    expect(mobileTopBar).toContain("准爸爸好帮手");
-    expect(mobileTopBar).toContain("返回上一页");
-    expect(mobileTopBar).toContain("{isHome ? (");
-    expect(mobileTopBar).toContain("{copy.title}");
-    expect(mobileTopBar).toContain("{copy.subtitle}");
-    expect(mobileTopBar).toContain("生成专属待产清单");
-    expect(mobileTopBar).toContain("contentFirstRoutes");
-    expect(mobileTopBar).toContain('"/checklist"');
-    expect(mobileTopBar).toContain('"/hospital"');
-    expect(mobileTopBar).toContain('"/timeline"');
-    expect(mobileTopBar).toContain('"/go"');
-    expect(mobileTopBar).toContain('"/contractions"');
-    expect(mobileTopBar).toContain('"/settings"');
-    expect(mobileTopBar).toContain("ArrowRight");
-    expect(mobileTopBar).toContain("CalendarClock");
+    expect(layout).not.toContain("<MobileTopBar");
+    expect(layout).not.toContain("@/components/MobileTopBar");
+    expect(
+      existsSync(join(process.cwd(), "components", "MobileTopBar.tsx")),
+    ).toBe(false);
   });
 
   it("ships transparent cute illustration assets used by page headers", () => {

@@ -25,6 +25,8 @@ describe("home page copy", () => {
     expect(homePage).toContain("HomeHeroCard");
     expect(homePage).toContain("TodayActionsPanel");
     expect(homePage).toContain("OverallProgressPanel");
+    expect(homePage).not.toContain("HomeAppHeader");
+    expect(homePage).not.toContain("dadkit-dad-avatar.png");
     expect(homePage).toContain("预产期：");
     expect(homePage).toContain("建议今天完成");
     expect(homePage).not.toContain("工具宫格");

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Home } from "lucide-react";
 
 import { CustomHospitalForm } from "@/components/CustomHospitalForm";
 import { CuteIllustration } from "@/components/CuteIllustration";
@@ -342,7 +343,14 @@ export default function SetupPage() {
 
 function SetupHeader() {
   return (
-    <section className="relative grid min-h-24 grid-cols-[minmax(0,1fr)_5.5rem] items-center gap-3">
+    <section className="relative grid min-h-24 grid-cols-[auto_minmax(0,1fr)_5.5rem] items-center gap-3">
+      <Link
+        aria-label="返回首页"
+        className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/90 bg-card text-primary shadow-sm"
+        href="/"
+      >
+        <Home className="size-4" />
+      </Link>
       <div className="min-w-0">
         <h1 className="text-2xl font-black leading-tight tracking-normal">
           创建资料

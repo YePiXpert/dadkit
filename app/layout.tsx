@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 
 import { AppHeader } from "@/components/AppHeader";
 import { MobileNav } from "@/components/MobileNav";
-import { MobileTopBar } from "@/components/MobileTopBar";
 import { StoreHydrator } from "@/components/StoreHydrator";
 import { PwaRegister } from "@/components/PwaRegister";
 import "./globals.css";
@@ -36,7 +35,6 @@ export default function RootLayout({
         <StoreHydrator />
         <PwaRegister />
         <AppHeader />
-        <MobileTopBar />
         <main>{children}</main>
         <MobileNav />
       </body>
