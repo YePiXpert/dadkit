@@ -157,7 +157,7 @@ export default function TimelinePage() {
 
   return (
     <div className="page-shell">
-      <section className="mx-auto grid w-full max-w-[430px] gap-3">
+      <section className="mx-auto grid w-full max-w-[390px] gap-3 overflow-hidden">
         <CurrentStagePanel
           daysLeft={getDaysUntilDue(profile)}
           dueDate={dueDate}
@@ -174,7 +174,7 @@ export default function TimelinePage() {
           onToggleTask={toggleTask}
         />
 
-        <ol className="relative grid gap-3">
+        <ol className="relative grid min-w-0 gap-3 overflow-hidden">
           <span
             aria-hidden="true"
             className="absolute bottom-8 left-5 top-8 w-0.5 rounded-full bg-border"
@@ -221,14 +221,14 @@ function CurrentStagePanel({
   stageStats?: { completed: number; percent: number; total: number };
 }) {
   return (
-    <section className="rounded-lg border border-white/90 bg-card/95 p-4 shadow-soft">
-      <div className="flex items-start justify-between gap-3">
+    <section className="w-full max-w-full overflow-hidden rounded-lg border border-white/90 bg-card/95 p-4 shadow-soft">
+      <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="section-kicker">准备时间线</p>
-          <h1 className="mt-1 text-2xl font-black leading-tight tracking-normal">
+          <h1 className="mt-1 break-words text-2xl font-black leading-tight tracking-normal">
             {stage ? stage.title : "先把准备节奏理顺"}
           </h1>
-          <p className="mt-2 text-sm font-medium leading-6 text-muted-foreground">
+          <p className="mt-2 break-words text-sm font-medium leading-6 text-muted-foreground">
             预产期 {formatDueDateLabel(dueDate)}
             {typeof daysLeft === "number" ? ` · ${formatDaysLeft(daysLeft)}` : ""}
           </p>
@@ -238,7 +238,7 @@ function CurrentStagePanel({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 rounded-lg border border-white/90 bg-background/70 p-3">
+      <div className="mt-4 grid min-w-0 gap-3 rounded-lg border border-white/90 bg-background/70 p-3">
         <div className="flex items-center justify-between gap-3">
           <span className="text-sm font-bold">整体进度</span>
           <span className="text-sm font-black text-primary">
@@ -284,12 +284,12 @@ function PriorityTasksPanel({
   }
 
   return (
-    <section className="grid gap-2">
+    <section className="grid min-w-0 gap-2">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold tracking-normal">现在优先看</h2>
         <span className="text-xs font-bold text-primary">{tasks.length} 项</span>
       </div>
-      <div className="overflow-hidden rounded-lg border border-white/90 bg-card/95 shadow-soft">
+      <div className="w-full overflow-hidden rounded-lg border border-white/90 bg-card/95 shadow-soft">
         {tasks.map((task) => (
           <TaskRow
             checklist={checklist}
@@ -332,7 +332,7 @@ function TimelineStageRow({
   const previewTasks = pendingTasks.length > 0 ? pendingTasks : stage.tasks.slice(0, 2);
 
   return (
-    <li className="relative grid grid-cols-[2.75rem_1fr] gap-3">
+    <li className="relative grid min-w-0 grid-cols-[2.75rem_minmax(0,1fr)] gap-3">
       <div className="relative z-10 flex justify-center pt-4">
         <span
           className={cn(
@@ -343,13 +343,13 @@ function TimelineStageRow({
           <StageIcon className="size-5" />
         </span>
       </div>
-      <article className={cn("rounded-lg border p-3 shadow-sm", tone.card)}>
-        <div className="flex items-start justify-between gap-3">
+      <article className={cn("min-w-0 overflow-hidden rounded-lg border p-3 shadow-sm", tone.card)}>
+        <div className="flex min-w-0 items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="text-base font-black leading-6 tracking-normal">
+            <h3 className="break-words text-base font-black leading-6 tracking-normal">
               {stage.title}
             </h3>
-            <p className="mt-1 text-xs font-semibold text-muted-foreground">
+            <p className="mt-1 break-words text-xs font-semibold text-muted-foreground">
               {stage.subtitle} · {formatTargetDate(dueDate, stage.targetDaysBeforeDue)}
             </p>
           </div>
@@ -413,7 +413,7 @@ function TaskRow({
   return (
     <button
       className={cn(
-        "flex w-full items-center gap-2 text-left transition-colors",
+        "flex min-w-0 max-w-full items-center gap-2 overflow-hidden text-left transition-colors",
         compact
           ? "min-h-[3.35rem] border-b border-muted/60 bg-background/55 px-3 py-2.5 last:border-b-0 active:bg-mint/50"
           : "rounded-md bg-background/65 px-2.5 py-2 active:bg-mint/50",
@@ -436,7 +436,7 @@ function TaskRow({
       <span className="min-w-0 flex-1">
         <span
           className={cn(
-            "block truncate text-sm font-bold leading-5",
+            "block break-words text-sm font-bold leading-5",
             complete && "text-muted-foreground line-through",
           )}
         >

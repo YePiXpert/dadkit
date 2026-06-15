@@ -61,6 +61,10 @@ const mobileNav = readFileSync(
   join(process.cwd(), "components", "MobileNav.tsx"),
   "utf8",
 );
+const pwaRegister = readFileSync(
+  join(process.cwd(), "components", "PwaRegister.tsx"),
+  "utf8",
+);
 const emptyState = readFileSync(
   join(process.cwd(), "components", "EmptyState.tsx"),
   "utf8",
@@ -84,6 +88,9 @@ describe("cute maternity app visual direction", () => {
     expect(layout).toContain("maximumScale: 1");
     expect(layout).toContain("userScalable: false");
     expect(layout).toContain('viewportFit: "cover"');
+    expect(pwaRegister).toContain("gesturestart");
+    expect(pwaRegister).toContain("touchmove");
+    expect(pwaRegister).toContain("passive: false");
     expect(mobileNav).toContain("bg-mint");
     expect(mobileNav).toContain("after:bg-mint");
     expect(mobileNav).toContain("h-[3.25rem]");
@@ -222,7 +229,9 @@ describe("cute maternity app visual direction", () => {
     expect(timelinePage).toContain("TimelineStageRow");
     expect(timelinePage).toContain("formatDueDateLabel");
     expect(timelinePage).toContain("打开临出门检查");
-    expect(timelinePage).toContain("max-w-[430px]");
+    expect(timelinePage).toContain("max-w-[390px]");
+    expect(timelinePage).toContain("grid-cols-[2.75rem_minmax(0,1fr)]");
+    expect(timelinePage).toContain("min-w-0 max-w-full");
     expect(timelinePage).not.toContain("lg:max-w-none");
     expect(timelinePage).not.toContain("TIMELINE_MILESTONES");
     expect(timelinePage).not.toContain("TimelineMilestoneRow");

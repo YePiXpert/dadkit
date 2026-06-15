@@ -6,6 +6,27 @@ export function PwaRegister() {
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker>();
 
   useEffect(() => {
+    const preventGesture: EventListener = (event) => event.preventDefault();
+    const preventMultiTouch = (event: TouchEvent) => {
+      if (event.touches.length > 1) {
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener("gesturestart", preventGesture);
+    document.addEventListener("gesturechange", preventGesture);
+    document.addEventListener("gestureend", preventGesture);
+    document.addEventListener("touchmove", preventMultiTouch, { passive: false });
+
+    return () => {
+      document.removeEventListener("gesturestart", preventGesture);
+      document.removeEventListener("gesturechange", preventGesture);
+      document.removeEventListener("gestureend", preventGesture);
+      document.removeEventListener("touchmove", preventMultiTouch);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!("serviceWorker" in navigator)) {
       return;
     }
