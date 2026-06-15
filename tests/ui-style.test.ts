@@ -211,14 +211,17 @@ describe("cute maternity app visual direction", () => {
   });
 
   it("uses app-like timeline and profile navigation patterns", () => {
-    expect(timelinePage).toContain("TIMELINE_MILESTONES");
-    expect(timelinePage).toContain("TimelineMilestoneRow");
-    expect(timelinePage).toContain("grid-cols-[3.75rem_1fr]");
-    expect(timelinePage).toContain("糖耐检查");
+    expect(timelinePage).toContain("generateTimeline");
+    expect(timelinePage).toContain("calculateTimelineStageStatus");
+    expect(timelinePage).toContain("generateTodayTasks");
+    expect(timelinePage).toContain("CurrentStagePanel");
+    expect(timelinePage).toContain("PriorityTasksPanel");
+    expect(timelinePage).toContain("TimelineStageRow");
     expect(timelinePage).toContain("formatDueDateLabel");
-    expect(timelinePage).toContain("预产期&nbsp; {dueDateLabel}");
-    expect(timelinePage).toContain("dadkit-bear-transparent.png");
-    expect(timelinePage).toContain("重要节点不错过");
+    expect(timelinePage).toContain("打开临出门检查");
+    expect(timelinePage).not.toContain("TIMELINE_MILESTONES");
+    expect(timelinePage).not.toContain("TimelineMilestoneRow");
+    expect(timelinePage).not.toContain("dadkit-bear-transparent.png");
     expect(timelinePage).not.toContain("CuteIllustration");
     expect(settingsPage).toContain("准爸爸头像");
     expect(settingsPage).toContain("dadkit-dad-avatar.png");
