@@ -15,6 +15,12 @@ const ILLUSTRATIONS = {
     src: "/illustrations/dadkit-bear-transparent.png",
     width: 1254,
   },
+  horse: {
+    alt: "戴粉色蝴蝶结的小马宝宝助手",
+    height: 1254,
+    src: "/illustrations/dadkit-horse-girl.png",
+    width: 1254,
+  },
 };
 
 type CuteIllustrationProps = {
@@ -26,15 +32,14 @@ type CuteIllustrationProps = {
 };
 
 export function CuteIllustration({
-  variant = "helper",
+  variant = "horse",
   className,
   imageClassName,
   priority = false,
   sizes,
 }: CuteIllustrationProps) {
   const illustration = ILLUSTRATIONS[variant];
-  const defaultShape =
-    variant === "family" ? "aspect-[16/9]" : "aspect-square";
+  const defaultShape = variant === "family" ? "aspect-[16/9]" : "aspect-square";
 
   return (
     <div

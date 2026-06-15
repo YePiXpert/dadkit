@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ArrowRight,
@@ -257,53 +256,44 @@ export default function HospitalPage() {
   return (
     <div className="page-shell">
       <section className="mobile-shell grid gap-0 lg:max-w-none">
-        <h1 className="text-2xl font-black tracking-normal">医院确认</h1>
+        <h1 className="text-2xl font-black tracking-normal">医院</h1>
         <p className="text-sm font-medium leading-6 text-muted-foreground">
-          确认产检医院与入院准备
+          入院前的关键信息先问清楚
         </p>
       </section>
 
-      <Card className="mobile-shell overflow-hidden border-[#ffd4d9] bg-gradient-to-br from-[#fff4f5] via-[#ffe7eb] to-[#fff8f4] shadow-soft lg:max-w-none">
-        <CardContent className="relative min-h-[10rem] p-3">
-          <span className="pointer-events-none absolute right-8 top-5 text-2xl text-blush-foreground/25">
-            ✿
-          </span>
-          <span className="pointer-events-none absolute right-24 top-14 text-lg text-coral">
-            ❤
-          </span>
-          <div className="relative z-10 max-w-[62%] pt-2">
-            <p className="text-sm font-black leading-6 text-blush-foreground">
-              趁早确认，入院更从容~
-            </p>
-            <p className="mt-1 truncate text-xs font-medium text-blush-foreground/70">
-              当前医院：{hospital?.name ?? "暂未确定医院"}
-            </p>
-            <p className="mt-3 text-xs font-bold text-blush-foreground/75">
-              确认进度
-            </p>
-            <div className="mt-1 flex items-end gap-1.5">
-              <span className="text-3xl font-black leading-none tracking-normal text-primary">
-                {completedConfirmations}
-              </span>
-              <span className="pb-0.5 text-sm font-bold text-muted-foreground">
-                /{allConfirmationItems.length}
+      <Card className="mobile-shell pony-soft-card overflow-hidden lg:max-w-none">
+        <CardContent className="p-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
+              <Hospital className="size-6" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-base font-black">
+                {hospital?.name ?? "暂未确定医院"}
+              </p>
+              <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
+                趁早确认，入院更从容
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full bg-mint px-3 py-1 text-xs font-bold text-mint-foreground">
+              {hospital ? "已确认" : "待确认"}
+            </span>
+          </div>
+          <div className="mt-3 rounded-lg border border-white/90 bg-background/70 p-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-black">入院相关确认</p>
+              <span className="text-sm font-black text-primary">
+                {completedConfirmations}/{allConfirmationItems.length}
               </span>
             </div>
-            <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-card/85">
+            <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-primary/12">
               <div
                 className="h-full rounded-full bg-primary transition-all"
                 style={{ width: `${confirmationPercent}%` }}
               />
             </div>
           </div>
-          <Image
-            alt="医院确认剪贴板"
-            className="absolute right-6 top-4 h-28 w-28 object-contain drop-shadow-sm"
-            height={132}
-            priority
-            src="/illustrations/dadkit-hospital-clipboard.png"
-            width={132}
-          />
         </CardContent>
       </Card>
 

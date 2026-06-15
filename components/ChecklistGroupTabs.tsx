@@ -15,8 +15,8 @@ type ChecklistGroupTabsProps = {
 };
 
 const groupTone: Record<ChecklistVisualGroup, string> = {
-  all: "border-mint bg-mint text-primary",
-  baby_bag: "border-coral/25 bg-coral-soft text-coral-foreground",
+  all: "border-primary/20 bg-secondary text-primary",
+  baby_bag: "border-coral/25 bg-secondary text-primary",
   dad: "border-amber/35 bg-amber-soft text-amber-foreground",
   documents_folder: "border-mint bg-mint text-primary",
   go: "border-peach bg-peach text-peach-foreground",
@@ -43,7 +43,7 @@ export function ChecklistGroupTabs({
             className={cn(
               "grid min-h-[4.75rem] grid-cols-[2.75rem_1fr] items-center gap-2 rounded-lg border border-white/80 bg-card/90 px-2.5 py-2 text-left text-sm font-semibold leading-5 text-muted-foreground shadow-sm transition-colors active:scale-[0.99]",
               active &&
-                "border-primary/40 bg-mint text-primary shadow-soft",
+                "border-primary/40 bg-secondary text-primary shadow-soft",
             )}
             key={group.id}
             type="button"

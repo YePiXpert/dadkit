@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
   <title>DadKit</title>
-  <rect width="512" height="512" rx="96" fill="#28706b"/>
-  <path d="M144 176c0-35.3 28.7-64 64-64h96c35.3 0 64 28.7 64 64v24h24c22.1 0 40 17.9 40 40v112c0 22.1-17.9 40-40 40H120c-22.1 0-40-17.9-40-40V240c0-22.1 17.9-40 40-40h24v-24Z" fill="#f7f2e8"/>
-  <path d="M184 200h144v-24c0-13.3-10.7-24-24-24h-96c-13.3 0-24 10.7-24 24v24Z" fill="#f3c6a5"/>
-  <path d="M196 300l39 39 88-94" fill="none" stroke="#28706b" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect width="512" height="512" rx="96" fill="#ff5c7a"/>
+  <path d="M144 176c0-35.3 28.7-64 64-64h96c35.3 0 64 28.7 64 64v24h24c22.1 0 40 17.9 40 40v112c0 22.1-17.9 40-40 40H120c-22.1 0-40-17.9-40-40V240c0-22.1 17.9-40 40-40h24v-24Z" fill="#fff7f8"/>
+  <path d="M184 200h144v-24c0-13.3-10.7-24-24-24h-96c-13.3 0-24 10.7-24 24v24Z" fill="#ffe09b"/>
+  <path d="M196 300l39 39 88-94" fill="none" stroke="#ff5c7a" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

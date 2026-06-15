@@ -156,12 +156,12 @@ export default function GoPage() {
             </p>
           </div>
           <Image
-            alt="兔子临出门检查助手"
-            className="absolute bottom-0 right-0 h-32 w-36 object-contain object-bottom"
-            height={160}
+            alt="小马宝宝临出门检查助手"
+            className="absolute -bottom-5 -right-5 h-40 w-40 object-contain object-bottom"
+            height={1254}
             priority
-            src="/illustrations/dadkit-go-bunny.png"
-            width={180}
+            src="/illustrations/dadkit-horse-girl.png"
+            width={1254}
           />
         </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
@@ -160,14 +161,21 @@ export default function ChecklistPage() {
         <div className="flex items-start justify-between gap-3 px-1">
           <div className="min-w-0">
             <h1 className="text-2xl font-black leading-tight tracking-normal">
-              清单工作台
+              清单
             </h1>
             <p className="mt-1 text-sm font-medium leading-6 text-muted-foreground">
-              按分类整理，逐项打包不遗漏 ✨
+              为小公主的待产包逐项打勾
             </p>
           </div>
-          <span className="mt-1 flex size-14 shrink-0 items-center justify-center rounded-lg bg-amber-soft text-amber-foreground shadow-sm">
-            <span className="text-3xl leading-none">★</span>
+          <span className="relative mt-1 flex size-14 shrink-0 overflow-hidden rounded-full border border-primary/15 bg-secondary shadow-sm">
+            <Image
+              alt="小马宝宝清单贴纸"
+              className="object-contain p-0.5"
+              fill
+              priority
+              sizes="56px"
+              src="/illustrations/dadkit-horse-girl.png"
+            />
           </span>
         </div>
 
@@ -326,16 +334,23 @@ function ChecklistProgressCard({
   packing: { completed: number; percent: number; total: number };
 }) {
   return (
-    <section className="rounded-lg border border-white/90 bg-card/95 p-4 shadow-soft">
-      <p className="text-xs font-bold text-muted-foreground">打包总进度</p>
-      <div className="mt-1 flex items-end gap-2">
-        <span className="text-3xl font-black leading-none text-foreground">
-          {packing.percent}%
+    <section className="pony-soft-card p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold text-muted-foreground">清单总进度</p>
+          <div className="mt-1 flex items-end gap-2">
+            <span className="text-3xl font-black leading-none text-primary">
+              {packing.percent}%
+            </span>
+          </div>
+        </div>
+        <span className="text-sm font-black text-primary">
+          {packing.completed}/{packing.total}
         </span>
       </div>
-      <Progress className="mt-3 h-2" value={packing.percent} />
+      <Progress className="mt-3 h-2.5 bg-primary/12" value={packing.percent} />
       <p className="mt-2 text-xs font-semibold text-muted-foreground">
-        已打包 {packing.completed} / 全部 {packing.total}
+        已完成 {packing.completed} 项，共 {packing.total} 项
       </p>
     </section>
   );

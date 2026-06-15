@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -57,7 +58,7 @@ const stageTone: Record<
   }
 > = {
   current: {
-    card: "border-primary/35 bg-mint/45 shadow-soft",
+    card: "border-primary/40 bg-secondary/60 shadow-soft",
     chip: "bg-primary text-primary-foreground",
     dot: "border-primary bg-primary text-primary-foreground shadow-soft",
     status: "本阶段",
@@ -69,9 +70,9 @@ const stageTone: Record<
     status: "已完成",
   },
   late: {
-    card: "border-coral/45 bg-blush/35",
-    chip: "bg-blush text-coral-foreground",
-    dot: "border-coral bg-blush text-coral-foreground",
+    card: "border-amber/55 bg-amber-soft/65",
+    chip: "bg-amber-soft text-amber-foreground",
+    dot: "border-amber bg-amber-soft text-amber-foreground",
     status: "需补齐",
   },
   upcoming: {
@@ -193,8 +194,10 @@ export default function TimelinePage() {
           ))}
         </ol>
 
+        <TimelineDueDateCard dueDate={dueDate} />
+
         <Link
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground shadow-soft"
+          className="pony-gradient-button inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold"
           href="/go"
         >
           打开临出门检查
@@ -221,10 +224,10 @@ function CurrentStagePanel({
   stageStats?: { completed: number; percent: number; total: number };
 }) {
   return (
-    <section className="w-full max-w-full overflow-hidden rounded-lg border border-white/90 bg-card/95 p-4 shadow-soft">
+    <section className="pony-soft-card w-full max-w-full overflow-hidden p-4">
       <div className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="section-kicker">准备时间线</p>
+          <p className="section-kicker">时间线</p>
           <h1 className="mt-1 break-words text-2xl font-black leading-tight tracking-normal">
             {stage ? stage.title : "先把准备节奏理顺"}
           </h1>
@@ -233,7 +236,7 @@ function CurrentStagePanel({
             {typeof daysLeft === "number" ? ` · ${formatDaysLeft(daysLeft)}` : ""}
           </p>
         </div>
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-mint text-primary">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-secondary text-primary">
           <CalendarClock className="size-6" />
         </div>
       </div>
@@ -245,7 +248,7 @@ function CurrentStagePanel({
             {overallStats.completed}/{overallStats.total}
           </span>
         </div>
-        <Progress className="h-2.5" value={overallPercent} />
+        <Progress className="h-2.5 bg-primary/12" value={overallPercent} />
         {stageStats ? (
           <p className="text-xs font-medium text-muted-foreground">
             当前阶段完成 {stageStats.completed}/{stageStats.total} 项
@@ -286,7 +289,7 @@ function PriorityTasksPanel({
   return (
     <section className="grid min-w-0 gap-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold tracking-normal">现在优先看</h2>
+        <h2 className="text-sm font-black tracking-normal">今天先做</h2>
         <span className="text-xs font-bold text-primary">{tasks.length} 项</span>
       </div>
       <div className="w-full overflow-hidden rounded-lg border border-white/90 bg-card/95 shadow-soft">
@@ -394,6 +397,33 @@ function TimelineStageRow({
   );
 }
 
+function TimelineDueDateCard({ dueDate }: { dueDate: string }) {
+  return (
+    <section className="pony-due-card relative min-h-[5.8rem] overflow-hidden p-4">
+      <div className="relative z-10 pr-20">
+        <p className="text-sm font-black text-amber-foreground">预产期</p>
+        <p className="mt-1 break-words text-base font-black text-amber-foreground">
+          {formatDueDateLabel(dueDate)}
+        </p>
+        <p className="mt-1 text-xs font-bold text-primary">
+          丙午年 · 火马宝宝女孩
+        </p>
+      </div>
+      <span className="pointer-events-none absolute left-5 top-12 text-2xl text-amber">
+        ♡
+      </span>
+      <Image
+        alt="小马宝宝预产期贴纸"
+        className="pointer-events-none absolute -right-5 bottom-[-1.2rem] h-28 w-28 object-contain"
+        height={1254}
+        sizes="112px"
+        src="/illustrations/dadkit-horse-girl.png"
+        width={1254}
+      />
+    </section>
+  );
+}
+
 function TaskRow({
   checklist,
   compact = false,
@@ -415,8 +445,8 @@ function TaskRow({
       className={cn(
         "flex min-w-0 max-w-full items-center gap-2 overflow-hidden text-left transition-colors",
         compact
-          ? "min-h-[3.35rem] border-b border-muted/60 bg-background/55 px-3 py-2.5 last:border-b-0 active:bg-mint/50"
-          : "rounded-md bg-background/65 px-2.5 py-2 active:bg-mint/50",
+          ? "min-h-[3.35rem] border-b border-muted/60 bg-background/55 px-3 py-2.5 last:border-b-0 active:bg-secondary"
+          : "rounded-md bg-background/65 px-2.5 py-2 active:bg-secondary",
       )}
       type="button"
       onClick={() => onToggleTask(task)}

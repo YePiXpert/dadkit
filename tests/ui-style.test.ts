@@ -83,16 +83,17 @@ describe("cute maternity app visual direction", () => {
     expect(globals).toContain(".macaron-note");
     expect(globals).toContain(".app-hero-card");
     expect(globals).toContain(".app-list-row");
-    expect(header).toContain("准爸爸好帮手");
-    expect(layout).toContain("#247A73");
+    expect(header).toContain("为小公主的到来做足准备");
+    expect(header).toContain("dadkit-horse-girl.png");
+    expect(layout).toContain("#FF5C7A");
     expect(layout).toContain("maximumScale: 1");
     expect(layout).toContain("userScalable: false");
     expect(layout).toContain('viewportFit: "cover"');
     expect(pwaRegister).toContain("gesturestart");
     expect(pwaRegister).toContain("touchmove");
     expect(pwaRegister).toContain("passive: false");
-    expect(mobileNav).toContain("bg-mint");
-    expect(mobileNav).toContain("after:bg-mint");
+    expect(mobileNav).toContain("bg-card/95");
+    expect(mobileNav).toContain("after:bg-primary");
     expect(mobileNav).toContain("h-[3.25rem]");
     expect(mobileNav).toContain('label: "我的"');
     expect(mobileNav).toContain("hiddenRoutes");
@@ -117,6 +118,16 @@ describe("cute maternity app visual direction", () => {
           "public",
           "illustrations",
           "dadkit-family-transparent.png",
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      existsSync(
+        join(
+          process.cwd(),
+          "public",
+          "illustrations",
+          "dadkit-horse-girl.png",
         ),
       ),
     ).toBe(true);
@@ -161,8 +172,10 @@ describe("cute maternity app visual direction", () => {
       ),
     ).toBe(true);
     expect(cuteIllustration).toContain("dadkit-family-transparent.png");
+    expect(cuteIllustration).toContain("dadkit-horse-girl.png");
     expect(cuteIllustration).toContain("dadkit-bear-transparent.png");
-    expect(cuteIllustration).toContain("小熊助手");
+    expect(cuteIllustration).toContain('variant = "horse"');
+    expect(cuteIllustration).toContain("小马宝宝助手");
     expect(pageIntro).toContain("CuteIllustration");
     expect(pageIntro).toContain("sm:hidden");
     expect(pageIntro).toContain("sm:block");
@@ -190,7 +203,7 @@ describe("cute maternity app visual direction", () => {
     expect(goPage).toContain("全部 OK，出发！");
     expect(goPage).toContain("markAllDone");
     expect(goPage).toContain("bg-[linear-gradient(100deg,#ff8385");
-    expect(goPage).toContain("dadkit-go-bunny.png");
+    expect(goPage).toContain("dadkit-horse-girl.png");
     expect(goPage).not.toContain("CuteIllustration");
     expect(contractionsPage).toContain("本次宫缩计时圆盘");
     expect(contractionsPage).toContain("conic-gradient");
@@ -208,10 +221,10 @@ describe("cute maternity app visual direction", () => {
     expect(setupPage).toContain("更多医院信息（可选）");
     expect(setupPage).toContain("SegmentButton");
     expect(setupPage).toContain("grid grid-cols-2");
-    expect(hospitalPage).toContain("bg-gradient-to-br from-[#fff4f5]");
-    expect(hospitalPage).toContain("min-h-[10rem]");
+    expect(hospitalPage).toContain("pony-soft-card");
+    expect(hospitalPage).toContain("入院前的关键信息先问清楚");
     expect(hospitalPage).toContain("趁早确认，入院更从容");
-    expect(hospitalPage).toContain("dadkit-hospital-clipboard.png");
+    expect(hospitalPage).not.toContain("dadkit-hospital-clipboard.png");
     expect(hospitalPage).toContain("HospitalQuickRow");
     expect(hospitalPage).not.toContain("CuteIllustration");
     expect(hospitalPage).not.toContain("TabsTrigger");
@@ -227,7 +240,10 @@ describe("cute maternity app visual direction", () => {
     expect(timelinePage).toContain("CurrentStagePanel");
     expect(timelinePage).toContain("PriorityTasksPanel");
     expect(timelinePage).toContain("TimelineStageRow");
+    expect(timelinePage).toContain("TimelineDueDateCard");
     expect(timelinePage).toContain("formatDueDateLabel");
+    expect(timelinePage).toContain("丙午年 · 火马宝宝女孩");
+    expect(timelinePage).toContain("dadkit-horse-girl.png");
     expect(timelinePage).toContain("打开临出门检查");
     expect(timelinePage).toContain("max-w-[390px]");
     expect(timelinePage).toContain("grid-cols-[2.75rem_minmax(0,1fr)]");

@@ -103,49 +103,51 @@ function HomeHeroCard({
   profile?: UserProfile;
 }) {
   const countdownNumber = countdownLabel.match(/\d+/)?.[0];
+  const dueDateLabel = formatHomeDueDate(profile?.dueDate);
 
   return (
-    <section className="relative min-h-[10.8rem] overflow-hidden rounded-lg bg-primary p-4 text-primary-foreground shadow-soft">
-      <span className="pointer-events-none absolute right-7 top-5 text-xl text-peach">
-        ❤
+    <section className="pony-hero-card min-h-[11.25rem]">
+      <span className="pointer-events-none absolute right-6 top-5 text-2xl text-amber">
+        ✿
       </span>
-      <span className="pointer-events-none absolute right-24 top-12 text-sm text-amber">
+      <span className="pointer-events-none absolute right-28 top-9 text-xl text-amber-soft">
         ✦
       </span>
-      <span className="pointer-events-none absolute right-36 bottom-10 text-base text-blush">
+      <span className="pointer-events-none absolute right-[8.5rem] bottom-8 text-lg text-blush">
         ❤
       </span>
 
-      <div className="relative z-10 max-w-[54%]">
-        <p className="text-xs font-bold text-primary-foreground/80">
-          距离预产期还剩
-        </p>
-        <h1 className="mt-2 flex items-end gap-1 text-[2.65rem] font-black leading-none tracking-normal">
+      <div className="relative z-10 max-w-[58%]">
+        <p className="text-sm font-black text-primary-foreground/90">预产期</p>
+        <h1 className="mt-2 flex items-end gap-1 text-[3.15rem] font-black leading-none tracking-normal">
           {countdownNumber ? (
             <>
               <span>{countdownNumber}</span>
-              <span className="mb-1 text-base font-bold">天</span>
+              <span className="mb-1 text-lg font-bold">天</span>
             </>
           ) : (
             <span className="text-3xl">{countdownLabel}</span>
           )}
         </h1>
-        <p className="mt-2 text-xs font-bold text-primary-foreground/85">
-          预产期：{profile?.dueDate ?? "待填写"}
+        <p className="mt-3 text-sm font-bold text-primary-foreground/95">
+          {dueDateLabel}
         </p>
-        <p className="mt-1 text-xs font-bold text-primary-foreground/85">
+        <p className="mt-1 text-xs font-bold text-primary-foreground/90">
+          丙午年 · 火马宝宝女孩
+        </p>
+        <p className="mt-1 text-xs font-bold text-primary-foreground/80">
           {pregnancyProgress.label}
         </p>
       </div>
 
       <Image
-        alt="准爸爸和孕妈妈一起迎接宝宝"
-        className="pointer-events-none absolute right-2 top-1 h-[10.5rem] w-auto"
-        height={282}
+        alt="戴粉色蝴蝶结的小马宝宝助手"
+        className="pointer-events-none absolute -right-9 bottom-[-1.7rem] h-[12rem] w-[12rem] object-contain drop-shadow-sm"
+        height={1254}
         priority
-        sizes="230px"
-        src="/illustrations/dadkit-family-card-v2.png"
-        width={216}
+        sizes="220px"
+        src="/illustrations/dadkit-horse-girl.png"
+        width={1254}
       />
     </section>
   );
@@ -195,7 +197,9 @@ function TodayActionsPanel({
   return (
     <section className="grid gap-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold tracking-normal">今日行动 3 项</h2>
+        <h2 className="text-base font-black tracking-normal">
+          今日行动 {actions.length} 项
+        </h2>
         <Link
           className="inline-flex items-center gap-1 text-xs font-bold text-primary"
           href={profileReady ? "/timeline" : "/setup"}
@@ -227,18 +231,18 @@ function HomeActionRow({
   const Icon = action.icon;
   const toneClass =
     action.tone === "coral"
-      ? "bg-coral-soft text-coral-foreground"
+      ? "bg-secondary text-primary"
       : action.tone === "blue"
         ? "bg-lavender text-lavender-foreground"
         : "bg-mint text-primary";
 
   return (
     <Link
-      className="flex min-h-[3.45rem] items-center gap-3 border-b border-muted/60 bg-background/55 px-3 py-2.5 transition-colors last:border-b-0 active:bg-mint/50"
+      className="flex min-h-[3.85rem] items-center gap-3 border-b border-muted/60 bg-background/55 px-3 py-2.5 transition-colors last:border-b-0 active:bg-secondary"
       href={action.href}
     >
       <span
-        className={`flex size-9 shrink-0 items-center justify-center rounded-md ${toneClass}`}
+        className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${toneClass}`}
       >
         <Icon className="size-4" />
       </span>
@@ -246,7 +250,7 @@ function HomeActionRow({
         <span className="block truncate text-sm font-bold leading-5">
           {action.title}
         </span>
-        <span className="mt-0.5 block text-xs font-semibold text-coral-foreground">
+        <span className="mt-0.5 block text-xs font-semibold text-primary">
           {action.subtitle}
         </span>
       </span>
@@ -261,23 +265,49 @@ function OverallProgressPanel({
   progress: { completed: number; percent: number; total: number };
 }) {
   return (
-    <section className="rounded-lg border border-white/90 bg-card/95 p-3 shadow-soft">
-      <h2 className="text-sm font-bold tracking-normal">整体准备进度</h2>
-      <div className="mt-3 grid grid-cols-[1fr_auto_3.5rem] items-end gap-3">
-        <Progress className="mb-2 h-2.5" value={progress.percent} />
-        <span className="mb-1 text-sm font-black text-primary">
-          {progress.percent}%
-        </span>
+    <section className="pony-due-card p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-black tracking-normal">准备进度</h2>
+            <span className="text-sm font-black text-primary">
+              {progress.completed}/{progress.total}
+            </span>
+          </div>
+          <Progress className="mt-3 h-2.5 bg-primary/12" value={progress.percent} />
+          <p className="mt-2 text-xs font-semibold text-muted-foreground">
+            已完成 {progress.completed} 项，共 {progress.total} 项
+          </p>
+        </div>
         <Image
-          alt="小熊助手提醒准备进度"
-          className="object-contain"
-          height={56}
-          src="/illustrations/dadkit-bear-transparent.png"
-          width={56}
+          alt="小马宝宝助手提醒准备进度"
+          className="h-16 w-16 shrink-0 object-contain"
+          height={1254}
+          src="/illustrations/dadkit-horse-girl.png"
+          width={1254}
         />
       </div>
     </section>
   );
+}
+
+function formatHomeDueDate(dueDate?: string) {
+  if (!dueDate) {
+    return "待填写";
+  }
+
+  const [year, month, day] = dueDate.split("-").map(Number);
+  const date = new Date(year, (month || 1) - 1, day || 1);
+
+  if (Number.isNaN(date.getTime())) {
+    return dueDate;
+  }
+
+  const weekday = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][
+    date.getDay()
+  ];
+
+  return `${dueDate}（${weekday}）`;
 }
 
 function taskHref(task: TimelineTask) {

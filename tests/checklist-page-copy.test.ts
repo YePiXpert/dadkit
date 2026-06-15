@@ -33,7 +33,8 @@ describe("checklist page copy", () => {
   });
 
   it("keeps checklist controls in the normal page flow", () => {
-    expect(checklistPage).toContain("清单工作台");
+    expect(checklistPage).toContain("为小公主的待产包逐项打勾");
+    expect(checklistPage).toContain("dadkit-horse-girl.png");
     expect(checklistPage).toContain("筛选与操作");
     expect(checklistPage).toContain("ChecklistProgressCard");
     expect(checklistPage).toContain("分类入口");

@@ -39,21 +39,21 @@ export function AppHeader() {
     <header className="hidden border-b border-white/80 bg-card/90 backdrop-blur sm:sticky sm:top-0 sm:z-40 sm:block">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link className="flex min-w-0 items-center gap-2" href="/">
-          <span className="relative flex size-10 items-center justify-center overflow-hidden rounded-lg border border-coral/20 bg-accent shadow-soft">
+          <span className="relative flex size-10 items-center justify-center overflow-hidden rounded-full border border-primary/20 bg-secondary shadow-soft">
             <Image
-              alt="DadKit 小熊助手"
+              alt="DadKit 小马宝宝助手"
               className="object-contain p-0.5"
               fill
               sizes="40px"
-              src="/illustrations/dadkit-bear-transparent.png"
+              src="/illustrations/dadkit-horse-girl.png"
             />
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-base font-semibold leading-tight">
+            <span className="block truncate text-base font-black leading-tight text-primary">
               DadKit
             </span>
             <span className="hidden text-xs font-medium text-muted-foreground sm:block">
-              准爸爸好帮手
+              为小公主的到来做足准备
             </span>
           </span>
         </Link>
@@ -71,8 +71,8 @@ export function AppHeader() {
             return (
               <Link
                 className={cn(
-                  "inline-flex h-10 items-center gap-2 rounded-full px-3.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
-                  active && "bg-secondary text-primary shadow-sm",
+                  "inline-flex h-10 items-center gap-2 rounded-full px-3.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-primary",
+                  active && "bg-primary text-primary-foreground shadow-sm hover:bg-primary hover:text-primary-foreground",
                 )}
                 href={item.href}
                 key={item.href}
