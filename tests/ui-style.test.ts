@@ -49,6 +49,10 @@ const timelinePage = readFileSync(
   join(process.cwd(), "app", "timeline", "page.tsx"),
   "utf8",
 );
+const timelineDashboard = readFileSync(
+  join(process.cwd(), "components", "TimelineDashboard.tsx"),
+  "utf8",
+);
 const pageIntro = readFileSync(
   join(process.cwd(), "components", "PageIntro.tsx"),
   "utf8",
@@ -83,6 +87,7 @@ describe("cute maternity app visual direction", () => {
     expect(globals).toContain(".macaron-note");
     expect(globals).toContain(".app-hero-card");
     expect(globals).toContain(".app-list-row");
+    expect(globals).toContain("max-w-[390px]");
     expect(header).toContain("为小公主的到来做足准备");
     expect(header).toContain("dadkit-horse-girl.png");
     expect(layout).toContain("#FF5C7A");
@@ -95,6 +100,7 @@ describe("cute maternity app visual direction", () => {
     expect(mobileNav).toContain("bg-card/95");
     expect(mobileNav).toContain("after:bg-primary");
     expect(mobileNav).toContain("h-[3.25rem]");
+    expect(mobileNav).toContain("mobile-shell grid");
     expect(mobileNav).toContain('label: "我的"');
     expect(mobileNav).toContain("hiddenRoutes");
     expect(mobileNav).toContain('"/setup"');
@@ -234,25 +240,27 @@ describe("cute maternity app visual direction", () => {
   });
 
   it("uses app-like timeline and profile navigation patterns", () => {
-    expect(timelinePage).toContain("generateTimeline");
-    expect(timelinePage).toContain("calculateTimelineStageStatus");
-    expect(timelinePage).toContain("generateTodayTasks");
-    expect(timelinePage).toContain("CurrentStagePanel");
-    expect(timelinePage).toContain("PriorityTasksPanel");
-    expect(timelinePage).toContain("TimelineStageRow");
-    expect(timelinePage).toContain("TimelineDueDateCard");
-    expect(timelinePage).toContain("formatDueDateLabel");
-    expect(timelinePage).toContain("丙午年 · 火马宝宝女孩");
-    expect(timelinePage).toContain("dadkit-horse-girl.png");
-    expect(timelinePage).toContain("打开临出门检查");
-    expect(timelinePage).toContain("max-w-[390px]");
-    expect(timelinePage).toContain("grid-cols-[2.75rem_minmax(0,1fr)]");
-    expect(timelinePage).toContain("min-w-0 max-w-full");
+    expect(timelinePage).toContain("TimelineDashboard");
+    expect(timelinePage).not.toContain("max-w-[390px]");
+    expect(timelineDashboard).toContain("generateTimeline");
+    expect(timelineDashboard).toContain("calculateTimelineStageStatus");
+    expect(timelineDashboard).toContain("generateTodayTasks");
+    expect(timelineDashboard).toContain("CurrentStagePanel");
+    expect(timelineDashboard).toContain("PriorityTasksPanel");
+    expect(timelineDashboard).toContain("TimelineStageRow");
+    expect(timelineDashboard).toContain("TimelineDueDateCard");
+    expect(timelineDashboard).toContain("formatDueDateLabel");
+    expect(timelineDashboard).toContain("mobile-shell grid gap-3 overflow-hidden");
+    expect(timelineDashboard).toContain("丙午年 · 火马宝宝女孩");
+    expect(timelineDashboard).toContain("dadkit-horse-girl.png");
+    expect(timelineDashboard).toContain("打开临出门检查");
+    expect(timelineDashboard).toContain("grid-cols-[2.75rem_minmax(0,1fr)]");
+    expect(timelineDashboard).toContain("min-w-0 max-w-full");
     expect(timelinePage).not.toContain("lg:max-w-none");
     expect(timelinePage).not.toContain("TIMELINE_MILESTONES");
-    expect(timelinePage).not.toContain("TimelineMilestoneRow");
-    expect(timelinePage).not.toContain("dadkit-bear-transparent.png");
-    expect(timelinePage).not.toContain("CuteIllustration");
+    expect(timelineDashboard).not.toContain("TimelineMilestoneRow");
+    expect(timelineDashboard).not.toContain("dadkit-bear-transparent.png");
+    expect(timelineDashboard).not.toContain("CuteIllustration");
     expect(settingsPage).toContain("准爸爸头像");
     expect(settingsPage).toContain("dadkit-dad-avatar.png");
     expect(settingsPage).toContain("数据与备份");

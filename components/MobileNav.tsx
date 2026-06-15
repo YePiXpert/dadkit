@@ -32,7 +32,7 @@ export function MobileNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/80 bg-card/95 pb-[max(env(safe-area-inset-bottom),0.55rem)] pt-1.5 shadow-soft backdrop-blur sm:hidden">
-      <div className="mx-auto grid max-w-[480px] grid-cols-5 gap-1 px-2">
+      <div className="mobile-shell grid grid-cols-5 gap-1 px-2">
         {navItems.map((item) => {
           const active =
             item.href === "/"
