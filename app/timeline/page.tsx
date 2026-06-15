@@ -157,7 +157,7 @@ export default function TimelinePage() {
 
   return (
     <div className="page-shell">
-      <section className="mobile-shell grid gap-3 lg:max-w-none">
+      <section className="mx-auto grid w-full max-w-[430px] gap-3">
         <CurrentStagePanel
           daysLeft={getDaysUntilDue(profile)}
           dueDate={dueDate}

@@ -81,6 +81,9 @@ describe("cute maternity app visual direction", () => {
     expect(globals).toContain(".app-list-row");
     expect(header).toContain("准爸爸好帮手");
     expect(layout).toContain("#247A73");
+    expect(layout).toContain("maximumScale: 1");
+    expect(layout).toContain("userScalable: false");
+    expect(layout).toContain('viewportFit: "cover"');
     expect(mobileNav).toContain("bg-mint");
     expect(mobileNav).toContain("after:bg-mint");
     expect(mobileNav).toContain("h-[3.25rem]");
@@ -219,6 +222,8 @@ describe("cute maternity app visual direction", () => {
     expect(timelinePage).toContain("TimelineStageRow");
     expect(timelinePage).toContain("formatDueDateLabel");
     expect(timelinePage).toContain("打开临出门检查");
+    expect(timelinePage).toContain("max-w-[430px]");
+    expect(timelinePage).not.toContain("lg:max-w-none");
     expect(timelinePage).not.toContain("TIMELINE_MILESTONES");
     expect(timelinePage).not.toContain("TimelineMilestoneRow");
     expect(timelinePage).not.toContain("dadkit-bear-transparent.png");
