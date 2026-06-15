@@ -2,7 +2,12 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { CalendarClock, Plus, RotateCcw, Trash2 } from "lucide-react";
+import {
+  CalendarClock,
+  Plus,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 
 import { ExportTextArea } from "@/components/ExportTextArea";
 import { Button } from "@/components/ui/button";
@@ -10,6 +15,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  LABOR_URGENT_SIGNAL_CARDS,
+  WATER_BREAK_STEPS,
+} from "@/lib/labor-guide";
 import {
   calculateContractionStats,
   formatDuration,
@@ -245,6 +254,66 @@ export default function ContractionsPage() {
                 {message}
               </p>
             ) : null}
+          </CardContent>
+        </Card>
+      </section>
+
+      <section
+        className="mobile-shell grid gap-3 lg:max-w-none"
+        id="labor-alerts"
+      >
+        <Card className="macaron-panel">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarClock className="size-4 text-primary" />
+              临产提醒
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            <div className="grid gap-2 sm:grid-cols-2">
+              {LABOR_URGENT_SIGNAL_CARDS.map((card) => (
+                <div
+                  className="rounded-lg border border-mint/70 bg-card/85 p-3 shadow-sm"
+                  key={card.id}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="min-w-0 break-words text-sm font-black">
+                      {card.title}
+                    </p>
+                    <span className="shrink-0 rounded-full bg-mint px-2 py-1 text-[0.68rem] font-bold text-primary">
+                      {card.actionLabel}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    {card.description}
+                  </p>
+                  <p className="mt-2 rounded-md bg-muted/60 px-2 py-1.5 text-xs leading-5 text-muted-foreground">
+                    {card.notePrompt}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-lg border border-primary/15 bg-mint/30 p-3">
+              <h3 className="flex items-center gap-2 text-sm font-black">
+                <CalendarClock className="size-4 text-primary" />
+                破水先这样记录
+              </h3>
+              <div className="mt-3 grid gap-2">
+                {WATER_BREAK_STEPS.map((step) => (
+                  <div className="soft-detail" key={step.title}>
+                    <p className="text-sm font-bold">{step.title}</p>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      {step.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <p className="macaron-note">
+              这些内容只帮助爸爸记录和沟通，不替代医生判断；是否去医院以医院/医生要求为准。
+            </p>
           </CardContent>
         </Card>
       </section>

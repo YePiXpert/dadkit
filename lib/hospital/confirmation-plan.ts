@@ -1,7 +1,10 @@
+import { LABOR_HOSPITAL_QUESTION_TITLES } from "@/lib/labor-guide";
+
 export type HospitalConfirmationGroupId =
   | "provided_items"
   | "admission_flow"
   | "partner_policy"
+  | "labor_support"
   | "payment"
   | "discharge";
 
@@ -30,6 +33,7 @@ export const HOSPITAL_CONFIRMATION_GROUP_LABELS: Record<
   provided_items: "医院提供物品",
   admission_flow: "入院流程",
   partner_policy: "陪产探视",
+  labor_support: "临产支持",
   payment: "费用结算",
   discharge: "出院办理",
 };
@@ -111,6 +115,49 @@ export const HOSPITAL_CONFIRMATION_QUESTIONS: HospitalConfirmationQuestion[] = [
     answerType: "confirmation",
   },
   {
+    id: "question-labor-analgesia-timing-cost",
+    groupId: "labor_support",
+    title: LABOR_HOSPITAL_QUESTION_TITLES[0],
+    description: "把无痛分娩等镇痛方案的时机、流程、费用和风险问清楚。",
+    answerType: "confirmation",
+  },
+  {
+    id: "question-labor-doula-support",
+    groupId: "labor_support",
+    title: LABOR_HOSPITAL_QUESTION_TITLES[1],
+    description: "确认是否有导乐、导乐仪、呼吸放松或体位指导等支持。",
+    answerType: "confirmation",
+  },
+  {
+    id: "question-labor-room-companion-policy",
+    groupId: "labor_support",
+    title: LABOR_HOSPITAL_QUESTION_TITLES[2],
+    description: "确认陪产人能进入的区域、时间、证件和核验要求。",
+    answerType: "confirmation",
+  },
+  {
+    id: "question-labor-urgent-contact",
+    groupId: "labor_support",
+    title: LABOR_HOSPITAL_QUESTION_TITLES[3],
+    description: "提前保存产科、急诊、住院处或产房联系路径。",
+    answerType: "confirmation",
+    homeCore: true,
+  },
+  {
+    id: "question-labor-last-minute-purchases",
+    groupId: "labor_support",
+    title: LABOR_HOSPITAL_QUESTION_TITLES[4],
+    description: "把医院临产前要求自购的物品和购买地点写下来。",
+    answerType: "confirmation",
+  },
+  {
+    id: "question-labor-exam-results",
+    groupId: "labor_support",
+    title: LABOR_HOSPITAL_QUESTION_TITLES[5],
+    description: "确认纸质或电子产检、化验、B 超结果是否要随身带。",
+    answerType: "confirmation",
+  },
+  {
     id: "question-payment-deposit",
     groupId: "payment",
     title: "住院押金大概多少？",
@@ -128,7 +175,6 @@ export const HOSPITAL_CONFIRMATION_QUESTIONS: HospitalConfirmationQuestion[] = [
     groupId: "payment",
     title: "医保结算方式是什么？",
     answerType: "confirmation",
-    homeCore: true,
   },
   {
     id: "question-payment-card-cash",
@@ -199,6 +245,25 @@ export const DAD_ACTION_TASKS: DadActionTask[] = [
     relatedQuestionIds: [
       "question-partner-allowed",
       "question-partner-documents",
+    ],
+  },
+  {
+    id: "dad-confirm-labor-urgent-flow",
+    title: "确认临产异常联系流程",
+    description: "把破水、见红较多、胎动异常时要联系的电话和入口写清楚。",
+    relatedQuestionIds: [
+      "question-labor-urgent-contact",
+      "question-admission-night-route",
+    ],
+  },
+  {
+    id: "dad-prepare-labor-support",
+    title: "准备陪产减痛协助",
+    description: "提前和妈妈确认擦汗、按摩、递水、沟通记录这些协助边界。",
+    relatedQuestionIds: [
+      "question-labor-analgesia-timing-cost",
+      "question-labor-doula-support",
+      "question-labor-room-companion-policy",
     ],
   },
   {

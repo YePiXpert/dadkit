@@ -432,6 +432,29 @@ export function generateTimeline(
         ),
         task(
           "one_week",
+          "timeline-labor-alert-flow",
+          "确认破水/见红较多/胎动异常时的联系流程",
+          "dad_task",
+          "must",
+          relatedIds(
+            items,
+            (item) =>
+              item.itemKind === "question" &&
+              nameIncludes(item, "破水", "见红", "胎动异常"),
+          ),
+          "保存产科、急诊或住院处电话，并确认白天/夜间应该走哪条路线。",
+        ),
+        task(
+          "one_week",
+          "timeline-birth-plan-share",
+          "把分娩偏好卡分享给陪产人",
+          "dad_task",
+          "recommended",
+          [],
+          "提前说清楚无痛/导乐沟通项，以及擦汗、按摩、递水、记录医嘱的分工。",
+        ),
+        task(
+          "one_week",
           "timeline-car-seat-install",
           "确认安全座椅安装",
           "dad_task",
@@ -509,6 +532,15 @@ export function generateTimeline(
           "go",
           "must",
           goIds((item) => nameIncludes(item, "安全座椅")),
+        ),
+        task(
+          "go_time",
+          "timeline-go-labor-signal-note",
+          "记录破水/见红/胎动异常情况",
+          "go",
+          "must",
+          [],
+          "用宫缩记录备注写下时间、颜色/量、胎动变化和已联系的医院电话。",
         ),
         task(
           "go_time",

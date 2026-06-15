@@ -34,6 +34,11 @@ const GO_DISPLAY_ITEMS: GoChecklistDisplayItem[] = [
     title: "手机 + 充电器",
   },
   {
+    accent: "pink",
+    taskIds: ["timeline-go-labor-signal-note"],
+    title: "临产信号记录（破水/见红/胎动）",
+  },
+  {
     accent: "teal",
     taskIds: ["timeline-go-wallet"],
     title: "钱包 / 现金",

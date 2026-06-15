@@ -45,4 +45,10 @@ describe("settings page copy", () => {
     expect(settingsPage).toContain("WebDAV 凭据说明");
     expect(settingsPage).not.toContain("本地开发 / 未注入");
   });
+
+  it("surfaces labor-alert tools without adding another main tab", () => {
+    expect(settingsPage).toContain('href="/contractions#labor-alerts"');
+    expect(settingsPage).toContain("临产提醒");
+    expect(settingsPage).toContain("破水/见红/胎动异常");
+  });
 });

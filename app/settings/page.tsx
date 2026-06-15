@@ -416,7 +416,7 @@ export default function SettingsPage() {
               title="编辑资料"
             />
             <SettingsShortcutRow
-              caption="宫缩、偏好卡、产后办理"
+              caption="破水/见红/胎动异常、宫缩、偏好卡、产后"
               href="#more-tools"
               icon={<Cloud className="size-4" />}
               title="更多工具"
@@ -811,14 +811,33 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>更多工具</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-3">
-              <Button asChild variant="outline">
+            <CardContent className="grid gap-3 sm:grid-cols-4">
+              <Button
+                asChild
+                className="h-auto min-h-10 whitespace-normal py-2"
+                variant="outline"
+              >
+                <Link href="/contractions#labor-alerts">临产提醒</Link>
+              </Button>
+              <Button
+                asChild
+                className="h-auto min-h-10 whitespace-normal py-2"
+                variant="outline"
+              >
                 <Link href="/contractions">宫缩记录</Link>
               </Button>
-              <Button asChild variant="outline">
+              <Button
+                asChild
+                className="h-auto min-h-10 whitespace-normal py-2"
+                variant="outline"
+              >
                 <Link href="/birth-plan">分娩偏好卡</Link>
               </Button>
-              <Button asChild variant="outline">
+              <Button
+                asChild
+                className="h-auto min-h-10 whitespace-normal py-2"
+                variant="outline"
+              >
                 <Link href="/postpartum">产后办理</Link>
               </Button>
             </CardContent>

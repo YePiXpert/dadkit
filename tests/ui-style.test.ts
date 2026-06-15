@@ -219,6 +219,9 @@ describe("cute maternity app visual direction", () => {
     expect(contractionsPage).toContain("本次宫缩计时圆盘");
     expect(contractionsPage).toContain("conic-gradient");
     expect(contractionsPage).toContain("dadkit-baby-girl-timer.png");
+    expect(contractionsPage).toContain("LABOR_URGENT_SIGNAL_CARDS");
+    expect(contractionsPage).toContain("WATER_BREAK_STEPS");
+    expect(contractionsPage).toContain('id="labor-alerts"');
     expect(contractionsPage).not.toContain("CuteIllustration");
   });
 

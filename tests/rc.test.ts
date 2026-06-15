@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   calculateContractionStats,
   createContractionRecord,
+  DEFAULT_BIRTH_PLAN,
   generateBirthPlanShareText,
   generateContractionsShareText,
   mergeBirthPlan,
@@ -77,5 +78,16 @@ describe("rc helpers", () => {
     expect(birthPlanText).toContain("爸爸 13800000000");
     expect(birthPlanText).toContain("这不是医疗建议");
     expect(contractionsText).toContain("是否去医院以医生/医院要求为准");
+  });
+
+  it("seeds the birth-plan card with labor support prompts", () => {
+    expect(DEFAULT_BIRTH_PLAN.painManagement).toContain("无痛");
+    expect(DEFAULT_BIRTH_PLAN.painManagement).toContain("导乐");
+    expect(DEFAULT_BIRTH_PLAN.birthPreferences).toContain("陪产人");
+
+    const birthPlanText = generateBirthPlanShareText(DEFAULT_BIRTH_PLAN);
+
+    expect(birthPlanText).toContain("减痛");
+    expect(birthPlanText).toContain("陪产");
   });
 });

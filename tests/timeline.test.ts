@@ -121,6 +121,8 @@ describe("timeline", () => {
     expect(titles).toContain("确认夜间入院路线");
     expect(titles).toContain("确认支付方式和住院押金");
     expect(titles).toContain("确认安全座椅安装");
+    expect(titles).toContain("确认破水/见红较多/胎动异常时的联系流程");
+    expect(titles).toContain("把分娩偏好卡分享给陪产人");
   });
 
   it("includes core go-time tasks", () => {
@@ -134,6 +136,7 @@ describe("timeline", () => {
     expect(titles).toContain("手机");
     expect(titles).toContain("充电器");
     expect(titles).toContain("安全座椅确认");
+    expect(titles).toContain("记录破水/见红/胎动异常情况");
   });
 
   it("does not associate shopping tasks with documents or hospital questions", () => {

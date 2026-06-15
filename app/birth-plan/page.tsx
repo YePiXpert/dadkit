@@ -9,73 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  BIRTH_PLAN_LONG_FIELDS,
+  BIRTH_PLAN_SHORT_FIELDS,
+  PARTNER_SUPPORT_ACTIONS,
+} from "@/lib/labor-guide";
 import { generateBirthPlanShareText, type BirthPlan } from "@/lib/rc";
 import { useDadKitStore } from "@/lib/store";
-
-const shortFields: Array<{
-  key: keyof Pick<
-    BirthPlan,
-    "emergencyContact" | "supportPerson" | "hospitalPhone"
-  >;
-  label: string;
-  placeholder: string;
-}> = [
-  {
-    key: "emergencyContact",
-    label: "紧急联系人",
-    placeholder: "姓名 / 电话 / 关系",
-  },
-  {
-    key: "supportPerson",
-    label: "陪产人",
-    placeholder: "陪产人姓名和联系方式",
-  },
-  {
-    key: "hospitalPhone",
-    label: "医院电话",
-    placeholder: "产科 / 住院处 / 急诊电话",
-  },
-];
-
-const longFields: Array<{
-  key: keyof Omit<
-    BirthPlan,
-    "emergencyContact" | "supportPerson" | "hospitalPhone"
-  >;
-  label: string;
-  placeholder: string;
-}> = [
-  {
-    key: "medicationNotes",
-    label: "过敏 / 长期用药备注",
-    placeholder: "只写需要医护快速知道的信息。",
-  },
-  {
-    key: "birthPreferences",
-    label: "生产偏好",
-    placeholder: "例如沟通节奏、爸爸协助事项等。",
-  },
-  {
-    key: "painManagement",
-    label: "疼痛管理沟通项",
-    placeholder: "记录希望向医生了解的问题，不做医学判断。",
-  },
-  {
-    key: "feedingPreference",
-    label: "喂养偏好",
-    placeholder: "记录希望了解或尝试的喂养支持方式。",
-  },
-  {
-    key: "newbornCareQuestions",
-    label: "新生儿护理待确认",
-    placeholder: "记录疫苗、筛查、护理、陪护等待确认事项。",
-  },
-  {
-    key: "photoVisitPreference",
-    label: "拍照 / 探视偏好",
-    placeholder: "记录家人探视和拍照边界。",
-  },
-];
 
 export default function BirthPlanPage() {
   const birthPlan = useDadKitStore((state) => state.birthPlan);
@@ -104,7 +44,7 @@ export default function BirthPlanPage() {
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-3 sm:grid-cols-3">
-              {shortFields.map((field) => (
+              {BIRTH_PLAN_SHORT_FIELDS.map((field) => (
                 <Field
                   htmlFor={`birth-plan-${field.key}`}
                   key={field.key}
@@ -120,7 +60,7 @@ export default function BirthPlanPage() {
               ))}
             </div>
 
-            {longFields.map((field) => (
+            {BIRTH_PLAN_LONG_FIELDS.map((field) => (
               <Field
                 htmlFor={`birth-plan-${field.key}`}
                 key={field.key}
@@ -142,14 +82,35 @@ export default function BirthPlanPage() {
           </CardContent>
         </Card>
 
-        <Card className="macaron-panel">
-          <CardHeader>
-            <CardTitle>复制 / 导出沟通卡</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ExportTextArea value={exportText} />
-          </CardContent>
-        </Card>
+        <div className="grid gap-3">
+          <Card className="macaron-panel">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="size-4 text-primary" />
+                陪产协助小抄
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2">
+              {PARTNER_SUPPORT_ACTIONS.map((action) => (
+                <div className="soft-detail" key={action.title}>
+                  <p className="text-sm font-bold">{action.title}</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    {action.description}
+                  </p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="macaron-panel">
+            <CardHeader>
+              <CardTitle>复制 / 导出沟通卡</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ExportTextArea value={exportText} />
+            </CardContent>
+          </Card>
+        </div>
       </section>
     </div>
   );

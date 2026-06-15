@@ -57,6 +57,20 @@ export function TimelineDashboard(props: TimelineDashboardProps) {
 
 Business/data logic belongs in `lib/`, not in component files. For example, timeline generation and completion rules live in `lib/timeline.ts`; route components should consume those helpers rather than duplicating date or completion logic.
 
+Shared domain content also belongs in `lib/` when two or more routes need it. For example, labor-preparation prompts, hospital questions, birth-plan field metadata, and contraction warning copy should live in a structured data module such as `lib/labor-guide.ts`. Pages should render those records and wire state only; avoid copying the same medical/hospital communication text into multiple route components.
+
+```tsx
+// Correct: shared content module
+export const WATER_BREAK_STEPS = [
+  { title: "记录破水时间", description: "..." },
+];
+
+// Correct: page consumes records
+{WATER_BREAK_STEPS.map((step) => (
+  <StepRow key={step.title} step={step} />
+))}
+```
+
 ---
 
 ## Naming Conventions

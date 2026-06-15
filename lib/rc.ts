@@ -1,3 +1,5 @@
+import { DEFAULT_BIRTH_PLAN_LABOR_PROMPTS } from "@/lib/labor-guide";
+
 export type ContractionRecord = {
   id: string;
   startedAt: string;
@@ -63,11 +65,7 @@ export const DEFAULT_BIRTH_PLAN: BirthPlan = {
   supportPerson: "",
   hospitalPhone: "",
   medicationNotes: "",
-  birthPreferences: "希望以医院流程和医生判断为准，爸爸负责协助沟通。",
-  painManagement: "如有可选镇痛方案，希望提前了解适用条件、流程和风险。",
-  feedingPreference: "希望了解母乳、配方奶和混合喂养的可选支持方式。",
-  newbornCareQuestions: "希望确认新生儿护理、疫苗、筛查和陪护流程。",
-  photoVisitPreference: "希望在不影响医疗流程和妈妈休息的前提下再拍照或探视。",
+  ...DEFAULT_BIRTH_PLAN_LABOR_PROMPTS,
 };
 
 export const DEFAULT_POSTPARTUM_TASKS: PostpartumTask[] = [
