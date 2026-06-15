@@ -361,7 +361,7 @@ export default function SettingsPage() {
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-base font-semibold">准爸爸</p>
-            <p className="mt-1 truncate text-xs text-muted-foreground">
+            <p className="mt-1 break-words text-xs leading-4 text-muted-foreground">
               一起做好交接的我们
             </p>
           </div>
@@ -945,7 +945,7 @@ function SettingsShortcutRow({
       <span className="app-icon-tile size-9 rounded-md">{icon}</span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-bold leading-5">{title}</span>
-        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+        <span className="mt-0.5 block break-words text-xs leading-4 text-muted-foreground">
           {caption}
         </span>
       </span>

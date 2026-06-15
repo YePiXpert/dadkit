@@ -386,7 +386,9 @@ function SetupFieldRow({
     <div className="grid min-h-[4.1rem] grid-cols-[minmax(0,1fr)_minmax(8.5rem,42%)] items-center gap-3 rounded-lg border border-white/90 bg-background/70 px-3 py-2 shadow-sm">
       <div className="min-w-0">
         <p className="text-sm font-bold leading-5">{label}</p>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">{valueHint}</p>
+        <p className="mt-0.5 break-words text-xs leading-4 text-muted-foreground">
+          {valueHint}
+        </p>
       </div>
       <div className="flex min-w-0 items-center justify-end gap-1">
         {children}

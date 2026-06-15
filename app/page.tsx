@@ -248,7 +248,7 @@ function HomeActionRow({
         <Icon className="size-4" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-bold leading-5">
+        <span className="block break-words text-sm font-bold leading-5">
           {action.title}
         </span>
         <span className="mt-0.5 block text-xs font-semibold text-primary">

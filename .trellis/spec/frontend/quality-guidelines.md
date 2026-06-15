@@ -20,6 +20,10 @@ Do not render a global mobile top brand strip with DadKit name/avatar/calendar c
 
 Avoid `overflow-x-auto`, `min-w-max`, and sticky chip bars inside core mobile pages unless the task explicitly designs that interaction. Previous mobile issues came from content becoming wider than the PWA viewport.
 
+### Single-line truncation in compact mobile rows
+
+Avoid `truncate` or `whitespace-nowrap` on mobile task titles, checklist category names, settings shortcuts, and hospital confirmation rows. Long Chinese copy should stay inside the PWA shell by using `min-w-0` on the flex/grid cell and `break-words` with an explicit compact line-height on the text.
+
 ### One-off page width workarounds
 
 Do not add local `max-w-*` wrappers to fix mobile width if `mobile-shell` can represent the intended app width.

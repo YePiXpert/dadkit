@@ -17,6 +17,7 @@ const header = readFileSync(
   "utf8",
 );
 const layout = readFileSync(join(process.cwd(), "app", "layout.tsx"), "utf8");
+const homePage = readFileSync(join(process.cwd(), "app", "page.tsx"), "utf8");
 const checklistPage = readFileSync(
   join(process.cwd(), "app", "checklist", "page.tsx"),
   "utf8",
@@ -63,6 +64,10 @@ const cuteIllustration = readFileSync(
 );
 const mobileNav = readFileSync(
   join(process.cwd(), "components", "MobileNav.tsx"),
+  "utf8",
+);
+const checklistCategoryCard = readFileSync(
+  join(process.cwd(), "components", "ChecklistCategoryCard.tsx"),
   "utf8",
 );
 const pwaRegister = readFileSync(
@@ -272,5 +277,35 @@ describe("cute maternity app visual direction", () => {
     expect(checklistPage).not.toContain("sticky top-0");
     expect(checklistPage).not.toContain("overflow-x-auto");
     expect(checklistPage).not.toContain("min-w-max");
+  });
+
+  it("lets compact mobile row text wrap on narrow PWA screens", () => {
+    expect(homePage).not.toContain("block truncate text-sm font-bold leading-5");
+    expect(goPage).not.toContain(
+      "min-w-0 truncate text-base font-bold tracking-normal",
+    );
+    expect(hospitalPage).not.toContain("truncate text-base font-black");
+    expect(hospitalPage).not.toContain("block truncate text-sm font-bold");
+    expect(settingsPage).not.toContain(
+      "block truncate text-xs text-muted-foreground",
+    );
+    expect(setupPage).not.toContain("truncate text-xs text-muted-foreground");
+    expect(checklistCategoryCard).not.toContain(
+      "block truncate text-base font-bold tracking-normal",
+    );
+    expect(homePage).toContain("break-words text-sm font-bold leading-5");
+    expect(goPage).toContain(
+      "min-w-0 break-words text-base font-bold leading-5 tracking-normal",
+    );
+    expect(hospitalPage).toContain("break-words text-base font-black");
+    expect(settingsPage).toContain(
+      "block break-words text-xs leading-4 text-muted-foreground",
+    );
+    expect(setupPage).toContain(
+      "break-words text-xs leading-4 text-muted-foreground",
+    );
+    expect(checklistCategoryCard).toContain(
+      "block break-words text-base font-bold leading-5 tracking-normal",
+    );
   });
 });

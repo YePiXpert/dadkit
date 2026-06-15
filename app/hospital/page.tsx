@@ -269,7 +269,7 @@ export default function HospitalPage() {
               <Hospital className="size-6" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-base font-black">
+              <p className="break-words text-base font-black">
                 {hospital?.name ?? "暂未确定医院"}
               </p>
               <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
@@ -454,7 +454,9 @@ function HospitalQuickRow({ item }: { item: HospitalQuickRowInput }) {
         <Icon className="size-4" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-bold">{item.title}</span>
+        <span className="block break-words text-sm font-bold leading-5">
+          {item.title}
+        </span>
       </span>
       <span className="shrink-0 text-xs font-semibold text-muted-foreground">
         {item.done ? "已确认" : "待确认"}

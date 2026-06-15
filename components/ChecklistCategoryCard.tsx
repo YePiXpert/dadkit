@@ -49,7 +49,7 @@ export function ChecklistCategoryCard({
             )}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-base font-bold tracking-normal">
+            <span className="block break-words text-base font-bold leading-5 tracking-normal">
               {title}
             </span>
             <span className="mt-1 block text-xs font-semibold text-muted-foreground">

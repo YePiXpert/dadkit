@@ -223,7 +223,7 @@ function GoChecklistRow({
       >
         {done ? <Check className="size-3.5 stroke-[3]" /> : null}
       </span>
-      <span className="min-w-0 truncate text-base font-bold tracking-normal">
+      <span className="min-w-0 break-words text-base font-bold leading-5 tracking-normal">
         {item.title}
       </span>
       <span className="justify-self-end text-primary">
