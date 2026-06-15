@@ -84,6 +84,7 @@ export default function HomePage() {
           tasks={todayTasks}
         />
         <OverallProgressPanel progress={readyProgress} />
+        <HomeToolsPanel />
       </section>
 
       <p className="mobile-shell text-center text-xs leading-5 text-muted-foreground">
@@ -288,6 +289,89 @@ function OverallProgressPanel({
         />
       </div>
     </section>
+  );
+}
+
+const homeTools = [
+  {
+    href: "/contractions",
+    icon: CalendarClock,
+    subtitle: "宫缩频率随手记",
+    title: "宫缩记录",
+    tone: "coral" as const,
+  },
+  {
+    href: "/birth-plan",
+    icon: ClipboardList,
+    subtitle: "给医院和家人看",
+    title: "分娩偏好卡",
+    tone: "blue" as const,
+  },
+  {
+    href: "/postpartum",
+    icon: CheckCircle2,
+    subtitle: "出生后别漏项",
+    title: "产后办理",
+    tone: "mint" as const,
+  },
+];
+
+function HomeToolsPanel() {
+  return (
+    <section className="pony-soft-card p-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-black tracking-normal">小工具</h2>
+        <Link
+          className="inline-flex items-center gap-1 text-xs font-bold text-primary"
+          href="/settings#more-tools"
+        >
+          全部
+          <ArrowRight className="size-3.5" />
+        </Link>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {homeTools.map((tool) => (
+          <HomeToolLink key={tool.href} tool={tool} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HomeToolLink({
+  tool,
+}: {
+  tool: {
+    href: string;
+    icon: LucideIcon;
+    subtitle: string;
+    title: string;
+    tone: "blue" | "coral" | "mint";
+  };
+}) {
+  const Icon = tool.icon;
+  const toneClass =
+    tool.tone === "coral"
+      ? "bg-secondary text-primary"
+      : tool.tone === "blue"
+        ? "bg-lavender text-lavender-foreground"
+        : "bg-mint text-primary";
+
+  return (
+    <Link
+      className="grid min-h-[5.7rem] content-start gap-1 rounded-lg border border-white/80 bg-background/60 px-2.5 py-3 text-center shadow-sm transition-colors active:bg-secondary"
+      href={tool.href}
+    >
+      <span
+        className={`mx-auto flex size-9 items-center justify-center rounded-full ${toneClass}`}
+      >
+        <Icon className="size-4" />
+      </span>
+      <span className="mt-1 text-xs font-black leading-4">{tool.title}</span>
+      <span className="text-[0.68rem] font-semibold leading-4 text-muted-foreground">
+        {tool.subtitle}
+      </span>
+    </Link>
   );
 }
 

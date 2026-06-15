@@ -26,6 +26,13 @@ describe("home page copy", () => {
     expect(homePage).toContain("HomeHeroCard");
     expect(homePage).toContain("TodayActionsPanel");
     expect(homePage).toContain("OverallProgressPanel");
+    expect(homePage).toContain("HomeToolsPanel");
+    expect(homePage).toContain("HomeToolLink");
+    expect(homePage).toContain("小工具");
+    expect(homePage).toContain("宫缩记录");
+    expect(homePage).toContain("分娩偏好卡");
+    expect(homePage).toContain("产后办理");
+    expect(homePage).toContain('href="/settings#more-tools"');
     expect(homePage).not.toContain("HomeAppHeader");
     expect(homePage).not.toContain("dadkit-dad-avatar.png");
     expect(homePage).toContain("formatHomeDueDate");
