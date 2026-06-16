@@ -447,7 +447,7 @@ export function generateTimeline(
         task(
           "one_week",
           "timeline-birth-plan-share",
-          "把分娩偏好卡分享给陪产人",
+          "把分娩偏好卡发给陪产人",
           "dad_task",
           "recommended",
           [],

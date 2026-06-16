@@ -147,7 +147,7 @@ export default function GoPage() {
             临出门检查
           </h1>
           <p className="text-sm font-semibold leading-6 text-muted-foreground">
-            出门前 15 分钟快速确认💛
+            出发前快速确认
           </p>
         </div>
 
@@ -171,7 +171,7 @@ export default function GoPage() {
             </p>
           </div>
           <Image
-            alt="小马宝宝临出门检查助手"
+            alt="临出门检查插图"
             className="absolute -bottom-5 -right-5 h-40 w-40 object-contain object-bottom"
             height={1254}
             priority
@@ -212,7 +212,7 @@ export default function GoPage() {
           disabled={tasks.length === 0 && remainingCount === 0}
           onClick={markAllDone}
         >
-          全部 OK，出发！
+          全部确认，出发
         </Button>
       </section>
     </div>

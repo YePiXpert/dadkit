@@ -72,7 +72,7 @@ export function GoAdmissionInfoCard({
 
           {!hasAnyAdmissionInfo ? (
             <p className="rounded-md bg-card/80 px-2 py-1.5 text-xs font-semibold leading-5 text-muted-foreground">
-              先补上电话、入口和停车备注，临产时不用临时翻聊天记录。
+              补充电话、入口和停车备注，出发时可直接查看。
             </p>
           ) : null}
         </div>

@@ -13,7 +13,9 @@ describe("settings page copy", () => {
     expect(settingsPage).not.toContain("<PageIntro");
     expect(settingsPage).toContain("formatBabyZodiacLine");
     expect(settingsPage).toContain("getBabyMascot");
-    expect(settingsPage).toContain("安心待产清单");
+    expect(settingsPage).toContain("待产清单已生成");
+    expect(settingsPage).not.toContain("安心待产清单");
+    expect(settingsPage).not.toContain("专属清单");
     expect(settingsPage).not.toContain("dadkit-dad-avatar.png");
     expect(settingsPage).toContain("app-list-card");
     expect(settingsPage).toContain("SettingsShortcutRow");

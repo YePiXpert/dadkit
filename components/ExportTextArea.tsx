@@ -49,7 +49,7 @@ export function ExportTextArea({ value }: ExportTextAreaProps) {
         </Button>
         <Button variant="outline" onClick={shareText}>
           <Share2 className="size-4" />
-          分享给家人
+          系统分享
         </Button>
       </div>
     </div>

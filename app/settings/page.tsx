@@ -39,7 +39,6 @@ import {
 import {
   formatBabyZodiacLine,
   getBabyMascot,
-  getBabySexLabel,
 } from "@/lib/baby-profile";
 import { useDadKitStore } from "@/lib/store";
 import {
@@ -370,7 +369,7 @@ export default function SettingsPage() {
               {profile ? formatBabyZodiacLine(profile) : "待产资料"}
             </p>
             <p className="mt-1 break-words text-xs leading-4 text-muted-foreground">
-              {profile ? `${getBabySexLabel(profile)}的安心待产清单` : "先创建资料，生成专属清单"}
+              {profile ? "待产清单已生成" : "创建资料后生成清单"}
             </p>
           </div>
           <span className="shrink-0 rounded-full bg-mint px-3 py-1 text-xs font-bold text-primary">
@@ -406,7 +405,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="grid gap-2 p-2 pt-0">
             <SettingsShortcutRow
-              caption="破水/见红/胎动异常提醒"
+              caption="破水/见红/胎动异常记录"
               href="/contractions#labor-alerts"
               icon={<Info className="size-4" />}
               title="临产提醒"
@@ -418,7 +417,7 @@ export default function SettingsPage() {
               title="宫缩记录"
             />
             <SettingsShortcutRow
-              caption="给医院和家人看的沟通卡"
+              caption="入院沟通信息"
               href="/birth-plan"
               icon={<Copy className="size-4" />}
               title="分娩偏好卡"
@@ -470,7 +469,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="grid gap-2 p-2 pt-0">
             <SettingsShortcutRow
-              caption="破水/见红/胎动异常、宫缩、偏好卡、产后"
+              caption="临产信号、宫缩、偏好卡、产后事项"
               href="#more-tools"
               icon={<Cloud className="size-4" />}
               title="完整工具目录"

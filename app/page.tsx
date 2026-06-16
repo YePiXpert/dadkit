@@ -20,7 +20,6 @@ import {
 import {
   formatBabyZodiacLine,
   getBabyMascot,
-  getBabySexLabel,
 } from "@/lib/baby-profile";
 import { buildHomeSummary, type HomeSummary } from "@/lib/presentation/home-summary";
 import { useDadKitStore } from "@/lib/store";
@@ -122,12 +121,12 @@ function HomeLaborModePanel({
         <Hospital className="size-5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-black text-primary">临产模式</span>
+        <span className="block text-sm font-black text-primary">临出门检查</span>
         <span className="mt-1 block break-words text-base font-black leading-5">
-          电话 / 路线 / 待产包最后确认
+          电话 / 路线 / 必带物品确认
         </span>
         <span className="mt-1 block break-words text-xs font-semibold leading-4 text-muted-foreground">
-          {hasAdmissionInfo ? "入院联系信息已准备" : "先补医院电话和路线备注"}
+          {hasAdmissionInfo ? "联系信息已填写" : "补充电话与路线"}
         </span>
       </span>
       <ArrowRight className="size-4 shrink-0 text-primary" />
@@ -163,7 +162,7 @@ function HomeHeroCard({
 
       <div className="relative z-10 max-w-[58%]">
         <p className="text-sm font-black text-primary-foreground/90">
-          {getBabySexLabel(profile)}倒计时
+          预产期倒计时
         </p>
         <h1 className="mt-2 flex items-end gap-1 text-[3.15rem] font-black leading-none tracking-normal">
           {countdownNumber ? (
@@ -210,14 +209,14 @@ function TodayActionsPanel({
     {
       href: "/setup",
       icon: CalendarClock,
-      subtitle: "建议今天完成",
+      subtitle: "当前优先",
       title: "填写预产期和生产信息",
       tone: "coral" as const,
     },
     {
       href: "/setup",
       icon: Hospital,
-      subtitle: "建议今天完成",
+      subtitle: "当前优先",
       title: "选择或确认生产医院",
       tone: "blue" as const,
     },
@@ -234,7 +233,7 @@ function TodayActionsPanel({
     ? tasks.map((task, index) => ({
         href: taskHref(task),
         icon: taskIcon(task),
-        subtitle: "建议今天完成",
+        subtitle: "当前优先",
         title: task.title,
         tone: (["coral", "blue", "mint"] as const)[index % 3],
       }))
@@ -324,7 +323,7 @@ function OverallProgressPanel({
           </p>
         </div>
         <Image
-          alt="宝宝待产助手提醒准备进度"
+          alt="待产准备进度插图"
           className="h-16 w-16 shrink-0 object-contain"
           height={1254}
           src="/illustrations/dadkit-bear-transparent.png"
@@ -339,21 +338,21 @@ const homeTools = [
   {
     href: "/contractions",
     icon: CalendarClock,
-    subtitle: "宫缩频率随手记",
+    subtitle: "记录频率和持续时间",
     title: "宫缩记录",
     tone: "coral" as const,
   },
   {
     href: "/birth-plan",
     icon: ClipboardList,
-    subtitle: "给医院和家人看",
+    subtitle: "沟通信息整理",
     title: "分娩偏好卡",
     tone: "blue" as const,
   },
   {
     href: "/postpartum",
     icon: CheckCircle2,
-    subtitle: "出生后别漏项",
+    subtitle: "出生后事项",
     title: "产后办理",
     tone: "mint" as const,
   },
@@ -368,7 +367,7 @@ function HomeToolsPanel() {
           className="inline-flex items-center gap-1 text-xs font-bold text-primary"
           href="/settings#more-tools"
         >
-          全部工具在我的
+          全部工具
           <ArrowRight className="size-3.5" />
         </Link>
       </div>

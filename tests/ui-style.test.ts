@@ -93,8 +93,8 @@ describe("cute maternity app visual direction", () => {
     expect(globals).toContain(".app-hero-card");
     expect(globals).toContain(".app-list-row");
     expect(globals).toContain("max-w-[390px]");
-    expect(header).toContain("安心待产清单");
-    expect(header).not.toContain("姐妹安心待产清单");
+    expect(header).toContain("待产准备");
+    expect(header).not.toContain("安心待产清单");
     expect(header).toContain("getBabyMascot");
     expect(layout).toContain("#FF5C7A");
     expect(layout).toContain("maximumScale: 1");
@@ -187,7 +187,7 @@ describe("cute maternity app visual direction", () => {
     expect(cuteIllustration).toContain("dadkit-horse-girl.png");
     expect(cuteIllustration).toContain("dadkit-bear-transparent.png");
     expect(cuteIllustration).toContain('variant = "horse"');
-    expect(cuteIllustration).toContain("小马宝宝助手");
+    expect(cuteIllustration).toContain("小马宝宝插图");
     expect(pageIntro).toContain("CuteIllustration");
     expect(pageIntro).toContain("sm:hidden");
     expect(pageIntro).toContain("sm:block");
@@ -216,7 +216,8 @@ describe("cute maternity app visual direction", () => {
     expect(goPage).toContain("hospitalRouteNotes");
     expect(goPage).toContain("nightEntranceNotes");
     expect(goPage).toContain("parkingNotes");
-    expect(goPage).toContain("全部 OK，出发！");
+    expect(goPage).toContain("全部确认，出发");
+    expect(goPage).not.toContain("全部 OK，出发！");
     expect(goPage).toContain("markAllDone");
     expect(goPage).toContain("bg-[linear-gradient(100deg,#ff8385");
     expect(goPage).toContain("dadkit-horse-girl.png");
@@ -231,11 +232,14 @@ describe("cute maternity app visual direction", () => {
   });
 
   it("keeps setup and hospital confirmation close to the mobile app mockups", () => {
-    expect(setupPage).toContain("只需 2 分钟");
+    expect(setupPage).toContain("保存后可随时修改");
     expect(setupPage).toContain("SetupFieldRow");
     expect(setupPage).toContain("SetupHeader");
-    expect(setupPage).toContain("完善信息，生成专属待产方案");
-    expect(setupPage).toContain("生成我的待产清单");
+    expect(setupPage).toContain("填写基础信息，生成待产清单");
+    expect(setupPage).toContain("生成待产清单");
+    expect(setupPage).not.toContain("只需 2 分钟");
+    expect(setupPage).not.toContain("专属待产方案");
+    expect(setupPage).not.toContain("生成我的待产清单");
     expect(setupPage).toContain("宝宝性别");
     expect(setupPage).toContain("生肖会自动计算");
     expect(setupPage).toContain("首次生产？");

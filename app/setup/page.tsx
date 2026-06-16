@@ -250,10 +250,10 @@ export default function SetupPage() {
         </section>
 
         <Button className="h-14 w-full bg-primary text-base shadow-soft" onClick={submit}>
-          生成我的待产清单
+          生成待产清单
         </Button>
         <p className="text-center text-xs font-medium text-muted-foreground">
-          只需 2 分钟，后续可随时修改
+          保存后可随时修改
         </p>
 
         {message ? <p className="macaron-note">{message}</p> : null}
@@ -377,7 +377,7 @@ function SetupHeader() {
           创建资料
         </h1>
         <p className="mt-1 text-sm font-medium leading-6 text-muted-foreground">
-          完善信息，生成专属待产方案 ✨
+          填写基础信息，生成待产清单
         </p>
       </div>
       <div className="relative h-24">

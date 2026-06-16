@@ -18,9 +18,11 @@ describe("home page copy", () => {
     expect(homePage).not.toContain('href="/example"');
     expect(homePage).toContain("formatBabyZodiacLine");
     expect(homePage).toContain("getBabyMascot");
-    expect(homePage).toContain("getBabySexLabel");
+    expect(homePage).toContain("预产期倒计时");
+    expect(homePage).not.toContain("女宝倒计时");
     expect(homePage).toContain("今日优先");
     expect(homePage).not.toContain("姐妹今天先做");
+    expect(homePage).toContain("当前优先");
     expect(homePage).toContain("查看全部");
     expect(homePage).toContain("准备进度");
     expect(homePage).not.toContain("dadkit-family-card-v2.png");
@@ -33,7 +35,8 @@ describe("home page copy", () => {
     expect(homePage).toContain("HomeLaborModePanel");
     expect(homePage).toContain('href="/go"');
     expect(homePage).toContain("常用入口");
-    expect(homePage).toContain("全部工具在我的");
+    expect(homePage).toContain("全部工具");
+    expect(homePage).not.toContain("全部工具在我的");
     expect(homePage).toContain("宫缩记录");
     expect(homePage).toContain("分娩偏好卡");
     expect(homePage).toContain("产后办理");
@@ -41,7 +44,8 @@ describe("home page copy", () => {
     expect(homePage).not.toContain("HomeAppHeader");
     expect(homePage).not.toContain("dadkit-dad-avatar.png");
     expect(homePage).toContain("formatHomeDueDate");
-    expect(homePage).toContain("建议今天完成");
+    expect(homePage).not.toContain("建议今天完成");
+    expect(homePage).not.toContain("临产模式");
     expect(homePage).not.toContain("工具宫格");
     expect(homePage).not.toContain("ToolGridLink");
     expect(homePage).not.toContain("completed/");

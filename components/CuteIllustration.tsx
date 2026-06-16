@@ -10,13 +10,13 @@ const ILLUSTRATIONS = {
     width: 1536,
   },
   helper: {
-    alt: "拿着清单的小熊助手",
+    alt: "拿着清单的小熊插图",
     height: 1254,
     src: "/illustrations/dadkit-bear-transparent.png",
     width: 1254,
   },
   horse: {
-    alt: "戴粉色蝴蝶结的小马宝宝助手",
+    alt: "戴粉色蝴蝶结的小马宝宝插图",
     height: 1254,
     src: "/illustrations/dadkit-horse-girl.png",
     width: 1254,

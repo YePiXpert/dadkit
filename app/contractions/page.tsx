@@ -131,7 +131,7 @@ export default function ContractionsPage() {
       <section className="mobile-shell grid gap-1 lg:max-w-none">
         <h1 className="text-2xl font-black tracking-normal">宫缩记录</h1>
         <p className="text-sm font-medium leading-6 text-muted-foreground">
-          记录每一次，为顺利分娩助力 💪
+          记录持续时间和间隔，便于沟通。
         </p>
       </section>
 
@@ -166,7 +166,7 @@ export default function ContractionsPage() {
                 </div>
               </div>
               <Image
-                alt="女宝宫缩记录助手"
+                alt="宫缩记录插图"
                 className="absolute -bottom-1 right-0 h-24 w-32 object-contain drop-shadow-sm"
                 height={96}
                 priority
@@ -372,7 +372,7 @@ export default function ContractionsPage() {
 
         <Card className="macaron-panel">
           <CardHeader>
-            <CardTitle>导出给医生/家人</CardTitle>
+            <CardTitle>导出记录</CardTitle>
           </CardHeader>
           <CardContent>
             <ExportTextArea value={exportText} />

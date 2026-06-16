@@ -204,7 +204,7 @@ function CurrentStagePanel({
         <div className="min-w-0">
           <p className="section-kicker">时间线</p>
           <h1 className="mt-1 break-words text-2xl font-black leading-tight tracking-normal">
-            {stage ? stage.title : "先把准备节奏理顺"}
+            {stage ? stage.title : "准备时间线"}
           </h1>
           <p className="mt-2 break-words text-sm font-medium leading-6 text-muted-foreground">
             预产期 {formatDueDateLabel(dueDate)}
@@ -253,7 +253,7 @@ function PriorityTasksPanel({
           <div>
             <h2 className="text-base font-bold">当前阶段已处理完</h2>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              可以去临出门检查里确认最后一遍。
+              可前往临出门检查确认关键事项。
             </p>
           </div>
         </div>
@@ -264,7 +264,7 @@ function PriorityTasksPanel({
   return (
     <section className="grid w-full min-w-0 max-w-full gap-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-black tracking-normal">今天先做</h2>
+        <h2 className="text-sm font-black tracking-normal">当前优先</h2>
         <span className="text-xs font-bold text-primary">{tasks.length} 项</span>
       </div>
       <div className="w-full overflow-hidden rounded-lg border border-white/90 bg-card/95 shadow-soft">

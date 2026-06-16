@@ -102,14 +102,14 @@ export default function SharePage() {
       <PageIntro
         eyebrow="导出"
         title="导出与协作"
-        description="汇总关键准备状态，复制给家人或保存为备份。"
+        description="汇总关键准备状态，可复制或保存备份。"
       />
 
       <Card className="mobile-shell app-hero-card lg:max-w-none">
         <CardContent className="flex items-center justify-between gap-4 p-5">
           <div className="min-w-0">
             <p className="break-words text-2xl font-semibold tracking-normal">
-              待产准备摘要
+              准备摘要
             </p>
             <p className="mt-2 text-sm leading-6 text-primary-foreground/75">
               {babyLine}
@@ -281,7 +281,6 @@ function buildSharePosters(
 ): SharePoster[] {
   const dueDate = profile.dueDate ?? "待填写";
   const daysLeft = getDaysUntilDue(profile);
-  const babyLine = formatBabyZodiacLine(profile);
   const total = checklist.length;
   const completed = checklist.filter((item) =>
     COMPLETED_STATUSES.includes(item.status),
@@ -298,7 +297,7 @@ function buildSharePosters(
 
   return [
     {
-      caption: `我的${babyLine}待产准备：预产期 ${dueDate}，距离预产期 ${formatDaysMetric(daysLeft)}。先把清单、医院问题和临出门检查一步步整理好。`,
+      caption: `待产准备摘要：预产期 ${dueDate}，距离预产期 ${formatDaysMetric(daysLeft)}。包含待产包、医院问题和临出门检查。`,
       detail: `预产期 ${dueDate}`,
       icon: Sparkles,
       metric: formatDaysMetric(daysLeft),
@@ -331,9 +330,9 @@ function buildSharePosters(
     },
     {
       caption: `分娩偏好卡：紧急联系人、陪产人、过敏/用药、沟通偏好，入院时便于家人和医护快速了解。`,
-      detail: "给家人和医院看的沟通卡",
+      detail: "入院沟通信息",
       icon: ClipboardList,
-      metric: "安心",
+      metric: "已整理",
       title: "分娩偏好卡",
       tone: "mint",
     },

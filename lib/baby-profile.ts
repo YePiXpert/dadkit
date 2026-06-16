@@ -113,20 +113,20 @@ export function getBabyMascot(
 
   if (zodiac?.animal === "马" && sex === "girl") {
     return {
-      alt: "小马女宝待产助手",
+      alt: "小马女宝待产插图",
       src: "/illustrations/dadkit-horse-girl.png",
     };
   }
 
   if (sex === "girl") {
     return {
-      alt: "女宝待产提醒助手",
+      alt: "女宝待产插图",
       src: "/illustrations/dadkit-baby-girl-timer.png",
     };
   }
 
   return {
-    alt: "宝宝待产提醒助手",
+    alt: "待产准备插图",
     src: "/illustrations/dadkit-bear-transparent.png",
   };
 }

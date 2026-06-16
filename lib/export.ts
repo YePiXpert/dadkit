@@ -312,7 +312,7 @@ export function generateGoShareText(
           .map((task) => lineForTimelineTask(task, checklist, timelineTaskStatuses))
           .join("\n")
       : "- 暂无临出门任务",
-    "\n提醒：临产时只看这张表，医院问题和购物清单先放一边。",
+    "\n提醒：临出门时优先查看这张表，其他清单可后续处理。",
   ].join("\n");
 }
 
