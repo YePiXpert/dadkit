@@ -25,6 +25,7 @@ import {
   type TimelineTask,
   type TimelineTaskStatus,
 } from "@/lib/timeline";
+import { formatBabyZodiacLine, getBabyMascot } from "@/lib/baby-profile";
 import type { ChecklistItem, UserProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -169,7 +170,7 @@ export function TimelineDashboard({
         ))}
       </ol>
 
-      <TimelineDueDateCard dueDate={dueDate} />
+      <TimelineDueDateCard profile={profile} />
 
       <Link
         className="pony-gradient-button inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold"
@@ -261,7 +262,7 @@ function PriorityTasksPanel({
   }
 
   return (
-    <section className="grid min-w-0 gap-2">
+    <section className="grid w-full min-w-0 max-w-full gap-2">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-black tracking-normal">今天先做</h2>
         <span className="text-xs font-bold text-primary">{tasks.length} 项</span>
@@ -377,7 +378,10 @@ function TimelineStageRow({
   );
 }
 
-function TimelineDueDateCard({ dueDate }: { dueDate: string }) {
+function TimelineDueDateCard({ profile }: { profile: UserProfile }) {
+  const dueDate = profile.dueDate ?? "";
+  const mascot = getBabyMascot(profile);
+
   return (
     <section className="pony-due-card relative min-h-[5.8rem] overflow-hidden p-4">
       <div className="relative z-10 pr-20">
@@ -386,18 +390,18 @@ function TimelineDueDateCard({ dueDate }: { dueDate: string }) {
           {formatDueDateLabel(dueDate)}
         </p>
         <p className="mt-1 text-xs font-bold text-primary">
-          丙午年 · 火马宝宝女孩
+          {formatBabyZodiacLine(profile)}
         </p>
       </div>
       <span className="pointer-events-none absolute left-5 top-12 text-2xl text-amber">
         ♥
       </span>
       <Image
-        alt="小马宝宝预产期贴纸"
+        alt={mascot.alt}
         className="pointer-events-none absolute -right-5 bottom-[-1.2rem] h-28 w-28 object-contain"
         height={1254}
         sizes="112px"
-        src="/illustrations/dadkit-horse-girl.png"
+        src={mascot.src}
         width={1254}
       />
     </section>
@@ -423,7 +427,7 @@ function TaskRow({
   return (
     <button
       className={cn(
-        "flex min-w-0 max-w-full items-center gap-2 overflow-hidden text-left transition-colors",
+        "flex w-full min-w-0 max-w-full items-center gap-2 overflow-hidden text-left transition-colors",
         compact
           ? "min-h-[3.35rem] border-b border-muted/60 bg-background/55 px-3 py-2.5 last:border-b-0 active:bg-secondary"
           : "rounded-md bg-background/65 px-2.5 py-2 active:bg-secondary",
@@ -446,7 +450,7 @@ function TaskRow({
       <span className="min-w-0 flex-1">
         <span
           className={cn(
-            "block break-words text-sm font-bold leading-5",
+            "block whitespace-normal break-words text-sm font-bold leading-5",
             complete && "text-muted-foreground line-through",
           )}
         >

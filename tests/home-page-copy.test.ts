@@ -16,13 +16,14 @@ describe("home page copy", () => {
     expect(homePage).toContain("生成待产包清单");
     expect(homePage).not.toContain("查看示例");
     expect(homePage).not.toContain('href="/example"');
-    expect(homePage).toContain("丙午年 · 火马宝宝女孩");
-    expect(homePage).toContain("今日行动 {actions.length} 项");
+    expect(homePage).toContain("formatBabyZodiacLine");
+    expect(homePage).toContain("getBabyMascot");
+    expect(homePage).toContain("getBabySexLabel");
+    expect(homePage).toContain("姐妹今天先做 {actions.length} 件事");
     expect(homePage).toContain("查看全部");
     expect(homePage).toContain("准备进度");
-    expect(homePage).toContain("dadkit-horse-girl.png");
     expect(homePage).not.toContain("dadkit-family-card-v2.png");
-    expect(homePage).not.toContain("dadkit-bear-transparent.png");
+    expect(homePage).toContain("dadkit-bear-transparent.png");
     expect(homePage).toContain("HomeHeroCard");
     expect(homePage).toContain("TodayActionsPanel");
     expect(homePage).toContain("OverallProgressPanel");

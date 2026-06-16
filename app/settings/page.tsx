@@ -36,6 +36,11 @@ import {
   type BirthPlan,
   type PostpartumTask,
 } from "@/lib/rc";
+import {
+  formatBabyZodiacLine,
+  getBabyMascot,
+  getBabySexLabel,
+} from "@/lib/baby-profile";
 import { useDadKitStore } from "@/lib/store";
 import {
   clearSnapshots,
@@ -111,6 +116,7 @@ export default function SettingsPage() {
     hasBirthPlanData(birthPlan) ||
     hasPostpartumData(postpartumTasks);
   const recentSnapshots = snapshots.slice(0, 2);
+  const babyMascot = getBabyMascot(profile);
 
   function refreshSnapshots() {
     setSnapshots(loadSnapshots());
@@ -351,18 +357,20 @@ export default function SettingsPage() {
         <CardContent className="app-list-row p-3">
           <span className="relative flex size-14 shrink-0 overflow-hidden rounded-full border border-white/80 bg-peach shadow-sm">
             <Image
-              alt="准爸爸头像"
+              alt={babyMascot.alt}
               className="object-contain p-0.5"
               fill
               priority
               sizes="56px"
-              src="/illustrations/dadkit-dad-avatar.png"
+              src={babyMascot.src}
             />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-base font-semibold">准爸爸</p>
+            <p className="text-base font-semibold">
+              {profile ? formatBabyZodiacLine(profile) : "待产资料"}
+            </p>
             <p className="mt-1 break-words text-xs leading-4 text-muted-foreground">
-              一起做好交接的我们
+              {profile ? `${getBabySexLabel(profile)}的安心待产清单` : "先创建资料，生成专属清单"}
             </p>
           </div>
           <span className="shrink-0 rounded-full bg-mint px-3 py-1 text-xs font-bold text-primary">

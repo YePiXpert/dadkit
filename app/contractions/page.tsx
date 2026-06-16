@@ -312,7 +312,7 @@ export default function ContractionsPage() {
             </div>
 
             <p className="macaron-note">
-              这些内容只帮助爸爸记录和沟通，不替代医生判断；是否去医院以医院/医生要求为准。
+              这些内容只帮助家人记录和沟通，不替代医生判断；是否去医院以医院/医生要求为准。
             </p>
           </CardContent>
         </Card>

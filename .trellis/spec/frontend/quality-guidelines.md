@@ -60,17 +60,74 @@ For visual verification, use:
 npm.cmd run visual:screenshots
 ```
 
-This script uses local Chrome/Edge DevTools Protocol and is the preferred fallback when the Codex in-app Browser cannot access `127.0.0.1:3000` because of enterprise network policy.
+### Visual Screenshot Contract
 
-Run it against an active Next dev server. If no server is listening at
-`BASE_URL`, Chrome can still capture an `ERR_CONNECTION_REFUSED` page and the
-script may exit successfully. Treat screenshot verification as valid only when:
+#### 1. Scope / Trigger
 
-* `BASE_URL` points to the running dev server, for example:
-  `BASE_URL=http://127.0.0.1:3217 npm.cmd run visual:screenshots`.
-* The generated `manifest.json` has no `exception` or `network` diagnostics.
-* At least the changed route screenshots are opened and visually checked for the
-  expected app content, not a browser error page.
+Use `scripts/capture-mobile-screenshots.mjs` for mobile layout verification when a change touches page composition, copy density, mobile width, PWA chrome, or bottom navigation. It is the preferred fallback when the Codex in-app Browser cannot access localhost because of enterprise policy.
+
+#### 2. Signatures
+
+Command:
+
+```powershell
+npm.cmd run visual:screenshots
+```
+
+Optional environment:
+
+* `BASE_URL`: running app origin, default `http://127.0.0.1:3000`.
+* `OUT_DIR`: screenshot output directory.
+* `VISUAL_WIDTH`, `VISUAL_HEIGHT`, `VISUAL_DPR`: viewport override.
+* `DADKIT_VISUAL_DUE_DATE`, `DADKIT_VISUAL_BABY_SEX`: seeded profile values.
+* `CHROME_PATH`: Chrome/Edge executable override.
+
+#### 3. Contracts
+
+* The script launches Chrome/Edge with `--remote-debugging-pipe`, not a localhost DevTools port.
+* The script seeds `dadkit:user-profile` and `dadkit:checklist-mode` before route capture.
+* Every route in `ROUTES` must produce a PNG and a `manifest.json` entry.
+* Each manifest entry must include viewport width, `scrollWidth`, `bodyScrollWidth`, profile presence, text sample, and diagnostics.
+
+#### 4. Validation & Error Matrix
+
+* Browser executable missing -> fail with setup error.
+* Captured count differs from `ROUTES.length` -> fail.
+* Any `network` or `exception` diagnostic -> fail.
+* Browser error-page text such as `ERR_CONNECTION` -> fail.
+* `scrollWidth` or `bodyScrollWidth` exceeds viewport width by more than 1px -> fail.
+
+#### 5. Good/Base/Bad Cases
+
+* Good: production `next start` is running, all routes capture, manifest widths are `390/390/390`.
+* Base: dev server is running; capture is valid, but inspect screenshots for dev-only overlays.
+* Bad: no server is running; screenshots may be created, but command must exit non-zero because diagnostics show connection errors.
+
+#### 6. Tests Required
+
+* Run `npm.cmd test`, `npm.cmd run lint`, and `npm.cmd run build`.
+* Run visual screenshots after the app server is ready.
+* Read `manifest.json` and confirm changed routes have `scrollWidth === width` and no network/exception diagnostics.
+* Open at least changed route screenshots for visual inspection.
+
+#### 7. Wrong vs Correct
+
+Wrong:
+
+```powershell
+npm.cmd run visual:screenshots
+# Accepting an empty directory or browser error screenshots as a pass.
+```
+
+Correct:
+
+```powershell
+$env:BASE_URL="http://127.0.0.1:3218"
+$env:OUT_DIR=".visual-screenshots\current"
+npm.cmd run visual:screenshots
+```
+
+Then confirm the manifest has no failed diagnostics and no horizontal overflow.
 
 ---
 

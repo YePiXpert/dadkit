@@ -4,9 +4,6 @@ import os from "node:os";
 import path from "node:path";
 
 const BASE_URL = process.env.BASE_URL ?? "http://127.0.0.1:3000";
-const DEBUG_PORT = Number(
-  process.env.CHROME_DEBUG_PORT ?? 9300 + Math.floor(Math.random() * 1000),
-);
 const VIEWPORT = {
   width: Number(process.env.VISUAL_WIDTH ?? 390),
   height: Number(process.env.VISUAL_HEIGHT ?? 844),
@@ -28,6 +25,7 @@ const ROUTES = [
   ["06-go", "/go"],
   ["07-contractions", "/contractions"],
   ["08-settings", "/settings"],
+  ["09-share", "/share"],
 ];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -58,92 +56,87 @@ function findChrome() {
   return chromePath;
 }
 
-async function waitForJson(url, attempts = 60) {
-  let lastError;
-
-  for (let index = 0; index < attempts; index += 1) {
-    try {
-      const response = await fetch(url);
-
-      if (response.ok) {
-        return response.json();
-      }
-    } catch (error) {
-      lastError = error;
-    }
-
-    await sleep(500);
-  }
-
-  throw lastError ?? new Error(`Timed out waiting for ${url}`);
-}
-
-function connect(wsUrl) {
+function connectPipe(chrome) {
   return new Promise((resolve, reject) => {
-    if (!globalThis.WebSocket) {
-      reject(new Error("This script needs Node.js with the global WebSocket API."));
+    const input = chrome.stdio[3];
+    const output = chrome.stdio[4];
+
+    if (!input || !output) {
+      reject(new Error("Chrome pipe transport was not available."));
       return;
     }
 
-    const ws = new WebSocket(wsUrl);
     let sequence = 0;
+    let buffer = Buffer.alloc(0);
+    let resolved = false;
     const pending = new Map();
     const eventWaiters = new Map();
     const eventListeners = new Map();
-    const openTimer = setTimeout(() => {
-      reject(new Error("Timed out while opening the Chrome DevTools socket."));
-    }, 10_000);
 
-    ws.onopen = () => {
-      clearTimeout(openTimer);
-      resolve({
-        send(method, params = {}) {
-          const id = ++sequence;
+    function removeWaiter(method, waiter) {
+      const waiters = eventWaiters.get(method) ?? [];
 
-          ws.send(JSON.stringify({ id, method, params }));
+      eventWaiters.set(
+        method,
+        waiters.filter((candidate) => candidate !== waiter),
+      );
+    }
 
-          return new Promise((res, rej) => {
-            pending.set(id, { method, res, rej });
-          });
-        },
-        waitEvent(method, timeoutMs = 15_000) {
-          return new Promise((res, rej) => {
-            const timer = setTimeout(() => {
-              const waiters = eventWaiters.get(method) ?? [];
+    function rejectPending(error) {
+      for (const { rej } of pending.values()) {
+        rej(error);
+      }
 
-              eventWaiters.set(
-                method,
-                waiters.filter((waiter) => waiter.res !== res),
-              );
-              rej(new Error(`Timed out waiting for ${method}.`));
-            }, timeoutMs);
-            const waiters = eventWaiters.get(method) ?? [];
+      pending.clear();
+    }
 
-            waiters.push({
-              res(payload) {
-                clearTimeout(timer);
-                res(payload);
-              },
-            });
-            eventWaiters.set(method, waiters);
-          });
-        },
-        listen(method, handler) {
-          const listeners = eventListeners.get(method) ?? [];
+    const connection = {
+      send(method, params = {}, sessionId) {
+        const id = ++sequence;
+        const payload = { id, method, params };
 
-          listeners.push(handler);
-          eventListeners.set(method, listeners);
-        },
-        close() {
-          ws.close();
-        },
-      });
+        if (sessionId) {
+          payload.sessionId = sessionId;
+        }
+
+        input.write(`${JSON.stringify(payload)}\0`);
+
+        return new Promise((res, rej) => {
+          pending.set(id, { method, res, rej });
+        });
+      },
+      waitEvent(method, timeoutMs = 15_000, sessionId) {
+        return new Promise((res, rej) => {
+          const waiter = {
+            sessionId,
+            res(payload) {
+              clearTimeout(timer);
+              res(payload);
+            },
+          };
+          const timer = setTimeout(() => {
+            removeWaiter(method, waiter);
+            rej(new Error(`Timed out waiting for ${method}.`));
+          }, timeoutMs);
+          const waiters = eventWaiters.get(method) ?? [];
+
+          waiters.push(waiter);
+          eventWaiters.set(method, waiters);
+        });
+      },
+      listen(method, handler, sessionId) {
+        const listeners = eventListeners.get(method) ?? [];
+
+        listeners.push({ handler, sessionId });
+        eventListeners.set(method, listeners);
+      },
+      close() {
+        input.end();
+        output.destroy();
+      },
     };
 
-    ws.onerror = () => reject(new Error("Chrome DevTools socket error."));
-    ws.onmessage = (message) => {
-      const payload = JSON.parse(message.data);
-
+    function handleMessage(payload) {
       if (payload.id && pending.has(payload.id)) {
         const { method, res, rej } = pending.get(payload.id);
 
@@ -160,17 +153,88 @@ function connect(wsUrl) {
 
       if (payload.method && eventWaiters.has(payload.method)) {
         const waiters = eventWaiters.get(payload.method) ?? [];
+        const remaining = [];
 
-        eventWaiters.set(payload.method, []);
-        waiters.forEach((waiter) => waiter.res(payload.params ?? {}));
+        for (const waiter of waiters) {
+          if (waiter.sessionId && waiter.sessionId !== payload.sessionId) {
+            remaining.push(waiter);
+            continue;
+          }
+
+          waiter.res(payload.params ?? {});
+        }
+
+        eventWaiters.set(payload.method, remaining);
       }
 
       if (payload.method && eventListeners.has(payload.method)) {
         const listeners = eventListeners.get(payload.method) ?? [];
 
-        listeners.forEach((listener) => listener(payload.params ?? {}));
+        listeners.forEach((listener) => {
+          if (listener.sessionId && listener.sessionId !== payload.sessionId) {
+            return;
+          }
+
+          listener.handler(payload.params ?? {});
+        });
       }
-    };
+    }
+
+    const startupTimer = setTimeout(() => {
+      reject(new Error("Timed out while opening the Chrome DevTools pipe."));
+    }, 10_000);
+
+    output.on("data", (data) => {
+      buffer = Buffer.concat([buffer, data]);
+
+      let delimiterIndex = buffer.indexOf(0);
+
+      while (delimiterIndex !== -1) {
+        const rawMessage = buffer.slice(0, delimiterIndex).toString("utf8");
+
+        buffer = buffer.slice(delimiterIndex + 1);
+
+        if (rawMessage) {
+          handleMessage(JSON.parse(rawMessage));
+        }
+
+        delimiterIndex = buffer.indexOf(0);
+      }
+    });
+
+    output.on("error", (error) => {
+      rejectPending(error);
+
+      if (!resolved) {
+        clearTimeout(startupTimer);
+        reject(error);
+      }
+    });
+
+    chrome.once("exit", (code, signal) => {
+      const error = new Error(
+        `Chrome exited before screenshots completed (${code ?? signal}).`,
+      );
+
+      rejectPending(error);
+
+      if (!resolved) {
+        clearTimeout(startupTimer);
+        reject(error);
+      }
+    });
+
+    connection
+      .send("Browser.getVersion")
+      .then(() => {
+        resolved = true;
+        clearTimeout(startupTimer);
+        resolve(connection);
+      })
+      .catch((error) => {
+        clearTimeout(startupTimer);
+        reject(error);
+      });
   });
 }
 
@@ -179,6 +243,7 @@ function buildSeedProfile() {
 
   return {
     dueDate: process.env.DADKIT_VISUAL_DUE_DATE ?? "2026-09-04",
+    babySex: process.env.DADKIT_VISUAL_BABY_SEX ?? "girl",
     regionId: "cn-bj-general",
     hospitalMode: "unknown",
     deliveryMode: "vaginal",
@@ -200,9 +265,16 @@ async function main() {
     findChrome(),
     [
       "--headless=new",
-      `--remote-debugging-port=${DEBUG_PORT}`,
+      "--remote-debugging-pipe",
+      "--enable-automation",
+      "--no-sandbox",
       `--user-data-dir=${userDataDir}`,
       "--disable-gpu",
+      "--disable-gpu-sandbox",
+      "--disable-gpu-compositing",
+      "--disable-dev-shm-usage",
+      "--in-process-gpu",
+      "--use-angle=swiftshader",
       "--disable-application-cache",
       "--disk-cache-size=0",
       "--no-first-run",
@@ -212,20 +284,36 @@ async function main() {
       `--window-size=${VIEWPORT.width},${VIEWPORT.height}`,
       "about:blank",
     ],
-    { stdio: "ignore", windowsHide: true },
+    { stdio: ["ignore", "ignore", "ignore", "pipe", "pipe"], windowsHide: true },
   );
 
   try {
-    const targets = await waitForJson(
-      `http://127.0.0.1:${DEBUG_PORT}/json/list`,
-    );
-    const target = targets.find((item) => item.type === "page");
+    const browser = await connectPipe(chrome);
+    const targets = await browser.send("Target.getTargets");
+    const target = targets.targetInfos.find((item) => item.type === "page");
 
     if (!target) {
       throw new Error("No Chrome page target was available.");
     }
 
-    const cdp = await connect(target.webSocketDebuggerUrl);
+    const attached = await browser.send("Target.attachToTarget", {
+      targetId: target.targetId,
+      flatten: true,
+    });
+    const cdp = {
+      send(method, params = {}) {
+        return browser.send(method, params, attached.sessionId);
+      },
+      waitEvent(method, timeoutMs = 15_000) {
+        return browser.waitEvent(method, timeoutMs, attached.sessionId);
+      },
+      listen(method, handler) {
+        browser.listen(method, handler, attached.sessionId);
+      },
+      close() {
+        browser.close();
+      },
+    };
     const seedProfile = buildSeedProfile();
     const diagnostics = [];
 
@@ -282,6 +370,10 @@ async function main() {
       }
     });
     cdp.listen("Network.loadingFailed", (params) => {
+      if (params.canceled) {
+        return;
+      }
+
       diagnostics.push({
         type: "network",
         level: "error",
@@ -336,7 +428,7 @@ async function main() {
 
       const state = await cdp.send("Runtime.evaluate", {
         expression:
-          "(() => { const firstRelative = document.querySelector('.relative'); const firstImage = document.querySelector('img'); const imageRect = firstImage ? firstImage.getBoundingClientRect() : null; return { width: innerWidth, height: innerHeight, styleSheets: document.styleSheets.length, firstRelativePosition: firstRelative ? getComputedStyle(firstRelative).position : null, firstImageRect: imageRect ? { x: Math.round(imageRect.x), y: Math.round(imageRect.y), width: Math.round(imageRect.width), height: Math.round(imageRect.height) } : null, hasProfile: Boolean(localStorage.getItem('dadkit:user-profile')), text: document.body ? document.body.innerText.slice(0, 260) : '' }; })()",
+          "(() => { const firstRelative = document.querySelector('.relative'); const firstImage = document.querySelector('img'); const imageRect = firstImage ? firstImage.getBoundingClientRect() : null; return { width: innerWidth, height: innerHeight, scrollWidth: document.documentElement.scrollWidth, bodyScrollWidth: document.body ? document.body.scrollWidth : 0, styleSheets: document.styleSheets.length, firstRelativePosition: firstRelative ? getComputedStyle(firstRelative).position : null, firstImageRect: imageRect ? { x: Math.round(imageRect.x), y: Math.round(imageRect.y), width: Math.round(imageRect.width), height: Math.round(imageRect.height) } : null, hasProfile: Boolean(localStorage.getItem('dadkit:user-profile')), text: document.body ? document.body.innerText.slice(0, 260) : '' }; })()",
         returnByValue: true,
       });
       const screenshot = await cdp.send("Page.captureScreenshot", {
@@ -357,12 +449,27 @@ async function main() {
     }
 
     cdp.close();
+    const failedRoutes = manifest.filter((entry) => {
+      const text = entry.state?.text ?? "";
+      const hasErrorPageText =
+        /This site can.t be reached|无法访问此网站|ERR_CONNECTION/i.test(text);
+      const hasNetworkDiagnostics = entry.diagnostics.some(
+        (diagnostic) =>
+          diagnostic.type === "network" && diagnostic.level === "error",
+      );
+      const hasHorizontalOverflow =
+        Math.max(entry.state?.scrollWidth ?? 0, entry.state?.bodyScrollWidth ?? 0) >
+        (entry.state?.width ?? VIEWPORT.width) + 1;
+
+      return hasErrorPageText || hasNetworkDiagnostics || hasHorizontalOverflow;
+    });
+
     writeFileSync(
       path.join(OUT_DIR, "manifest.json"),
       JSON.stringify(
         {
           baseUrl: BASE_URL,
-          debugPort: DEBUG_PORT,
+          transport: "chrome-pipe",
           viewport: `${VIEWPORT.width}x${VIEWPORT.height}@${VIEWPORT.deviceScaleFactor}x`,
           seededDueDate: seedProfile.dueDate,
           manifest,
@@ -372,13 +479,29 @@ async function main() {
       ),
     );
 
+    if (manifest.length !== ROUTES.length) {
+      throw new Error(
+        `Expected ${ROUTES.length} screenshots, captured ${manifest.length}.`,
+      );
+    }
+
+    if (failedRoutes.length > 0) {
+      throw new Error(
+        `Visual capture found network/page/layout errors on: ${failedRoutes
+          .map((entry) => entry.route)
+          .join(", ")}`,
+      );
+    }
+
     console.log(`Captured ${manifest.length} screenshots in ${OUT_DIR}`);
   } finally {
     chrome.kill("SIGTERM");
   }
 }
 
-main().catch((error) => {
+try {
+  await main();
+} catch (error) {
   console.error(error);
   process.exitCode = 1;
-});
+}

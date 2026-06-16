@@ -11,9 +11,10 @@ const settingsPage = readFileSync(
 describe("settings page copy", () => {
   it("uses a mobile app settings header and single-page sections", () => {
     expect(settingsPage).not.toContain("<PageIntro");
-    expect(settingsPage).toContain("准爸爸头像");
-    expect(settingsPage).toContain("dadkit-dad-avatar.png");
-    expect(settingsPage).toContain("一起做好交接的我们");
+    expect(settingsPage).toContain("formatBabyZodiacLine");
+    expect(settingsPage).toContain("getBabyMascot");
+    expect(settingsPage).toContain("安心待产清单");
+    expect(settingsPage).not.toContain("dadkit-dad-avatar.png");
     expect(settingsPage).toContain("app-list-card");
     expect(settingsPage).toContain("SettingsShortcutRow");
     expect(settingsPage).toContain("我的资料");

@@ -46,7 +46,7 @@ export const PREPARATION_KIND_LABELS: Record<PreparationKind, string> = {
   document: "证件/资料整理",
   last_minute: "临出门拿",
   question: "医院问题",
-  task: "爸爸任务",
+  task: "协作任务",
   install_or_place: "安装/放车上",
 };
 

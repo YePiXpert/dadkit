@@ -55,6 +55,8 @@ export type ItemBulk = "small" | "medium" | "large";
 
 export type ChecklistMode = "lean" | "full";
 
+export type BabySex = "girl" | "boy" | "unknown";
+
 export type ChecklistFilterValue = "all";
 
 export type PreparationKind =
@@ -85,6 +87,7 @@ export type HospitalAnswer = {
 
 export type UserProfile = {
   dueDate?: string;
+  babySex?: BabySex;
   regionId: string;
   hospitalMode: HospitalMode;
   hospitalId?: string;
@@ -181,7 +184,7 @@ export const CATEGORY_LABELS: Record<ChecklistCategory, string> = {
   mom_labor: "妈妈包",
   mom_postpartum: "妈妈包",
   baby: "宝宝包",
-  partner: "爸爸负责",
+  partner: "爸爸协作",
   going_home: "出院返家",
   hospital_questions: "到下次产检时问清楚",
   last_minute: "临出门拿",
@@ -240,6 +243,12 @@ export const HOSPITAL_MODE_LABELS: Record<HospitalMode, string> = {
   preset: "已收录医院",
   custom: "自定义医院",
   unknown: "暂未确定医院",
+};
+
+export const BABY_SEX_LABELS: Record<BabySex, string> = {
+  girl: "女宝",
+  boy: "男宝",
+  unknown: "宝宝",
 };
 
 export const TIMING_LABELS: Record<ChecklistTiming, string> = {

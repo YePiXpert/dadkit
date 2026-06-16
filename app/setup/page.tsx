@@ -25,8 +25,10 @@ import {
   createDefaultProfile,
   useDadKitStore,
 } from "@/lib/store";
+import { formatBabyZodiacLine } from "@/lib/baby-profile";
 import { getHospitalForProfile } from "@/lib/rules";
 import type {
+  BabySex,
   DeliveryMode,
   HospitalProfile,
   UserProfile,
@@ -46,6 +48,12 @@ const PROVIDED_OPTIONS = [
 const DELIVERY_SEGMENTS: Array<{ label: string; value: DeliveryMode }> = [
   { label: "顺产", value: "vaginal" },
   { label: "剖宫产", value: "c_section" },
+];
+
+const BABY_SEX_SEGMENTS: Array<{ label: string; value: BabySex }> = [
+  { label: "女宝", value: "girl" },
+  { label: "男宝", value: "boy" },
+  { label: "先不确定", value: "unknown" },
 ];
 
 export default function SetupPage() {
@@ -149,7 +157,9 @@ export default function SetupPage() {
         <section className="grid gap-3 rounded-lg border border-white/90 bg-card/95 p-3 shadow-soft">
           <SetupFieldRow
             label="预产期"
-            valueHint={draft.dueDate || "请选择"}
+            valueHint={
+              draft.dueDate ? formatBabyZodiacLine(draft) : "请选择，生肖会自动计算"
+            }
           >
             <Input
               required
@@ -165,6 +175,17 @@ export default function SetupPage() {
               }}
             />
           </SetupFieldRow>
+
+          <SegmentField label="宝宝性别" columns={3}>
+            {BABY_SEX_SEGMENTS.map((option) => (
+              <SegmentButton
+                active={(draft.babySex ?? "unknown") === option.value}
+                key={option.value}
+                label={option.label}
+                onClick={() => setDraft({ ...draft, babySex: option.value })}
+              />
+            ))}
+          </SegmentField>
 
           <SetupFieldRow label="所在地" valueHint="北京市">
             <Select
@@ -400,15 +421,19 @@ function SetupFieldRow({
 
 function SegmentField({
   children,
+  columns = 2,
   label,
 }: {
   children: React.ReactNode;
+  columns?: 2 | 3;
   label: string;
 }) {
   return (
     <section className="grid gap-2 rounded-lg border border-white/90 bg-background/70 p-3 shadow-sm">
       <p className="text-sm font-bold leading-5">{label}</p>
-      <div className="grid grid-cols-2 gap-2">{children}</div>
+      <div className={cn("grid gap-2", columns === 3 ? "grid-cols-3" : "grid-cols-2")}>
+        {children}
+      </div>
     </section>
   );
 }

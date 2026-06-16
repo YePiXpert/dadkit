@@ -60,7 +60,7 @@ export const TIMELINE_KIND_LABELS: Record<TimelineTask["kind"], string> = {
   packing: "打包",
   documents: "证件",
   hospital: "医院",
-  dad_task: "爸爸任务",
+  dad_task: "爸爸协作",
   go: "临出门",
 };
 

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 const ILLUSTRATIONS = {
   family: {
-    alt: "准爸爸和孕妈妈一起整理待产清单",
+    alt: "家人一起整理待产清单",
     height: 1024,
     src: "/illustrations/dadkit-family-transparent.png",
     width: 1536,

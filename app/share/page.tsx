@@ -1,6 +1,16 @@
 "use client";
 
-import { Copy, Download } from "lucide-react";
+import Image from "next/image";
+import {
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  Copy,
+  Download,
+  Hospital,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
 
 import { EmptyState } from "@/components/EmptyState";
 import { ExportTextArea } from "@/components/ExportTextArea";
@@ -17,10 +27,26 @@ import {
   generateTimelineShareText,
 } from "@/lib/export";
 import {
+  formatBabyZodiacLine,
+  getBabyMascot,
+  getBabySexLabel,
+} from "@/lib/baby-profile";
+import {
   generateBirthPlanShareText,
   generateContractionsShareText,
 } from "@/lib/rc";
 import { useDadKitStore } from "@/lib/store";
+import { getDaysUntilDue } from "@/lib/timeline";
+import { COMPLETED_STATUSES, type ChecklistItem, type UserProfile } from "@/lib/types";
+
+type SharePoster = {
+  caption: string;
+  detail: string;
+  icon: LucideIcon;
+  metric: string;
+  tone: "mint" | "coral" | "lavender" | "amber";
+  title: string;
+};
 
 export default function SharePage() {
   const profile = useDadKitStore((state) => state.profile);
@@ -45,6 +71,9 @@ export default function SharePage() {
     );
   }
 
+  const babyLine = formatBabyZodiacLine(profile);
+  const mascot = getBabyMascot(profile);
+  const posterCards = buildSharePosters(profile, checklist);
   const leanText = generateLeanShareText(checklist, profile);
   const fullText = generateShareText(checklist, profile, "DadKit 完整待产准备清单");
   const dadText = generateDadExecutionShareText(checklist, profile);
@@ -73,16 +102,18 @@ export default function SharePage() {
     <div className="page-shell">
       <PageIntro
         eyebrow="一键分享"
-        title="爸爸执行版"
-        description="只保留要拿、要问、要确认的事，适合复制给自己或家人。"
+        title="分享配图"
+        description="整理成姐妹容易收藏的配图和文案，也能复制给家人协作。"
       />
 
       <Card className="mobile-shell app-hero-card lg:max-w-none">
         <CardContent className="flex items-center justify-between gap-4 p-5">
-          <div>
-            <p className="text-2xl font-semibold tracking-normal">今天先完成 3 件事</p>
+          <div className="min-w-0">
+            <p className="break-words text-2xl font-semibold tracking-normal">
+              {babyLine}待产准备
+            </p>
             <p className="mt-2 text-sm leading-6 text-primary-foreground/75">
-              保存电话 · 确认路线 · 确认证件包
+              待产包 · 产检问题 · 临出门检查
             </p>
           </div>
           <Button
@@ -90,19 +121,21 @@ export default function SharePage() {
             onClick={() => navigator.clipboard.writeText(dadText)}
           >
             <Copy className="size-4" />
-            复制
+            复制协作清单
           </Button>
         </CardContent>
       </Card>
 
+      <SharePosterSection cards={posterCards} mascot={mascot} />
+
       <Card className="mobile-shell macaron-panel lg:max-w-none">
         <CardHeader>
-          <CardTitle>导出清单</CardTitle>
+          <CardTitle>复制详细文本</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="dad">
             <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-9">
-              <TabsTrigger value="dad">爸爸执行版</TabsTrigger>
+              <TabsTrigger value="dad">家人协作</TabsTrigger>
               <TabsTrigger value="go">临出门版</TabsTrigger>
               <TabsTrigger value="hospital">医院沟通版</TabsTrigger>
               <TabsTrigger value="birth-plan">分娩偏好卡</TabsTrigger>
@@ -120,7 +153,7 @@ export default function SharePage() {
             </TabsContent>
             <TabsContent value="dad">
               <div className="macaron-note mb-3">
-                爸爸执行版只保留要拿、要问、要确认的事，适合直接复制给家人。
+                家人协作清单只保留要拿、要问、要确认的事，适合直接复制给爸爸或家人。
               </div>
               <ExportTextArea value={dadText} />
             </TabsContent>
@@ -153,4 +186,167 @@ export default function SharePage() {
       </Card>
     </div>
   );
+}
+
+function SharePosterSection({
+  cards,
+  mascot,
+}: {
+  cards: SharePoster[];
+  mascot: { alt: string; src: string };
+}) {
+  return (
+    <section className="mobile-shell grid gap-3 lg:max-w-none">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-base font-black tracking-normal">笔记配图</h2>
+        <span className="rounded-full bg-mint px-3 py-1 text-xs font-bold text-primary">
+          可截图
+        </span>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {cards.map((card, index) => (
+          <SharePosterCard
+            card={card}
+            key={card.title}
+            mascot={index === 0 ? mascot : undefined}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SharePosterCard({
+  card,
+  mascot,
+}: {
+  card: SharePoster;
+  mascot?: { alt: string; src: string };
+}) {
+  const Icon = card.icon;
+  const toneClass = {
+    amber: "border-amber/35 bg-amber-soft/70 text-amber-foreground",
+    coral: "border-coral/25 bg-secondary/75 text-primary",
+    lavender: "border-lavender/40 bg-lavender/70 text-lavender-foreground",
+    mint: "border-primary/20 bg-mint/70 text-primary",
+  }[card.tone];
+
+  return (
+    <article className="relative min-h-[10.5rem] overflow-hidden rounded-lg border border-white/90 bg-card/95 p-4 shadow-soft">
+      {mascot ? (
+        <Image
+          alt={mascot.alt}
+          className="pointer-events-none absolute -right-6 bottom-[-1.25rem] h-28 w-28 object-contain opacity-95"
+          height={1254}
+          sizes="112px"
+          src={mascot.src}
+          width={1254}
+        />
+      ) : null}
+      <div className="relative z-10 grid min-h-[8.5rem] content-between gap-4 pr-16">
+        <div>
+          <span
+            className={`inline-flex size-10 items-center justify-center rounded-full border ${toneClass}`}
+          >
+            <Icon className="size-5" />
+          </span>
+          <h3 className="mt-3 break-words text-lg font-black leading-6 tracking-normal">
+            {card.title}
+          </h3>
+          <p className="mt-1 break-words text-xs font-semibold leading-5 text-muted-foreground">
+            {card.detail}
+          </p>
+        </div>
+        <div className="flex items-end justify-between gap-3">
+          <p className="text-2xl font-black text-primary">{card.metric}</p>
+          <Button
+            className="h-9 px-3 text-xs"
+            variant="outline"
+            onClick={() => navigator.clipboard.writeText(card.caption)}
+          >
+            <Copy className="size-3.5" />
+            复制文案
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function buildSharePosters(
+  profile: UserProfile,
+  checklist: ChecklistItem[],
+): SharePoster[] {
+  const dueDate = profile.dueDate ?? "待填写";
+  const daysLeft = getDaysUntilDue(profile);
+  const babyLine = formatBabyZodiacLine(profile);
+  const babySex = getBabySexLabel(profile);
+  const total = checklist.length;
+  const completed = checklist.filter((item) =>
+    COMPLETED_STATUSES.includes(item.status),
+  ).length;
+  const hospitalQuestions = checklist.filter(
+    (item) => item.category === "hospital_questions" || item.itemKind === "question",
+  );
+  const goItems = checklist.filter(
+    (item) =>
+      item.category === "last_minute" ||
+      item.bag === "last_minute" ||
+      item.timing === "grab_before_leaving",
+  );
+
+  return [
+    {
+      caption: `我的${babyLine}待产准备：预产期 ${dueDate}，距离预产期 ${formatDaysMetric(daysLeft)}。先把清单、医院问题和临出门检查一步步整理好。`,
+      detail: `预产期 ${dueDate}`,
+      icon: Sparkles,
+      metric: formatDaysMetric(daysLeft),
+      title: `${babySex}倒计时`,
+      tone: "coral",
+    },
+    {
+      caption: `待产包进度 ${completed}/${total}。姐妹们别一次性焦虑，今天先确认 3 件最要紧的。`,
+      detail: "待产包、证件和医院确认一起看",
+      icon: CheckCircle2,
+      metric: `${completed}/${total}`,
+      title: "我的待产包进度",
+      tone: "mint",
+    },
+    {
+      caption: `下次产检我要问清楚 ${hospitalQuestions.length} 个问题：医院提供什么、入院入口、陪产规则、证件和支付方式都提前确认。`,
+      detail: "医院规则提前问清楚",
+      icon: Hospital,
+      metric: `${hospitalQuestions.length} 项`,
+      title: "下次产检要问",
+      tone: "lavender",
+    },
+    {
+      caption: `临出门检查先看这张：证件、手机、充电器、妈妈包、宝宝包、医院电话和路线，别临时翻箱倒柜。`,
+      detail: "出发前只看关键项",
+      icon: CalendarClock,
+      metric: `${goItems.length} 项`,
+      title: "临出门检查",
+      tone: "amber",
+    },
+    {
+      caption: `分娩偏好卡提前写好：紧急联系人、陪产人、过敏/用药、沟通偏好，入院时给家人和医护看更省心。`,
+      detail: "给家人和医院看的沟通卡",
+      icon: ClipboardList,
+      metric: "安心",
+      title: "分娩偏好卡",
+      tone: "mint",
+    },
+  ];
+}
+
+function formatDaysMetric(daysLeft?: number) {
+  if (typeof daysLeft !== "number") {
+    return "待填写";
+  }
+
+  if (daysLeft <= 0) {
+    return "已到预产期";
+  }
+
+  return `${daysLeft} 天`;
 }

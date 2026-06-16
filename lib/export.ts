@@ -21,6 +21,7 @@ import {
   type TimelineTask,
   type TimelineTaskStatus,
 } from "@/lib/timeline";
+import { formatBabyZodiacLine } from "@/lib/baby-profile";
 
 const DAD_EXECUTION_KEYWORDS = [
   "证件",
@@ -43,6 +44,7 @@ function formatProfile(profile: UserProfile | undefined, title: string) {
 
   if (profile?.dueDate) {
     lines.push(`预产期：${profile.dueDate}`);
+    lines.push(`宝宝信息：${formatBabyZodiacLine(profile)}`);
   }
 
   lines.push(
@@ -224,7 +226,7 @@ export function generateDadExecutionShareText(
   );
 
   return [
-    formatProfile(profile, "DadKit 爸爸执行版"),
+    formatProfile(profile, "DadKit 家人协作清单"),
     section("保存电话", phone),
     section("确认路线", route),
     section("证件包", docs),

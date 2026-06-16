@@ -17,6 +17,11 @@ import {
   getCountdownLabel,
   getPregnancyProgress,
 } from "@/lib/presentation/home-dashboard";
+import {
+  formatBabyZodiacLine,
+  getBabyMascot,
+  getBabySexLabel,
+} from "@/lib/baby-profile";
 import { buildHomeSummary, type HomeSummary } from "@/lib/presentation/home-summary";
 import { useDadKitStore } from "@/lib/store";
 import type { UserProfile } from "@/lib/types";
@@ -141,6 +146,8 @@ function HomeHeroCard({
 }) {
   const countdownNumber = countdownLabel.match(/\d+/)?.[0];
   const dueDateLabel = formatHomeDueDate(profile?.dueDate);
+  const babyLine = formatBabyZodiacLine(profile);
+  const mascot = getBabyMascot(profile);
 
   return (
     <section className="pony-hero-card min-h-[11.25rem]">
@@ -155,7 +162,9 @@ function HomeHeroCard({
       </span>
 
       <div className="relative z-10 max-w-[58%]">
-        <p className="text-sm font-black text-primary-foreground/90">预产期</p>
+        <p className="text-sm font-black text-primary-foreground/90">
+          {getBabySexLabel(profile)}倒计时
+        </p>
         <h1 className="mt-2 flex items-end gap-1 text-[3.15rem] font-black leading-none tracking-normal">
           {countdownNumber ? (
             <>
@@ -170,7 +179,7 @@ function HomeHeroCard({
           {dueDateLabel}
         </p>
         <p className="mt-1 text-xs font-bold text-primary-foreground/90">
-          丙午年 · 火马宝宝女孩
+          {babyLine}
         </p>
         <p className="mt-1 text-xs font-bold text-primary-foreground/80">
           {pregnancyProgress.label}
@@ -178,12 +187,12 @@ function HomeHeroCard({
       </div>
 
       <Image
-        alt="戴粉色蝴蝶结的小马宝宝助手"
+        alt={mascot.alt}
         className="pointer-events-none absolute -right-9 bottom-[-1.7rem] h-[12rem] w-[12rem] object-contain drop-shadow-sm"
         height={1254}
         priority
         sizes="220px"
-        src="/illustrations/dadkit-horse-girl.png"
+        src={mascot.src}
         width={1254}
       />
     </section>
@@ -235,7 +244,7 @@ function TodayActionsPanel({
     <section className="grid gap-2">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-black tracking-normal">
-          今日行动 {actions.length} 项
+          姐妹今天先做 {actions.length} 件事
         </h2>
         <Link
           className="inline-flex items-center gap-1 text-xs font-bold text-primary"
@@ -317,10 +326,10 @@ function OverallProgressPanel({
           </p>
         </div>
         <Image
-          alt="小马宝宝助手提醒准备进度"
+          alt="宝宝待产助手提醒准备进度"
           className="h-16 w-16 shrink-0 object-contain"
           height={1254}
-          src="/illustrations/dadkit-horse-girl.png"
+          src="/illustrations/dadkit-bear-transparent.png"
           width={1254}
         />
       </div>

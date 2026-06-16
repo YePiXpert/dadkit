@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { getBabyMascot } from "@/lib/baby-profile";
 import { useDadKitStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ const secondaryRouteOwners: Record<string, string[]> = {
 export function AppHeader() {
   const profile = useDadKitStore((state) => state.profile);
   const pathname = usePathname();
+  const mascot = getBabyMascot(profile);
 
   return (
     <header className="hidden border-b border-white/80 bg-card/90 backdrop-blur sm:sticky sm:top-0 sm:z-40 sm:block">
@@ -41,11 +43,11 @@ export function AppHeader() {
         <Link className="flex min-w-0 items-center gap-2" href="/">
           <span className="relative flex size-10 items-center justify-center overflow-hidden rounded-full border border-primary/20 bg-secondary shadow-soft">
             <Image
-              alt="DadKit 小马宝宝助手"
+              alt={mascot.alt}
               className="object-contain p-0.5"
               fill
               sizes="40px"
-              src="/illustrations/dadkit-horse-girl.png"
+              src={mascot.src}
             />
           </span>
           <span className="min-w-0">
@@ -53,7 +55,7 @@ export function AppHeader() {
               DadKit
             </span>
             <span className="hidden text-xs font-medium text-muted-foreground sm:block">
-              为小公主的到来做足准备
+              姐妹安心待产清单
             </span>
           </span>
         </Link>

@@ -314,10 +314,10 @@ export default function HospitalPage() {
           onChange={updateHospitalAnswer}
         />
         <QuestionSection
-          description="路线、电话、停车和证件包，是爸爸临近入院前要落实的行动。"
+          description="路线、电话、停车和证件包，是家人临近入院前要落实的行动。"
           icon={Hospital}
           items={dadConfirmItems}
-          title="爸爸要确认"
+          title="家人要确认"
           answersByItemId={answersByItemId}
           onChange={updateHospitalAnswer}
         />

@@ -139,6 +139,7 @@ export function createDefaultProfile(input: CreateProfileInput = {}): UserProfil
   const timestamp = nowIso();
 
   return {
+    babySex: "unknown",
     regionId: "cn-bj-general",
     hospitalMode: "unknown",
     deliveryMode: "unknown",

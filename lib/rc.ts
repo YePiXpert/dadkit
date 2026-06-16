@@ -274,7 +274,7 @@ export function generateBirthPlanShareText(plan: BirthPlan) {
 
   return [
     "DadKit 分娩偏好 / 入院沟通卡",
-    "提醒：这不是医疗建议，只是方便爸爸、护士和医生快速沟通。",
+    "提醒：这不是医疗建议，只是方便家人、护士和医生快速沟通。",
     "",
     `紧急联系人：${valueOrEmpty(merged.emergencyContact)}`,
     `陪产人：${valueOrEmpty(merged.supportPerson)}`,

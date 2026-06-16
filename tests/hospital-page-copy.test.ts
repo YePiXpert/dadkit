@@ -20,7 +20,7 @@ describe("hospital page copy", () => {
     expect(hospitalPage).toContain("医院规则");
     expect(hospitalPage).toContain("产检问答与入院信息");
     expect(hospitalPage).toContain("下次产检要问");
-    expect(hospitalPage).toContain("爸爸要确认");
+    expect(hospitalPage).toContain("家人要确认");
     expect(hospitalPage).toContain("高级设置");
     expect(hospitalPage).toContain("lg:grid-cols-[1.15fr_0.85fr]");
     expect(hospitalPage).toContain("macaron-panel p-4");

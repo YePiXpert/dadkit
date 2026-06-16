@@ -32,6 +32,7 @@ import {
   calculatePackingCompletion,
   filterItemsForChecklistMode,
 } from "@/lib/rules";
+import { getBabyMascot, getBabySexLabel } from "@/lib/baby-profile";
 import { useDadKitStore } from "@/lib/store";
 import {
   CATEGORY_LABELS,
@@ -128,6 +129,7 @@ export default function ChecklistPage() {
     [filteredItems, visualGroup],
   );
   const emptyCopy = getEmptyStateCopy(visualGroup);
+  const babyMascot = getBabyMascot(profile);
 
   if (!profile) {
     return (
@@ -164,17 +166,17 @@ export default function ChecklistPage() {
               清单
             </h1>
             <p className="mt-1 text-sm font-medium leading-6 text-muted-foreground">
-              为小公主的待产包逐项打勾
+              为{getBabySexLabel(profile)}的待产包逐项打勾
             </p>
           </div>
           <span className="relative mt-1 flex size-14 shrink-0 overflow-hidden rounded-full border border-primary/15 bg-secondary shadow-sm">
             <Image
-              alt="小马宝宝清单贴纸"
+              alt={babyMascot.alt}
               className="object-contain p-0.5"
               fill
               priority
               sizes="56px"
-              src="/illustrations/dadkit-horse-girl.png"
+              src={babyMascot.src}
             />
           </span>
         </div>
