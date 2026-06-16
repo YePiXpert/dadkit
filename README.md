@@ -31,7 +31,7 @@ DadKit 不是母婴电商清单，不提供购物链接或商品推荐；也不�
 - `/contractions`：宫缩记录。
 - `/birth-plan`：分娩偏好 / 入院沟通卡。
 - `/postpartum`：产后办理待确认。
-- `/share`：分享配图、家人协作清单、临出门版、医院沟通版、分娩偏好卡、宫缩记录和 JSON 备份。
+- `/share`：导出与协作、家人协作清单、临出门版、医院沟通版、分娩偏好卡、宫缩记录和 JSON 备份。
 - `/settings`：资料、更多工具、本地快照、JSON 备份、WebDAV 备份、版本信息。
 - `/healthz`：健康检查，返回 `ok`、`version`、`buildTime`。
 

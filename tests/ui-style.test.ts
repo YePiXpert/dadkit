@@ -93,7 +93,8 @@ describe("cute maternity app visual direction", () => {
     expect(globals).toContain(".app-hero-card");
     expect(globals).toContain(".app-list-row");
     expect(globals).toContain("max-w-[390px]");
-    expect(header).toContain("姐妹安心待产清单");
+    expect(header).toContain("安心待产清单");
+    expect(header).not.toContain("姐妹安心待产清单");
     expect(header).toContain("getBabyMascot");
     expect(layout).toContain("#FF5C7A");
     expect(layout).toContain("maximumScale: 1");

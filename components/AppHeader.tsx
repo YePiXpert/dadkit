@@ -55,7 +55,7 @@ export function AppHeader() {
               DadKit
             </span>
             <span className="hidden text-xs font-medium text-muted-foreground sm:block">
-              姐妹安心待产清单
+              安心待产清单
             </span>
           </span>
         </Link>

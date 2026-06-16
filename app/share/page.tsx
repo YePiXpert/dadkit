@@ -29,7 +29,6 @@ import {
 import {
   formatBabyZodiacLine,
   getBabyMascot,
-  getBabySexLabel,
 } from "@/lib/baby-profile";
 import {
   generateBirthPlanShareText,
@@ -101,18 +100,21 @@ export default function SharePage() {
   return (
     <div className="page-shell">
       <PageIntro
-        eyebrow="一键分享"
-        title="分享配图"
-        description="整理成姐妹容易收藏的配图和文案，也能复制给家人协作。"
+        eyebrow="导出"
+        title="导出与协作"
+        description="汇总关键准备状态，复制给家人或保存为备份。"
       />
 
       <Card className="mobile-shell app-hero-card lg:max-w-none">
         <CardContent className="flex items-center justify-between gap-4 p-5">
           <div className="min-w-0">
             <p className="break-words text-2xl font-semibold tracking-normal">
-              {babyLine}待产准备
+              待产准备摘要
             </p>
             <p className="mt-2 text-sm leading-6 text-primary-foreground/75">
+              {babyLine}
+            </p>
+            <p className="text-sm leading-6 text-primary-foreground/75">
               待产包 · 产检问题 · 临出门检查
             </p>
           </div>
@@ -121,7 +123,7 @@ export default function SharePage() {
             onClick={() => navigator.clipboard.writeText(dadText)}
           >
             <Copy className="size-4" />
-            复制协作清单
+            复制清单
           </Button>
         </CardContent>
       </Card>
@@ -130,7 +132,7 @@ export default function SharePage() {
 
       <Card className="mobile-shell macaron-panel lg:max-w-none">
         <CardHeader>
-          <CardTitle>复制详细文本</CardTitle>
+          <CardTitle>详细文本</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="dad">
@@ -153,7 +155,7 @@ export default function SharePage() {
             </TabsContent>
             <TabsContent value="dad">
               <div className="macaron-note mb-3">
-                家人协作清单只保留要拿、要问、要确认的事，适合直接复制给爸爸或家人。
+                只保留要拿、要问、要确认的事项，便于家人分工确认。
               </div>
               <ExportTextArea value={dadText} />
             </TabsContent>
@@ -198,9 +200,9 @@ function SharePosterSection({
   return (
     <section className="mobile-shell grid gap-3 lg:max-w-none">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-black tracking-normal">笔记配图</h2>
+        <h2 className="text-base font-black tracking-normal">摘要卡片</h2>
         <span className="rounded-full bg-mint px-3 py-1 text-xs font-bold text-primary">
-          可截图
+          {cards.length} 项
         </span>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -265,7 +267,7 @@ function SharePosterCard({
             onClick={() => navigator.clipboard.writeText(card.caption)}
           >
             <Copy className="size-3.5" />
-            复制文案
+            复制摘要
           </Button>
         </div>
       </div>
@@ -280,7 +282,6 @@ function buildSharePosters(
   const dueDate = profile.dueDate ?? "待填写";
   const daysLeft = getDaysUntilDue(profile);
   const babyLine = formatBabyZodiacLine(profile);
-  const babySex = getBabySexLabel(profile);
   const total = checklist.length;
   const completed = checklist.filter((item) =>
     COMPLETED_STATUSES.includes(item.status),
@@ -301,15 +302,15 @@ function buildSharePosters(
       detail: `预产期 ${dueDate}`,
       icon: Sparkles,
       metric: formatDaysMetric(daysLeft),
-      title: `${babySex}倒计时`,
+      title: "预产期倒计时",
       tone: "coral",
     },
     {
-      caption: `待产包进度 ${completed}/${total}。姐妹们别一次性焦虑，今天先确认 3 件最要紧的。`,
+      caption: `待产包进度 ${completed}/${total}。优先确认证件、医院信息和临出门必带项。`,
       detail: "待产包、证件和医院确认一起看",
       icon: CheckCircle2,
       metric: `${completed}/${total}`,
-      title: "我的待产包进度",
+      title: "准备进度",
       tone: "mint",
     },
     {
@@ -321,7 +322,7 @@ function buildSharePosters(
       tone: "lavender",
     },
     {
-      caption: `临出门检查先看这张：证件、手机、充电器、妈妈包、宝宝包、医院电话和路线，别临时翻箱倒柜。`,
+      caption: `临出门检查：证件、手机、充电器、妈妈包、宝宝包、医院电话和路线，出发前集中确认。`,
       detail: "出发前只看关键项",
       icon: CalendarClock,
       metric: `${goItems.length} 项`,
@@ -329,7 +330,7 @@ function buildSharePosters(
       tone: "amber",
     },
     {
-      caption: `分娩偏好卡提前写好：紧急联系人、陪产人、过敏/用药、沟通偏好，入院时给家人和医护看更省心。`,
+      caption: `分娩偏好卡：紧急联系人、陪产人、过敏/用药、沟通偏好，入院时便于家人和医护快速了解。`,
       detail: "给家人和医院看的沟通卡",
       icon: ClipboardList,
       metric: "安心",

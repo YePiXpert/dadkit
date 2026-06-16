@@ -19,7 +19,8 @@ describe("home page copy", () => {
     expect(homePage).toContain("formatBabyZodiacLine");
     expect(homePage).toContain("getBabyMascot");
     expect(homePage).toContain("getBabySexLabel");
-    expect(homePage).toContain("姐妹今天先做 {actions.length} 件事");
+    expect(homePage).toContain("今日优先");
+    expect(homePage).not.toContain("姐妹今天先做");
     expect(homePage).toContain("查看全部");
     expect(homePage).toContain("准备进度");
     expect(homePage).not.toContain("dadkit-family-card-v2.png");

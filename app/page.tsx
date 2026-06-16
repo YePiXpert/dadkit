@@ -243,9 +243,7 @@ function TodayActionsPanel({
   return (
     <section className="grid gap-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-black tracking-normal">
-          姐妹今天先做 {actions.length} 件事
-        </h2>
+        <h2 className="text-base font-black tracking-normal">今日优先</h2>
         <Link
           className="inline-flex items-center gap-1 text-xs font-bold text-primary"
           href={profileReady ? "/timeline" : "/setup"}

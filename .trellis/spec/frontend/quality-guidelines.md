@@ -28,6 +28,10 @@ Avoid `truncate` or `whitespace-nowrap` on mobile task titles, checklist categor
 
 Do not add local `max-w-*` wrappers to fix mobile width if `mobile-shell` can represent the intended app width.
 
+### Marketing or platform copy inside core app UI
+
+Do not use platform-growth language in product surfaces, such as "姐妹", "可截图", "笔记配图", "分享配图", or "一键分享". DadKit is a preparation tool first. Core pages should label what the user can do or inspect: tasks, status, export, backup, timeline, and collaboration.
+
 ---
 
 ## Required Patterns
@@ -36,6 +40,7 @@ Do not add local `max-w-*` wrappers to fix mobile width if `mobile-shell` can re
 * Preserve gesture guards in `components/PwaRegister.tsx` for `gesturestart`, `gesturechange`, `gestureend`, and multitouch `touchmove`.
 * Align mobile bottom navigation with the shared mobile shell width.
 * Keep generated/data behavior in `lib/` and page presentation in `components/`.
+* Keep in-app copy practical and restrained. Prefer concrete nouns and actions such as "今日优先", "导出与协作", "摘要卡片", "复制清单", and "详细文本". Avoid telling users what a UI is for if the action label already makes it clear.
 
 ---
 
