@@ -381,7 +381,7 @@ export default function SettingsPage() {
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-3">
         <Card className="app-list-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">我的资料</CardTitle>
+            <CardTitle className="text-base">资料</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 p-2 pt-0">
             <SettingsShortcutRow

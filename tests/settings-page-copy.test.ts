@@ -20,7 +20,7 @@ describe("settings page copy", () => {
     expect(settingsPage).not.toContain("dadkit-dad-avatar.png");
     expect(settingsPage).toContain("app-list-card");
     expect(settingsPage).toContain("SettingsShortcutRow");
-    expect(settingsPage).toContain("我的资料");
+    expect(settingsPage).toContain("资料");
     expect(settingsPage).toContain("备份与恢复");
     expect(settingsPage).toContain("应用信息");
     expect(settingsPage).not.toContain("常用小工具");

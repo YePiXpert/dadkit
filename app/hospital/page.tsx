@@ -62,6 +62,23 @@ function isAnswerDone(answer?: HospitalAnswer) {
   return Boolean(answer && answer.status !== "todo");
 }
 
+function groupConfirmationStats(
+  groupId: HospitalConfirmationGroupId,
+  answersByItemId: Map<string, HospitalAnswer>,
+) {
+  const questions = HOSPITAL_CONFIRMATION_QUESTIONS.filter(
+    (question) => question.groupId === groupId,
+  );
+  const completed = questions.filter((question) =>
+    isAnswerDone(answersByItemId.get(question.id)),
+  ).length;
+
+  return {
+    completed,
+    total: questions.length,
+  };
+}
+
 function questionToCardInput(
   question: (typeof HOSPITAL_CONFIRMATION_QUESTIONS)[number],
 ): HospitalQuestionCardInput {
@@ -157,56 +174,30 @@ export default function HospitalPage() {
     allConfirmationItems.length === 0
       ? 0
       : Math.round((completedConfirmations / allConfirmationItems.length) * 100);
-  const quickConfirmRows: HospitalQuickRowInput[] = [
-    {
-      done: Boolean(hospital),
-      icon: Hospital,
-      tone: "lavender",
-      title: "待产医院与病区",
-    },
-    {
-      done: completedConfirmations > 0,
-      icon: ClipboardList,
-      tone: "mint",
-      title: "入院流程与所需材料",
-    },
-    {
-      done: Boolean(
-        answersByItemId.get("hospital-bag-location") &&
-          isAnswerDone(answersByItemId.get("hospital-bag-location")),
-      ),
-      icon: ClipboardList,
-      tone: "coral",
-      title: "待产包存放位置",
-    },
-    {
-      done: Boolean(
-        answersByItemId.get("partner-policy") &&
-          isAnswerDone(answersByItemId.get("partner-policy")),
-      ),
-      icon: CheckCircle2,
-      tone: "amber",
-      title: "陪产与探视规定",
-    },
-    {
-      done: Boolean(
-        answersByItemId.get("postpartum-care") &&
-          isAnswerDone(answersByItemId.get("postpartum-care")),
-      ),
-      icon: CheckCircle2,
-      tone: "coral",
-      title: "产后病房与护理",
-    },
-    {
-      done: Boolean(
-        answersByItemId.get("discharge-documents") &&
-          isAnswerDone(answersByItemId.get("discharge-documents")),
-      ),
-      icon: ClipboardList,
-      tone: "peach",
-      title: "出院结算与证件",
-    },
-  ];
+  const groupIds = Object.keys(
+    HOSPITAL_CONFIRMATION_GROUP_LABELS,
+  ) as HospitalConfirmationGroupId[];
+  const quickConfirmRows: HospitalQuickRowInput[] = groupIds.map((groupId, index) => {
+    const stats = groupConfirmationStats(groupId, answersByItemId);
+    const icons = [ClipboardList, Hospital, CheckCircle2] as const;
+    const tones = ["mint", "lavender", "coral", "amber", "peach"] as const;
+
+    return {
+      caption: `${stats.completed}/${stats.total} 项已确认`,
+      done: stats.total > 0 && stats.completed === stats.total,
+      icon: icons[index % icons.length],
+      tone: tones[index % tones.length],
+      title: HOSPITAL_CONFIRMATION_GROUP_LABELS[groupId],
+    };
+  });
+  const primaryPendingQuestion =
+    HOSPITAL_CONFIRMATION_QUESTIONS.find(
+      (question) =>
+        question.homeCore && !isAnswerDone(answersByItemId.get(question.id)),
+    ) ??
+    HOSPITAL_CONFIRMATION_QUESTIONS.find(
+      (question) => !isAnswerDone(answersByItemId.get(question.id)),
+    );
 
   function toggleProvidedItem(id: string) {
     const current = new Set(activeProfile.hospitalProvidedItemIds);
@@ -258,7 +249,7 @@ export default function HospitalPage() {
       <section className="mobile-shell grid gap-0 lg:max-w-none">
         <h1 className="text-2xl font-black tracking-normal">医院规则</h1>
         <p className="text-sm font-medium leading-6 text-muted-foreground">
-          产检问答与入院信息，入院前的关键信息先问清楚
+          入院流程、医院提供物品、陪产和缴费信息提前确认
         </p>
       </section>
 
@@ -282,7 +273,7 @@ export default function HospitalPage() {
           </div>
           <div className="mt-3 rounded-lg border border-white/90 bg-background/70 p-3">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-black">入院相关确认</p>
+              <p className="text-sm font-black">医院规则确认</p>
               <span className="text-sm font-black text-primary">
                 {completedConfirmations}/{allConfirmationItems.length}
               </span>
@@ -294,6 +285,14 @@ export default function HospitalPage() {
               />
             </div>
           </div>
+          {primaryPendingQuestion ? (
+            <div className="mt-3 rounded-lg border border-primary/15 bg-secondary/45 p-3">
+              <p className="text-xs font-black text-primary">下一项先确认</p>
+              <p className="mt-1 break-words text-sm font-bold leading-5">
+                {primaryPendingQuestion.title}
+              </p>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -309,7 +308,7 @@ export default function HospitalPage() {
           icon={ClipboardList}
           items={nextCheckupItems}
           grouped
-          title="下次产检要问"
+          title="医院规则确认表"
           answersByItemId={answersByItemId}
           onChange={updateHospitalAnswer}
         />
@@ -432,6 +431,7 @@ function QuestionSection({
 }
 
 type HospitalQuickRowInput = {
+  caption: string;
   done: boolean;
   icon: LucideIcon;
   title: string;
@@ -456,6 +456,9 @@ function HospitalQuickRow({ item }: { item: HospitalQuickRowInput }) {
       <span className="min-w-0 flex-1">
         <span className="block break-words text-sm font-bold leading-5">
           {item.title}
+        </span>
+        <span className="mt-0.5 block break-words text-xs leading-4 text-muted-foreground">
+          {item.caption}
         </span>
       </span>
       <span className="shrink-0 text-xs font-semibold text-muted-foreground">
@@ -638,7 +641,7 @@ function AdvancedSettings({
             </summary>
             <div className="mt-3 grid gap-3">
               <p className="text-sm leading-6 text-muted-foreground">
-                通常不需要手动勾选，建议直接在“下次产检要问”里记录医院答复。
+                通常不需要手动勾选，建议直接在“医院规则确认表”里记录医院答复。
               </p>
               <ManualProvidedPicker
                 selectedIds={manualProvidedIds}

@@ -45,7 +45,7 @@ export const PREPARATION_KIND_LABELS: Record<PreparationKind, string> = {
   wash_then_pack: "清洗后打包",
   document: "证件/资料整理",
   last_minute: "临出门拿",
-  question: "医院问题",
+  question: "医院规则",
   task: "协作任务",
   install_or_place: "安装/放车上",
 };

@@ -11,7 +11,7 @@ const navItems = [
   { href: "/checklist", label: "清单", icon: ClipboardList },
   { href: "/hospital", label: "医院", icon: Hospital },
   { href: "/timeline", label: "时间线", icon: CalendarClock },
-  { href: "/settings", label: "我的", icon: Settings },
+  { href: "/settings", label: "设置", icon: Settings },
 ];
 
 const hiddenRoutes = ["/setup"];

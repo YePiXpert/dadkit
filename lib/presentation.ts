@@ -1,4 +1,4 @@
-import { normalizeChecklistItem } from "@/lib/rules";
+import { isPackingProgressItem, normalizeChecklistItem } from "@/lib/rules";
 import {
   getShoppingGroup,
   isGoCheckItem,
@@ -14,7 +14,6 @@ export type ChecklistVisualGroup =
   | "dad"
   | "shopping"
   | "go"
-  | "questions"
   | "last_minute"
   | "going_home";
 
@@ -22,27 +21,25 @@ export const CHECKLIST_VISUAL_GROUPS: Array<{
   id: ChecklistVisualGroup;
   label: string;
 }> = [
-  { id: "all", label: "全部" },
+  { id: "all", label: "待产包" },
   { id: "documents_folder", label: "证件包检查" },
   { id: "mom_bag", label: "妈妈包" },
   { id: "baby_bag", label: "宝宝包" },
   { id: "shopping", label: "购物清单" },
   { id: "dad", label: "爸爸协作" },
   { id: "going_home", label: "出院返家" },
-  { id: "questions", label: "下次产检问" },
   { id: "go", label: "临出门检查" },
   { id: "last_minute", label: "临出门拿" },
 ];
 
 export const CHECKLIST_GROUP_LABELS: Record<ChecklistVisualGroup, string> = {
-  all: "全部",
+  all: "待产包",
   documents_folder: "证件包检查",
   mom_bag: "妈妈包",
   baby_bag: "宝宝包",
   dad: "爸爸协作",
   shopping: "购物清单",
   go: "临出门检查",
-  questions: "到下次产检时问清楚",
   last_minute: "临出门拿",
   going_home: "出院返家",
 };
@@ -53,9 +50,17 @@ export const CHECKLIST_GROUP_ORDER: ChecklistVisualGroup[] = [
   "baby_bag",
   "dad",
   "going_home",
-  "questions",
   "last_minute",
 ];
+
+export function isPackingChecklistItem(item: ChecklistItem) {
+  const normalized = normalizeChecklistItem(item);
+
+  return (
+    normalized.itemKind !== "question" &&
+    normalized.category !== "hospital_questions"
+  );
+}
 
 export function getChecklistVisualGroup(item: ChecklistItem): ChecklistVisualGroup {
   const normalized = normalizeChecklistItem(item);
@@ -87,10 +92,6 @@ export function getChecklistVisualGroup(item: ChecklistItem): ChecklistVisualGro
     return "dad";
   }
 
-  if (normalized.category === "hospital_questions" || normalized.itemKind === "question") {
-    return "questions";
-  }
-
   return "going_home";
 }
 
@@ -99,7 +100,7 @@ export function filterItemsByVisualGroup(
   visualGroup: ChecklistVisualGroup,
 ) {
   if (visualGroup === "all") {
-    return items;
+    return items.filter(isPackingProgressItem);
   }
 
   if (visualGroup === "shopping") {
@@ -110,14 +111,18 @@ export function filterItemsByVisualGroup(
     return items.map(normalizeChecklistItem).filter(isGoCheckItem);
   }
 
-  return items.filter((item) => getChecklistVisualGroup(item) === visualGroup);
+  return items
+    .filter(isPackingChecklistItem)
+    .filter((item) => getChecklistVisualGroup(item) === visualGroup);
 }
 
 export function groupItemsForChecklist(items: ChecklistItem[]) {
   return CHECKLIST_GROUP_ORDER.map((group) => ({
     group,
     label: CHECKLIST_GROUP_LABELS[group],
-    items: items.filter((item) => getChecklistVisualGroup(item) === group),
+    items: items
+      .filter(isPackingChecklistItem)
+      .filter((item) => getChecklistVisualGroup(item) === group),
   })).filter((entry) => entry.items.length > 0);
 }
 

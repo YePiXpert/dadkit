@@ -47,6 +47,7 @@ import {
   filterItemsByVisualGroup,
   groupItemsForChecklist,
   groupItemsForShopping,
+  isPackingChecklistItem,
   type ChecklistVisualGroup,
 } from "@/lib/presentation";
 
@@ -79,10 +80,18 @@ export default function ChecklistPage() {
     () => filterItemsForChecklistMode(checklist, checklistMode),
     [checklist, checklistMode],
   );
-  const packing = useMemo(() => calculatePackingCompletion(modeItems), [modeItems]);
+  const packingItems = useMemo(
+    () => modeItems.filter(isPackingChecklistItem),
+    [modeItems],
+  );
+  const categoryOptions = useMemo(
+    () => CATEGORY_ORDER.filter((category) => category !== "hospital_questions"),
+    [],
+  );
+  const packing = useMemo(() => calculatePackingCompletion(packingItems), [packingItems]);
   const groupedModeItems = useMemo(
-    () => filterItemsByVisualGroup(modeItems, visualGroup),
-    [modeItems, visualGroup],
+    () => filterItemsByVisualGroup(packingItems, visualGroup),
+    [packingItems, visualGroup],
   );
   const filteredItems = useMemo(
     () =>
@@ -107,6 +116,16 @@ export default function ChecklistPage() {
     () =>
       Object.fromEntries(
         CHECKLIST_VISUAL_GROUPS.map((group) => {
+          if (group.id === "all") {
+            return [
+              group.id,
+              {
+                remaining: Math.max(0, packing.total - packing.completed),
+                total: packing.total,
+              },
+            ];
+          }
+
           const items = filterItemsByVisualGroup(modeItems, group.id);
           const stats = calculateCompletion(items);
 
@@ -119,7 +138,7 @@ export default function ChecklistPage() {
           ];
         }),
       ) as Record<ChecklistVisualGroup, { total: number; remaining: number }>,
-    [modeItems],
+    [modeItems, packing.completed, packing.total],
   );
   const renderedGroups = useMemo(
     () =>
@@ -185,7 +204,7 @@ export default function ChecklistPage() {
 
         <div className="grid gap-2">
           <div className="flex items-center justify-between px-1">
-            <p className="text-sm font-bold">分类入口</p>
+            <p className="text-sm font-bold">打包分组</p>
             <p className="text-xs font-semibold text-muted-foreground">
               共 {CHECKLIST_VISUAL_GROUPS.length} 类
             </p>
@@ -205,7 +224,7 @@ export default function ChecklistPage() {
           </summary>
           <div className="mt-3 grid gap-3">
             <p className="macaron-note">
-              分类、筛选和批量处理放在这里，主页面只保留待产包进度和分组。
+              筛选和批量处理放在这里，医院规则确认统一放在医院页。
             </p>
             <ModeToggle mode={checklistMode} onChange={setChecklistMode} />
             <div className="grid gap-3 sm:grid-cols-3">
@@ -220,7 +239,7 @@ export default function ChecklistPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">全部分类</SelectItem>
-                  {CATEGORY_ORDER.map((category) => (
+                  {categoryOptions.map((category) => (
                     <SelectItem key={category} value={category}>
                       {CATEGORY_LABELS[category]}
                     </SelectItem>
@@ -366,13 +385,6 @@ function getEmptyStateCopy(visualGroup: ChecklistVisualGroup) {
     return {
       title: "当前没有待购买物品",
       description: "购物清单只显示可能需要购买或补货、且尚未完成的物品。",
-    };
-  }
-
-  if (visualGroup === "questions") {
-    return {
-      title: "暂时没有待问事项",
-      description: "医院确认问题处理完后，这里会保持清爽。",
     };
   }
 

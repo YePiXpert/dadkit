@@ -37,11 +37,13 @@ describe("checklist page copy", () => {
     expect(checklistPage).toContain("getBabyMascot");
     expect(checklistPage).toContain("为{getBabySexLabel(profile)}的待产包逐项打勾");
     expect(checklistPage).toContain("清单操作");
-    expect(checklistPage).toContain("分类、筛选和批量处理放在这里");
+    expect(checklistPage).toContain(
+      "筛选和批量处理放在这里，医院规则确认统一放在医院页。",
+    );
     expect(checklistPage).toContain("ChecklistProgressCard");
-    expect(checklistPage).toContain("分类入口");
+    expect(checklistPage).toContain("打包分组");
     expect(checklistPage).toContain("当前没有待购买物品");
-    expect(checklistPage).toContain("暂时没有待问事项");
+    expect(checklistPage).not.toContain("暂时没有待问事项");
     expect(checklistPage).not.toContain("PageIntro");
     expect(checklistPage).not.toContain("sticky top-0");
     expect(checklistPage).not.toContain("z-30");
@@ -55,6 +57,7 @@ describe("checklist page copy", () => {
     expect(checklistGroupTabs).toContain("<svg");
     expect(checklistGroupTabs).toContain("未完成 {count.remaining} 项");
     expect(checklistPage).toContain("groupCounts");
+    expect(checklistPage).toContain("packing.total - packing.completed");
     expect(checklistGroupTabs).not.toContain("overflow-x-auto");
     expect(checklistGroupTabs).not.toContain("min-w-max");
     expect(checklistPage).not.toContain("SlidersHorizontal");

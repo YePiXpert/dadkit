@@ -387,7 +387,7 @@ function SetupHeader() {
         <CuteIllustration
           className="absolute bottom-0 right-0 size-24 border-transparent bg-transparent shadow-none"
           imageClassName="object-contain"
-          variant="helper"
+          priority
         />
       </div>
     </section>

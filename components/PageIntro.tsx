@@ -41,6 +41,7 @@ export function PageIntro({
           <CuteIllustration
             className="size-16 shrink-0 justify-self-end"
             imageClassName="object-cover"
+            priority
             sizes="64px"
           />
         ) : null}
@@ -74,6 +75,7 @@ export function PageIntro({
             <CuteIllustration
               className="size-20 shrink-0 justify-self-end sm:size-28"
               imageClassName="object-cover"
+              priority
               sizes="112px"
             />
           ) : null}

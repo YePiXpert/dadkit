@@ -22,7 +22,7 @@ const desktopNavItems = [
   { href: "/checklist", label: "清单", icon: ClipboardList },
   { href: "/hospital", label: "医院", icon: Hospital },
   { href: "/timeline", label: "时间线", icon: CalendarClock },
-  { href: "/settings", label: "我的", icon: Settings },
+  { href: "/settings", label: "设置", icon: Settings },
 ];
 
 const secondaryRouteOwners: Record<string, string[]> = {
@@ -45,6 +45,7 @@ export function AppHeader() {
               alt={mascot.alt}
               className="object-contain p-0.5"
               fill
+              priority
               sizes="40px"
               src={mascot.src}
             />

@@ -14,6 +14,7 @@ export default function TimelinePage() {
   const timelineTaskStatuses = useDadKitStore(
     (state) => state.timelineTaskStatuses,
   );
+  const hospitalAnswers = useDadKitStore((state) => state.hospitalAnswers);
   const updateTimelineTaskStatus = useDadKitStore(
     (state) => state.updateTimelineTaskStatus,
   );
@@ -36,6 +37,7 @@ export default function TimelinePage() {
       task,
       checklist,
       timelineTaskStatuses,
+      hospitalAnswers,
     );
 
     updateTimelineTaskStatus(task.id, complete ? "todo" : "done");
@@ -45,6 +47,7 @@ export default function TimelinePage() {
     <div className="page-shell">
       <TimelineDashboard
         checklist={checklist}
+        hospitalAnswers={hospitalAnswers}
         profile={profile}
         statuses={timelineTaskStatuses}
         onToggleTask={toggleTask}

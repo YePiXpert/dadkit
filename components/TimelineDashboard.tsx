@@ -26,7 +26,7 @@ import {
   type TimelineTaskStatus,
 } from "@/lib/timeline";
 import { formatBabyZodiacLine, getBabyMascot } from "@/lib/baby-profile";
-import type { ChecklistItem, UserProfile } from "@/lib/types";
+import type { ChecklistItem, HospitalAnswer, UserProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type StageVisualState = "done" | "current" | "late" | "upcoming";
@@ -34,6 +34,7 @@ type StageVisualState = "done" | "current" | "late" | "upcoming";
 type TimelineDashboardProps = {
   profile: UserProfile;
   checklist: ChecklistItem[];
+  hospitalAnswers: HospitalAnswer[];
   statuses: TimelineTaskStatus[];
   onToggleTask: (task: TimelineTask) => void;
 };
@@ -93,6 +94,7 @@ const stageTone: Record<
 
 export function TimelineDashboard({
   checklist,
+  hospitalAnswers,
   onToggleTask,
   profile,
   statuses,
@@ -111,15 +113,27 @@ export function TimelineDashboard({
   const currentStage =
     timeline.find((stage) => stage.id === currentStageId) ?? timeline[0];
   const currentStageStats = currentStage
-    ? calculateTimelineStageStatus(currentStage, checklist, statuses)
+    ? calculateTimelineStageStatus(
+        currentStage,
+        checklist,
+        statuses,
+        hospitalAnswers,
+      )
     : undefined;
-  const todayTasks = generateTodayTasks(profile, checklist, statuses).slice(
-    0,
-    4,
-  );
+  const todayTasks = generateTodayTasks(
+    profile,
+    checklist,
+    statuses,
+    hospitalAnswers,
+  ).slice(0, 4);
   const overallStats = timeline.reduce(
     (total, stage) => {
-      const stats = calculateTimelineStageStatus(stage, checklist, statuses);
+      const stats = calculateTimelineStageStatus(
+        stage,
+        checklist,
+        statuses,
+        hospitalAnswers,
+      );
 
       return {
         completed: total.completed + stats.completed,
@@ -146,21 +160,25 @@ export function TimelineDashboard({
 
       <PriorityTasksPanel
         checklist={checklist}
+        hospitalAnswers={hospitalAnswers}
         statuses={statuses}
         tasks={todayTasks}
         onToggleTask={onToggleTask}
       />
 
-      <ol className="relative grid min-w-0 gap-3 overflow-hidden">
-        <span
-          aria-hidden="true"
-          className="absolute bottom-8 left-5 top-8 w-0.5 rounded-full bg-border"
-        />
+      <div className="flex items-center justify-between px-1">
+        <h2 className="text-sm font-black tracking-normal">阶段安排</h2>
+        <span className="text-xs font-bold text-muted-foreground">
+          先处理本阶段
+        </span>
+      </div>
+      <ol className="grid min-w-0 gap-3 overflow-hidden">
         {timeline.map((stage, index) => (
           <TimelineStageRow
             checklist={checklist}
             currentStageIndex={currentStageIndex}
             dueDate={dueDate}
+            hospitalAnswers={hospitalAnswers}
             index={index}
             key={stage.id}
             stage={stage}
@@ -236,11 +254,13 @@ function CurrentStagePanel({
 
 function PriorityTasksPanel({
   checklist,
+  hospitalAnswers,
   onToggleTask,
   statuses,
   tasks,
 }: {
   checklist: ChecklistItem[];
+  hospitalAnswers: HospitalAnswer[];
   onToggleTask: (task: TimelineTask) => void;
   statuses: TimelineTaskStatus[];
   tasks: TimelineTask[];
@@ -272,6 +292,7 @@ function PriorityTasksPanel({
           <TaskRow
             checklist={checklist}
             compact
+            hospitalAnswers={hospitalAnswers}
             key={task.id}
             statuses={statuses}
             task={task}
@@ -287,6 +308,7 @@ function TimelineStageRow({
   checklist,
   currentStageIndex,
   dueDate,
+  hospitalAnswers,
   index,
   onToggleTask,
   stage,
@@ -295,33 +317,30 @@ function TimelineStageRow({
   checklist: ChecklistItem[];
   currentStageIndex: number;
   dueDate: string;
+  hospitalAnswers: HospitalAnswer[];
   index: number;
   onToggleTask: (task: TimelineTask) => void;
   stage: TimelineStage;
   statuses: TimelineTaskStatus[];
 }) {
-  const stats = calculateTimelineStageStatus(stage, checklist, statuses);
+  const stats = calculateTimelineStageStatus(
+    stage,
+    checklist,
+    statuses,
+    hospitalAnswers,
+  );
   const state = getStageState(stats, index, currentStageIndex);
   const tone = stageTone[state];
   const StageIcon = stageIcons[stage.id];
   const pendingTasks = stage.tasks.filter(
-    (task) => !isTimelineTaskComplete(task, checklist, statuses),
+    (task) =>
+      !isTimelineTaskComplete(task, checklist, statuses, hospitalAnswers),
   );
   const previewTasks =
     pendingTasks.length > 0 ? pendingTasks : stage.tasks.slice(0, 2);
 
   return (
-    <li className="relative grid min-w-0 grid-cols-[2.75rem_minmax(0,1fr)] gap-3">
-      <div className="relative z-10 flex justify-center pt-4">
-        <span
-          className={cn(
-            "flex size-10 items-center justify-center rounded-full border-2",
-            tone.dot,
-          )}
-        >
-          <StageIcon className="size-5" />
-        </span>
-      </div>
+    <li className="min-w-0">
       <article
         className={cn(
           "min-w-0 overflow-hidden rounded-lg border p-3 shadow-sm",
@@ -329,13 +348,23 @@ function TimelineStageRow({
         )}
       >
         <div className="flex min-w-0 items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className="break-words text-base font-black leading-6 tracking-normal">
-              {stage.title}
-            </h3>
-            <p className="mt-1 break-words text-xs font-semibold text-muted-foreground">
-              {stage.subtitle} · {formatTargetDate(dueDate, stage.targetDaysBeforeDue)}
-            </p>
+          <div className="flex min-w-0 gap-3">
+            <span
+              className={cn(
+                "flex size-10 shrink-0 items-center justify-center rounded-full border-2",
+                tone.dot,
+              )}
+            >
+              <StageIcon className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <h3 className="break-words text-base font-black leading-6 tracking-normal">
+                {stage.title}
+              </h3>
+              <p className="mt-1 break-words text-xs font-semibold text-muted-foreground">
+                {stage.subtitle} · {formatTargetDate(dueDate, stage.targetDaysBeforeDue)}
+              </p>
+            </div>
           </div>
           <span
             className={cn(
@@ -361,6 +390,7 @@ function TimelineStageRow({
           {previewTasks.slice(0, 3).map((task) => (
             <TaskRow
               checklist={checklist}
+              hospitalAnswers={hospitalAnswers}
               key={task.id}
               statuses={statuses}
               task={task}
@@ -400,6 +430,7 @@ function TimelineDueDateCard({ profile }: { profile: UserProfile }) {
         alt={mascot.alt}
         className="pointer-events-none absolute -right-5 bottom-[-1.2rem] h-28 w-28 object-contain"
         height={1254}
+        priority
         sizes="112px"
         src={mascot.src}
         width={1254}
@@ -411,17 +442,24 @@ function TimelineDueDateCard({ profile }: { profile: UserProfile }) {
 function TaskRow({
   checklist,
   compact = false,
+  hospitalAnswers,
   onToggleTask,
   statuses,
   task,
 }: {
   checklist: ChecklistItem[];
   compact?: boolean;
+  hospitalAnswers: HospitalAnswer[];
   onToggleTask: (task: TimelineTask) => void;
   statuses: TimelineTaskStatus[];
   task: TimelineTask;
 }) {
-  const complete = isTimelineTaskComplete(task, checklist, statuses);
+  const complete = isTimelineTaskComplete(
+    task,
+    checklist,
+    statuses,
+    hospitalAnswers,
+  );
   const KindIcon = taskKindIcons[task.kind];
 
   return (

@@ -21,7 +21,11 @@ import {
   formatBabyZodiacLine,
   getBabyMascot,
 } from "@/lib/baby-profile";
-import { buildHomeSummary, type HomeSummary } from "@/lib/presentation/home-summary";
+import {
+  buildHomeReadinessMetrics,
+  buildHomeSummary,
+  type HomeReadinessMetric,
+} from "@/lib/presentation/home-summary";
 import { useDadKitStore } from "@/lib/store";
 import type { UserProfile } from "@/lib/types";
 import {
@@ -29,23 +33,6 @@ import {
   getDaysUntilDue,
   type TimelineTask,
 } from "@/lib/timeline";
-
-function overallProgress(summary: HomeSummary) {
-  const total =
-    summary.corePacking.total +
-    summary.hospitalQuestions.total +
-    summary.lastMinute.total;
-  const completed =
-    summary.corePacking.completed +
-    summary.hospitalQuestions.completed +
-    summary.lastMinute.completed;
-
-  return {
-    completed,
-    percent: total === 0 ? 0 : Math.round((completed / total) * 100),
-    total,
-  };
-}
 
 export default function HomePage() {
   const profile = useDadKitStore((state) => state.profile);
@@ -70,11 +57,19 @@ export default function HomePage() {
   const todayTasks = useMemo(
     () =>
       profile
-        ? generateTodayTasks(profile, checklist, timelineTaskStatuses).slice(0, 3)
+        ? generateTodayTasks(
+            profile,
+            checklist,
+            timelineTaskStatuses,
+            hospitalAnswers,
+          ).slice(0, 3)
         : [],
-    [checklist, profile, timelineTaskStatuses],
+    [checklist, hospitalAnswers, profile, timelineTaskStatuses],
   );
-  const readyProgress = useMemo(() => overallProgress(summary), [summary]);
+  const readinessMetrics = useMemo(
+    () => buildHomeReadinessMetrics(summary),
+    [summary],
+  );
   const hasAdmissionInfo = Boolean(
     birthPlan.hospitalPhone.trim() ||
       birthPlan.hospitalAddress.trim() ||
@@ -92,11 +87,11 @@ export default function HomePage() {
           profile={profile}
         />
         <HomeLaborModePanel hasAdmissionInfo={hasAdmissionInfo} />
-        <TodayActionsPanel
+        <TodayFocusPanel
           profileReady={Boolean(profile?.dueDate)}
           tasks={todayTasks}
         />
-        <OverallProgressPanel progress={readyProgress} />
+        <ReadinessMetricsPanel metrics={readinessMetrics} />
         <HomeToolsPanel />
       </section>
 
@@ -198,7 +193,7 @@ function HomeHeroCard({
   );
 }
 
-function TodayActionsPanel({
+function TodayFocusPanel({
   profileReady,
   tasks,
 }: {
@@ -239,24 +234,63 @@ function TodayActionsPanel({
       }))
     : fallbackActions;
 
+  const [primaryAction, ...secondaryActions] = actions;
+
   return (
     <section className="grid gap-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-black tracking-normal">今日优先</h2>
+        <h2 className="text-base font-black tracking-normal">今日重点</h2>
         <Link
           className="inline-flex items-center gap-1 text-xs font-bold text-primary"
           href={profileReady ? "/timeline" : "/setup"}
         >
-          查看全部
+          准备节奏
           <ArrowRight className="size-3.5" />
         </Link>
       </div>
-      <div className="overflow-hidden rounded-lg border border-white/90 bg-card/95 shadow-soft">
-        {actions.map((action) => (
-          <HomeActionRow action={action} key={`${action.href}-${action.title}`} />
-        ))}
-      </div>
+      {primaryAction ? <PrimaryActionCard action={primaryAction} /> : null}
+      {secondaryActions.length > 0 ? (
+        <div className="overflow-hidden rounded-lg border border-white/90 bg-card/95 shadow-soft">
+          {secondaryActions.map((action) => (
+            <HomeActionRow action={action} key={`${action.href}-${action.title}`} />
+          ))}
+        </div>
+      ) : null}
     </section>
+  );
+}
+
+function PrimaryActionCard({
+  action,
+}: {
+  action: {
+    href: string;
+    icon: LucideIcon;
+    subtitle: string;
+    title: string;
+    tone: "blue" | "coral" | "mint";
+  };
+}) {
+  const Icon = action.icon;
+
+  return (
+    <Link
+      className="pony-soft-card flex min-h-[6.4rem] items-center gap-3 p-4 transition-colors active:bg-secondary"
+      href={action.href}
+    >
+      <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-secondary text-primary">
+        <Icon className="size-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-xs font-black text-primary">
+          {action.subtitle}
+        </span>
+        <span className="mt-1 block break-words text-lg font-black leading-6">
+          {action.title}
+        </span>
+      </span>
+      <ArrowRight className="size-4 shrink-0 text-primary" />
+    </Link>
   );
 }
 
@@ -302,35 +336,43 @@ function HomeActionRow({
   );
 }
 
-function OverallProgressPanel({
-  progress,
-}: {
-  progress: { completed: number; percent: number; total: number };
-}) {
+function ReadinessMetricsPanel({ metrics }: { metrics: HomeReadinessMetric[] }) {
   return (
     <section className="pony-due-card p-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-sm font-black tracking-normal">准备进度</h2>
-            <span className="text-sm font-black text-primary">
-              {progress.completed}/{progress.total}
-            </span>
-          </div>
-          <Progress className="mt-3 h-2.5 bg-primary/12" value={progress.percent} />
-          <p className="mt-2 text-xs font-semibold text-muted-foreground">
-            已完成 {progress.completed} 项，共 {progress.total} 项
-          </p>
-        </div>
-        <Image
-          alt="待产准备进度插图"
-          className="h-16 w-16 shrink-0 object-contain"
-          height={1254}
-          src="/illustrations/dadkit-bear-transparent.png"
-          width={1254}
-        />
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-black tracking-normal">入院准备</h2>
+        <span className="text-xs font-bold text-muted-foreground">3 项</span>
+      </div>
+      <div className="grid gap-2">
+        {metrics.map((metric) => (
+          <ReadinessMetricRow key={metric.id} metric={metric} />
+        ))}
       </div>
     </section>
+  );
+}
+
+function ReadinessMetricRow({ metric }: { metric: HomeReadinessMetric }) {
+  return (
+    <Link
+      className="grid gap-2 rounded-lg border border-white/80 bg-background/65 p-3 shadow-sm transition-colors active:bg-secondary"
+      href={metric.href}
+    >
+      <span className="flex items-start justify-between gap-3">
+        <span className="min-w-0">
+          <span className="block break-words text-sm font-black leading-5">
+            {metric.label}
+          </span>
+          <span className="mt-0.5 block break-words text-xs font-semibold leading-4 text-muted-foreground">
+            {metric.caption}
+          </span>
+        </span>
+        <span className="shrink-0 text-sm font-black text-primary">
+          {metric.completed}/{metric.total}
+        </span>
+      </span>
+      <Progress className="h-2 bg-primary/12" value={metric.percent} />
+    </Link>
   );
 }
 

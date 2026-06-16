@@ -14,7 +14,7 @@ import {
   type TimelineTask,
   type TimelineTaskStatus,
 } from "@/lib/timeline";
-import type { ChecklistItem } from "@/lib/types";
+import type { ChecklistItem, HospitalAnswer } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type GoChecklistDisplayItem = {
@@ -65,6 +65,7 @@ export default function GoPage() {
   const profile = useDadKitStore((state) => state.profile);
   const checklist = useDadKitStore((state) => state.checklist);
   const birthPlan = useDadKitStore((state) => state.birthPlan);
+  const hospitalAnswers = useDadKitStore((state) => state.hospitalAnswers);
   const timelineTaskStatuses = useDadKitStore(
     (state) => state.timelineTaskStatuses,
   );
@@ -83,9 +84,14 @@ export default function GoPage() {
   const completedCount = useMemo(
     () =>
       tasks.filter((task) =>
-        isTimelineTaskComplete(task, checklist, timelineTaskStatuses),
+        isTimelineTaskComplete(
+          task,
+          checklist,
+          timelineTaskStatuses,
+          hospitalAnswers,
+        ),
       ).length,
-    [checklist, tasks, timelineTaskStatuses],
+    [checklist, hospitalAnswers, tasks, timelineTaskStatuses],
   );
   const remainingCount = Math.max(0, tasks.length - completedCount);
   const progressPercent =
@@ -100,7 +106,13 @@ export default function GoPage() {
 
   function displayItemDone(item: GoChecklistDisplayItem) {
     return item.taskIds.every((taskId) =>
-      isDisplayTaskDone(taskId, taskById, checklist, timelineTaskStatuses),
+      isDisplayTaskDone(
+        taskId,
+        taskById,
+        checklist,
+        timelineTaskStatuses,
+        hospitalAnswers,
+      ),
     );
   }
 
@@ -112,7 +124,14 @@ export default function GoPage() {
 
   function markAllDone() {
     tasks.forEach((task) => {
-      if (!isTimelineTaskComplete(task, checklist, timelineTaskStatuses)) {
+      if (
+        !isTimelineTaskComplete(
+          task,
+          checklist,
+          timelineTaskStatuses,
+          hospitalAnswers,
+        )
+      ) {
         updateTimelineTaskStatus(task.id, "done");
       }
     });
@@ -259,11 +278,12 @@ function isDisplayTaskDone(
   taskById: Map<string, TimelineTask>,
   checklist: ChecklistItem[],
   statuses: TimelineTaskStatus[],
+  hospitalAnswers: HospitalAnswer[],
 ) {
   const task = taskById.get(taskId);
 
   if (task) {
-    return isTimelineTaskComplete(task, checklist, statuses);
+    return isTimelineTaskComplete(task, checklist, statuses, hospitalAnswers);
   }
 
   const explicitStatus = statuses.find((status) => status.taskId === taskId)?.status;

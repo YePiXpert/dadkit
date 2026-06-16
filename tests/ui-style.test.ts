@@ -94,6 +94,9 @@ describe("cute maternity app visual direction", () => {
     expect(globals).toContain(".app-hero-card");
     expect(globals).toContain(".app-list-row");
     expect(globals).toContain("max-w-[390px]");
+    expect(globals).toContain("max-width: min(100%, 390px)");
+    expect(globals).toContain("overflow-x: hidden");
+    expect(globals).toContain("touch-action: pan-x pan-y");
     expect(header).toContain("待产准备");
     expect(header).not.toContain(banned("安心", "待产清单"));
     expect(header).toContain("getBabyMascot");
@@ -103,19 +106,21 @@ describe("cute maternity app visual direction", () => {
     expect(layout).toContain('viewportFit: "cover"');
     expect(pwaRegister).toContain("gesturestart");
     expect(pwaRegister).toContain("touchmove");
+    expect(pwaRegister).toContain("touchend");
+    expect(pwaRegister).toContain("preventDoubleTapZoom");
     expect(pwaRegister).toContain("passive: false");
     expect(mobileNav).toContain("bg-card/95");
     expect(mobileNav).toContain("after:bg-primary");
     expect(mobileNav).toContain("h-[3.25rem]");
     expect(mobileNav).toContain("mobile-shell grid");
-    expect(mobileNav).toContain('label: "我的"');
+    expect(mobileNav).toContain('label: "设置"');
     expect(mobileNav).toContain("hiddenRoutes");
     expect(mobileNav).toContain('"/setup"');
     expect(mobileNav).toContain("secondaryRouteOwners");
     expect(mobileNav).toContain('"/contractions"');
     expect(mobileNav).toContain('"/go"');
     expect(mobileNav).not.toContain('"/postpartum"');
-    expect(header).toContain('label: "我的"');
+    expect(header).toContain('label: "设置"');
     expect(header).toContain("secondaryRouteOwners");
     expect(header).not.toContain('"/postpartum"');
     expect(layout).not.toContain("<MobileTopBar");
@@ -253,7 +258,10 @@ describe("cute maternity app visual direction", () => {
     expect(setupPage).toContain("grid grid-cols-2");
     expect(setupPage).toContain("grid-cols-3");
     expect(hospitalPage).toContain("pony-soft-card");
-    expect(hospitalPage).toContain("入院前的关键信息先问清楚");
+    expect(hospitalPage).toContain(
+      "入院流程、医院提供物品、陪产和缴费信息提前确认",
+    );
+    expect(hospitalPage).toContain("医院规则确认表");
     expect(hospitalPage).toContain("趁早确认，入院更从容");
     expect(hospitalPage).not.toContain("dadkit-hospital-clipboard.png");
     expect(hospitalPage).toContain("HospitalQuickRow");
@@ -279,7 +287,11 @@ describe("cute maternity app visual direction", () => {
     expect(timelineDashboard).toContain("formatBabyZodiacLine");
     expect(timelineDashboard).toContain("getBabyMascot");
     expect(timelineDashboard).toContain("打开临出门检查");
-    expect(timelineDashboard).toContain("grid-cols-[2.75rem_minmax(0,1fr)]");
+    expect(timelineDashboard).toContain("阶段安排");
+    expect(timelineDashboard).toContain("flex min-w-0 gap-3");
+    expect(timelineDashboard).not.toContain(
+      "grid-cols-[2.75rem_minmax(0,1fr)]",
+    );
     expect(timelineDashboard).toContain("w-full min-w-0 max-w-full");
     expect(timelineDashboard).toContain("whitespace-normal break-words");
     expect(timelinePage).not.toContain("lg:max-w-none");

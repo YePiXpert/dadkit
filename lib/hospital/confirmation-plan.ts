@@ -30,11 +30,11 @@ export const HOSPITAL_CONFIRMATION_GROUP_LABELS: Record<
   HospitalConfirmationGroupId,
   string
 > = {
-  provided_items: "医院提供物品",
+  provided_items: "物品提供",
   admission_flow: "入院流程",
   partner_policy: "陪产探视",
   labor_support: "临产支持",
-  payment: "费用结算",
+  payment: "缴费结算",
   discharge: "出院办理",
 };
 

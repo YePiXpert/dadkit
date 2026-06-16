@@ -851,7 +851,7 @@ function applyStayDayQuantities(item: ChecklistItem, profile: UserProfile) {
   if (item.name === "一次性内裤") {
     return {
       ...item,
-      quantity: `${Math.max(1, profile.expectedStayDays)} 天用量`,
+      quantity: `${Math.max(5, profile.expectedStayDays)} 条或按预计住院天数准备`,
     };
   }
 
@@ -1071,18 +1071,21 @@ export function calculateCompletion(items: ChecklistItem[]) {
   return completionResult(total, completed);
 }
 
+export function isPackingProgressItem(item: ChecklistItem) {
+  const normalized = normalizeChecklistItem(item);
+
+  return (
+    normalized.itemKind === "item" &&
+    normalized.category !== "hospital_questions" &&
+    normalized.category !== "last_minute" &&
+    normalized.bag !== "none" &&
+    normalized.bag !== "car" &&
+    normalized.status !== "not_needed"
+  );
+}
+
 export function calculatePackingCompletion(items: ChecklistItem[]) {
-  const packableItems = items
-    .map(normalizeChecklistItem)
-    .filter(
-      (item) =>
-        item.itemKind === "item" &&
-        item.category !== "hospital_questions" &&
-        item.category !== "last_minute" &&
-        item.bag !== "none" &&
-        item.bag !== "car" &&
-        item.status !== "not_needed",
-    );
+  const packableItems = items.filter(isPackingProgressItem);
   const completed = packableItems.filter((item) =>
     ["packed", "hospital_provided"].includes(item.status),
   ).length;

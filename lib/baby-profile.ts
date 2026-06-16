@@ -111,6 +111,13 @@ export function getBabyMascot(
   const zodiac = getChineseZodiacInfo(profile?.dueDate);
   const sex = getBabySex(profile);
 
+  if (!profile?.dueDate && sex === "unknown") {
+    return {
+      alt: "待产准备小马插图",
+      src: "/illustrations/dadkit-horse-girl.png",
+    };
+  }
+
   if (zodiac?.animal === "马" && sex === "girl") {
     return {
       alt: "小马女宝待产插图",

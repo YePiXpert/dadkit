@@ -8,6 +8,7 @@ import {
   CATEGORY_ORDER,
   PRIORITY_LABELS,
   type ChecklistItem,
+  type HospitalAnswer,
   type PackStatus,
   type UserProfile,
 } from "@/lib/types";
@@ -234,7 +235,7 @@ export function generateDadExecutionShareText(
     section("临出门拿", lastMinute),
     section("出院返家", goingHome),
     section("妈妈和宝宝核心物品", momBabyCore),
-    section("下次产检要问的问题", questions),
+    section("医院规则确认", questions),
   ]
     .filter(Boolean)
     .join("\n");
@@ -251,8 +252,9 @@ function lineForTimelineTask(
   task: TimelineTask,
   checklist: ChecklistItem[],
   statuses: TimelineTaskStatus[],
+  hospitalAnswers: HospitalAnswer[] = [],
 ) {
-  const status = isTimelineTaskComplete(task, checklist, statuses)
+  const status = isTimelineTaskComplete(task, checklist, statuses, hospitalAnswers)
     ? "已完成"
     : "待处理";
 
@@ -263,6 +265,7 @@ export function generateTimelineShareText(
   profile: UserProfile,
   checklist: ChecklistItem[],
   timelineTaskStatuses: TimelineTaskStatus[] = [],
+  hospitalAnswers: HospitalAnswer[] = [],
 ) {
   const timeline = generateTimeline(profile, checklist);
   const currentStageId = getCurrentTimelineStageId(profile);
@@ -271,6 +274,7 @@ export function generateTimelineShareText(
     profile,
     checklist,
     timelineTaskStatuses,
+    hospitalAnswers,
   ).slice(0, 5);
   const goTasks = generateGoModeTasks(profile, checklist);
 
@@ -280,19 +284,29 @@ export function generateTimelineShareText(
     currentStage
       ? `${currentStage.title}（${currentStage.subtitle}）`
       : "填写预产期后自动计算",
-    "\n## 今日优先任务",
+    "\n## 当前优先任务",
     todayTasks.length > 0
       ? todayTasks
           .map((task) =>
-            `${lineForTimelineTask(task, checklist, timelineTaskStatuses)} · ${
-              TIMELINE_STAGE_TITLES[task.stageId]
-            }`,
+            `${lineForTimelineTask(
+              task,
+              checklist,
+              timelineTaskStatuses,
+              hospitalAnswers,
+            )} · ${TIMELINE_STAGE_TITLES[task.stageId]}`,
           )
           .join("\n")
       : "- 暂无",
     "\n## 临出门检查",
     goTasks
-      .map((task) => lineForTimelineTask(task, checklist, timelineTaskStatuses))
+      .map((task) =>
+        lineForTimelineTask(
+          task,
+          checklist,
+          timelineTaskStatuses,
+          hospitalAnswers,
+        ),
+      )
       .join("\n"),
   ].join("\n");
 }
@@ -301,6 +315,7 @@ export function generateGoShareText(
   profile: UserProfile,
   checklist: ChecklistItem[],
   timelineTaskStatuses: TimelineTaskStatus[] = [],
+  hospitalAnswers: HospitalAnswer[] = [],
 ) {
   const goTasks = generateGoModeTasks(profile, checklist);
 
@@ -309,7 +324,14 @@ export function generateGoShareText(
     "\n## 现在就检查这些",
     goTasks.length > 0
       ? goTasks
-          .map((task) => lineForTimelineTask(task, checklist, timelineTaskStatuses))
+          .map((task) =>
+            lineForTimelineTask(
+              task,
+              checklist,
+              timelineTaskStatuses,
+              hospitalAnswers,
+            ),
+          )
           .join("\n")
       : "- 暂无临出门任务",
     "\n提醒：临出门时优先查看这张表，其他清单可后续处理。",
@@ -339,7 +361,7 @@ export function generateHospitalCommunicationShareText(
 
   return [
     formatProfile(profile, "DadKit 医院沟通版"),
-    section("产检 / 入院待问", questions),
+    section("医院规则确认", questions),
     section("电话、路线和结算确认", routeAndContacts),
   ]
     .filter(Boolean)

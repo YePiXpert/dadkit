@@ -13,6 +13,16 @@ export type HomeSummary = {
   lastMinute: SummaryPart;
 };
 
+export type HomeReadinessMetric = {
+  id: "packing" | "hospital" | "go";
+  label: string;
+  completed: number;
+  total: number;
+  percent: number;
+  caption: string;
+  href: string;
+};
+
 function summaryPart(total: number, completed: number): SummaryPart {
   return {
     total,
@@ -80,4 +90,38 @@ export function buildHomeSummary(
       lastMinuteItems.filter(itemIsDone).length,
     ),
   };
+}
+
+export function buildHomeReadinessMetrics(
+  summary: HomeSummary,
+): HomeReadinessMetric[] {
+  return [
+    {
+      id: "packing",
+      label: "待产包",
+      completed: summary.corePacking.completed,
+      total: summary.corePacking.total,
+      percent: summary.corePacking.percent,
+      caption: "需要带到医院的核心物品",
+      href: "/checklist",
+    },
+    {
+      id: "hospital",
+      label: "医院规则",
+      completed: summary.hospitalQuestions.completed,
+      total: summary.hospitalQuestions.total,
+      percent: summary.hospitalQuestions.percent,
+      caption: "入院流程和医院提供物品",
+      href: "/hospital",
+    },
+    {
+      id: "go",
+      label: "临出门",
+      completed: summary.lastMinute.completed,
+      total: summary.lastMinute.total,
+      percent: summary.lastMinute.percent,
+      caption: "发动当天再拿和再确认",
+      href: "/go",
+    },
+  ];
 }

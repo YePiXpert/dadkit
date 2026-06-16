@@ -23,7 +23,6 @@ const groupTone: Record<ChecklistVisualGroup, string> = {
   going_home: "border-lavender bg-lavender text-lavender-foreground",
   last_minute: "border-blush bg-blush text-blush-foreground",
   mom_bag: "border-blush bg-blush text-blush-foreground",
-  questions: "border-sky-200 bg-sky-50 text-sky-700",
   shopping: "border-peach bg-peach text-peach-foreground",
 };
 
@@ -58,10 +57,10 @@ export function ChecklistGroupTabs({
             >
               <ChecklistGroupIcon group={group.id} />
             </span>
-            <span>
-              <span className="block">{group.label}</span>
+            <span className="min-w-0">
+              <span className="block break-words">{group.label}</span>
               {count ? (
-                <span className="mt-0.5 block text-xs font-medium opacity-75">
+                <span className="mt-0.5 block break-words text-xs font-medium opacity-75">
                   未完成 {count.remaining} 项
                 </span>
               ) : null}
@@ -115,17 +114,6 @@ function ChecklistGroupIcon({ group }: { group: ChecklistVisualGroup }) {
         <path d="M9.5 14c1-4 4-6 6.5-6s5.4 2 6.5 6c-3-1.2-4.8-2.4-6.5-4-1.7 1.6-3.5 2.8-6.5 4Z" fill="currentColor" opacity=".28" />
         <path d="M12.7 17h.1M19.2 17h.1M13.5 21c1.5 1 3.5 1 5 0" stroke={stroke} strokeLinecap="round" strokeWidth="2.2" />
         <path d="M11 25c2.6 1.8 7.4 1.8 10 0" stroke={stroke} strokeLinecap="round" strokeWidth="2.2" />
-      </svg>
-    );
-  }
-
-  if (group === "questions") {
-    return (
-      <svg aria-hidden="true" className="size-7" viewBox="0 0 32 32">
-        <circle cx="14.5" cy="14.5" fill={softFill} r="7.5" stroke={stroke} strokeWidth="2.2" />
-        <path d="m20 20 5 5" stroke={stroke} strokeLinecap="round" strokeWidth="2.4" />
-        <path d="M12.2 12.6a2.6 2.6 0 1 1 4.3 2c-1.2.9-1.5 1.3-1.5 2.4" fill="none" stroke={stroke} strokeLinecap="round" strokeWidth="2" />
-        <path d="M15 20.5h.1" stroke={stroke} strokeLinecap="round" strokeWidth="2.4" />
       </svg>
     );
   }

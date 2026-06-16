@@ -4,6 +4,7 @@ import {
   calculatePackingCompletion,
   filterItemsForChecklistMode,
   generateChecklist,
+  isPackingProgressItem,
 } from "@/lib/rules";
 import { STATUS_FLOW } from "@/lib/store";
 import { beijingRegionTemplate } from "@/lib/templates/regions";
@@ -199,6 +200,26 @@ describe("generateChecklist", () => {
     expect(items.some((item) => item.name === "吸奶器是否需要带？")).toBe(true);
   });
 
+  it("keeps authority-aligned hospital bag essentials in the general template", () => {
+    const items = generateChecklist(makeProfile({ breastfeeding: true }));
+    const names = items.map((item) => item.name);
+
+    expect(names).toContain("分娩偏好卡 / 出生计划");
+    expect(names).toContain("眼罩");
+    expect(names).toContain("自用枕头，如需要");
+    expect(names).toContain("小风扇 / 喷雾瓶");
+    expect(names).toContain("耳机 / 放松音频");
+    expect(names).toContain("TENS 镇痛仪，如已决定使用");
+    expect(names).toContain("宝宝住院衣物（连体衣/和尚服），如医院不提供");
+    expect(names).toContain("纱布巾 / 小方巾");
+    expect(items.find((item) => item.name === "一次性内裤")?.quantity).toBe(
+      "5 条或按预计住院天数准备",
+    );
+    expect(items.find((item) => item.name === "哺乳内衣")?.quantity).toBe(
+      "2-3 件",
+    );
+  });
+
   it("adds warm items when coldWeather is true", () => {
     const items = generateChecklist(makeProfile({ coldWeather: true }));
 
@@ -272,6 +293,25 @@ describe("generateChecklist", () => {
     ]);
 
     expect(result).toEqual({ total: 1, completed: 1, percent: 100 });
+  });
+
+  it("exposes the same packable predicate used by packing progress", () => {
+    const item = testItem({ status: "todo" });
+    const hospitalQuestion = testItem({
+      id: "question",
+      category: "hospital_questions",
+      itemKind: "question",
+    });
+    const lastMinute = testItem({
+      id: "last",
+      category: "last_minute",
+      itemKind: "task",
+      bag: "last_minute",
+    });
+
+    expect(isPackingProgressItem(item)).toBe(true);
+    expect(isPackingProgressItem(hospitalQuestion)).toBe(false);
+    expect(isPackingProgressItem(lastMinute)).toBe(false);
   });
 
   it("does not count last-minute checks toward packing completion", () => {

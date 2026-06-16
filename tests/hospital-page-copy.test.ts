@@ -18,8 +18,11 @@ describe("hospital page copy", () => {
     expect(hospitalPage).not.toContain("入院路线 / 电话 / 停车");
     expect(hospitalPage).not.toContain('value="provided"');
     expect(hospitalPage).toContain("医院规则");
-    expect(hospitalPage).toContain("产检问答与入院信息");
-    expect(hospitalPage).toContain("下次产检要问");
+    expect(hospitalPage).toContain(
+      "入院流程、医院提供物品、陪产和缴费信息提前确认",
+    );
+    expect(hospitalPage).toContain("医院规则确认表");
+    expect(hospitalPage).toContain("下一项先确认");
     expect(hospitalPage).toContain("家人要确认");
     expect(hospitalPage).toContain("高级设置");
     expect(hospitalPage).toContain("lg:grid-cols-[1.15fr_0.85fr]");

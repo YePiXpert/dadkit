@@ -34,9 +34,13 @@ import {
   generateBirthPlanShareText,
   generateContractionsShareText,
 } from "@/lib/rc";
+import {
+  buildHomeReadinessMetrics,
+  buildHomeSummary,
+} from "@/lib/presentation/home-summary";
 import { useDadKitStore } from "@/lib/store";
 import { getDaysUntilDue } from "@/lib/timeline";
-import { COMPLETED_STATUSES, type ChecklistItem, type UserProfile } from "@/lib/types";
+import type { HospitalAnswer, UserProfile } from "@/lib/types";
 
 type SharePoster = {
   caption: string;
@@ -50,6 +54,7 @@ type SharePoster = {
 export default function SharePage() {
   const profile = useDadKitStore((state) => state.profile);
   const checklist = useDadKitStore((state) => state.checklist);
+  const hospitalAnswers = useDadKitStore((state) => state.hospitalAnswers);
   const timelineTaskStatuses = useDadKitStore(
     (state) => state.timelineTaskStatuses,
   );
@@ -72,11 +77,16 @@ export default function SharePage() {
 
   const babyLine = formatBabyZodiacLine(profile);
   const mascot = getBabyMascot(profile);
-  const posterCards = buildSharePosters(profile, checklist);
+  const posterCards = buildSharePosters(profile, checklist, hospitalAnswers);
   const leanText = generateLeanShareText(checklist, profile);
   const fullText = generateShareText(checklist, profile, "DadKit 完整待产准备清单");
   const dadText = generateDadExecutionShareText(checklist, profile);
-  const goText = generateGoShareText(profile, checklist, timelineTaskStatuses);
+  const goText = generateGoShareText(
+    profile,
+    checklist,
+    timelineTaskStatuses,
+    hospitalAnswers,
+  );
   const hospitalText = generateHospitalCommunicationShareText(checklist, profile);
   const birthPlanText = generateBirthPlanShareText(birthPlan);
   const contractionsText = generateContractionsShareText(contractions);
@@ -84,6 +94,7 @@ export default function SharePage() {
     profile,
     checklist,
     timelineTaskStatuses,
+    hospitalAnswers,
   );
   const jsonText = exportJson();
 
@@ -115,7 +126,7 @@ export default function SharePage() {
               {babyLine}
             </p>
             <p className="text-sm leading-6 text-primary-foreground/75">
-              待产包 · 产检问题 · 临出门检查
+              待产包 · 医院规则 · 临出门检查
             </p>
           </div>
           <Button
@@ -240,6 +251,7 @@ function SharePosterCard({
           alt={mascot.alt}
           className="pointer-events-none absolute -right-6 bottom-[-1.25rem] h-28 w-28 object-contain opacity-95"
           height={1254}
+          priority
           sizes="112px"
           src={mascot.src}
           width={1254}
@@ -277,27 +289,18 @@ function SharePosterCard({
 
 function buildSharePosters(
   profile: UserProfile,
-  checklist: ChecklistItem[],
+  checklist: Parameters<typeof buildHomeSummary>[0],
+  hospitalAnswers: HospitalAnswer[],
 ): SharePoster[] {
   const dueDate = profile.dueDate ?? "待填写";
   const daysLeft = getDaysUntilDue(profile);
-  const total = checklist.length;
-  const completed = checklist.filter((item) =>
-    COMPLETED_STATUSES.includes(item.status),
-  ).length;
-  const hospitalQuestions = checklist.filter(
-    (item) => item.category === "hospital_questions" || item.itemKind === "question",
-  );
-  const goItems = checklist.filter(
-    (item) =>
-      item.category === "last_minute" ||
-      item.bag === "last_minute" ||
-      item.timing === "grab_before_leaving",
+  const [packing, hospital, go] = buildHomeReadinessMetrics(
+    buildHomeSummary(checklist, hospitalAnswers),
   );
 
   return [
     {
-      caption: `待产准备摘要：预产期 ${dueDate}，距离预产期 ${formatDaysMetric(daysLeft)}。包含待产包、医院问题和临出门检查。`,
+      caption: `待产准备摘要：预产期 ${dueDate}，距离预产期 ${formatDaysMetric(daysLeft)}。包含待产包、医院规则和临出门检查。`,
       detail: `预产期 ${dueDate}`,
       icon: Sparkles,
       metric: formatDaysMetric(daysLeft),
@@ -305,27 +308,27 @@ function buildSharePosters(
       tone: "coral",
     },
     {
-      caption: `待产包进度 ${completed}/${total}。优先确认证件、医院信息和临出门必带项。`,
-      detail: "待产包、证件和医院确认一起看",
+      caption: `待产包进度 ${packing.completed}/${packing.total}。优先确认证件、妈妈包和宝宝包。`,
+      detail: packing.caption,
       icon: CheckCircle2,
-      metric: `${completed}/${total}`,
-      title: "准备进度",
+      metric: `${packing.completed}/${packing.total}`,
+      title: packing.label,
       tone: "mint",
     },
     {
-      caption: `下次产检我要问清楚 ${hospitalQuestions.length} 个问题：医院提供什么、入院入口、陪产规则、证件和支付方式都提前确认。`,
-      detail: "医院规则提前问清楚",
+      caption: `医院规则确认 ${hospital.completed}/${hospital.total}。医院提供物品、入院入口、陪产规则和缴费方式提前确认。`,
+      detail: hospital.caption,
       icon: Hospital,
-      metric: `${hospitalQuestions.length} 项`,
-      title: "下次产检要问",
+      metric: `${hospital.completed}/${hospital.total}`,
+      title: hospital.label,
       tone: "lavender",
     },
     {
-      caption: `临出门检查：证件、手机、充电器、妈妈包、宝宝包、医院电话和路线，出发前集中确认。`,
-      detail: "出发前只看关键项",
+      caption: `临出门检查 ${go.completed}/${go.total}。证件、手机、充电器、妈妈包、宝宝包、医院电话和路线出发前集中确认。`,
+      detail: go.caption,
       icon: CalendarClock,
-      metric: `${goItems.length} 项`,
-      title: "临出门检查",
+      metric: `${go.completed}/${go.total}`,
+      title: go.label,
       tone: "amber",
     },
     {

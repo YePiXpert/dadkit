@@ -7,22 +7,34 @@ export function PwaRegister() {
 
   useEffect(() => {
     const preventGesture: EventListener = (event) => event.preventDefault();
+    let lastTouchEnd = 0;
     const preventMultiTouch = (event: TouchEvent) => {
       if (event.touches.length > 1) {
         event.preventDefault();
       }
+    };
+    const preventDoubleTapZoom = (event: TouchEvent) => {
+      const now = Date.now();
+
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+
+      lastTouchEnd = now;
     };
 
     document.addEventListener("gesturestart", preventGesture);
     document.addEventListener("gesturechange", preventGesture);
     document.addEventListener("gestureend", preventGesture);
     document.addEventListener("touchmove", preventMultiTouch, { passive: false });
+    document.addEventListener("touchend", preventDoubleTapZoom, { passive: false });
 
     return () => {
       document.removeEventListener("gesturestart", preventGesture);
       document.removeEventListener("gesturechange", preventGesture);
       document.removeEventListener("gestureend", preventGesture);
       document.removeEventListener("touchmove", preventMultiTouch);
+      document.removeEventListener("touchend", preventDoubleTapZoom);
     };
   }, []);
 

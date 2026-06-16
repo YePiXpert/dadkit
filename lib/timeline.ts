@@ -6,7 +6,7 @@ import {
   isShoppingListItem,
 } from "@/lib/preparation";
 import { normalizeChecklistItem } from "@/lib/rules";
-import type { ChecklistItem, Priority, UserProfile } from "@/lib/types";
+import type { ChecklistItem, HospitalAnswer, Priority, UserProfile } from "@/lib/types";
 
 export type TimelineStageId =
   | "six_weeks"
@@ -21,6 +21,7 @@ export type TimelineTask = {
   title: string;
   description?: string;
   relatedItemIds?: string[];
+  relatedHospitalQuestionIds?: string[];
   priority: Priority;
   kind:
     | "shopping"
@@ -78,6 +79,7 @@ function task(
   priority: Priority,
   relatedItemIds: string[] = [],
   description?: string,
+  relatedHospitalQuestionIds: string[] = [],
 ): TimelineTask {
   return {
     id,
@@ -85,6 +87,7 @@ function task(
     title,
     description,
     relatedItemIds,
+    relatedHospitalQuestionIds,
     priority,
     kind,
   };
@@ -117,6 +120,19 @@ function activeWashingItems(items: ChecklistItem[]) {
 
 function statusForTask(taskId: string, statuses: TimelineTaskStatus[]) {
   return statuses.find((candidate) => candidate.taskId === taskId)?.status;
+}
+
+function answerComplete(answer?: Pick<HospitalAnswer, "status">) {
+  return Boolean(answer && answer.status !== "todo");
+}
+
+function relatedHospitalAnswers(
+  task: TimelineTask,
+  hospitalAnswers: HospitalAnswer[],
+) {
+  const ids = new Set(task.relatedHospitalQuestionIds ?? []);
+
+  return hospitalAnswers.filter((answer) => ids.has(answer.itemId));
 }
 
 function relatedChecklistItems(task: TimelineTask, checklist: ChecklistItem[]) {
@@ -197,6 +213,8 @@ export function generateTimeline(
             items,
             (item) => item.itemKind === "question" && nameIncludes(item, "产褥垫"),
           ),
+          undefined,
+          ["question-provided-postpartum-pads"],
         ),
         task(
           "six_weeks",
@@ -208,6 +226,8 @@ export function generateTimeline(
             items,
             (item) => item.itemKind === "question" && nameIncludes(item, "尿不湿"),
           ),
+          undefined,
+          ["question-provided-baby-diapers"],
         ),
         task(
           "six_weeks",
@@ -219,6 +239,8 @@ export function generateTimeline(
             items,
             (item) => item.itemKind === "question" && nameIncludes(item, "宝宝衣物"),
           ),
+          undefined,
+          ["question-provided-baby-clothes"],
         ),
         task(
           "six_weeks",
@@ -227,6 +249,8 @@ export function generateTimeline(
           "dad_task",
           "must",
           relatedIds(items, (item) => nameIncludes(item, "产科", "住院处")),
+          undefined,
+          ["question-admission-phone", "question-labor-urgent-contact"],
         ),
         task(
           "six_weeks",
@@ -235,6 +259,8 @@ export function generateTimeline(
           "dad_task",
           "must",
           relatedIds(items, (item) => nameIncludes(item, "入院入口", "停车")),
+          undefined,
+          ["question-admission-day-entrance", "question-admission-night-route"],
         ),
       ],
     },
@@ -377,6 +403,14 @@ export function generateTimeline(
             items,
             (item) => item.itemKind === "question" || item.category === "hospital_questions",
           ),
+          undefined,
+          [
+            "question-provided-postpartum-pads",
+            "question-provided-baby-diapers",
+            "question-provided-baby-clothes",
+            "question-admission-day-entrance",
+            "question-admission-night-route",
+          ],
         ),
       ],
     },
@@ -393,6 +427,8 @@ export function generateTimeline(
           "dad_task",
           "must",
           relatedIds(items, (item) => nameIncludes(item, "夜间入院", "急诊入院")),
+          undefined,
+          ["question-admission-night-route"],
         ),
         task(
           "one_week",
@@ -401,6 +437,8 @@ export function generateTimeline(
           "dad_task",
           "must",
           relatedIds(items, (item) => nameIncludes(item, "停车")),
+          undefined,
+          ["question-admission-day-entrance", "question-admission-night-route"],
         ),
         task(
           "one_week",
@@ -409,6 +447,8 @@ export function generateTimeline(
           "dad_task",
           "must",
           relatedIds(items, (item) => nameIncludes(item, "支付", "押金")),
+          undefined,
+          ["question-payment-deposit", "question-payment-methods"],
         ),
         task(
           "one_week",
@@ -421,6 +461,8 @@ export function generateTimeline(
             (item) =>
               item.itemKind === "question" && nameIncludes(item, "医保结算"),
           ),
+          undefined,
+          ["question-payment-insurance"],
         ),
         task(
           "one_week",
@@ -429,6 +471,8 @@ export function generateTimeline(
           "dad_task",
           "must",
           relatedIds(items, (item) => nameIncludes(item, "陪产人", "身份证件")),
+          undefined,
+          ["question-partner-allowed", "question-partner-documents"],
         ),
         task(
           "one_week",
@@ -443,6 +487,7 @@ export function generateTimeline(
               nameIncludes(item, "破水", "见红", "胎动异常"),
           ),
           "保存产科、急诊或住院处电话，并确认白天/夜间应该走哪条路线。",
+          ["question-labor-urgent-contact", "question-admission-night-route"],
         ),
         task(
           "one_week",
@@ -559,6 +604,7 @@ export function isTimelineTaskComplete(
   task: TimelineTask,
   checklist: ChecklistItem[],
   statuses: TimelineTaskStatus[] = [],
+  hospitalAnswers: HospitalAnswer[] = [],
 ) {
   const explicitStatus = statusForTask(task.id, statuses);
 
@@ -568,6 +614,19 @@ export function isTimelineTaskComplete(
 
   if (explicitStatus === "todo") {
     return false;
+  }
+
+  const questionIds = task.relatedHospitalQuestionIds ?? [];
+
+  if (questionIds.length > 0) {
+    const answers = relatedHospitalAnswers(task, hospitalAnswers);
+
+    if (
+      answers.length === questionIds.length &&
+      answers.every(answerComplete)
+    ) {
+      return true;
+    }
   }
 
   const items = normalizeItems(checklist);
@@ -599,6 +658,7 @@ export function generateTodayTasks(
   profile: UserProfile,
   checklist: ChecklistItem[],
   statuses: TimelineTaskStatus[] = [],
+  hospitalAnswers: HospitalAnswer[] = [],
 ): TimelineTask[] {
   const currentStageId = getCurrentTimelineStageId(profile);
 
@@ -612,7 +672,8 @@ export function generateTodayTasks(
     currentStageIndex >= 0 ? timeline.slice(currentStageIndex) : timeline;
   const pendingCurrentStageTasks =
     stagesToScan[0]?.tasks.filter(
-      (candidate) => !isTimelineTaskComplete(candidate, checklist, statuses),
+      (candidate) =>
+        !isTimelineTaskComplete(candidate, checklist, statuses, hospitalAnswers),
     ) ?? [];
 
   if (pendingCurrentStageTasks.length > 0) {
@@ -622,17 +683,21 @@ export function generateTodayTasks(
   return stagesToScan
     .slice(1)
     .flatMap((stage) => stage.tasks)
-    .filter((candidate) => !isTimelineTaskComplete(candidate, checklist, statuses));
+    .filter(
+      (candidate) =>
+        !isTimelineTaskComplete(candidate, checklist, statuses, hospitalAnswers),
+    );
 }
 
 export function calculateTimelineStageStatus(
   stage: TimelineStage,
   checklist: ChecklistItem[],
   statuses: TimelineTaskStatus[] = [],
+  hospitalAnswers: HospitalAnswer[] = [],
 ) {
   const total = stage.tasks.length;
   const completed = stage.tasks.filter((taskItem) =>
-    isTimelineTaskComplete(taskItem, checklist, statuses),
+    isTimelineTaskComplete(taskItem, checklist, statuses, hospitalAnswers),
   ).length;
 
   return {

@@ -49,6 +49,8 @@
   html {
     min-height: 100dvh;
     scroll-behavior: smooth;
+    overflow-x: hidden;
+    touch-action: pan-x pan-y;
   }
 
   body {
@@ -58,10 +60,12 @@
       linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(var(--background)) 34%, hsl(var(--cream) / 0.48) 64%, hsl(var(--mint) / 0.38) 100%);
     min-height: 100dvh;
     overflow-x: hidden;
+    touch-action: pan-x pan-y;
   }
 
   main {
     min-height: 100dvh;
+    overflow-x: hidden;
   }
 
   button,
@@ -74,7 +78,7 @@
 
 @layer components {
   .page-shell {
-    @apply mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 pb-24 pt-4 sm:gap-6 sm:px-6 lg:px-8;
+    @apply mx-auto flex w-full max-w-6xl flex-col gap-5 overflow-x-hidden px-4 pb-24 pt-4 sm:gap-6 sm:px-6 lg:px-8;
     padding-bottom: calc(6rem + env(safe-area-inset-bottom));
   }
 
@@ -88,6 +92,8 @@
 
   .mobile-shell {
     @apply mx-auto w-full max-w-[390px];
+    max-width: min(100%, 390px);
+    min-width: 0;
   }
 
   .paper-card {
