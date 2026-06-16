@@ -211,6 +211,10 @@ describe("cute maternity app visual direction", () => {
     expect(goPage).toContain("准备就绪度");
     expect(goPage).toContain("必带物品");
     expect(goPage).toContain("GO_DISPLAY_ITEMS");
+    expect(goPage).toContain("GoAdmissionInfoCard");
+    expect(goPage).toContain("hospitalRouteNotes");
+    expect(goPage).toContain("nightEntranceNotes");
+    expect(goPage).toContain("parkingNotes");
     expect(goPage).toContain("全部 OK，出发！");
     expect(goPage).toContain("markAllDone");
     expect(goPage).toContain("bg-[linear-gradient(100deg,#ff8385");

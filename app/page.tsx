@@ -46,6 +46,7 @@ function overallProgress(summary: HomeSummary) {
 export default function HomePage() {
   const profile = useDadKitStore((state) => state.profile);
   const checklist = useDadKitStore((state) => state.checklist);
+  const birthPlan = useDadKitStore((state) => state.birthPlan);
   const hospitalAnswers = useDadKitStore((state) => state.hospitalAnswers);
   const timelineTaskStatuses = useDadKitStore(
     (state) => state.timelineTaskStatuses,
@@ -70,6 +71,13 @@ export default function HomePage() {
     [checklist, profile, timelineTaskStatuses],
   );
   const readyProgress = useMemo(() => overallProgress(summary), [summary]);
+  const hasAdmissionInfo = Boolean(
+    birthPlan.hospitalPhone.trim() ||
+      birthPlan.hospitalAddress.trim() ||
+      birthPlan.hospitalRouteNotes.trim() ||
+      birthPlan.nightEntranceNotes.trim() ||
+      birthPlan.parkingNotes.trim(),
+  );
 
   return (
     <div className="page-shell">
@@ -79,6 +87,7 @@ export default function HomePage() {
           pregnancyProgress={pregnancyProgress}
           profile={profile}
         />
+        <HomeLaborModePanel hasAdmissionInfo={hasAdmissionInfo} />
         <TodayActionsPanel
           profileReady={Boolean(profile?.dueDate)}
           tasks={todayTasks}
@@ -91,6 +100,33 @@ export default function HomePage() {
         非医疗建议，请以医院通知和产检确认结果为准。
       </p>
     </div>
+  );
+}
+
+function HomeLaborModePanel({
+  hasAdmissionInfo,
+}: {
+  hasAdmissionInfo: boolean;
+}) {
+  return (
+    <Link
+      className="pony-soft-card flex min-h-[5.25rem] items-center gap-3 p-3 transition-colors active:bg-secondary"
+      href="/go"
+    >
+      <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-mint text-primary">
+        <Hospital className="size-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-black text-primary">临产模式</span>
+        <span className="mt-1 block break-words text-base font-black leading-5">
+          电话 / 路线 / 待产包最后确认
+        </span>
+        <span className="mt-1 block break-words text-xs font-semibold leading-4 text-muted-foreground">
+          {hasAdmissionInfo ? "入院联系信息已准备" : "先补医院电话和路线备注"}
+        </span>
+      </span>
+      <ArrowRight className="size-4 shrink-0 text-primary" />
+    </Link>
   );
 }
 

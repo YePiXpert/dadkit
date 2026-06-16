@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { Check } from "lucide-react";
 
 import { EmptyState } from "@/components/EmptyState";
+import { GoAdmissionInfoCard } from "@/components/GoAdmissionInfoCard";
 import { Button } from "@/components/ui/button";
 import { useDadKitStore } from "@/lib/store";
 import {
@@ -63,9 +64,11 @@ const GO_DISPLAY_ITEMS: GoChecklistDisplayItem[] = [
 export default function GoPage() {
   const profile = useDadKitStore((state) => state.profile);
   const checklist = useDadKitStore((state) => state.checklist);
+  const birthPlan = useDadKitStore((state) => state.birthPlan);
   const timelineTaskStatuses = useDadKitStore(
     (state) => state.timelineTaskStatuses,
   );
+  const saveBirthPlan = useDadKitStore((state) => state.saveBirthPlan);
   const updateTimelineTaskStatus = useDadKitStore(
     (state) => state.updateTimelineTaskStatus,
   );
@@ -87,6 +90,13 @@ export default function GoPage() {
   const remainingCount = Math.max(0, tasks.length - completedCount);
   const progressPercent =
     tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
+  const hasAnyAdmissionInfo = Boolean(
+    birthPlan.hospitalPhone.trim() ||
+      birthPlan.hospitalAddress.trim() ||
+      birthPlan.hospitalRouteNotes.trim() ||
+      birthPlan.nightEntranceNotes.trim() ||
+      birthPlan.parkingNotes.trim(),
+  );
 
   function displayItemDone(item: GoChecklistDisplayItem) {
     return item.taskIds.every((taskId) =>
@@ -169,6 +179,12 @@ export default function GoPage() {
             width={1254}
           />
         </div>
+
+        <GoAdmissionInfoCard
+          birthPlan={birthPlan}
+          hasAnyAdmissionInfo={hasAnyAdmissionInfo}
+          onUpdate={saveBirthPlan}
+        />
 
         <section className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
           <div className="border-b border-border/80 px-4 py-3">

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  BIRTH_PLAN_ADMISSION_FIELDS,
   BIRTH_PLAN_LONG_FIELDS,
   BIRTH_PLAN_SHORT_FIELDS,
   PARTNER_SUPPORT_ACTIONS,
@@ -56,6 +57,32 @@ export default function BirthPlanPage() {
                     value={birthPlan[field.key]}
                     onChange={(event) => updateField(field.key, event.target.value)}
                   />
+                </Field>
+              ))}
+            </div>
+
+            <div className="grid gap-3">
+              {BIRTH_PLAN_ADMISSION_FIELDS.map((field) => (
+                <Field
+                  htmlFor={`birth-plan-${field.key}`}
+                  key={field.key}
+                  label={field.label}
+                >
+                  {field.multiline ? (
+                    <Textarea
+                      id={`birth-plan-${field.key}`}
+                      placeholder={field.placeholder}
+                      value={birthPlan[field.key]}
+                      onChange={(event) => updateField(field.key, event.target.value)}
+                    />
+                  ) : (
+                    <Input
+                      id={`birth-plan-${field.key}`}
+                      placeholder={field.placeholder}
+                      value={birthPlan[field.key]}
+                      onChange={(event) => updateField(field.key, event.target.value)}
+                    />
+                  )}
                 </Field>
               ))}
             </div>

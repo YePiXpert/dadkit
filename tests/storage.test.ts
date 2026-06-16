@@ -256,6 +256,42 @@ describe("storage import/export", () => {
     expect(loadPostpartumTasks()[0]).toMatchObject(postpartumTasks[0]);
   });
 
+  it("preserves admission route details through birthPlan export and import", () => {
+    installLocalStorage();
+    const birthPlan = mergeBirthPlan({
+      hospitalPhone: "010-12345678",
+      hospitalAddress: "北京市朝阳区示例医院产科楼",
+      hospitalRouteNotes: "走东门，到住院部 3 层产科",
+      nightEntranceNotes: "夜间走急诊入口，先到分诊台",
+      parkingNotes: "家属车停地下 B2，保留停车票",
+    });
+
+    saveBirthPlan(birthPlan);
+
+    const exported = exportData();
+
+    expect(exported.birthPlan).toMatchObject({
+      hospitalPhone: "010-12345678",
+      hospitalAddress: "北京市朝阳区示例医院产科楼",
+      hospitalRouteNotes: "走东门，到住院部 3 层产科",
+      nightEntranceNotes: "夜间走急诊入口，先到分诊台",
+      parkingNotes: "家属车停地下 B2，保留停车票",
+    });
+
+    saveBirthPlan(mergeBirthPlan());
+
+    const result = importData(JSON.stringify(exported));
+
+    expect(result.ok).toBe(true);
+    expect(loadBirthPlan()).toMatchObject({
+      hospitalPhone: "010-12345678",
+      hospitalAddress: "北京市朝阳区示例医院产科楼",
+      hospitalRouteNotes: "走东门，到住院部 3 层产科",
+      nightEntranceNotes: "夜间走急诊入口，先到分诊台",
+      parkingNotes: "家属车停地下 B2，保留停车票",
+    });
+  });
+
   it("does not clear v0.4 local data when old JSON omits new fields", () => {
     installLocalStorage();
     const contractions = [

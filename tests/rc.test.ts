@@ -90,4 +90,26 @@ describe("rc helpers", () => {
     expect(birthPlanText).toContain("减痛");
     expect(birthPlanText).toContain("陪产");
   });
+
+  it("keeps admission route fields in birth-plan defaults and share text", () => {
+    expect(DEFAULT_BIRTH_PLAN).toMatchObject({
+      hospitalAddress: "",
+      hospitalRouteNotes: "",
+      nightEntranceNotes: "",
+      parkingNotes: "",
+    });
+
+    const birthPlan = mergeBirthPlan({
+      hospitalPhone: "010-12345678",
+      hospitalAddress: "产科楼东门",
+      hospitalRouteNotes: "白天走住院部，先到三层护士站",
+      nightEntranceNotes: "夜间走急诊入口",
+      parkingNotes: "地下 B2 靠近 3 号电梯",
+    });
+    const text = generateBirthPlanShareText(birthPlan);
+
+    expect(text).toContain("产科楼东门");
+    expect(text).toContain("夜间走急诊入口");
+    expect(text).toContain("地下 B2 靠近 3 号电梯");
+  });
 });
