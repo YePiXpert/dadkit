@@ -62,6 +62,16 @@ npm.cmd run visual:screenshots
 
 This script uses local Chrome/Edge DevTools Protocol and is the preferred fallback when the Codex in-app Browser cannot access `127.0.0.1:3000` because of enterprise network policy.
 
+Run it against an active Next dev server. If no server is listening at
+`BASE_URL`, Chrome can still capture an `ERR_CONNECTION_REFUSED` page and the
+script may exit successfully. Treat screenshot verification as valid only when:
+
+* `BASE_URL` points to the running dev server, for example:
+  `BASE_URL=http://127.0.0.1:3217 npm.cmd run visual:screenshots`.
+* The generated `manifest.json` has no `exception` or `network` diagnostics.
+* At least the changed route screenshots are opened and visually checked for the
+  expected app content, not a browser error page.
+
 ---
 
 ## Code Review Checklist
