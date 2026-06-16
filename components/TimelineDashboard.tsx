@@ -146,6 +146,15 @@ export function TimelineDashboard({
     overallStats.total === 0
       ? 0
       : Math.round((overallStats.completed / overallStats.total) * 100);
+  const currentStageList =
+    currentStageIndex >= 0
+      ? [timeline[currentStageIndex]]
+      : currentStage
+        ? [currentStage]
+        : [];
+  const otherStageList = timeline.filter(
+    (stage) => !currentStageList.some((current) => current?.id === stage.id),
+  );
 
   return (
     <section className="mobile-shell grid gap-3 overflow-hidden">
@@ -173,20 +182,52 @@ export function TimelineDashboard({
         </span>
       </div>
       <ol className="grid min-w-0 gap-3 overflow-hidden">
-        {timeline.map((stage, index) => (
-          <TimelineStageRow
-            checklist={checklist}
-            currentStageIndex={currentStageIndex}
-            dueDate={dueDate}
-            hospitalAnswers={hospitalAnswers}
-            index={index}
-            key={stage.id}
-            stage={stage}
-            statuses={statuses}
-            onToggleTask={onToggleTask}
-          />
-        ))}
+        {currentStageList.map((stage) => {
+          const index = timeline.findIndex((candidate) => candidate.id === stage.id);
+
+          return (
+            <TimelineStageRow
+              checklist={checklist}
+              currentStageIndex={currentStageIndex}
+              dueDate={dueDate}
+              hospitalAnswers={hospitalAnswers}
+              index={index}
+              key={stage.id}
+              stage={stage}
+              statuses={statuses}
+              onToggleTask={onToggleTask}
+            />
+          );
+        })}
       </ol>
+      {otherStageList.length > 0 ? (
+        <details className="rounded-lg border border-white/90 bg-card/90 p-3 shadow-sm">
+          <summary className="cursor-pointer text-sm font-bold text-primary">
+            查看其他阶段
+          </summary>
+          <ol className="mt-3 grid min-w-0 gap-3 overflow-hidden">
+            {otherStageList.map((stage) => {
+              const index = timeline.findIndex(
+                (candidate) => candidate.id === stage.id,
+              );
+
+              return (
+                <TimelineStageRow
+                  checklist={checklist}
+                  currentStageIndex={currentStageIndex}
+                  dueDate={dueDate}
+                  hospitalAnswers={hospitalAnswers}
+                  index={index}
+                  key={stage.id}
+                  stage={stage}
+                  statuses={statuses}
+                  onToggleTask={onToggleTask}
+                />
+              );
+            })}
+          </ol>
+        </details>
+      ) : null}
 
       <TimelineDueDateCard profile={profile} />
 

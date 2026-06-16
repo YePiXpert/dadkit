@@ -52,7 +52,8 @@ describe("checklist page copy", () => {
 
   it("keeps checklist view choices visible without an embedded horizontal scroller", () => {
     expect(checklistGroupTabs).toContain("grid grid-cols-2");
-    expect(checklistGroupTabs).toContain("min-h-[4.75rem]");
+    expect(checklistGroupTabs).toContain("min-h-[3.9rem]");
+    expect(checklistGroupTabs).toContain("size-6");
     expect(checklistGroupTabs).toContain("ChecklistGroupIcon");
     expect(checklistGroupTabs).toContain("<svg");
     expect(checklistGroupTabs).toContain("未完成 {count.remaining} 项");
@@ -60,6 +61,7 @@ describe("checklist page copy", () => {
     expect(checklistPage).toContain("packing.total - packing.completed");
     expect(checklistGroupTabs).not.toContain("overflow-x-auto");
     expect(checklistGroupTabs).not.toContain("min-w-max");
+    expect(checklistGroupTabs).not.toContain("min-h-[4.75rem]");
     expect(checklistPage).not.toContain("SlidersHorizontal");
   });
 

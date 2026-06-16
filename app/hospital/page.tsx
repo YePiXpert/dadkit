@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  ArrowRight,
   CheckCircle2,
   ClipboardList,
   Hospital,
@@ -313,11 +312,7 @@ export default function HospitalPage() {
         </CardContent>
       </Card>
 
-      <section className="mobile-shell grid gap-2 lg:max-w-none">
-        {quickConfirmRows.map((item) => (
-          <HospitalQuickRow item={item} key={item.title} />
-        ))}
-      </section>
+      <HospitalQuickGrid items={quickConfirmRows} />
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[1.15fr_0.85fr]">
         <QuestionSection
@@ -460,7 +455,17 @@ type HospitalQuickRowInput = {
   tone: "mint" | "lavender" | "coral" | "amber" | "peach";
 };
 
-function HospitalQuickRow({ item }: { item: HospitalQuickRowInput }) {
+function HospitalQuickGrid({ items }: { items: HospitalQuickRowInput[] }) {
+  return (
+    <section className="mobile-shell grid grid-cols-2 gap-2 lg:max-w-none">
+      {items.map((item) => (
+        <HospitalQuickGridItem item={item} key={item.title} />
+      ))}
+    </section>
+  );
+}
+
+function HospitalQuickGridItem({ item }: { item: HospitalQuickRowInput }) {
   const Icon = item.icon;
   const toneClass = {
     amber: "bg-amber-soft text-amber-foreground",
@@ -472,24 +477,23 @@ function HospitalQuickRow({ item }: { item: HospitalQuickRowInput }) {
 
   return (
     <a
-      className="app-list-row min-h-[3.25rem] bg-card/95 p-2.5"
+      className="grid min-h-[4.5rem] min-w-0 gap-1.5 rounded-lg border border-white/80 bg-card/95 p-2.5 shadow-sm transition-colors active:bg-secondary"
       href={`#hospital-confirmation-${item.groupId}`}
     >
-      <span className={`app-icon-tile size-8 rounded-md ${toneClass}`}>
-        <Icon className="size-4" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block break-words text-sm font-bold leading-5">
-          {item.title}
+      <span className="flex items-start justify-between gap-2">
+        <span className={`app-icon-tile size-8 rounded-md ${toneClass}`}>
+          <Icon className="size-4" />
         </span>
-        <span className="mt-0.5 block break-words text-xs leading-4 text-muted-foreground">
-          {item.caption}
+        <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+          {item.done ? "已确认" : "待确认"}
         </span>
       </span>
-      <span className="shrink-0 text-xs font-semibold text-muted-foreground">
-        {item.done ? "已确认" : "待确认"}
+      <span className="block break-words text-sm font-bold leading-5">
+        {item.title}
       </span>
-      <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
+      <span className="block break-words text-xs leading-4 text-muted-foreground">
+        {item.caption}
+      </span>
     </a>
   );
 }

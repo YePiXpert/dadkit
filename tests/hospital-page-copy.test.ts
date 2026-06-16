@@ -28,6 +28,8 @@ describe("hospital page copy", () => {
     expect(hospitalPage).toContain("下一项先确认");
     expect(hospitalPage).toContain("家人要确认");
     expect(hospitalPage).toContain("高级设置");
+    expect(hospitalPage).toContain("HospitalQuickGrid");
+    expect(hospitalPage).toContain("grid-cols-2");
     expect(hospitalPage).toContain("lg:grid-cols-[1.15fr_0.85fr]");
     expect(hospitalPage).toContain("macaron-panel p-4");
     expect(hospitalPage).not.toContain("TabsTrigger");
@@ -44,6 +46,8 @@ describe("hospital page copy", () => {
   it("does not render decorative arrows on static hospital rows", () => {
     expect(hospitalPage).toContain('href={`#hospital-confirmation-${item.groupId}`}');
     expect(hospitalPage).toContain("scroll-mt-24");
+    expect(hospitalPage).not.toContain("function HospitalQuickRow");
     expect(hospitalPage).not.toContain("<article className=\"app-list-row min-h-[3.25rem]");
+    expect(hospitalPage).not.toContain("app-list-row min-h-[3.25rem]");
   });
 });

@@ -51,6 +51,7 @@ concrete status and action copy: "预产期倒计时", "当前优先",
 * Align mobile bottom navigation with the shared mobile shell width.
 * Keep generated/data behavior in `lib/` and page presentation in `components/`.
 * Keep in-app copy practical and restrained. Prefer concrete nouns and actions such as "今日优先", "导出与协作", "摘要卡片", "复制清单", and "详细文本". Avoid telling users what a UI is for if the action label already makes it clear.
+* Keep primary PWA tab first screens compressed. The default mobile flow should show current status plus the next useful action; secondary histories, all-stage lists, and advanced backup/settings controls should move behind `<details>` summaries or below compact grids. Source tests should guard the markers that enforce this, such as `HospitalQuickGrid`, `currentStageList`/`otherStageList`, and `SettingsDetailsSection`.
 * Derive count badges and the visible item list from the same selector/helper. If
   a tab uses `getChecklistVisualGroupItems(items, groupId)` for rendering, use
   that same result for its `total`/`remaining` badge. Do not recompute with a

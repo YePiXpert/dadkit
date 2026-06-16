@@ -443,17 +443,22 @@ export default function SettingsPage() {
               title="免责声明"
             />
             <SettingsShortcutRow
-              caption="密码保存方式和设备范围"
-              href="#webdav-credentials"
+              caption="本地数据和清单数量"
+              href="#current-data-summary"
               icon={<Info className="size-4" />}
-              title="WebDAV 凭据说明"
+              title="当前数据摘要"
             />
           </CardContent>
         </Card>
       </section>
 
-      <section className="mobile-shell grid gap-3 lg:max-w-none">
-        <Card className="macaron-panel" id="local-snapshots">
+      <section className="grid gap-3">
+        <SettingsDetailsSection
+          icon={<History className="size-4 text-primary" />}
+          id="local-snapshots"
+          title="最近备份"
+        >
+          <Card className="macaron-panel">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <History className="size-4 text-primary" />
@@ -533,8 +538,14 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
+        </SettingsDetailsSection>
 
-          <Card className="macaron-panel" id="json-backup">
+        <SettingsDetailsSection
+          icon={<Upload className="size-4 text-primary" />}
+          id="json-backup"
+          title="JSON 备份"
+        >
+          <Card className="macaron-panel">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Upload className="size-4 text-primary" />
@@ -581,8 +592,14 @@ export default function SettingsPage() {
               ) : null}
             </CardContent>
           </Card>
+        </SettingsDetailsSection>
 
-          <Card className="macaron-panel" id="webdav-backup">
+        <SettingsDetailsSection
+          icon={<Cloud className="size-4 text-primary" />}
+          id="webdav-backup"
+          title="WebDAV 备份"
+        >
+          <Card className="macaron-panel">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Cloud className="size-4 text-primary" />
@@ -805,6 +822,13 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+        </SettingsDetailsSection>
+
+        <SettingsDetailsSection
+          icon={<Info className="size-4 text-primary" />}
+          id="current-data-summary"
+          title="当前数据摘要"
+        >
           <Card className="macaron-panel">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -822,7 +846,14 @@ export default function SettingsPage() {
               <StatusTile label="自定义项" value={`${customItems.length} 项`} />
             </CardContent>
           </Card>
-          <Card className="macaron-panel" id="danger-zone">
+        </SettingsDetailsSection>
+
+        <SettingsDetailsSection
+          icon={<RotateCcw className="size-4 text-primary" />}
+          id="danger-zone"
+          title="清空本地数据"
+        >
+          <Card className="macaron-panel">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <RotateCcw className="size-4 text-primary" />
@@ -850,8 +881,14 @@ export default function SettingsPage() {
               ) : null}
             </CardContent>
           </Card>
+        </SettingsDetailsSection>
 
-          <Card className="macaron-panel" id="about-dadkit">
+        <SettingsDetailsSection
+          icon={<Info className="size-4 text-primary" />}
+          id="about-dadkit"
+          title="关于 DadKit"
+        >
+          <Card className="macaron-panel">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Info className="size-4 text-primary" />
@@ -882,8 +919,14 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+        </SettingsDetailsSection>
 
-          <Card className="macaron-panel" id="disclaimer">
+        <SettingsDetailsSection
+          icon={<Info className="size-4 text-primary" />}
+          id="disclaimer"
+          title="免责声明"
+        >
+          <Card className="macaron-panel">
             <CardHeader>
               <CardTitle>免责声明</CardTitle>
             </CardHeader>
@@ -891,8 +934,14 @@ export default function SettingsPage() {
               <DisclaimerBox />
             </CardContent>
           </Card>
+        </SettingsDetailsSection>
 
-          <Card className="macaron-panel" id="webdav-credentials">
+        <SettingsDetailsSection
+          icon={<Cloud className="size-4 text-primary" />}
+          id="webdav-credentials"
+          title="WebDAV 凭据说明"
+        >
+          <Card className="macaron-panel">
             <CardHeader>
               <CardTitle>WebDAV 凭据说明</CardTitle>
             </CardHeader>
@@ -905,6 +954,7 @@ export default function SettingsPage() {
               </p>
             </CardContent>
           </Card>
+        </SettingsDetailsSection>
       </section>
     </div>
   );
@@ -932,6 +982,33 @@ function SettingsShortcutRow({
       </span>
       <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
     </Link>
+  );
+}
+
+function SettingsDetailsSection({
+  children,
+  icon,
+  id,
+  title,
+}: {
+  children: ReactNode;
+  icon: ReactNode;
+  id: string;
+  title: string;
+}) {
+  return (
+    <details
+      className="mobile-shell scroll-mt-24 rounded-lg border border-white/90 bg-card/95 p-4 shadow-soft lg:max-w-none"
+      id={id}
+    >
+      <summary className="cursor-pointer list-none text-base font-bold">
+        <span className="inline-flex items-center gap-2">
+          {icon}
+          {title}
+        </span>
+      </summary>
+      <div className="mt-3 grid gap-3">{children}</div>
+    </details>
   );
 }
 

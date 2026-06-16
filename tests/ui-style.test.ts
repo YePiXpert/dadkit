@@ -264,7 +264,7 @@ describe("cute maternity app visual direction", () => {
     expect(hospitalPage).toContain("医院规则确认表");
     expect(hospitalPage).toContain("趁早确认，入院更从容");
     expect(hospitalPage).not.toContain("dadkit-hospital-clipboard.png");
-    expect(hospitalPage).toContain("HospitalQuickRow");
+    expect(hospitalPage).toContain("HospitalQuickGrid");
     expect(hospitalPage).not.toContain("CuteIllustration");
     expect(hospitalPage).not.toContain("TabsTrigger");
     expect(hospitalQuestionCard).toContain("app-icon-tile");
@@ -281,6 +281,8 @@ describe("cute maternity app visual direction", () => {
     expect(timelineDashboard).toContain("CurrentStagePanel");
     expect(timelineDashboard).toContain("PriorityTasksPanel");
     expect(timelineDashboard).toContain("TimelineStageRow");
+    expect(timelineDashboard).toContain("currentStageList");
+    expect(timelineDashboard).toContain("otherStageList");
     expect(timelineDashboard).toContain("TimelineDueDateCard");
     expect(timelineDashboard).toContain("formatDueDateLabel");
     expect(timelineDashboard).toContain("mobile-shell grid gap-3 overflow-hidden");
@@ -288,6 +290,8 @@ describe("cute maternity app visual direction", () => {
     expect(timelineDashboard).toContain("getBabyMascot");
     expect(timelineDashboard).toContain("打开临出门检查");
     expect(timelineDashboard).toContain("阶段安排");
+    expect(timelineDashboard).toContain("查看其他阶段");
+    expect(timelineDashboard).toMatch(/<details[\s\S]*查看其他阶段/);
     expect(timelineDashboard).toContain("flex min-w-0 gap-3");
     expect(timelineDashboard).not.toContain(
       "grid-cols-[2.75rem_minmax(0,1fr)]",
@@ -303,6 +307,10 @@ describe("cute maternity app visual direction", () => {
     expect(settingsPage).not.toContain("dadkit-dad-avatar.png");
     expect(settingsPage).toContain("备份与恢复");
     expect(settingsPage).toContain("应用信息");
+    expect(settingsPage).toContain("SettingsDetailsSection");
+    expect(settingsPage).toContain("<details");
+    expect(settingsPage).toMatch(/<SettingsDetailsSection[\s\S]*title="最近备份"/);
+    expect(settingsPage).toMatch(/<SettingsDetailsSection[\s\S]*title="WebDAV 备份"/);
     expect(settingsPage).not.toContain("常用小工具");
     expect(settingsPage).not.toContain("完整工具目录");
   });

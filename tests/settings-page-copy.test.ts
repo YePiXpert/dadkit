@@ -23,13 +23,19 @@ describe("settings page copy", () => {
     expect(settingsPage).toContain("资料");
     expect(settingsPage).toContain("备份与恢复");
     expect(settingsPage).toContain("应用信息");
+    expect(settingsPage).toContain("SettingsDetailsSection");
     expect(settingsPage).not.toContain("常用小工具");
     expect(settingsPage).not.toContain("完整工具目录");
     expect(settingsPage).toContain('href="#webdav-backup"');
     expect(settingsPage).toContain('href="#json-backup"');
+    expect(settingsPage).toContain('href="#current-data-summary"');
     expect(settingsPage).toContain('id="local-snapshots"');
     expect(settingsPage).toContain('id="disclaimer"');
     expect(settingsPage).toContain('id="webdav-credentials"');
+    expect(settingsPage).toContain("<details");
+    expect(settingsPage).toMatch(/<SettingsDetailsSection[\s\S]*title="最近备份"/);
+    expect(settingsPage).toMatch(/<SettingsDetailsSection[\s\S]*title="WebDAV 备份"/);
+    expect(settingsPage).not.toContain('<Card className="macaron-panel" id="local-snapshots"');
     expect(settingsPage).not.toContain("TabsTrigger");
   });
 
