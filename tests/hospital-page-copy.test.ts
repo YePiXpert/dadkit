@@ -22,6 +22,9 @@ describe("hospital page copy", () => {
       "入院流程、医院提供物品、陪产和缴费信息提前确认",
     );
     expect(hospitalPage).toContain("医院规则确认表");
+    expect(hospitalPage).toContain("医院规则 {hospitalProgress.completed}/{hospitalProgress.total}");
+    expect(hospitalPage).toContain("家人确认 {dadProgress.completed}/{dadProgress.total}");
+    expect(hospitalPage).not.toContain("{completedConfirmations}/{allConfirmationItems.length}");
     expect(hospitalPage).toContain("下一项先确认");
     expect(hospitalPage).toContain("家人要确认");
     expect(hospitalPage).toContain("高级设置");
@@ -36,5 +39,11 @@ describe("hospital page copy", () => {
     expect(hospitalQuestionCard).toContain("补充记录");
     expect(hospitalQuestionCard).toContain("修改记录");
     expect(hospitalQuestionCard).toContain("aria-label");
+  });
+
+  it("does not render decorative arrows on static hospital rows", () => {
+    expect(hospitalPage).toContain('href={`#hospital-confirmation-${item.groupId}`}');
+    expect(hospitalPage).toContain("scroll-mt-24");
+    expect(hospitalPage).not.toContain("<article className=\"app-list-row min-h-[3.25rem]");
   });
 });

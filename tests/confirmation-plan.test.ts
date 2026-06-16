@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   DAD_ACTION_TASKS,
+  getDadActionProgress,
+  getHospitalQuestionProgress,
   HOSPITAL_CONFIRMATION_QUESTIONS,
 } from "@/lib/hospital/confirmation-plan";
 
@@ -46,5 +48,21 @@ describe("hospital confirmation plan", () => {
         "临近入院前再确认医院规则",
       ]),
     );
+  });
+
+  it("keeps hospital questions and dad actions as separate progress counts", () => {
+    const hospitalProgress = getHospitalQuestionProgress([]);
+    const dadProgress = getDadActionProgress([]);
+
+    expect(hospitalProgress).toMatchObject({
+      completed: 0,
+      total: HOSPITAL_CONFIRMATION_QUESTIONS.length,
+    });
+    expect(dadProgress).toMatchObject({
+      completed: 0,
+      total: DAD_ACTION_TASKS.length,
+    });
+    expect(hospitalProgress.total).toBe(23);
+    expect(dadProgress.total).toBe(9);
   });
 });

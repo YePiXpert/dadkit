@@ -26,7 +26,7 @@ export const CHECKLIST_VISUAL_GROUPS: Array<{
   { id: "mom_bag", label: "妈妈包" },
   { id: "baby_bag", label: "宝宝包" },
   { id: "shopping", label: "购物清单" },
-  { id: "dad", label: "爸爸协作" },
+  { id: "dad", label: "爸爸背包" },
   { id: "going_home", label: "出院返家" },
   { id: "go", label: "临出门检查" },
   { id: "last_minute", label: "临出门拿" },
@@ -37,7 +37,7 @@ export const CHECKLIST_GROUP_LABELS: Record<ChecklistVisualGroup, string> = {
   documents_folder: "证件包检查",
   mom_bag: "妈妈包",
   baby_bag: "宝宝包",
-  dad: "爸爸协作",
+  dad: "爸爸背包",
   shopping: "购物清单",
   go: "临出门检查",
   last_minute: "临出门拿",
@@ -95,7 +95,17 @@ export function getChecklistVisualGroup(item: ChecklistItem): ChecklistVisualGro
   return "going_home";
 }
 
-export function filterItemsByVisualGroup(
+function isDadBackpackItem(item: ChecklistItem) {
+  const normalized = normalizeChecklistItem(item);
+
+  return (
+    normalized.category === "partner" &&
+    normalized.itemKind === "item" &&
+    normalized.bag === "dad_backpack"
+  );
+}
+
+export function getChecklistVisualGroupItems(
   items: ChecklistItem[],
   visualGroup: ChecklistVisualGroup,
 ) {
@@ -111,18 +121,27 @@ export function filterItemsByVisualGroup(
     return items.map(normalizeChecklistItem).filter(isGoCheckItem);
   }
 
+  if (visualGroup === "dad") {
+    return items.filter(isDadBackpackItem);
+  }
+
   return items
     .filter(isPackingChecklistItem)
     .filter((item) => getChecklistVisualGroup(item) === visualGroup);
+}
+
+export function filterItemsByVisualGroup(
+  items: ChecklistItem[],
+  visualGroup: ChecklistVisualGroup,
+) {
+  return getChecklistVisualGroupItems(items, visualGroup);
 }
 
 export function groupItemsForChecklist(items: ChecklistItem[]) {
   return CHECKLIST_GROUP_ORDER.map((group) => ({
     group,
     label: CHECKLIST_GROUP_LABELS[group],
-    items: items
-      .filter(isPackingChecklistItem)
-      .filter((item) => getChecklistVisualGroup(item) === group),
+    items: getChecklistVisualGroupItems(items, group),
   })).filter((entry) => entry.items.length > 0);
 }
 

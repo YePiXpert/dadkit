@@ -25,6 +25,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   DAD_ACTION_TASKS,
+  getDadActionProgress,
+  getHospitalQuestionProgress,
   HOSPITAL_CONFIRMATION_GROUP_LABELS,
   HOSPITAL_CONFIRMATION_QUESTIONS,
   type HospitalConfirmationGroupId,
@@ -166,14 +168,8 @@ export default function HospitalPage() {
   const activeProfile = profile;
   const nextCheckupItems = HOSPITAL_CONFIRMATION_QUESTIONS.map(questionToCardInput);
   const dadConfirmItems = DAD_ACTION_TASKS.map(taskToCardInput);
-  const allConfirmationItems = [...nextCheckupItems, ...dadConfirmItems];
-  const completedConfirmations = allConfirmationItems.filter((item) =>
-    isAnswerDone(answersByItemId.get(item.id)),
-  ).length;
-  const confirmationPercent =
-    allConfirmationItems.length === 0
-      ? 0
-      : Math.round((completedConfirmations / allConfirmationItems.length) * 100);
+  const hospitalProgress = getHospitalQuestionProgress(hospitalAnswers);
+  const dadProgress = getDadActionProgress(hospitalAnswers);
   const groupIds = Object.keys(
     HOSPITAL_CONFIRMATION_GROUP_LABELS,
   ) as HospitalConfirmationGroupId[];
@@ -185,6 +181,7 @@ export default function HospitalPage() {
     return {
       caption: `${stats.completed}/${stats.total} 项已确认`,
       done: stats.total > 0 && stats.completed === stats.total,
+      groupId,
       icon: icons[index % icons.length],
       tone: tones[index % tones.length],
       title: HOSPITAL_CONFIRMATION_GROUP_LABELS[groupId],
@@ -271,18 +268,38 @@ export default function HospitalPage() {
               {hospital ? "已确认" : "待确认"}
             </span>
           </div>
-          <div className="mt-3 rounded-lg border border-white/90 bg-background/70 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-black">医院规则确认</p>
-              <span className="text-sm font-black text-primary">
-                {completedConfirmations}/{allConfirmationItems.length}
-              </span>
+          <div className="mt-3 grid gap-3 rounded-lg border border-white/90 bg-background/70 p-3">
+            <div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-black">
+                  医院规则 {hospitalProgress.completed}/{hospitalProgress.total}
+                </p>
+                <span className="text-sm font-black text-primary">
+                  {hospitalProgress.percent}%
+                </span>
+              </div>
+              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-primary/12">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${hospitalProgress.percent}%` }}
+                />
+              </div>
             </div>
-            <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-primary/12">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${confirmationPercent}%` }}
-              />
+            <div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-black">
+                  家人确认 {dadProgress.completed}/{dadProgress.total}
+                </p>
+                <span className="text-sm font-black text-primary">
+                  {dadProgress.percent}%
+                </span>
+              </div>
+              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-primary/12">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${dadProgress.percent}%` }}
+                />
+              </div>
             </div>
           </div>
           {primaryPendingQuestion ? (
@@ -408,7 +425,11 @@ function QuestionSection({
           </p>
         ) : (
           groupedItems.map((group) => (
-            <div className="grid gap-2" key={group.groupId}>
+            <div
+              className="grid scroll-mt-24 gap-2"
+              id={`hospital-confirmation-${group.groupId}`}
+              key={group.groupId}
+            >
               {group.label ? (
                 <p className="mt-2 text-xs font-semibold text-muted-foreground">
                   {group.label}
@@ -433,6 +454,7 @@ function QuestionSection({
 type HospitalQuickRowInput = {
   caption: string;
   done: boolean;
+  groupId: HospitalConfirmationGroupId;
   icon: LucideIcon;
   title: string;
   tone: "mint" | "lavender" | "coral" | "amber" | "peach";
@@ -449,7 +471,10 @@ function HospitalQuickRow({ item }: { item: HospitalQuickRowInput }) {
   }[item.tone];
 
   return (
-    <article className="app-list-row min-h-[3.25rem] bg-card/95 p-2.5">
+    <a
+      className="app-list-row min-h-[3.25rem] bg-card/95 p-2.5"
+      href={`#hospital-confirmation-${item.groupId}`}
+    >
       <span className={`app-icon-tile size-8 rounded-md ${toneClass}`}>
         <Icon className="size-4" />
       </span>
@@ -465,7 +490,7 @@ function HospitalQuickRow({ item }: { item: HospitalQuickRowInput }) {
         {item.done ? "已确认" : "待确认"}
       </span>
       <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
-    </article>
+    </a>
   );
 }
 

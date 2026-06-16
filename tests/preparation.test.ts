@@ -6,7 +6,10 @@ import {
   getStatusOptionsForItem,
   inferPreparationKind,
 } from "@/lib/preparation";
-import { filterItemsByVisualGroup } from "@/lib/presentation";
+import {
+  filterItemsByVisualGroup,
+  getChecklistVisualGroupItems,
+} from "@/lib/presentation";
 import { generateChecklist } from "@/lib/rules";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem, UserProfile } from "@/lib/types";
@@ -215,6 +218,23 @@ describe("preparation semantics", () => {
     expect(shoppingIds).toContain("general-postpartum-underwear");
     expect(shoppingIds).toContain("general-postpartum-pads");
     expect(shoppingIds).toContain("general-baby-diapers");
+  });
+
+  it("uses one source for checklist group counts and visible items", () => {
+    const items = generateChecklist(makeProfile());
+    const dadItems = getChecklistVisualGroupItems(items, "dad");
+
+    expect(filterItemsByVisualGroup(items, "dad")).toEqual(dadItems);
+    expect(dadItems.map((item) => item.id)).toEqual([
+      "general-partner-id",
+      "general-partner-charger",
+      "general-partner-water-snacks",
+      "general-partner-clothes",
+      "general-partner-toiletries",
+      "general-partner-glasses",
+    ]);
+    expect(dadItems.every((item) => item.itemKind === "item")).toBe(true);
+    expect(dadItems.every((item) => item.bag === "dad_backpack")).toBe(true);
   });
 
   it("saves preparationKind when adding custom items", () => {

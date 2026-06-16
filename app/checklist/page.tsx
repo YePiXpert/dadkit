@@ -44,10 +44,9 @@ import {
 } from "@/lib/types";
 import {
   CHECKLIST_VISUAL_GROUPS,
-  filterItemsByVisualGroup,
+  getChecklistVisualGroupItems,
   groupItemsForChecklist,
   groupItemsForShopping,
-  isPackingChecklistItem,
   type ChecklistVisualGroup,
 } from "@/lib/presentation";
 
@@ -81,7 +80,7 @@ export default function ChecklistPage() {
     [checklist, checklistMode],
   );
   const packingItems = useMemo(
-    () => modeItems.filter(isPackingChecklistItem),
+    () => getChecklistVisualGroupItems(modeItems, "all"),
     [modeItems],
   );
   const categoryOptions = useMemo(
@@ -90,8 +89,8 @@ export default function ChecklistPage() {
   );
   const packing = useMemo(() => calculatePackingCompletion(packingItems), [packingItems]);
   const groupedModeItems = useMemo(
-    () => filterItemsByVisualGroup(packingItems, visualGroup),
-    [packingItems, visualGroup],
+    () => getChecklistVisualGroupItems(modeItems, visualGroup),
+    [modeItems, visualGroup],
   );
   const filteredItems = useMemo(
     () =>
@@ -126,7 +125,7 @@ export default function ChecklistPage() {
             ];
           }
 
-          const items = filterItemsByVisualGroup(modeItems, group.id);
+          const items = getChecklistVisualGroupItems(modeItems, group.id);
           const stats = calculateCompletion(items);
 
           return [

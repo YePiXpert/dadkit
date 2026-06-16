@@ -51,6 +51,13 @@ concrete status and action copy: "预产期倒计时", "当前优先",
 * Align mobile bottom navigation with the shared mobile shell width.
 * Keep generated/data behavior in `lib/` and page presentation in `components/`.
 * Keep in-app copy practical and restrained. Prefer concrete nouns and actions such as "今日优先", "导出与协作", "摘要卡片", "复制清单", and "详细文本". Avoid telling users what a UI is for if the action label already makes it clear.
+* Derive count badges and the visible item list from the same selector/helper. If
+  a tab uses `getChecklistVisualGroupItems(items, groupId)` for rendering, use
+  that same result for its `total`/`remaining` badge. Do not recompute with a
+  broader category filter in the page.
+* Keep hospital confirmation progress split by intent: hospital rule questions
+  are counted separately from family/dad action tasks. Do not present their sum
+  as the primary progress number.
 
 ---
 

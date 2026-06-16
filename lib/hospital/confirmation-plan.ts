@@ -1,4 +1,5 @@
 import { LABOR_HOSPITAL_QUESTION_TITLES } from "@/lib/labor-guide";
+import type { HospitalAnswer } from "@/lib/types";
 
 export type HospitalConfirmationGroupId =
   | "provided_items"
@@ -25,6 +26,35 @@ export type DadActionTask = {
   relatedQuestionIds?: string[];
   homeCore?: boolean;
 };
+
+export type ConfirmationProgress = {
+  completed: number;
+  percent: number;
+  total: number;
+};
+
+function answerIsDone(answer?: HospitalAnswer) {
+  return Boolean(answer && answer.status !== "todo");
+}
+
+function calculateConfirmationProgress(
+  itemIds: string[],
+  answers: HospitalAnswer[],
+): ConfirmationProgress {
+  const answersByItemId = new Map(
+    answers.map((answer) => [answer.itemId, answer] as const),
+  );
+  const completed = itemIds.filter((itemId) =>
+    answerIsDone(answersByItemId.get(itemId)),
+  ).length;
+
+  return {
+    completed,
+    percent:
+      itemIds.length === 0 ? 0 : Math.round((completed / itemIds.length) * 100),
+    total: itemIds.length,
+  };
+}
 
 export const HOSPITAL_CONFIRMATION_GROUP_LABELS: Record<
   HospitalConfirmationGroupId,
@@ -272,3 +302,17 @@ export const DAD_ACTION_TASKS: DadActionTask[] = [
     description: "医院规则可能变化，临近入院前再确认一次。",
   },
 ];
+
+export function getHospitalQuestionProgress(answers: HospitalAnswer[]) {
+  return calculateConfirmationProgress(
+    HOSPITAL_CONFIRMATION_QUESTIONS.map((question) => question.id),
+    answers,
+  );
+}
+
+export function getDadActionProgress(answers: HospitalAnswer[]) {
+  return calculateConfirmationProgress(
+    DAD_ACTION_TASKS.map((task) => task.id),
+    answers,
+  );
+}

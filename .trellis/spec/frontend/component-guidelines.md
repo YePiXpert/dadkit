@@ -94,8 +94,18 @@ of `settings#more-tools`, and absence of tool-directory labels in Settings.
 ## Accessibility
 
 * Interactive task rows should be buttons when they mutate state.
+* Rows with a visible right-arrow affordance must be actionable. Use `Link`/`a`
+  for navigation, `button` for mutation or expansion, or remove the arrow.
 * Decorative images and lines should use either meaningful `alt` text or `aria-hidden`.
 * Preserve at least 44px hit targets for primary mobile actions.
+
+```tsx
+// Correct: the row and arrow share the same click target.
+<a className="app-list-row" href={`#hospital-confirmation-${groupId}`}>
+  <span>{label}</span>
+  <ArrowRight aria-hidden className="size-4" />
+</a>
+```
 
 ---
 
