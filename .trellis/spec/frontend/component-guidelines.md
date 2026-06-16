@@ -73,15 +73,21 @@ opening the app to decide the next action, not browsing a generic tool portal.
 * 清单: packing preparation, category grouping, filters, and checklist operations.
 * 医院: hospital questions, admission rules, and hospital-specific notes.
 * 时间线: pregnancy-stage rhythm and sequencing.
-* 我的: profile, complete tool directory, data backup, app safety, and about.
+* 我的: profile, data backup/recovery, app information, safety, and about.
 
-Home may link to `settings#more-tools`, but it should not render the full tool
-directory. Settings can be denser because users visit it for management and
-recovery tasks rather than urgent action.
+Home should not link to a generic tool directory. It may render only a small
+set of concrete high-frequency actions, such as contraction tracking, admission
+communication, or go-mode checks. Tools should surface in the route where they
+belong, not as a directory inside Settings.
+
+Settings can be denser because users visit it for management and recovery
+tasks, but it must stay focused on profile, backup/recovery, app information,
+and high-risk local-data actions. Do not use Settings/My as a catch-all tool
+warehouse.
 
 **Tests Required**: Source-level UI tests should guard the section labels and
-key links when this contract changes, especially the `/go` home entry and
-`settings#more-tools` tool-directory link.
+key links when this contract changes, especially the `/go` home entry, absence
+of `settings#more-tools`, and absence of tool-directory labels in Settings.
 
 ---
 

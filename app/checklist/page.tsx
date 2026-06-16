@@ -342,7 +342,7 @@ function ChecklistProgressCard({
     <section className="pony-soft-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-bold text-muted-foreground">清单总进度</p>
+          <p className="text-xs font-bold text-muted-foreground">待产包进度</p>
           <div className="mt-1 flex items-end gap-2">
             <span className="text-3xl font-black leading-none text-primary">
               {packing.percent}%

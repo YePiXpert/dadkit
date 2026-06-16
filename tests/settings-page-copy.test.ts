@@ -21,12 +21,15 @@ describe("settings page copy", () => {
     expect(settingsPage).toContain("app-list-card");
     expect(settingsPage).toContain("SettingsShortcutRow");
     expect(settingsPage).toContain("我的资料");
-    expect(settingsPage).toContain("常用小工具");
-    expect(settingsPage).toContain("数据备份");
-    expect(settingsPage).toContain("应用与安全");
+    expect(settingsPage).toContain("备份与恢复");
+    expect(settingsPage).toContain("应用信息");
+    expect(settingsPage).not.toContain("常用小工具");
+    expect(settingsPage).not.toContain("完整工具目录");
     expect(settingsPage).toContain('href="#webdav-backup"');
     expect(settingsPage).toContain('href="#json-backup"');
     expect(settingsPage).toContain('id="local-snapshots"');
+    expect(settingsPage).toContain('id="disclaimer"');
+    expect(settingsPage).toContain('id="webdav-credentials"');
     expect(settingsPage).not.toContain("TabsTrigger");
   });
 
@@ -42,9 +45,8 @@ describe("settings page copy", () => {
   });
 
   it("keeps profile and high-risk settings visible in the settings list", () => {
-    expect(settingsPage).toContain("修改个人资料");
+    expect(settingsPage).toContain("编辑资料");
     expect(settingsPage).toContain("修改地区医院");
-    expect(settingsPage).toContain("编辑医院信息");
     expect(settingsPage).toContain("当前数据摘要");
     expect(settingsPage).toContain("清空本地数据");
     expect(settingsPage).toContain("关于 DadKit");
@@ -53,13 +55,15 @@ describe("settings page copy", () => {
     expect(settingsPage).not.toContain("本地开发 / 未注入");
   });
 
-  it("surfaces the complete tool directory without adding another main tab", () => {
-    expect(settingsPage).toContain('id="more-tools"');
-    expect(settingsPage).toContain('href="/contractions#labor-alerts"');
-    expect(settingsPage).toContain("临产提醒");
-    expect(settingsPage).toContain("破水/见红/胎动异常");
-    expect(settingsPage).toContain("宫缩记录");
-    expect(settingsPage).toContain("分娩偏好卡");
-    expect(settingsPage).toContain("产后办理");
+  it("does not use My as a tool directory", () => {
+    expect(settingsPage).not.toContain('id="more-tools"');
+    expect(settingsPage).not.toContain('href="/contractions#labor-alerts"');
+    expect(settingsPage).not.toContain('href="/contractions"');
+    expect(settingsPage).not.toContain('href="/birth-plan"');
+    expect(settingsPage).not.toContain('href="/postpartum"');
+    expect(settingsPage).not.toContain("临产提醒");
+    expect(settingsPage).not.toContain("宫缩记录");
+    expect(settingsPage).not.toContain("分娩偏好卡");
+    expect(settingsPage).not.toContain("产后办理");
   });
 });

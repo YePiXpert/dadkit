@@ -378,7 +378,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-2">
+      <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-3">
         <Card className="app-list-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">我的资料</CardTitle>
@@ -399,92 +399,54 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="app-list-card" id="more-tools">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">常用小工具</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-2 p-2 pt-0">
-            <SettingsShortcutRow
-              caption="破水/见红/胎动异常记录"
-              href="/contractions#labor-alerts"
-              icon={<Info className="size-4" />}
-              title="临产提醒"
-            />
-            <SettingsShortcutRow
-              caption="记录宫缩频率和持续时间"
-              href="/contractions"
-              icon={<History className="size-4" />}
-              title="宫缩记录"
-            />
-            <SettingsShortcutRow
-              caption="入院沟通信息"
-              href="/birth-plan"
-              icon={<Copy className="size-4" />}
-              title="分娩偏好卡"
-            />
-            <SettingsShortcutRow
-              caption="出生后证件、出院和复查"
-              href="/postpartum"
-              icon={<Upload className="size-4" />}
-              title="产后办理"
-            />
-          </CardContent>
-        </Card>
-
         <Card className="app-list-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">数据备份</CardTitle>
+            <CardTitle className="text-base">备份与恢复</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 p-2 pt-0">
-            <SettingsShortcutRow
-              caption="手动上传或下载远端备份"
-              href="#webdav-backup"
-              icon={<Cloud className="size-4" />}
-              title="WebDAV 备份"
-            />
-            <SettingsShortcutRow
-              caption="复制当前浏览器里的完整数据"
-              href="#json-backup"
-              icon={<Download className="size-4" />}
-              title="导出 JSON"
-            />
-            <SettingsShortcutRow
-              caption="从本地 JSON 文件恢复"
-              href="#json-backup"
-              icon={<Upload className="size-4" />}
-              title="导入 JSON"
-            />
             <SettingsShortcutRow
               caption={`${snapshots.length} 份本地自动快照`}
               href="#local-snapshots"
               icon={<History className="size-4" />}
               title="最近备份"
             />
+            <SettingsShortcutRow
+              caption="导入或复制当前浏览器数据"
+              href="#json-backup"
+              icon={<Download className="size-4" />}
+              title="JSON 备份"
+            />
+            <SettingsShortcutRow
+              caption="手动上传或下载远端备份"
+              href="#webdav-backup"
+              icon={<Cloud className="size-4" />}
+              title="WebDAV 备份"
+            />
           </CardContent>
         </Card>
 
         <Card className="app-list-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">应用与安全</CardTitle>
+            <CardTitle className="text-base">应用信息</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 p-2 pt-0">
-            <SettingsShortcutRow
-              caption="临产信号、宫缩、偏好卡、产后事项"
-              href="#more-tools"
-              icon={<Cloud className="size-4" />}
-              title="完整工具目录"
-            />
-            <SettingsShortcutRow
-              caption="清空前会自动保留快照"
-              href="#danger-zone"
-              icon={<Trash2 className="size-4" />}
-              title="清空本地数据"
-            />
             <SettingsShortcutRow
               caption={`v${releaseInfo.version}`}
               href="#about-dadkit"
               icon={<Info className="size-4" />}
               title="关于 DadKit"
+            />
+            <SettingsShortcutRow
+              caption="本地优先和医疗信息边界"
+              href="#disclaimer"
+              icon={<Info className="size-4" />}
+              title="免责声明"
+            />
+            <SettingsShortcutRow
+              caption="密码保存方式和设备范围"
+              href="#webdav-credentials"
+              icon={<Info className="size-4" />}
+              title="WebDAV 凭据说明"
             />
           </CardContent>
         </Card>
@@ -845,59 +807,6 @@ export default function SettingsPage() {
           </Card>
           <Card className="macaron-panel">
             <CardHeader>
-              <CardTitle>我的资料</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-2">
-              <Button asChild variant="outline">
-                <Link href="/setup">修改个人资料</Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/hospital">修改地区医院</Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/hospital">编辑医院信息</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="macaron-panel">
-            <CardHeader>
-              <CardTitle>常用小工具</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-4">
-              <Button
-                asChild
-                className="h-auto min-h-10 whitespace-normal py-2"
-                variant="outline"
-              >
-                <Link href="/contractions#labor-alerts">临产提醒</Link>
-              </Button>
-              <Button
-                asChild
-                className="h-auto min-h-10 whitespace-normal py-2"
-                variant="outline"
-              >
-                <Link href="/contractions">宫缩记录</Link>
-              </Button>
-              <Button
-                asChild
-                className="h-auto min-h-10 whitespace-normal py-2"
-                variant="outline"
-              >
-                <Link href="/birth-plan">分娩偏好卡</Link>
-              </Button>
-              <Button
-                asChild
-                className="h-auto min-h-10 whitespace-normal py-2"
-                variant="outline"
-              >
-                <Link href="/postpartum">产后办理</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="macaron-panel">
-            <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Info className="size-4 text-primary" />
                 当前数据摘要
@@ -974,7 +883,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="macaron-panel">
+          <Card className="macaron-panel" id="disclaimer">
             <CardHeader>
               <CardTitle>免责声明</CardTitle>
             </CardHeader>
@@ -983,7 +892,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="macaron-panel">
+          <Card className="macaron-panel" id="webdav-credentials">
             <CardHeader>
               <CardTitle>WebDAV 凭据说明</CardTitle>
             </CardHeader>

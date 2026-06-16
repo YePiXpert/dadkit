@@ -114,8 +114,10 @@ describe("cute maternity app visual direction", () => {
     expect(mobileNav).toContain("secondaryRouteOwners");
     expect(mobileNav).toContain('"/contractions"');
     expect(mobileNav).toContain('"/go"');
+    expect(mobileNav).not.toContain('"/postpartum"');
     expect(header).toContain('label: "我的"');
     expect(header).toContain("secondaryRouteOwners");
+    expect(header).not.toContain('"/postpartum"');
     expect(layout).not.toContain("<MobileTopBar");
     expect(layout).not.toContain("@/components/MobileTopBar");
     expect(
@@ -202,6 +204,8 @@ describe("cute maternity app visual direction", () => {
   it("extends the cute macaron treatment beyond the home page", () => {
     expect(checklistPage).toContain("ChecklistProgressCard");
     expect(checklistPage).toContain("ChecklistGroupSummaryCard");
+    expect(checklistPage).toContain("待产包进度");
+    expect(checklistPage).not.toContain("清单总进度");
     expect(hospitalPage).toContain("macaron-panel");
     expect(settingsPage).toContain("macaron-panel");
     expect(checklistPage).toContain("macaron-note");
@@ -285,8 +289,10 @@ describe("cute maternity app visual direction", () => {
     expect(settingsPage).toContain("formatBabyZodiacLine");
     expect(settingsPage).toContain("getBabyMascot");
     expect(settingsPage).not.toContain("dadkit-dad-avatar.png");
-    expect(settingsPage).toContain("常用小工具");
-    expect(settingsPage).toContain("数据备份");
+    expect(settingsPage).toContain("备份与恢复");
+    expect(settingsPage).toContain("应用信息");
+    expect(settingsPage).not.toContain("常用小工具");
+    expect(settingsPage).not.toContain("完整工具目录");
   });
 
   it("keeps controls soft without reintroducing embedded page scrollers", () => {

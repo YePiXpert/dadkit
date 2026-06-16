@@ -20,7 +20,6 @@ const secondaryRouteOwners: Record<string, string[]> = {
   "/checklist": ["/go", "/share"],
   "/hospital": ["/birth-plan"],
   "/timeline": ["/contractions"],
-  "/settings": ["/postpartum"],
 };
 
 export function MobileNav() {

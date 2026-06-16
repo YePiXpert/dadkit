@@ -345,15 +345,15 @@ const homeTools = [
   {
     href: "/birth-plan",
     icon: ClipboardList,
-    subtitle: "沟通信息整理",
-    title: "分娩偏好卡",
+    subtitle: "偏好与联系人",
+    title: "入院沟通",
     tone: "blue" as const,
   },
   {
-    href: "/postpartum",
+    href: "/go",
     icon: CheckCircle2,
-    subtitle: "出生后事项",
-    title: "产后办理",
+    subtitle: "临出门前核对",
+    title: "临出门检查",
     tone: "mint" as const,
   },
 ];
@@ -361,16 +361,7 @@ const homeTools = [
 function HomeToolsPanel() {
   return (
     <section className="pony-soft-card p-3">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-black tracking-normal">常用入口</h2>
-        <Link
-          className="inline-flex items-center gap-1 text-xs font-bold text-primary"
-          href="/settings#more-tools"
-        >
-          全部工具
-          <ArrowRight className="size-3.5" />
-        </Link>
-      </div>
+      <h2 className="mb-2 text-sm font-black tracking-normal">快捷操作</h2>
       <div className="grid grid-cols-3 gap-2">
         {homeTools.map((tool) => (
           <HomeToolLink key={tool.href} tool={tool} />
