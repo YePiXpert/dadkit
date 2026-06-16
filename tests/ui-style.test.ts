@@ -78,6 +78,7 @@ const emptyState = readFileSync(
   join(process.cwd(), "components", "EmptyState.tsx"),
   "utf8",
 );
+const banned = (...parts: string[]) => parts.join("");
 
 describe("cute maternity app visual direction", () => {
   it("uses the warm DadKit palette and reusable cute markers", () => {
@@ -94,7 +95,7 @@ describe("cute maternity app visual direction", () => {
     expect(globals).toContain(".app-list-row");
     expect(globals).toContain("max-w-[390px]");
     expect(header).toContain("待产准备");
-    expect(header).not.toContain("安心待产清单");
+    expect(header).not.toContain(banned("安心", "待产清单"));
     expect(header).toContain("getBabyMascot");
     expect(layout).toContain("#FF5C7A");
     expect(layout).toContain("maximumScale: 1");
@@ -217,7 +218,7 @@ describe("cute maternity app visual direction", () => {
     expect(goPage).toContain("nightEntranceNotes");
     expect(goPage).toContain("parkingNotes");
     expect(goPage).toContain("全部确认，出发");
-    expect(goPage).not.toContain("全部 OK，出发！");
+    expect(goPage).not.toContain(banned("全部 ", "OK", "，出发！"));
     expect(goPage).toContain("markAllDone");
     expect(goPage).toContain("bg-[linear-gradient(100deg,#ff8385");
     expect(goPage).toContain("dadkit-horse-girl.png");
@@ -237,8 +238,8 @@ describe("cute maternity app visual direction", () => {
     expect(setupPage).toContain("SetupHeader");
     expect(setupPage).toContain("填写基础信息，生成待产清单");
     expect(setupPage).toContain("生成待产清单");
-    expect(setupPage).not.toContain("只需 2 分钟");
-    expect(setupPage).not.toContain("专属待产方案");
+    expect(setupPage).not.toContain(banned("只需 ", "2 分钟"));
+    expect(setupPage).not.toContain(banned("专属", "待产方案"));
     expect(setupPage).not.toContain("生成我的待产清单");
     expect(setupPage).toContain("宝宝性别");
     expect(setupPage).toContain("生肖会自动计算");

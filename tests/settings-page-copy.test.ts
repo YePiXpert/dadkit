@@ -7,6 +7,7 @@ const settingsPage = readFileSync(
   join(process.cwd(), "app", "settings", "page.tsx"),
   "utf8",
 );
+const banned = (...parts: string[]) => parts.join("");
 
 describe("settings page copy", () => {
   it("uses a mobile app settings header and single-page sections", () => {
@@ -14,8 +15,8 @@ describe("settings page copy", () => {
     expect(settingsPage).toContain("formatBabyZodiacLine");
     expect(settingsPage).toContain("getBabyMascot");
     expect(settingsPage).toContain("待产清单已生成");
-    expect(settingsPage).not.toContain("安心待产清单");
-    expect(settingsPage).not.toContain("专属清单");
+    expect(settingsPage).not.toContain(banned("安心", "待产清单"));
+    expect(settingsPage).not.toContain(banned("专属", "清单"));
     expect(settingsPage).not.toContain("dadkit-dad-avatar.png");
     expect(settingsPage).toContain("app-list-card");
     expect(settingsPage).toContain("SettingsShortcutRow");

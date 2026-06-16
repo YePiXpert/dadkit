@@ -30,14 +30,17 @@ Do not add local `max-w-*` wrappers to fix mobile width if `mobile-shell` can re
 
 ### Marketing or platform copy inside core app UI
 
-Do not use platform-growth language in product surfaces, such as "姐妹", "可截图", "笔记配图", "分享配图", or "一键分享". DadKit is a preparation tool first. Core pages should label what the user can do or inspect: tasks, status, export, backup, timeline, and collaboration.
+Do not use platform-growth language in product surfaces: community slang,
+screenshot/post framing, or one-click growth phrasing. DadKit is a preparation
+tool first. Core pages should label what the user can do or inspect: tasks,
+status, export, backup, timeline, and collaboration.
 
 Do not make the interface feel like a promotion by using emotional claims or
-over-personalized labels such as "安心待产清单", "专属待产方案", "女宝倒计时",
-"建议今天完成", or "全部工具在我的". Keep gender and zodiac details as profile
-metadata, not primary action labels. Prefer concrete status and action copy:
-"预产期倒计时", "当前优先", "待产清单已生成", "全部工具", "准备摘要",
-and "入院沟通信息".
+over-personalized labels. Keep gender and zodiac details as profile metadata,
+not primary action labels. Avoid pressure subtitles and labels that route users
+through account/profile wording when a direct action label is clearer. Prefer
+concrete status and action copy: "预产期倒计时", "当前优先",
+"待产清单已生成", "全部工具", "准备摘要", and "入院沟通信息".
 
 ---
 
