@@ -256,9 +256,9 @@ export default function HospitalPage() {
   return (
     <div className="page-shell">
       <section className="mobile-shell grid gap-0 lg:max-w-none">
-        <h1 className="text-2xl font-black tracking-normal">医院</h1>
+        <h1 className="text-2xl font-black tracking-normal">医院规则</h1>
         <p className="text-sm font-medium leading-6 text-muted-foreground">
-          入院前的关键信息先问清楚
+          产检问答与入院信息，入院前的关键信息先问清楚
         </p>
       </section>
 

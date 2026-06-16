@@ -59,6 +59,30 @@ For mobile/PWA routes, compose:
 
 Do not reintroduce a global mobile brand header. Desktop `AppHeader` is allowed because it is hidden on mobile.
 
+## Design Decisions
+
+### Task-Flow Mobile IA
+
+**Context**: DadKit has several useful routes, but mobile pages can become hard
+to scan if every page exposes every tool. The primary PWA use case is a dad
+opening the app to decide the next action, not browsing a generic tool portal.
+
+**Decision**: Keep the five mobile tabs stable and assign each a clear job:
+
+* 首页: status, next actions, labor-mode entry, and a small set of frequent shortcuts.
+* 清单: packing preparation, category grouping, filters, and checklist operations.
+* 医院: hospital questions, admission rules, and hospital-specific notes.
+* 时间线: pregnancy-stage rhythm and sequencing.
+* 我的: profile, complete tool directory, data backup, app safety, and about.
+
+Home may link to `settings#more-tools`, but it should not render the full tool
+directory. Settings can be denser because users visit it for management and
+recovery tasks rather than urgent action.
+
+**Tests Required**: Source-level UI tests should guard the section labels and
+key links when this contract changes, especially the `/go` home entry and
+`settings#more-tools` tool-directory link.
+
 ---
 
 ## Accessibility

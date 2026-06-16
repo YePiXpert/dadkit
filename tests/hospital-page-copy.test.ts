@@ -17,7 +17,8 @@ describe("hospital page copy", () => {
     expect(hospitalPage).not.toContain("高优先级问题");
     expect(hospitalPage).not.toContain("入院路线 / 电话 / 停车");
     expect(hospitalPage).not.toContain('value="provided"');
-    expect(hospitalPage).toContain("医院确认");
+    expect(hospitalPage).toContain("医院规则");
+    expect(hospitalPage).toContain("产检问答与入院信息");
     expect(hospitalPage).toContain("下次产检要问");
     expect(hospitalPage).toContain("爸爸要确认");
     expect(hospitalPage).toContain("高级设置");

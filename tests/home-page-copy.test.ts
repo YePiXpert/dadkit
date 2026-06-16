@@ -30,7 +30,8 @@ describe("home page copy", () => {
     expect(homePage).toContain("HomeToolLink");
     expect(homePage).toContain("HomeLaborModePanel");
     expect(homePage).toContain('href="/go"');
-    expect(homePage).toContain("小工具");
+    expect(homePage).toContain("常用入口");
+    expect(homePage).toContain("全部工具在我的");
     expect(homePage).toContain("宫缩记录");
     expect(homePage).toContain("分娩偏好卡");
     expect(homePage).toContain("产后办理");

@@ -275,7 +275,8 @@ describe("cute maternity app visual direction", () => {
     expect(timelineDashboard).not.toContain("CuteIllustration");
     expect(settingsPage).toContain("准爸爸头像");
     expect(settingsPage).toContain("dadkit-dad-avatar.png");
-    expect(settingsPage).toContain("数据与备份");
+    expect(settingsPage).toContain("常用小工具");
+    expect(settingsPage).toContain("数据备份");
   });
 
   it("keeps controls soft without reintroducing embedded page scrollers", () => {

@@ -16,7 +16,10 @@ describe("settings page copy", () => {
     expect(settingsPage).toContain("一起做好交接的我们");
     expect(settingsPage).toContain("app-list-card");
     expect(settingsPage).toContain("SettingsShortcutRow");
-    expect(settingsPage).toContain("数据与备份");
+    expect(settingsPage).toContain("我的资料");
+    expect(settingsPage).toContain("常用小工具");
+    expect(settingsPage).toContain("数据备份");
+    expect(settingsPage).toContain("应用与安全");
     expect(settingsPage).toContain('href="#webdav-backup"');
     expect(settingsPage).toContain('href="#json-backup"');
     expect(settingsPage).toContain('id="local-snapshots"');
@@ -46,9 +49,13 @@ describe("settings page copy", () => {
     expect(settingsPage).not.toContain("本地开发 / 未注入");
   });
 
-  it("surfaces labor-alert tools without adding another main tab", () => {
+  it("surfaces the complete tool directory without adding another main tab", () => {
+    expect(settingsPage).toContain('id="more-tools"');
     expect(settingsPage).toContain('href="/contractions#labor-alerts"');
     expect(settingsPage).toContain("临产提醒");
     expect(settingsPage).toContain("破水/见红/胎动异常");
+    expect(settingsPage).toContain("宫缩记录");
+    expect(settingsPage).toContain("分娩偏好卡");
+    expect(settingsPage).toContain("产后办理");
   });
 });

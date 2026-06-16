@@ -374,7 +374,59 @@ export default function SettingsPage() {
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-2">
         <Card className="app-list-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">数据与备份</CardTitle>
+            <CardTitle className="text-base">我的资料</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 p-2 pt-0">
+            <SettingsShortcutRow
+              caption="预产期、地区、医院和生产方式"
+              href="/setup"
+              icon={<Info className="size-4" />}
+              title="编辑资料"
+            />
+            <SettingsShortcutRow
+              caption="医院模板、地区医院和入院备注"
+              href="/hospital"
+              icon={<Info className="size-4" />}
+              title="修改地区医院"
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="app-list-card" id="more-tools">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">常用小工具</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 p-2 pt-0">
+            <SettingsShortcutRow
+              caption="破水/见红/胎动异常提醒"
+              href="/contractions#labor-alerts"
+              icon={<Info className="size-4" />}
+              title="临产提醒"
+            />
+            <SettingsShortcutRow
+              caption="记录宫缩频率和持续时间"
+              href="/contractions"
+              icon={<History className="size-4" />}
+              title="宫缩记录"
+            />
+            <SettingsShortcutRow
+              caption="给医院和家人看的沟通卡"
+              href="/birth-plan"
+              icon={<Copy className="size-4" />}
+              title="分娩偏好卡"
+            />
+            <SettingsShortcutRow
+              caption="出生后证件、出院和复查"
+              href="/postpartum"
+              icon={<Upload className="size-4" />}
+              title="产后办理"
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="app-list-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">数据备份</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 p-2 pt-0">
             <SettingsShortcutRow
@@ -406,20 +458,14 @@ export default function SettingsPage() {
 
         <Card className="app-list-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">更多</CardTitle>
+            <CardTitle className="text-base">应用与安全</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 p-2 pt-0">
-            <SettingsShortcutRow
-              caption="预产期、医院和生产方式"
-              href="/setup"
-              icon={<Info className="size-4" />}
-              title="编辑资料"
-            />
             <SettingsShortcutRow
               caption="破水/见红/胎动异常、宫缩、偏好卡、产后"
               href="#more-tools"
               icon={<Cloud className="size-4" />}
-              title="更多工具"
+              title="完整工具目录"
             />
             <SettingsShortcutRow
               caption="清空前会自动保留快照"
@@ -792,7 +838,7 @@ export default function SettingsPage() {
           </Card>
           <Card className="macaron-panel">
             <CardHeader>
-              <CardTitle>资料</CardTitle>
+              <CardTitle>我的资料</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
               <Button asChild variant="outline">
@@ -807,9 +853,9 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="macaron-panel" id="more-tools">
+          <Card className="macaron-panel">
             <CardHeader>
-              <CardTitle>更多工具</CardTitle>
+              <CardTitle>常用小工具</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-4">
               <Button

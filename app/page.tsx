@@ -356,12 +356,12 @@ function HomeToolsPanel() {
   return (
     <section className="pony-soft-card p-3">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-black tracking-normal">小工具</h2>
+        <h2 className="text-sm font-black tracking-normal">常用入口</h2>
         <Link
           className="inline-flex items-center gap-1 text-xs font-bold text-primary"
           href="/settings#more-tools"
         >
-          全部
+          全部工具在我的
           <ArrowRight className="size-3.5" />
         </Link>
       </div>

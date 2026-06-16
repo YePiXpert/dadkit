@@ -199,9 +199,12 @@ export default function ChecklistPage() {
       <section className="mobile-shell grid gap-3 lg:max-w-none">
         <details className="rounded-lg border border-white/90 bg-card/90 p-3 shadow-sm">
           <summary className="cursor-pointer text-sm font-semibold text-primary">
-            筛选与操作
+            清单操作
           </summary>
           <div className="mt-3 grid gap-3">
+            <p className="macaron-note">
+              分类、筛选和批量处理放在这里，主页面只保留待产包进度和分组。
+            </p>
             <ModeToggle mode={checklistMode} onChange={setChecklistMode} />
             <div className="grid gap-3 sm:grid-cols-3">
               <Select
