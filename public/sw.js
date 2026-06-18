@@ -1,5 +1,5 @@
-const CACHE_NAME = "dadkit-v1.0.1";
-const PWA_ASSETS = [
+const CACHE_NAME = "dadkit-v1.0.2";
+const PWA_ICON_ASSETS = [
   "/manifest.webmanifest",
   "/icon.svg",
   "/maskable-icon.svg",
@@ -8,6 +8,17 @@ const PWA_ASSETS = [
   "/maskable-icon-512.png",
   "/apple-touch-icon.png",
 ];
+const PWA_ILLUSTRATION_ASSETS = [
+  "/illustrations/dadkit-baby-girl-timer.png",
+  "/illustrations/dadkit-bear-transparent.png",
+  "/illustrations/dadkit-dad-avatar.png",
+  "/illustrations/dadkit-family-card-v2.png",
+  "/illustrations/dadkit-family-transparent.png",
+  "/illustrations/dadkit-go-bunny.png",
+  "/illustrations/dadkit-horse-girl.png",
+  "/illustrations/dadkit-hospital-clipboard.png",
+];
+const PWA_ASSETS = [...PWA_ICON_ASSETS, ...PWA_ILLUSTRATION_ASSETS];
 const APP_SHELL = ["/", ...PWA_ASSETS];
 const STATIC_ASSETS = new Set(PWA_ASSETS);
 
@@ -56,7 +67,11 @@ self.addEventListener("fetch", (event) => {
 });
 
 function shouldCacheAsset(url) {
-  return url.pathname.startsWith("/_next/static/") || STATIC_ASSETS.has(url.pathname);
+  return (
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/illustrations/") ||
+    STATIC_ASSETS.has(url.pathname)
+  );
 }
 
 async function networkFirst(request, fallbackToHome) {

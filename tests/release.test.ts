@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -61,5 +61,23 @@ describe("release endpoints and pages", () => {
     expect(
       existsSync(join(process.cwd(), "public", "apple-touch-icon.png")),
     ).toBe(true);
+  });
+
+  it("pre-caches app illustrations for installed PWA sessions", () => {
+    const sw = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
+    const illustrationAssets = readdirSync(
+      join(process.cwd(), "public", "illustrations"),
+    )
+      .filter((file) => file.endsWith(".png"))
+      .map((file) => `/illustrations/${file}`)
+      .sort();
+
+    expect(illustrationAssets.length).toBeGreaterThan(0);
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.0.2"');
+    expect(sw).toContain('url.pathname.startsWith("/illustrations/")');
+
+    for (const asset of illustrationAssets) {
+      expect(sw).toContain(`"${asset}"`);
+    }
   });
 });
