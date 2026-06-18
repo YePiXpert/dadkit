@@ -1,8 +1,38 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
   <title>DadKit</title>
-  <rect width="512" height="512" fill="#ff5c7a"/>
-  <circle cx="256" cy="256" r="190" fill="#fff7f8"/>
-  <path d="M150 198c0-34.2 27.8-62 62-62h88c34.2 0 62 27.8 62 62v18h24c24.3 0 44 19.7 44 44v96c0 24.3-19.7 44-44 44H126c-24.3 0-44-19.7-44-44v-96c0-24.3 19.7-44 44-44h24v-18Z" fill="#ffe09b"/>
-  <path d="M188 216h136v-18c0-13.3-10.7-24-24-24h-88c-13.3 0-24 10.7-24 24v18Z" fill="#ff5c7a"/>
-  <path d="M198 308l40 40 86-96" fill="none" stroke="#ff5c7a" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <linearGradient id="bg" x1="78" y1="38" x2="430" y2="476" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff8da1"/>
+      <stop offset="0.5" stop-color="#ff5c7a"/>
+      <stop offset="1" stop-color="#f64f8b"/>
+    </linearGradient>
+    <linearGradient id="bag" x1="126" y1="154" x2="386" y2="394" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fffdfb"/>
+      <stop offset="1" stop-color="#fff0f4"/>
+    </linearGradient>
+    <linearGradient id="pocket" x1="184" y1="250" x2="330" y2="372" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffd9e1"/>
+      <stop offset="1" stop-color="#ffc0cf"/>
+    </linearGradient>
+    <linearGradient id="mint" x1="320" y1="144" x2="388" y2="214" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#bcf2dc"/>
+      <stop offset="1" stop-color="#70d7b8"/>
+    </linearGradient>
+    <filter id="softShadow" x="-15%" y="-15%" width="130%" height="135%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#c92d65" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="116" cy="112" r="36" fill="#ffd9a8" opacity="0.95"/>
+  <circle cx="400" cy="388" r="43" fill="#bdf1df" opacity="0.72"/>
+  <circle cx="414" cy="132" r="16" fill="#fff7f8" opacity="0.62"/>
+  <g filter="url(#softShadow)">
+    <path d="M164 208c0-45 36-81 81-81h22c45 0 81 36 81 81v16h-52v-16c0-16-13-29-29-29h-22c-16 0-29 13-29 29v16h-52v-16Z" fill="#ffe5b4"/>
+    <path d="M128 226c0-22 18-40 40-40h176c22 0 40 18 40 40v118c0 29-23 52-52 52H180c-29 0-52-23-52-52V226Z" fill="url(#bag)"/>
+    <path d="M128 254h256v90c0 29-23 52-52 52H180c-29 0-52-23-52-52v-90Z" fill="#fff7f8"/>
+    <path d="M181 276c0-16 13-29 29-29h92c16 0 29 13 29 29v64c0 16-13 29-29 29h-92c-16 0-29-13-29-29v-64Z" fill="url(#pocket)"/>
+    <path d="M218 313l27 27 55-64" fill="none" stroke="#ff5c7a" stroke-width="23" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M350 157c11-18 39-12 39 12 0 24-39 45-39 45s-39-21-39-45c0-24 28-30 39-12Z" fill="url(#mint)"/>
+    <path d="M188 210h136" fill="none" stroke="#ff5c7a" stroke-width="15" stroke-linecap="round" opacity="0.2"/>
+  </g>
 </svg>

@@ -1,6 +1,15 @@
-const CACHE_NAME = "dadkit-v1.0.0";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/icon.svg", "/maskable-icon.svg"];
-const STATIC_ASSETS = new Set(["/manifest.webmanifest", "/icon.svg", "/maskable-icon.svg"]);
+const CACHE_NAME = "dadkit-v1.0.1";
+const PWA_ASSETS = [
+  "/manifest.webmanifest",
+  "/icon.svg",
+  "/maskable-icon.svg",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/maskable-icon-512.png",
+  "/apple-touch-icon.png",
+];
+const APP_SHELL = ["/", ...PWA_ASSETS];
+const STATIC_ASSETS = new Set(PWA_ASSETS);
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
