@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DadKit 信息架构草图</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #253533;
+        --muted: #6d7c78;
+        --line: #eadfdc;
+        --page: #fff8f8;
+        --card: #fffefe;
+        --primary: #fb5f7b;
+        --mint: #d7f5ec;
+        --cream: #fff2c7;
+        --lavender: #efe8ff;
+        --peach: #ffd9bd;
+        --shadow: 0 16px 36px rgba(74, 48, 42, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 30% -10%, #ffe4ec 0 18rem, transparent 24rem),
+          linear-gradient(180deg, #ffffff 0%, var(--page) 46%, #edfbf6 100%);
+        color: var(--ink);
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+
+      main {
+        margin: 0 auto;
+        max-width: 1180px;
+        padding: 32px 20px 56px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      .hero {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+
+      .eyebrow {
+        color: var(--primary);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      h1 {
+        font-size: clamp(28px, 4vw, 46px);
+        line-height: 1.08;
+        letter-spacing: 0;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.7;
+        max-width: 760px;
+      }
+
+      .options {
+        display: grid;
+        gap: 18px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .option {
+        background: rgba(255, 255, 255, 0.86);
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        display: grid;
+        gap: 14px;
+        padding: 14px;
+      }
+
+      .option.recommended {
+        border-color: rgba(251, 95, 123, 0.42);
+      }
+
+      .option-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .option-title {
+        display: grid;
+        gap: 4px;
+      }
+
+      .option h2 {
+        font-size: 18px;
+        line-height: 1.3;
+      }
+
+      .tag {
+        align-self: flex-start;
+        border-radius: 999px;
+        background: var(--mint);
+        color: #237665;
+        flex-shrink: 0;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 6px 10px;
+      }
+
+      .option p {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .phone {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        box-shadow: inset 0 0 0 5px #fff, 0 20px 32px rgba(86, 60, 52, 0.12);
+        margin: 0 auto;
+        max-width: 320px;
+        overflow: hidden;
+        padding: 14px;
+      }
+
+      .screen {
+        background:
+          linear-gradient(180deg, #fff 0%, #fff8f9 55%, #effbf7 100%);
+        border-radius: 20px;
+        display: grid;
+        gap: 10px;
+        min-height: 580px;
+        overflow: hidden;
+        padding: 14px;
+        position: relative;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid rgba(255, 255, 255, 0.88);
+        border-radius: 10px;
+        box-shadow: 0 8px 18px rgba(73, 48, 42, 0.08);
+        padding: 12px;
+      }
+
+      .hero-card {
+        background: linear-gradient(135deg, #fb637b 0%, #ff8f7a 100%);
+        color: #fff;
+        min-height: 116px;
+        position: relative;
+      }
+
+      .hero-card strong {
+        display: block;
+        font-size: 34px;
+        line-height: 1;
+        margin-top: 8px;
+      }
+
+      .section-title {
+        align-items: center;
+        display: flex;
+        font-size: 13px;
+        font-weight: 900;
+        justify-content: space-between;
+      }
+
+      .row {
+        align-items: center;
+        border-top: 1px solid #f2e8e5;
+        display: grid;
+        gap: 10px;
+        grid-template-columns: 32px minmax(0, 1fr) auto;
+        min-height: 48px;
+        padding: 8px 0;
+      }
+
+      .row:first-child {
+        border-top: 0;
+      }
+
+      .icon {
+        align-items: center;
+        background: var(--mint);
+        border-radius: 9px;
+        display: flex;
+        font-size: 16px;
+        height: 32px;
+        justify-content: center;
+        width: 32px;
+      }
+
+      .row strong,
+      .tile strong,
+      .stage strong {
+        display: block;
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .row span,
+      .tile span,
+      .stage span {
+        color: var(--muted);
+        display: block;
+        font-size: 11px;
+        line-height: 1.4;
+        margin-top: 3px;
+      }
+
+      .pill {
+        background: #ffe4ed;
+        border-radius: 999px;
+        color: #9a3649;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 5px 8px;
+        white-space: nowrap;
+      }
+
+      .grid-2 {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid-3 {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .tile {
+        background: rgba(255, 255, 255, 0.76);
+        border: 1px solid #f1e7e4;
+        border-radius: 10px;
+        min-height: 72px;
+        padding: 10px;
+      }
+
+      .nav {
+        background: rgba(255, 255, 255, 0.96);
+        border-top: 1px solid #eee2df;
+        bottom: 0;
+        display: grid;
+        gap: 2px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        left: 0;
+        padding: 7px 7px 9px;
+        position: absolute;
+        right: 0;
+      }
+
+      .nav span {
+        border-radius: 8px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 800;
+        padding: 7px 2px;
+        text-align: center;
+      }
+
+      .nav .active {
+        background: #ffe4ed;
+        color: var(--primary);
+      }
+
+      .stage {
+        align-items: start;
+        display: grid;
+        gap: 10px;
+        grid-template-columns: 34px minmax(0, 1fr);
+      }
+
+      .dot {
+        align-items: center;
+        background: var(--mint);
+        border-radius: 999px;
+        display: flex;
+        height: 34px;
+        justify-content: center;
+        width: 34px;
+      }
+
+      .notes {
+        border-top: 1px solid var(--line);
+        display: grid;
+        gap: 8px;
+        margin-top: 6px;
+        padding-top: 12px;
+      }
+
+      .notes h3 {
+        font-size: 14px;
+      }
+
+      .notes ul {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      @media (max-width: 980px) {
+        .options {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <p class="eyebrow">DadKit Trellis 草图 / 信息架构优化</p>
+        <h1>三种页面重排方向</h1>
+        <p class="subtitle">
+          目标是让 PWA 不再像“很多工具堆在一起”，而是形成稳定路径：
+          首页看状态，清单处理物品，医院处理问答，时间线看节奏，我的承载工具和数据。
+        </p>
+      </section>
+
+      <section class="options">
+        <article class="option recommended">
+          <div class="option-header">
+            <div class="option-title">
+              <h2>A. 任务流优先</h2>
+              <p>推荐。以“今天先做什么”为主线，把工具藏到二级入口。</p>
+            </div>
+            <span class="tag">推荐</span>
+          </div>
+          <div class="phone">
+            <div class="screen">
+              <div class="card hero-card">
+                <p>距离预产期</p>
+                <strong>81 天</strong>
+                <p>当前阶段：先问清楚医院规则</p>
+              </div>
+              <div class="card">
+                <div class="section-title">今天先做 <span class="pill">3 项</span></div>
+                <div class="row">
+                  <div class="icon">🏥</div>
+                  <div><strong>确认生产医院</strong><span>医院</span></div>
+                  <span>›</span>
+                </div>
+                <div class="row">
+                  <div class="icon">📋</div>
+                  <div><strong>问清楚产褥垫是否提供</strong><span>医院问答</span></div>
+                  <span>›</span>
+                </div>
+                <div class="row">
+                  <div class="icon">👜</div>
+                  <div><strong>整理证件包</strong><span>清单</span></div>
+                  <span>›</span>
+                </div>
+              </div>
+              <div class="card">
+                <div class="section-title">常用入口 <span>全部在我的</span></div>
+                <div class="grid-3">
+                  <div class="tile"><strong>临产模式</strong><span>出门前</span></div>
+                  <div class="tile"><strong>宫缩记录</strong><span>信号</span></div>
+                  <div class="tile"><strong>偏好卡</strong><span>沟通</span></div>
+                </div>
+              </div>
+              <div class="nav">
+                <span class="active">首页</span><span>清单</span><span>医院</span><span>时间线</span><span>我的</span>
+              </div>
+            </div>
+          </div>
+          <div class="notes">
+            <h3>适合 DadKit 的理由</h3>
+            <ul>
+              <li>准爸爸打开 App 时通常需要下一步动作，不是浏览所有功能。</li>
+              <li>首页最轻，降低文字撑爆和首屏拥挤风险。</li>
+              <li>和现有首页、时间线、/go 结构最兼容。</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="option">
+          <div class="option-header">
+            <div class="option-title">
+              <h2>B. 五大模块工作台</h2>
+              <p>每个主 Tab 都像一个完整工作台，适合功能很多但更重。</p>
+            </div>
+          </div>
+          <div class="phone">
+            <div class="screen">
+              <div class="card">
+                <div class="section-title">首页总览 <span class="pill">4 区</span></div>
+                <div class="grid-2">
+                  <div class="tile"><strong>准备进度</strong><span>0/47</span></div>
+                  <div class="tile"><strong>医院确认</strong><span>0/18</span></div>
+                  <div class="tile"><strong>待产包</strong><span>0/31</span></div>
+                  <div class="tile"><strong>时间线</strong><span>本阶段</span></div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="section-title">功能分区</div>
+                <div class="row">
+                  <div class="icon">🏠</div>
+                  <div><strong>首页：总体仪表盘</strong><span>所有进度都看一点</span></div>
+                  <span>›</span>
+                </div>
+                <div class="row">
+                  <div class="icon">🧰</div>
+                  <div><strong>我的：全部工具箱</strong><span>备份、资料、工具都在这里</span></div>
+                  <span>›</span>
+                </div>
+              </div>
+              <div class="card">
+                <div class="section-title">风险</div>
+                <p>首页信息量会再次变大，后续更容易回到“每页都很多入口”的状态。</p>
+              </div>
+              <div class="nav">
+                <span class="active">首页</span><span>清单</span><span>医院</span><span>时间线</span><span>我的</span>
+              </div>
+            </div>
+          </div>
+          <div class="notes">
+            <h3>取舍</h3>
+            <ul>
+              <li>优点：所有模块感强，找功能直观。</li>
+              <li>缺点：首页和设置页会继续重，移动端首屏压力大。</li>
+              <li>适合后期功能稳定后再做，不适合当前收敛阶段。</li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="option">
+          <div class="option-header">
+            <div class="option-title">
+              <h2>C. 阶段式向导</h2>
+              <p>按孕周阶段组织所有页面，时间线成为主入口。</p>
+            </div>
+          </div>
+          <div class="phone">
+            <div class="screen">
+              <div class="card">
+                <div class="section-title">当前阶段</div>
+                <h2 style="font-size: 24px; line-height: 1.2; margin-top: 4px;">先问清楚医院规则</h2>
+                <p style="margin-top: 8px;">预产期前 6 周 · 约 2026-07-24</p>
+              </div>
+              <div class="card">
+                <div class="stage">
+                  <div class="dot">🏥</div>
+                  <div><strong>本阶段：医院规则</strong><span>入院、证件、产房、陪产</span></div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="stage">
+                  <div class="dot">👜</div>
+                  <div><strong>下一阶段：待产包装箱</strong><span>妈妈包、宝宝包、证件包</span></div>
+                </div>
+              </div>
+              <div class="card">
+                <div class="stage">
+                  <div class="dot">🚗</div>
+                  <div><strong>最后阶段：临出门检查</strong><span>电话、路线、信号记录</span></div>
+                </div>
+              </div>
+              <div class="nav">
+                <span>首页</span><span>清单</span><span>医院</span><span class="active">时间线</span><span>我的</span>
+              </div>
+            </div>
+          </div>
+          <div class="notes">
+            <h3>取舍</h3>
+            <ul>
+              <li>优点：逻辑完整，孕周阶段感强。</li>
+              <li>缺点：会弱化清单和医院两个主 Tab，改动范围更大。</li>
+              <li>适合以后做“向导模式”，当前不建议作为第一轮。</li>
+            </ul>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
