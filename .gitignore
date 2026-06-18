@@ -30,3 +30,8 @@ coverage
 
 # local coding assistants
 .serena/
+.agents/
+.codex/
+.trellis/
+AGENTS.md
+tmp/
