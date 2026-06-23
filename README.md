@@ -11,6 +11,18 @@ DadKit 是一个给孕晚期家庭使用的本地优先待产准备 PWA。它把
 
 DadKit 不是母婴电商清单，不提供购物链接或商品推荐；也不是医疗建议工具或医院官方规则库。所有医院规则、入院动线、陪产要求、提供物品和产后办理材料，都应以最近一次产检、入院须知、医院通知或当地窗口为准。
 
+## 🖼️ 项目预览
+
+![DadKit README 展示横幅](docs/assets/readme/dadkit-readme-hero.png)
+
+### 功能示例
+
+![DadKit 三屏功能示例](docs/assets/readme/dadkit-feature-overview.svg)
+
+### 使用流程
+
+![DadKit 使用流程图](docs/assets/readme/dadkit-workflow.svg)
+
 ## ✨ 核心功能
 
 - 🗓️ **今日优先**：根据预产期和当前准备状态，显示今天最值得先做的几件事。
