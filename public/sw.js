@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v1.0.2";
+const CACHE_NAME = "dadkit-v1.2.0";
 const PWA_ICON_ASSETS = [
   "/manifest.webmanifest",
   "/icon.svg",

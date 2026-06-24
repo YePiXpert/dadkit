@@ -7,9 +7,9 @@ import { PwaRegister } from "@/components/PwaRegister";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "DadKit 待产包",
+  title: "DadKit 待产准备",
   description:
-    "根据预产期、地区、医院和生产方式生成的本地优先待产包清单工具。",
+    "围绕医院确认、核心待产包、临出门沟通卡和产后提醒生成的本地优先待产准备工具。",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
