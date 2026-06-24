@@ -24,8 +24,9 @@ const ROUTES = [
   ["05-timeline", "/timeline"],
   ["06-go", "/go"],
   ["07-contractions", "/contractions"],
-  ["08-settings", "/settings"],
-  ["09-share", "/share"],
+  ["08-postpartum", "/postpartum"],
+  ["09-settings", "/settings"],
+  ["10-share", "/share"],
 ];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

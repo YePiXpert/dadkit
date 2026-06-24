@@ -273,7 +273,7 @@ export function generateBirthPlanShareText(plan: BirthPlan) {
   const merged = mergeBirthPlan(plan);
 
   return [
-    "DadKit 分娩偏好 / 入院沟通卡",
+    "DadKit 临出门沟通卡",
     "提醒：这不是医疗建议，只是方便家人、护士和医生快速沟通。",
     "",
     `紧急联系人：${valueOrEmpty(merged.emergencyContact)}`,

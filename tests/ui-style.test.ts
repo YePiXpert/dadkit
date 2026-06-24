@@ -42,6 +42,10 @@ const settingsPage = readFileSync(
   join(process.cwd(), "app", "settings", "page.tsx"),
   "utf8",
 );
+const postpartumPage = readFileSync(
+  join(process.cwd(), "app", "postpartum", "page.tsx"),
+  "utf8",
+);
 const hospitalQuestionCard = readFileSync(
   join(process.cwd(), "components", "HospitalQuestionCard.tsx"),
   "utf8",
@@ -239,6 +243,10 @@ describe("cute maternity app visual direction", () => {
     expect(contractionsPage).toContain("WATER_BREAK_STEPS");
     expect(contractionsPage).toContain('id="labor-alerts"');
     expect(contractionsPage).not.toContain("CuteIllustration");
+    expect(postpartumPage).toContain("产后提醒");
+    expect(postpartumPage).toContain("窗口待确认");
+    expect(postpartumPage).toContain("不判断政策是否最新");
+    expect(postpartumPage).toContain("mergePostpartumTasks");
   });
 
   it("keeps setup and hospital confirmation close to the mobile app mockups", () => {

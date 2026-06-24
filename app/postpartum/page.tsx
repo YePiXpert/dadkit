@@ -5,7 +5,9 @@ import { Info } from "lucide-react";
 import { ExportTextArea } from "@/components/ExportTextArea";
 import { PageIntro } from "@/components/PageIntro";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -18,6 +20,7 @@ import {
   POSTPARTUM_GROUP_LABELS,
   POSTPARTUM_STATUS_LABELS,
   generatePostpartumShareText,
+  mergePostpartumTasks,
   type PostpartumTaskGroup,
   type PostpartumTaskStatus,
 } from "@/lib/rc";
@@ -28,6 +31,14 @@ export default function PostpartumPage() {
   const updatePostpartumTask = useDadKitStore(
     (state) => state.updatePostpartumTask,
   );
+  const mergedPostpartumTasks = mergePostpartumTasks(postpartumTasks);
+  const completedTasks = mergedPostpartumTasks.filter(
+    (task) => task.status !== "todo",
+  ).length;
+  const progress =
+    mergedPostpartumTasks.length === 0
+      ? 0
+      : Math.round((completedTasks / mergedPostpartumTasks.length) * 100);
   const exportText = generatePostpartumShareText(postpartumTasks);
 
   return (
@@ -39,6 +50,33 @@ export default function PostpartumPage() {
       />
 
       <section className="mobile-shell grid gap-3 lg:max-w-none">
+        <Card className="pony-soft-card">
+          <CardContent className="grid gap-3 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-black text-primary">产后提醒</p>
+                <h2 className="mt-1 break-words text-lg font-black leading-6">
+                  出院后要问、要存、要办理
+                </h2>
+              </div>
+              <span className="shrink-0 text-sm font-black text-primary">
+                {completedTasks}/{mergedPostpartumTasks.length}
+              </span>
+            </div>
+            <Progress className="h-2 bg-primary/12" value={progress} />
+            <div className="flex flex-wrap gap-2">
+              <Badge className="bg-amber-soft text-amber-foreground">
+                窗口待确认
+              </Badge>
+              <Badge variant="soft">用户备注</Badge>
+              <Badge variant="outline">不适用可标记</Badge>
+            </div>
+            <p className="text-xs font-semibold leading-5 text-muted-foreground">
+              这里记录办理事项和材料口径，不判断政策是否最新，也不代替窗口要求。
+            </p>
+          </CardContent>
+        </Card>
+
         <Card className="app-list-card">
           <CardContent className="app-list-row p-3 text-sm leading-6 text-primary">
             <span className="app-icon-tile">
@@ -55,12 +93,19 @@ export default function PostpartumPage() {
             [PostpartumTaskGroup, string]
           >
         ).map(([group, label]) => {
-          const tasks = postpartumTasks.filter((task) => task.group === group);
+          const tasks = mergedPostpartumTasks.filter((task) => task.group === group);
 
           return (
             <Card className="macaron-panel" key={group}>
               <CardHeader>
-                <CardTitle>{label}</CardTitle>
+                <CardTitle className="flex items-center justify-between gap-3">
+                  <span>{label}</span>
+                  <span className="text-xs font-black text-primary">
+                    {
+                      tasks.filter((task) => task.status !== "todo").length
+                    }/{tasks.length}
+                  </span>
+                </CardTitle>
               </CardHeader>
               <CardContent className="grid gap-3">
                 {tasks.map((task) => (

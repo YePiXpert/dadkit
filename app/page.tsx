@@ -27,6 +27,11 @@ import {
   buildHomeSummary,
   type HomeReadinessMetric,
 } from "@/lib/presentation/home-summary";
+import {
+  buildPlanPillars,
+  type PlanPillar,
+  type PlanPillarId,
+} from "@/lib/presentation/plan-pillars";
 import { useDadKitStore } from "@/lib/store";
 import type { UserProfile } from "@/lib/types";
 import {
@@ -40,6 +45,7 @@ export default function HomePage() {
   const checklist = useDadKitStore((state) => state.checklist);
   const birthPlan = useDadKitStore((state) => state.birthPlan);
   const hospitalAnswers = useDadKitStore((state) => state.hospitalAnswers);
+  const postpartumTasks = useDadKitStore((state) => state.postpartumTasks);
   const timelineTaskStatuses = useDadKitStore(
     (state) => state.timelineTaskStatuses,
   );
@@ -71,6 +77,15 @@ export default function HomePage() {
     () => buildHomeReadinessMetrics(summary),
     [summary],
   );
+  const planPillars = useMemo(
+    () =>
+      buildPlanPillars({
+        checklist,
+        hospitalAnswers,
+        postpartumTasks,
+      }),
+    [checklist, hospitalAnswers, postpartumTasks],
+  );
   const hasAdmissionInfo = Boolean(
     birthPlan.hospitalPhone.trim() ||
       birthPlan.hospitalAddress.trim() ||
@@ -87,7 +102,7 @@ export default function HomePage() {
           pregnancyProgress={pregnancyProgress}
           profile={profile}
         />
-        {profile?.dueDate ? <HomePlanReadyPanel /> : null}
+        {profile?.dueDate ? <HomePlanReadyPanel pillars={planPillars} /> : null}
         <TodayFocusPanel
           profileReady={Boolean(profile?.dueDate)}
           tasks={todayTasks}
@@ -104,27 +119,8 @@ export default function HomePage() {
   );
 }
 
-function HomePlanReadyPanel() {
-  const links = [
-    {
-      href: "/checklist",
-      icon: ClipboardList,
-      label: "核心清单",
-      subtitle: "先核对必须带的物品",
-    },
-    {
-      href: "/hospital",
-      icon: Hospital,
-      label: "医院确认",
-      subtitle: "把规则和待问事项补齐",
-    },
-    {
-      href: "/share",
-      icon: Share2,
-      label: "分享备份",
-      subtitle: "发给陪产人或导出",
-    },
-  ];
+function HomePlanReadyPanel({ pillars }: { pillars: PlanPillar[] }) {
+  const shareLink = { href: "/share", label: "导出与协作" };
 
   return (
     <section className="pony-soft-card p-3">
@@ -132,16 +128,22 @@ function HomePlanReadyPanel() {
         <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-mint text-primary">
           <CheckCircle2 className="size-5" />
         </span>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h2 className="text-base font-black tracking-normal">方案已生成</h2>
           <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
-            今天先做最影响入院准备的事，进度可以慢慢补。
+            四件事按状态推进，今天先做最影响入院准备的事。
           </p>
         </div>
+        <Link
+          className="shrink-0 rounded-full bg-card px-3 py-1.5 text-xs font-black text-primary shadow-sm"
+          href={shareLink.href}
+        >
+          {shareLink.label}
+        </Link>
       </div>
-      <div className="grid gap-2">
-        {links.map((link) => (
-          <HomePlanLink key={link.href} link={link} />
+      <div className="grid grid-cols-2 gap-2">
+        {pillars.map((pillar) => (
+          <HomePlanLink key={pillar.id} pillar={pillar} />
         ))}
       </div>
     </section>
@@ -149,34 +151,49 @@ function HomePlanReadyPanel() {
 }
 
 function HomePlanLink({
-  link,
+  pillar,
 }: {
-  link: {
-    href: string;
-    icon: LucideIcon;
-    label: string;
-    subtitle: string;
-  };
+  pillar: PlanPillar;
 }) {
-  const Icon = link.icon;
+  const Icon = planPillarIcon(pillar.id);
 
   return (
     <Link
-      className="grid min-h-[3.7rem] grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-white/80 bg-background/60 px-3 py-2 shadow-sm transition-colors active:bg-secondary"
-      href={link.href}
+      className="grid min-h-[5.4rem] content-start gap-1.5 rounded-lg border border-white/80 bg-background/60 p-2.5 shadow-sm transition-colors active:bg-secondary"
+      href={pillar.href}
     >
-      <span className="flex size-9 items-center justify-center rounded-lg bg-secondary text-primary">
-        <Icon className="size-4" />
-      </span>
-      <span className="min-w-0">
-        <span className="block text-sm font-black leading-5">{link.label}</span>
-        <span className="mt-0.5 block break-words text-xs font-semibold leading-4 text-muted-foreground">
-          {link.subtitle}
+      <span className="flex items-center justify-between gap-2">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
+          <Icon className="size-4" />
+        </span>
+        <span className="text-xs font-black text-primary">
+          {pillar.completed}/{pillar.total}
         </span>
       </span>
-      <ArrowRight className="size-4 shrink-0 text-primary" />
+      <span className="block break-words text-sm font-black leading-5">
+        {pillar.title}
+      </span>
+      <span className="block break-words text-[0.68rem] font-semibold leading-4 text-muted-foreground">
+        {pillar.sourceLabel}
+      </span>
     </Link>
   );
+}
+
+function planPillarIcon(id: PlanPillarId): LucideIcon {
+  if (id === "hospital") {
+    return Hospital;
+  }
+
+  if (id === "go_card") {
+    return Share2;
+  }
+
+  if (id === "postpartum") {
+    return CalendarClock;
+  }
+
+  return ClipboardList;
 }
 
 function HomeLaborModePanel({

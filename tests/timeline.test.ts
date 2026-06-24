@@ -122,7 +122,7 @@ describe("timeline", () => {
     expect(titles).toContain("确认支付方式和住院押金");
     expect(titles).toContain("确认安全座椅安装");
     expect(titles).toContain("确认破水/见红较多/胎动异常时的联系流程");
-    expect(titles).toContain("把分娩偏好卡发给陪产人");
+    expect(titles).toContain("把临出门沟通卡发给陪产人");
   });
 
   it("ranks today's tasks by admission decision impact", () => {

@@ -4,6 +4,10 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const homePage = readFileSync(join(process.cwd(), "app", "page.tsx"), "utf8");
+const planPillars = readFileSync(
+  join(process.cwd(), "lib", "presentation", "plan-pillars.ts"),
+  "utf8",
+);
 const banned = (...parts: string[]) => parts.join("");
 
 describe("home page copy", () => {
@@ -22,9 +26,12 @@ describe("home page copy", () => {
     expect(homePage).toContain("预产期倒计时");
     expect(homePage).not.toContain(banned("女宝", "倒计时"));
     expect(homePage).toContain("方案已生成");
+    expect(homePage).toContain("buildPlanPillars");
     expect(homePage).toContain("HomePlanReadyPanel");
     expect(homePage).toContain("HomePlanLink");
     expect(homePage).toContain('href: "/share"');
+    expect(homePage).toContain("导出与协作");
+    expect(planPillars).toContain("产后提醒");
     expect(homePage).toContain("今日重点");
     expect(homePage).not.toContain(banned("姐妹", "今天先做"));
     expect(homePage).toContain("当前优先");

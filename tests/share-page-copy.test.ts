@@ -4,6 +4,10 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const sharePage = readFileSync(join(process.cwd(), "app", "share", "page.tsx"), "utf8");
+const planPillars = readFileSync(
+  join(process.cwd(), "lib", "presentation", "plan-pillars.ts"),
+  "utf8",
+);
 const banned = (...parts: string[]) => parts.join("");
 
 describe("share page copy", () => {
@@ -13,11 +17,12 @@ describe("share page copy", () => {
     expect(sharePage).toContain("复制摘要");
     expect(sharePage).toContain("详细文本");
     expect(sharePage).toContain("待产准备摘要");
-    expect(sharePage).toContain("待产包 · 医院规则 · 临出门检查");
-    expect(sharePage).toContain("packing.completed");
-    expect(sharePage).toContain("packing.total");
-    expect(sharePage).toContain("医院规则");
-    expect(sharePage).toContain("已整理");
+    expect(sharePage).toContain("医院确认 · 核心待产包 · 临出门沟通 · 产后提醒");
+    expect(sharePage).toContain("buildPlanPillars");
+    expect(sharePage).toContain("posterFromPillar");
+    expect(sharePage).toContain("generatePostpartumShareText");
+    expect(sharePage).toContain("产后提醒");
+    expect(planPillars).toContain("临出门沟通卡");
     expect(sharePage).not.toContain("准备进度");
     expect(sharePage).not.toContain("下次产检要问");
     expect(sharePage).not.toContain("产检问题");

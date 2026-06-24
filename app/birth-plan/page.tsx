@@ -31,8 +31,8 @@ export default function BirthPlanPage() {
     <div className="page-shell">
       <PageIntro
         eyebrow="沟通小抄"
-        title="分娩偏好卡"
-        description="这不是医疗建议，只是一张方便家人、护士和医生快速沟通的信息卡。"
+        title="临出门沟通卡"
+        description="这不是医疗建议，只整理联系人、路线、偏好和备注，方便家人、护士和医生快速沟通。"
       />
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[1fr_0.9fr]">

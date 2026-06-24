@@ -235,6 +235,7 @@ describe("store snapshots", () => {
     const exportedJson = useDadKitStore.getState().exportJson();
 
     expect(plan.emergencyContact).toBe("爸爸 13800000000");
+    expect(generateBirthPlanShareText(plan)).toContain("DadKit 临出门沟通卡");
     expect(generateBirthPlanShareText(plan)).toContain("爸爸 13800000000");
     expect(JSON.parse(exportedJson).birthPlan.supportPerson).toBe("爸爸");
     expect(exportedJson).not.toContain("secret-password");

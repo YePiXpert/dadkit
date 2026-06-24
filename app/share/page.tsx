@@ -33,14 +33,16 @@ import {
 import {
   generateBirthPlanShareText,
   generateContractionsShareText,
+  generatePostpartumShareText,
 } from "@/lib/rc";
 import {
-  buildHomeReadinessMetrics,
-  buildHomeSummary,
-} from "@/lib/presentation/home-summary";
+  buildPlanPillars,
+  type PlanPillar,
+  type PlanPillarId,
+} from "@/lib/presentation/plan-pillars";
 import { useDadKitStore } from "@/lib/store";
 import { getDaysUntilDue } from "@/lib/timeline";
-import type { HospitalAnswer, UserProfile } from "@/lib/types";
+import type { ChecklistItem, HospitalAnswer, UserProfile } from "@/lib/types";
 
 type SharePoster = {
   caption: string;
@@ -60,6 +62,7 @@ export default function SharePage() {
   );
   const contractions = useDadKitStore((state) => state.contractions);
   const birthPlan = useDadKitStore((state) => state.birthPlan);
+  const postpartumTasks = useDadKitStore((state) => state.postpartumTasks);
   const exportJson = useDadKitStore((state) => state.exportJson);
 
   if (!profile) {
@@ -77,7 +80,12 @@ export default function SharePage() {
 
   const babyLine = formatBabyZodiacLine(profile);
   const mascot = getBabyMascot(profile);
-  const posterCards = buildSharePosters(profile, checklist, hospitalAnswers);
+  const posterCards = buildSharePosters(
+    profile,
+    checklist,
+    hospitalAnswers,
+    postpartumTasks,
+  );
   const leanText = generateLeanShareText(checklist, profile);
   const fullText = generateShareText(checklist, profile, "DadKit 完整待产准备清单");
   const dadText = generateDadExecutionShareText(checklist, profile);
@@ -90,6 +98,7 @@ export default function SharePage() {
   const hospitalText = generateHospitalCommunicationShareText(checklist, profile);
   const birthPlanText = generateBirthPlanShareText(birthPlan);
   const contractionsText = generateContractionsShareText(contractions);
+  const postpartumText = generatePostpartumShareText(postpartumTasks);
   const timelineText = generateTimelineShareText(
     profile,
     checklist,
@@ -126,7 +135,7 @@ export default function SharePage() {
               {babyLine}
             </p>
             <p className="text-sm leading-6 text-primary-foreground/75">
-              待产包 · 医院规则 · 临出门检查
+              医院确认 · 核心待产包 · 临出门沟通 · 产后提醒
             </p>
           </div>
           <Button
@@ -147,11 +156,12 @@ export default function SharePage() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="dad">
-            <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-9">
+            <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
               <TabsTrigger value="dad">家人协作</TabsTrigger>
               <TabsTrigger value="go">临出门版</TabsTrigger>
               <TabsTrigger value="hospital">医院沟通版</TabsTrigger>
-              <TabsTrigger value="birth-plan">分娩偏好卡</TabsTrigger>
+              <TabsTrigger value="birth-plan">沟通卡</TabsTrigger>
+              <TabsTrigger value="postpartum">产后提醒</TabsTrigger>
               <TabsTrigger value="contractions">宫缩记录</TabsTrigger>
               <TabsTrigger value="timeline">时间线</TabsTrigger>
               <TabsTrigger value="lean">精简版</TabsTrigger>
@@ -178,6 +188,12 @@ export default function SharePage() {
             </TabsContent>
             <TabsContent value="birth-plan">
               <ExportTextArea value={birthPlanText} />
+            </TabsContent>
+            <TabsContent value="postpartum">
+              <div className="macaron-note mb-3">
+                只整理办理事项和备注口径，最终以当地窗口、医院和官方渠道为准。
+              </div>
+              <ExportTextArea value={postpartumText} />
             </TabsContent>
             <TabsContent value="contractions">
               <ExportTextArea value={contractionsText} />
@@ -289,57 +305,68 @@ function SharePosterCard({
 
 function buildSharePosters(
   profile: UserProfile,
-  checklist: Parameters<typeof buildHomeSummary>[0],
+  checklist: ChecklistItem[],
   hospitalAnswers: HospitalAnswer[],
+  postpartumTasks: Parameters<typeof buildPlanPillars>[0]["postpartumTasks"],
 ): SharePoster[] {
   const dueDate = profile.dueDate ?? "待填写";
   const daysLeft = getDaysUntilDue(profile);
-  const [packing, hospital, go] = buildHomeReadinessMetrics(
-    buildHomeSummary(checklist, hospitalAnswers),
-  );
+  const pillars = buildPlanPillars({ checklist, hospitalAnswers, postpartumTasks });
 
   return [
     {
-      caption: `待产准备摘要：预产期 ${dueDate}，距离预产期 ${formatDaysMetric(daysLeft)}。包含待产包、医院规则和临出门检查。`,
+      caption: `待产准备摘要：预产期 ${dueDate}，距离预产期 ${formatDaysMetric(daysLeft)}。包含医院确认、核心待产包、临出门沟通和产后提醒。`,
       detail: `预产期 ${dueDate}`,
       icon: Sparkles,
       metric: formatDaysMetric(daysLeft),
       title: "预产期倒计时",
       tone: "coral",
     },
-    {
-      caption: `待产包进度 ${packing.completed}/${packing.total}。优先确认证件、妈妈包和宝宝包。`,
-      detail: packing.caption,
-      icon: CheckCircle2,
-      metric: `${packing.completed}/${packing.total}`,
-      title: packing.label,
-      tone: "mint",
-    },
-    {
-      caption: `医院规则确认 ${hospital.completed}/${hospital.total}。医院提供物品、入院入口、陪产规则和缴费方式提前确认。`,
-      detail: hospital.caption,
-      icon: Hospital,
-      metric: `${hospital.completed}/${hospital.total}`,
-      title: hospital.label,
-      tone: "lavender",
-    },
-    {
-      caption: `临出门检查 ${go.completed}/${go.total}。证件、手机、充电器、妈妈包、宝宝包、医院电话和路线出发前集中确认。`,
-      detail: go.caption,
-      icon: CalendarClock,
-      metric: `${go.completed}/${go.total}`,
-      title: go.label,
-      tone: "amber",
-    },
-    {
-      caption: `分娩偏好卡：紧急联系人、陪产人、过敏/用药、沟通偏好，入院时便于家人和医护快速了解。`,
-      detail: "入院沟通信息",
-      icon: ClipboardList,
-      metric: "已整理",
-      title: "分娩偏好卡",
-      tone: "mint",
-    },
+    ...pillars.map(posterFromPillar),
   ];
+}
+
+function posterFromPillar(pillar: PlanPillar): SharePoster {
+  return {
+    caption: `${pillar.title} ${pillar.completed}/${pillar.total}。${pillar.caption}。${pillar.boundary}`,
+    detail: pillar.caption,
+    icon: sharePillarIcon(pillar.id),
+    metric: `${pillar.completed}/${pillar.total}`,
+    title: pillar.title,
+    tone: sharePillarTone(pillar.id),
+  };
+}
+
+function sharePillarIcon(id: PlanPillarId): LucideIcon {
+  if (id === "hospital") {
+    return Hospital;
+  }
+
+  if (id === "go_card") {
+    return ClipboardList;
+  }
+
+  if (id === "postpartum") {
+    return CalendarClock;
+  }
+
+  return CheckCircle2;
+}
+
+function sharePillarTone(id: PlanPillarId): SharePoster["tone"] {
+  if (id === "hospital") {
+    return "lavender";
+  }
+
+  if (id === "go_card") {
+    return "amber";
+  }
+
+  if (id === "postpartum") {
+    return "coral";
+  }
+
+  return "mint";
 }
 
 function formatDaysMetric(daysLeft?: number) {
