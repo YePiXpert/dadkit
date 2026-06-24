@@ -67,6 +67,22 @@ export const TIMELINE_KIND_LABELS: Record<TimelineTask["kind"], string> = {
 
 const COMPLETE_ITEM_STATUSES = ["packed", "hospital_provided", "not_needed"];
 
+const TODAY_PRIORITY_SCORE: Record<Priority, number> = {
+  must: 300,
+  recommended: 150,
+  optional: 50,
+};
+
+const TODAY_KIND_SCORE: Record<TimelineTask["kind"], number> = {
+  hospital: 700,
+  go: 680,
+  documents: 640,
+  dad_task: 600,
+  shopping: 560,
+  packing: 540,
+  washing: 420,
+};
+
 function normalizeItems(checklist: ChecklistItem[]) {
   return checklist.map(normalizeChecklistItem);
 }
@@ -106,6 +122,50 @@ function nameIncludes(item: ChecklistItem, ...keywords: string[]) {
 
 function itemComplete(item: ChecklistItem) {
   return COMPLETE_ITEM_STATUSES.includes(item.status);
+}
+
+function titleHas(task: TimelineTask, ...keywords: string[]) {
+  return keywords.some((keyword) => task.title.includes(keyword));
+}
+
+function todayTaskDecisionScore(task: TimelineTask) {
+  let score = TODAY_PRIORITY_SCORE[task.priority] + TODAY_KIND_SCORE[task.kind];
+
+  if (
+    task.kind === "hospital" ||
+    titleHas(task, "医院", "产科", "住院", "入院", "流程")
+  ) {
+    score += 180;
+  }
+
+  if (task.kind === "go") {
+    score += 160;
+  }
+
+  if (titleHas(task, "证件", "电话", "路线", "停车", "支付", "押金", "安全座椅")) {
+    score += 120;
+  }
+
+  if (titleHas(task, "破水", "见红", "胎动异常", "联系流程")) {
+    score += 260;
+  }
+
+  if (titleHas(task, "妈妈包", "宝宝包", "核心", "购物")) {
+    score += 80;
+  }
+
+  if (task.title === "确认生产医院") {
+    score += 150;
+  }
+
+  return score;
+}
+
+function sortTodayTasks(tasks: TimelineTask[]) {
+  return tasks
+    .map((taskItem, index) => ({ index, score: todayTaskDecisionScore(taskItem), taskItem }))
+    .sort((left, right) => right.score - left.score || left.index - right.index)
+    .map(({ taskItem }) => taskItem);
 }
 
 function activeShoppingItems(items: ChecklistItem[]) {
@@ -677,16 +737,18 @@ export function generateTodayTasks(
     ) ?? [];
 
   if (pendingCurrentStageTasks.length > 0) {
-    return pendingCurrentStageTasks;
+    return sortTodayTasks(pendingCurrentStageTasks);
   }
 
-  return stagesToScan
+  return sortTodayTasks(
+    stagesToScan
     .slice(1)
     .flatMap((stage) => stage.tasks)
     .filter(
       (candidate) =>
         !isTimelineTaskComplete(candidate, checklist, statuses, hospitalAnswers),
-    );
+    ),
+  );
 }
 
 export function calculateTimelineStageStatus(

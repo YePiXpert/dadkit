@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, Home } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Home } from "lucide-react";
 
 import { CustomHospitalForm } from "@/components/CustomHospitalForm";
 import { CuteIllustration } from "@/components/CuteIllustration";
@@ -46,9 +46,33 @@ const PROVIDED_OPTIONS = [
 ];
 
 const DELIVERY_SEGMENTS: Array<{ label: string; value: DeliveryMode }> = [
+  { label: "先不确定", value: "unknown" },
   { label: "顺产", value: "vaginal" },
   { label: "剖宫产", value: "c_section" },
 ];
+
+const WIZARD_STEPS = [
+  {
+    eyebrow: "第 1 步",
+    title: "预产期",
+    description: "先确定时间线，后面的清单和今日优先都会跟着调整。",
+  },
+  {
+    eyebrow: "第 2 步",
+    title: "所在地区",
+    description: "当前按中国大陆待产场景整理，地区用于选择本地模板。",
+  },
+  {
+    eyebrow: "第 3 步",
+    title: "生产方式",
+    description: "不确定也可以先跳过，之后会按产检结果随时改。",
+  },
+  {
+    eyebrow: "第 4 步",
+    title: "医院情况",
+    description: "能确定就选医院；还没确定时，先用待确认模板推进。",
+  },
+] as const;
 
 const BABY_SEX_SEGMENTS: Array<{ label: string; value: BabySex }> = [
   { label: "女宝", value: "girl" },
@@ -68,6 +92,7 @@ export default function SetupPage() {
   const [otherProvided, setOtherProvided] = useState("");
   const [firstBaby, setFirstBaby] = useState(true);
   const [message, setMessage] = useState("");
+  const [wizardStep, setWizardStep] = useState(0);
 
   useEffect(() => {
     if (!profile) {
@@ -146,223 +171,305 @@ export default function SetupPage() {
       createProfile(nextProfile);
     }
 
-    router.push("/checklist");
+    router.push("/");
+  }
+
+  const isFirstRun = !profile;
+  const currentWizardStep = WIZARD_STEPS[wizardStep];
+  const canContinueWizard = wizardStep !== 0 || Boolean(draft.dueDate);
+
+  function goToNextWizardStep() {
+    if (!canContinueWizard) {
+      setMessage("请先填写预产期，DadKit 会据此生成准备时间线。");
+      return;
+    }
+
+    setMessage("");
+    setWizardStep((step) => Math.min(step + 1, WIZARD_STEPS.length - 1));
   }
 
   return (
     <div className="page-shell">
       <section className="mobile-shell grid gap-4">
-        <SetupHeader />
+        <SetupHeader firstRun={isFirstRun} />
 
-        <section className="grid gap-3 rounded-lg border border-white/90 bg-card/95 p-3 shadow-soft">
-          <SetupFieldRow
-            label="预产期"
-            valueHint={
-              draft.dueDate ? formatBabyZodiacLine(draft) : "请选择，生肖会自动计算"
-            }
-          >
-            <Input
-              required
-              className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus-visible:ring-0"
-              type="date"
-              value={draft.dueDate ?? ""}
-              onChange={(event) => {
-                setMessage("");
-                setDraft({
-                  ...draft,
-                  dueDate: event.target.value || undefined,
-                });
-              }}
-            />
-          </SetupFieldRow>
+        {isFirstRun ? (
+          <section className="grid gap-3 rounded-lg border border-white/90 bg-card/95 p-3 shadow-soft">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-black text-primary">
+                  {currentWizardStep.eyebrow} / 4 步生成可信方案
+                </p>
+                <h2 className="mt-1 text-lg font-black leading-6">
+                  {currentWizardStep.title}
+                </h2>
+              </div>
+              <span className="rounded-full bg-mint px-3 py-1 text-xs font-black text-primary">
+                {wizardStep + 1}/4
+              </span>
+            </div>
+            <p className="text-sm font-medium leading-6 text-muted-foreground">
+              {currentWizardStep.description}
+            </p>
+            <WizardProgress currentStep={wizardStep} />
 
-          <SegmentField label="宝宝性别" columns={3}>
-            {BABY_SEX_SEGMENTS.map((option) => (
-              <SegmentButton
-                active={(draft.babySex ?? "unknown") === option.value}
-                key={option.value}
-                label={option.label}
-                onClick={() => setDraft({ ...draft, babySex: option.value })}
-              />
-            ))}
-          </SegmentField>
-
-          <SetupFieldRow label="所在地" valueHint="北京市">
-            <Select
-              value={draft.regionId}
-              onValueChange={(regionId) => setDraft({ ...draft, regionId })}
-            >
-              <SelectTrigger className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus:ring-0 [&>svg]:hidden">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cn-bj-general">北京市</SelectItem>
-                <SelectItem value="other">其他地区</SelectItem>
-              </SelectContent>
-            </Select>
-          </SetupFieldRow>
-
-          <SetupFieldRow
-            label="选择医院（可选）"
-            valueHint={selectedHospital?.name ?? "我还没确定医院"}
-          >
-            <HospitalSelector
-              triggerClassName="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus:ring-0 [&>svg]:hidden"
-              value={{
-                hospitalMode: draft.hospitalMode,
-                hospitalId: draft.hospitalId,
-              }}
-              onChange={(value) =>
-                setDraft({
-                  ...draft,
-                  hospitalMode: value.hospitalMode,
-                  hospitalId: value.hospitalId,
-                })
-              }
-            />
-          </SetupFieldRow>
-
-          <SegmentField label="生产方式">
-            {DELIVERY_SEGMENTS.map((option) => (
-              <SegmentButton
-                active={draft.deliveryMode === option.value}
-                key={option.value}
-                label={option.label}
-                onClick={() =>
-                  setDraft({ ...draft, deliveryMode: option.value })
-                }
-              />
-            ))}
-          </SegmentField>
-
-          <SegmentField label="首次生产？">
-            <SegmentButton
-              active={firstBaby}
-              label="是"
-              onClick={() => setFirstBaby(true)}
-            />
-            <SegmentButton
-              active={!firstBaby}
-              label="否"
-              onClick={() => setFirstBaby(false)}
-            />
-          </SegmentField>
-        </section>
-
-        <Button className="h-14 w-full bg-primary text-base shadow-soft" onClick={submit}>
-          生成待产清单
-        </Button>
-        <p className="text-center text-xs font-medium text-muted-foreground">
-          保存后可随时修改
-        </p>
-
-        {message ? <p className="macaron-note">{message}</p> : null}
-
-        <details className="rounded-lg border border-white/90 bg-card/90 p-3 shadow-sm">
-          <summary className="cursor-pointer text-sm font-bold text-primary">
-            更多医院信息（可选）
-          </summary>
-          <div className="mt-4 grid gap-4">
-            {selectedHospital?.verificationStatus === "unverified" ? (
-              <p className="rounded-lg border border-amber/35 bg-amber-soft px-3 py-2 text-sm leading-6 text-amber-foreground">
-                该医院模板尚未核验，请以最近一次产检、入院须知或医院通知为准。
-              </p>
-            ) : null}
-            {draft.hospitalMode === "custom" ? (
-              <CustomHospitalForm
-                hospital={customHospital}
-                onChange={setCustomHospital}
-              />
-            ) : null}
-
-            <SetupFieldRow label="预计住院天数" valueHint={`${draft.expectedStayDays} 天`}>
-              <Input
-                className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus-visible:ring-0"
-                min={1}
-                type="number"
-                value={draft.expectedStayDays}
-                onChange={(event) =>
+            {wizardStep === 0 ? (
+              <DueDateField
+                draft={draft}
+                onChange={(dueDate) => {
+                  setMessage("");
                   setDraft({
                     ...draft,
-                    expectedStayDays: Number(event.target.value) || 1,
+                    dueDate,
+                  });
+                }}
+              />
+            ) : null}
+
+            {wizardStep === 1 ? (
+              <RegionField
+                draft={draft}
+                onChange={(regionId) => setDraft({ ...draft, regionId })}
+              />
+            ) : null}
+
+            {wizardStep === 2 ? (
+              <DeliveryModeField
+                draft={draft}
+                onChange={(deliveryMode) =>
+                  setDraft({ ...draft, deliveryMode })
+                }
+              />
+            ) : null}
+
+            {wizardStep === 3 ? (
+              <HospitalField
+                draft={draft}
+                selectedHospital={selectedHospital}
+                onChange={(value) =>
+                  setDraft({
+                    ...draft,
+                    hospitalMode: value.hospitalMode,
+                    hospitalId: value.hospitalId,
                   })
                 }
               />
-            </SetupFieldRow>
+            ) : null}
 
-            <div className="grid gap-2">
-              <SwitchField
-                checked={draft.breastfeeding}
-                label="计划哺乳"
-                onCheckedChange={(breastfeeding) =>
-                  setDraft({ ...draft, breastfeeding })
-                }
-              />
-              <SwitchField
-                checked={draft.partnerPresent}
-                label="有陪产人"
-                onCheckedChange={(partnerPresent) =>
-                  setDraft({ ...draft, partnerPresent })
-                }
-              />
-              <SwitchField
-                checked={draft.coldWeather}
-                label="寒冷季节"
-                onCheckedChange={(coldWeather) =>
-                  setDraft({ ...draft, coldWeather })
-                }
-              />
+            {message ? <p className="macaron-note">{message}</p> : null}
+
+            <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2">
+              <Button
+                aria-label="上一步"
+                className="h-12 px-4"
+                disabled={wizardStep === 0}
+                variant="secondary"
+                onClick={() => {
+                  setMessage("");
+                  setWizardStep((step) => Math.max(step - 1, 0));
+                }}
+              >
+                <ArrowLeft className="size-4" />
+              </Button>
+              {wizardStep < WIZARD_STEPS.length - 1 ? (
+                <Button
+                  className="h-12 w-full bg-primary text-base shadow-soft"
+                  onClick={goToNextWizardStep}
+                >
+                  继续
+                </Button>
+              ) : (
+                <Button
+                  className="h-12 w-full bg-primary text-base shadow-soft"
+                  onClick={submit}
+                >
+                  生成我的可信方案
+                </Button>
+              )}
             </div>
+            <p className="text-center text-xs font-medium text-muted-foreground">
+              保存后可随时修改
+            </p>
+          </section>
+        ) : (
+          <>
+            <section className="grid gap-3 rounded-lg border border-white/90 bg-card/95 p-3 shadow-soft">
+              <DueDateField
+                draft={draft}
+                onChange={(dueDate) => {
+                  setMessage("");
+                  setDraft({
+                    ...draft,
+                    dueDate,
+                  });
+                }}
+              />
 
-            <section className="grid gap-3">
-              <div>
-                <p className="text-sm font-bold">医院明确提供哪些物品？</p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  只有已经从医院确认过的物品才勾选。拿不准就选不确定。
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {PROVIDED_OPTIONS.map((option) => (
-                  <button
-                    className={cn(
-                      "min-h-10 rounded-lg border border-white/90 bg-background/75 px-3 text-left text-sm font-semibold shadow-sm",
-                      selectedProvided.has(option.id) &&
-                        "border-primary/40 bg-mint text-primary",
-                    )}
-                    key={option.id}
-                    type="button"
-                    onClick={() => toggleProvided(option.id)}
-                  >
-                    {option.label}
-                  </button>
+              <SegmentField label="宝宝性别" columns={3}>
+                {BABY_SEX_SEGMENTS.map((option) => (
+                  <SegmentButton
+                    active={(draft.babySex ?? "unknown") === option.value}
+                    key={option.value}
+                    label={option.label}
+                    onClick={() => setDraft({ ...draft, babySex: option.value })}
+                  />
                 ))}
-              </div>
-              {selectedProvided.has("other") ? (
-                <Input
-                  value={otherProvided}
-                  onChange={(event) => setOtherProvided(event.target.value)}
-                  placeholder="补充已确认由医院提供的其他物品"
+              </SegmentField>
+
+              <RegionField
+                draft={draft}
+                onChange={(regionId) => setDraft({ ...draft, regionId })}
+              />
+
+              <HospitalField
+                draft={draft}
+                selectedHospital={selectedHospital}
+                onChange={(value) =>
+                  setDraft({
+                    ...draft,
+                    hospitalMode: value.hospitalMode,
+                    hospitalId: value.hospitalId,
+                  })
+                }
+              />
+
+              <DeliveryModeField
+                draft={draft}
+                onChange={(deliveryMode) =>
+                  setDraft({ ...draft, deliveryMode })
+                }
+              />
+
+              <SegmentField label="首次生产？">
+                <SegmentButton
+                  active={firstBaby}
+                  label="是"
+                  onClick={() => setFirstBaby(true)}
                 />
-              ) : null}
+                <SegmentButton
+                  active={!firstBaby}
+                  label="否"
+                  onClick={() => setFirstBaby(false)}
+                />
+              </SegmentField>
             </section>
 
-            <Field label="医院备注">
-              <Textarea
-                value={draft.hospitalNotes ?? ""}
-                onChange={(event) =>
-                  setDraft({ ...draft, hospitalNotes: event.target.value })
-                }
-                placeholder="例如：产检时听到的入院入口、护士提醒、需要再次确认的事项"
-              />
-            </Field>
-          </div>
-        </details>
+            <Button className="h-14 w-full bg-primary text-base shadow-soft" onClick={submit}>
+              保存并回到首页
+            </Button>
+            <p className="text-center text-xs font-medium text-muted-foreground">
+              保存后可随时修改
+            </p>
+
+            {message ? <p className="macaron-note">{message}</p> : null}
+
+            <details className="rounded-lg border border-white/90 bg-card/90 p-3 shadow-sm">
+              <summary className="cursor-pointer text-sm font-bold text-primary">
+                更多医院信息（可选）
+              </summary>
+              <div className="mt-4 grid gap-4">
+                {selectedHospital?.verificationStatus === "unverified" ? (
+                  <p className="rounded-lg border border-amber/35 bg-amber-soft px-3 py-2 text-sm leading-6 text-amber-foreground">
+                    该医院模板尚未核验，请以最近一次产检、入院须知或医院通知为准。
+                  </p>
+                ) : null}
+                {draft.hospitalMode === "custom" ? (
+                  <CustomHospitalForm
+                    hospital={customHospital}
+                    onChange={setCustomHospital}
+                  />
+                ) : null}
+
+                <SetupFieldRow label="预计住院天数" valueHint={`${draft.expectedStayDays} 天`}>
+                  <Input
+                    className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus-visible:ring-0"
+                    min={1}
+                    type="number"
+                    value={draft.expectedStayDays}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        expectedStayDays: Number(event.target.value) || 1,
+                      })
+                    }
+                  />
+                </SetupFieldRow>
+
+                <div className="grid gap-2">
+                  <SwitchField
+                    checked={draft.breastfeeding}
+                    label="计划哺乳"
+                    onCheckedChange={(breastfeeding) =>
+                      setDraft({ ...draft, breastfeeding })
+                    }
+                  />
+                  <SwitchField
+                    checked={draft.partnerPresent}
+                    label="有陪产人"
+                    onCheckedChange={(partnerPresent) =>
+                      setDraft({ ...draft, partnerPresent })
+                    }
+                  />
+                  <SwitchField
+                    checked={draft.coldWeather}
+                    label="寒冷季节"
+                    onCheckedChange={(coldWeather) =>
+                      setDraft({ ...draft, coldWeather })
+                    }
+                  />
+                </div>
+
+                <section className="grid gap-3">
+                  <div>
+                    <p className="text-sm font-bold">医院明确提供哪些物品？</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      只有已经从医院确认过的物品才勾选。拿不准就选不确定。
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PROVIDED_OPTIONS.map((option) => (
+                      <button
+                        className={cn(
+                          "min-h-10 rounded-lg border border-white/90 bg-background/75 px-3 text-left text-sm font-semibold shadow-sm",
+                          selectedProvided.has(option.id) &&
+                            "border-primary/40 bg-mint text-primary",
+                        )}
+                        key={option.id}
+                        type="button"
+                        onClick={() => toggleProvided(option.id)}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  {selectedProvided.has("other") ? (
+                    <Input
+                      value={otherProvided}
+                      onChange={(event) => setOtherProvided(event.target.value)}
+                      placeholder="补充已确认由医院提供的其他物品"
+                    />
+                  ) : null}
+                </section>
+
+                <Field label="医院备注">
+                  <Textarea
+                    value={draft.hospitalNotes ?? ""}
+                    onChange={(event) =>
+                      setDraft({ ...draft, hospitalNotes: event.target.value })
+                    }
+                    placeholder="例如：产检时听到的入院入口、护士提醒、需要再次确认的事项"
+                  />
+                </Field>
+              </div>
+            </details>
+          </>
+        )}
       </section>
     </div>
   );
 }
 
-function SetupHeader() {
+function SetupHeader({ firstRun }: { firstRun: boolean }) {
   return (
     <section className="relative grid min-h-24 grid-cols-[auto_minmax(0,1fr)_5.5rem] items-center gap-3">
       <Link
@@ -377,7 +484,7 @@ function SetupHeader() {
           创建资料
         </h1>
         <p className="mt-1 text-sm font-medium leading-6 text-muted-foreground">
-          填写基础信息，生成待产清单
+          {firstRun ? "填写基础信息，生成可信方案" : "填写基础信息，生成待产清单"}
         </p>
       </div>
       <div className="relative h-24">
@@ -391,6 +498,115 @@ function SetupHeader() {
         />
       </div>
     </section>
+  );
+}
+
+function WizardProgress({ currentStep }: { currentStep: number }) {
+  return (
+    <div className="grid grid-cols-4 gap-1.5" aria-label="设置进度">
+      {WIZARD_STEPS.map((step, index) => (
+        <span
+          aria-label={step.title}
+          className={cn(
+            "h-2 rounded-full",
+            index <= currentStep ? "bg-primary" : "bg-muted",
+          )}
+          key={step.title}
+        />
+      ))}
+    </div>
+  );
+}
+
+function DueDateField({
+  draft,
+  onChange,
+}: {
+  draft: UserProfile;
+  onChange: (dueDate?: string) => void;
+}) {
+  return (
+    <SetupFieldRow
+      label="预产期"
+      valueHint={draft.dueDate ? formatBabyZodiacLine(draft) : "请选择，生肖会自动计算"}
+    >
+      <Input
+        required
+        className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus-visible:ring-0"
+        type="date"
+        value={draft.dueDate ?? ""}
+        onChange={(event) => onChange(event.target.value || undefined)}
+      />
+    </SetupFieldRow>
+  );
+}
+
+function RegionField({
+  draft,
+  onChange,
+}: {
+  draft: UserProfile;
+  onChange: (regionId: string) => void;
+}) {
+  return (
+    <SetupFieldRow label="所在地" valueHint="北京市">
+      <Select value={draft.regionId} onValueChange={onChange}>
+        <SelectTrigger className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus:ring-0 [&>svg]:hidden">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="cn-bj-general">北京市</SelectItem>
+          <SelectItem value="other">其他地区</SelectItem>
+        </SelectContent>
+      </Select>
+    </SetupFieldRow>
+  );
+}
+
+function HospitalField({
+  draft,
+  onChange,
+  selectedHospital,
+}: {
+  draft: UserProfile;
+  onChange: (value: Pick<UserProfile, "hospitalMode" | "hospitalId">) => void;
+  selectedHospital?: HospitalProfile;
+}) {
+  return (
+    <SetupFieldRow
+      label="选择医院（可选）"
+      valueHint={selectedHospital?.name ?? "我还没确定医院"}
+    >
+      <HospitalSelector
+        triggerClassName="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus:ring-0 [&>svg]:hidden"
+        value={{
+          hospitalMode: draft.hospitalMode,
+          hospitalId: draft.hospitalId,
+        }}
+        onChange={onChange}
+      />
+    </SetupFieldRow>
+  );
+}
+
+function DeliveryModeField({
+  draft,
+  onChange,
+}: {
+  draft: UserProfile;
+  onChange: (deliveryMode: DeliveryMode) => void;
+}) {
+  return (
+    <SegmentField label="生产方式" columns={3}>
+      {DELIVERY_SEGMENTS.map((option) => (
+        <SegmentButton
+          active={draft.deliveryMode === option.value}
+          key={option.value}
+          label={option.label}
+          onClick={() => onChange(option.value)}
+        />
+      ))}
+    </SegmentField>
   );
 }
 

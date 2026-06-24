@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Hospital,
+  Share2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -86,12 +87,13 @@ export default function HomePage() {
           pregnancyProgress={pregnancyProgress}
           profile={profile}
         />
-        <HomeLaborModePanel hasAdmissionInfo={hasAdmissionInfo} />
+        {profile?.dueDate ? <HomePlanReadyPanel /> : null}
         <TodayFocusPanel
           profileReady={Boolean(profile?.dueDate)}
           tasks={todayTasks}
         />
         <ReadinessMetricsPanel metrics={readinessMetrics} />
+        <HomeLaborModePanel hasAdmissionInfo={hasAdmissionInfo} />
         <HomeToolsPanel />
       </section>
 
@@ -99,6 +101,81 @@ export default function HomePage() {
         非医疗建议，请以医院通知和产检确认结果为准。
       </p>
     </div>
+  );
+}
+
+function HomePlanReadyPanel() {
+  const links = [
+    {
+      href: "/checklist",
+      icon: ClipboardList,
+      label: "核心清单",
+      subtitle: "先核对必须带的物品",
+    },
+    {
+      href: "/hospital",
+      icon: Hospital,
+      label: "医院确认",
+      subtitle: "把规则和待问事项补齐",
+    },
+    {
+      href: "/share",
+      icon: Share2,
+      label: "分享备份",
+      subtitle: "发给陪产人或导出",
+    },
+  ];
+
+  return (
+    <section className="pony-soft-card p-3">
+      <div className="mb-3 flex items-start gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-mint text-primary">
+          <CheckCircle2 className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-base font-black tracking-normal">方案已生成</h2>
+          <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
+            今天先做最影响入院准备的事，进度可以慢慢补。
+          </p>
+        </div>
+      </div>
+      <div className="grid gap-2">
+        {links.map((link) => (
+          <HomePlanLink key={link.href} link={link} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HomePlanLink({
+  link,
+}: {
+  link: {
+    href: string;
+    icon: LucideIcon;
+    label: string;
+    subtitle: string;
+  };
+}) {
+  const Icon = link.icon;
+
+  return (
+    <Link
+      className="grid min-h-[3.7rem] grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-white/80 bg-background/60 px-3 py-2 shadow-sm transition-colors active:bg-secondary"
+      href={link.href}
+    >
+      <span className="flex size-9 items-center justify-center rounded-lg bg-secondary text-primary">
+        <Icon className="size-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-black leading-5">{link.label}</span>
+        <span className="mt-0.5 block break-words text-xs font-semibold leading-4 text-muted-foreground">
+          {link.subtitle}
+        </span>
+      </span>
+      <ArrowRight className="size-4 shrink-0 text-primary" />
+    </Link>
   );
 }
 

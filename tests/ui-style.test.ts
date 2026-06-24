@@ -246,7 +246,9 @@ describe("cute maternity app visual direction", () => {
     expect(setupPage).toContain("SetupFieldRow");
     expect(setupPage).toContain("SetupHeader");
     expect(setupPage).toContain("填写基础信息，生成待产清单");
-    expect(setupPage).toContain("生成待产清单");
+    expect(setupPage).toContain("4 步生成可信方案");
+    expect(setupPage).toContain("生成我的可信方案");
+    expect(setupPage).toContain("保存并回到首页");
     expect(setupPage).not.toContain(banned("只需 ", "2 分钟"));
     expect(setupPage).not.toContain(banned("专属", "待产方案"));
     expect(setupPage).not.toContain("生成我的待产清单");

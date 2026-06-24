@@ -21,6 +21,10 @@ describe("home page copy", () => {
     expect(homePage).toContain("getBabyMascot");
     expect(homePage).toContain("预产期倒计时");
     expect(homePage).not.toContain(banned("女宝", "倒计时"));
+    expect(homePage).toContain("方案已生成");
+    expect(homePage).toContain("HomePlanReadyPanel");
+    expect(homePage).toContain("HomePlanLink");
+    expect(homePage).toContain('href: "/share"');
     expect(homePage).toContain("今日重点");
     expect(homePage).not.toContain(banned("姐妹", "今天先做"));
     expect(homePage).toContain("当前优先");

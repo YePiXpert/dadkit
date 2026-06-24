@@ -125,6 +125,21 @@ describe("timeline", () => {
     expect(titles).toContain("把分娩偏好卡发给陪产人");
   });
 
+  it("ranks today's tasks by admission decision impact", () => {
+    const profile = makeProfile({ dueDate: dueDateIn(7) });
+    const titles = generateTodayTasks(profile, checklistFor(profile)).map(
+      (task) => task.title,
+    );
+
+    expect(titles.slice(0, 3)).toEqual(
+      expect.arrayContaining([
+        "确认夜间入院路线",
+        "确认支付方式和住院押金",
+        "确认破水/见红较多/胎动异常时的联系流程",
+      ]),
+    );
+  });
+
   it("includes core go-time tasks", () => {
     const profile = makeProfile();
     const goStage = generateTimeline(profile, checklistFor(profile)).find(
