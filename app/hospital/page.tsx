@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { CustomHospitalForm } from "@/components/CustomHospitalForm";
+import { CuteIllustration } from "@/components/CuteIllustration";
 import { DisclaimerBox } from "@/components/DisclaimerBox";
 import { EmptyState } from "@/components/EmptyState";
 import {
@@ -242,11 +243,20 @@ export default function HospitalPage() {
 
   return (
     <div className="page-shell">
-      <section className="mobile-shell grid gap-0 lg:max-w-none">
-        <h1 className="text-2xl font-black tracking-normal">医院规则</h1>
-        <p className="text-sm font-medium leading-6 text-muted-foreground">
-          入院流程、医院提供物品、陪产和缴费信息提前确认
-        </p>
+      <section className="mobile-shell flex items-start justify-between gap-3 lg:max-w-none">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-black tracking-normal">医院规则</h1>
+          <p className="text-sm font-medium leading-6 text-muted-foreground">
+            入院流程、医院提供物品、陪产和缴费信息提前确认
+          </p>
+        </div>
+        <CuteIllustration
+          className="size-16 shrink-0 overflow-visible rounded-none border-0 bg-transparent shadow-none"
+          imageClassName="object-contain"
+          priority
+          sizes="64px"
+          variant="hospitalRoute"
+        />
       </section>
 
       <Card className="mobile-shell pony-soft-card overflow-hidden lg:max-w-none">

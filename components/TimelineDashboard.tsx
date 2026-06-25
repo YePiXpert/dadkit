@@ -25,6 +25,7 @@ import {
   type TimelineTask,
   type TimelineTaskStatus,
 } from "@/lib/timeline";
+import { CuteIllustration } from "@/components/CuteIllustration";
 import { formatBabyZodiacLine, getBabyMascot } from "@/lib/baby-profile";
 import type { ChecklistItem, HospitalAnswer, UserProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -270,9 +271,13 @@ function CurrentStagePanel({
             {typeof daysLeft === "number" ? ` · ${formatDaysLeft(daysLeft)}` : ""}
           </p>
         </div>
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-secondary text-primary">
-          <CalendarClock className="size-6" />
-        </div>
+        <CuteIllustration
+          className="size-16 shrink-0 overflow-visible rounded-none border-0 bg-transparent shadow-none"
+          imageClassName="object-contain"
+          priority
+          sizes="64px"
+          variant="timelineCalendar"
+        />
       </div>
 
       <div className="mt-4 grid min-w-0 gap-3 rounded-lg border border-white/90 bg-background/70 p-3">

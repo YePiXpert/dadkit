@@ -3,10 +3,22 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 const ILLUSTRATIONS = {
+  checklistBag: {
+    alt: "待产包和清单功能贴纸插图",
+    height: 1536,
+    src: "/illustrations/dadkit-checklist-bag-sticker.png",
+    width: 1536,
+  },
   family: {
     alt: "家人一起整理待产清单",
     height: 1024,
     src: "/illustrations/dadkit-family-transparent.png",
+    width: 1536,
+  },
+  hospitalRoute: {
+    alt: "医院路线和证件功能贴纸插图",
+    height: 1536,
+    src: "/illustrations/dadkit-hospital-route-sticker.png",
     width: 1536,
   },
   helper: {
@@ -21,10 +33,30 @@ const ILLUSTRATIONS = {
     src: "/illustrations/dadkit-horse-girl.png",
     width: 1254,
   },
+  postpartumPaperwork: {
+    alt: "产后证件和结算材料功能贴纸插图",
+    height: 1536,
+    src: "/illustrations/dadkit-postpartum-paperwork-sticker.png",
+    width: 1536,
+  },
+  shareSummary: {
+    alt: "导出摘要和协作清单功能贴纸插图",
+    height: 1536,
+    src: "/illustrations/dadkit-share-summary-sticker.png",
+    width: 1536,
+  },
+  timelineCalendar: {
+    alt: "日历和时间线功能贴纸插图",
+    height: 1536,
+    src: "/illustrations/dadkit-timeline-calendar-sticker.png",
+    width: 1536,
+  },
 };
 
+export type CuteIllustrationVariant = keyof typeof ILLUSTRATIONS;
+
 type CuteIllustrationProps = {
-  variant?: keyof typeof ILLUSTRATIONS;
+  variant?: CuteIllustrationVariant;
   className?: string;
   imageClassName?: string;
   priority?: boolean;

@@ -121,6 +121,7 @@ export default function SharePage() {
     <div className="page-shell">
       <PageIntro
         eyebrow="导出"
+        illustrationVariant="shareSummary"
         title="导出与协作"
         description="汇总关键准备状态，可复制或保存备份。"
       />

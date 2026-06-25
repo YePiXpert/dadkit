@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 
-import { CuteIllustration } from "@/components/CuteIllustration";
+import {
+  CuteIllustration,
+  type CuteIllustrationVariant,
+} from "@/components/CuteIllustration";
 import { cn } from "@/lib/utils";
 
 type PageIntroProps = {
@@ -9,6 +12,7 @@ type PageIntroProps = {
   description: string;
   children?: ReactNode;
   className?: string;
+  illustrationVariant?: CuteIllustrationVariant;
   mascot?: boolean;
 };
 
@@ -18,8 +22,12 @@ export function PageIntro({
   description,
   children,
   className,
+  illustrationVariant = "horse",
   mascot = true,
 }: PageIntroProps) {
+  const illustrationImageClassName =
+    illustrationVariant === "horse" ? "object-cover" : "object-contain p-1";
+
   return (
     <section className={cn("mobile-shell lg:max-w-none", className)}>
       <div
@@ -40,8 +48,9 @@ export function PageIntro({
         {mascot ? (
           <CuteIllustration
             className="size-16 shrink-0 justify-self-end"
-            imageClassName="object-cover"
+            imageClassName={illustrationImageClassName}
             priority
+            variant={illustrationVariant}
             sizes="64px"
           />
         ) : null}
@@ -74,8 +83,9 @@ export function PageIntro({
           {mascot ? (
             <CuteIllustration
               className="size-20 shrink-0 justify-self-end sm:size-28"
-              imageClassName="object-cover"
+              imageClassName={illustrationImageClassName}
               priority
+              variant={illustrationVariant}
               sizes="112px"
             />
           ) : null}

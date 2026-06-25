@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
@@ -15,6 +14,7 @@ import { AddItemDialog } from "@/components/AddItemDialog";
 import { ChecklistCategoryCard } from "@/components/ChecklistCategoryCard";
 import { ChecklistGroupTabs } from "@/components/ChecklistGroupTabs";
 import { ChecklistModeNotice } from "@/components/ChecklistModeNotice";
+import { CuteIllustration } from "@/components/CuteIllustration";
 import { DisclaimerBox } from "@/components/DisclaimerBox";
 import { EmptyState } from "@/components/EmptyState";
 import { ModeToggle } from "@/components/ModeToggle";
@@ -32,7 +32,7 @@ import {
   calculatePackingCompletion,
   filterItemsForChecklistMode,
 } from "@/lib/rules";
-import { getBabyMascot, getBabySexLabel } from "@/lib/baby-profile";
+import { getBabySexLabel } from "@/lib/baby-profile";
 import { useDadKitStore } from "@/lib/store";
 import {
   CATEGORY_LABELS,
@@ -147,7 +147,6 @@ export default function ChecklistPage() {
     [filteredItems, visualGroup],
   );
   const emptyCopy = getEmptyStateCopy(visualGroup);
-  const babyMascot = getBabyMascot(profile);
 
   if (!profile) {
     return (
@@ -187,16 +186,13 @@ export default function ChecklistPage() {
               为{getBabySexLabel(profile)}的待产包逐项打勾
             </p>
           </div>
-          <span className="relative mt-1 flex size-14 shrink-0 overflow-hidden rounded-full border border-primary/15 bg-secondary shadow-sm">
-            <Image
-              alt={babyMascot.alt}
-              className="object-contain p-0.5"
-              fill
-              priority
-              sizes="56px"
-              src={babyMascot.src}
-            />
-          </span>
+          <CuteIllustration
+            className="size-16 shrink-0 overflow-visible rounded-none border-0 bg-transparent shadow-none"
+            imageClassName="object-contain"
+            priority
+            sizes="64px"
+            variant="checklistBag"
+          />
         </div>
 
         <ChecklistProgressCard packing={packing} />

@@ -34,7 +34,8 @@ describe("checklist page copy", () => {
 
   it("keeps checklist controls in the normal page flow", () => {
     expect(checklistPage).toContain("getBabySexLabel");
-    expect(checklistPage).toContain("getBabyMascot");
+    expect(checklistPage).toContain("CuteIllustration");
+    expect(checklistPage).toContain('variant="checklistBag"');
     expect(checklistPage).toContain("为{getBabySexLabel(profile)}的待产包逐项打勾");
     expect(checklistPage).toContain("清单操作");
     expect(checklistPage).toContain(

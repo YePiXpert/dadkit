@@ -45,6 +45,7 @@ export default function PostpartumPage() {
     <div className="page-shell">
       <PageIntro
         eyebrow="产后待办"
+        illustrationVariant="postpartumPaperwork"
         title="产后办理待确认"
         description="不写死政策，只把出生证明、结算、保险、户口和复查事项整理成待确认清单。"
       />

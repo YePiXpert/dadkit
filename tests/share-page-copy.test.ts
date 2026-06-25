@@ -13,6 +13,7 @@ const banned = (...parts: string[]) => parts.join("");
 describe("share page copy", () => {
   it("uses restrained export and collaboration language", () => {
     expect(sharePage).toContain('title="导出与协作"');
+    expect(sharePage).toContain('illustrationVariant="shareSummary"');
     expect(sharePage).toContain("摘要卡片");
     expect(sharePage).toContain("复制摘要");
     expect(sharePage).toContain("详细文本");
