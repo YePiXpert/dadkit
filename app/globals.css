@@ -136,6 +136,25 @@
     color: hsl(var(--primary-foreground));
   }
 
+  .journal-cover-card {
+    @apply relative overflow-hidden rounded-lg border border-white/90 p-4 shadow-soft;
+    background:
+      linear-gradient(90deg, hsl(var(--card) / 0.92) 0 1px, transparent 1px) 0 0 / 1.45rem 1.45rem,
+      linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--blush) / 0.64) 58%, hsl(var(--cream) / 0.72) 100%);
+  }
+
+  .journal-cover-card::before {
+    @apply pointer-events-none absolute inset-x-4 top-3 h-px bg-white/80 content-[''];
+  }
+
+  .journal-cover-kicker {
+    @apply inline-flex items-center rounded-full border border-white/90 bg-card/85 px-3 py-1 text-xs font-black text-primary shadow-sm;
+  }
+
+  .journal-cover-chip {
+    @apply inline-flex max-w-full items-center rounded-full border border-white/90 bg-card/80 px-2.5 py-1 text-[0.68rem] font-bold leading-4 text-muted-foreground shadow-sm;
+  }
+
   .pony-hero-card {
     @apply relative overflow-hidden rounded-lg border border-white/90 p-4 shadow-soft;
     background:
@@ -175,6 +194,25 @@
 
   .section-kicker {
     @apply text-xs font-bold uppercase tracking-normal text-primary;
+  }
+
+  .share-poster-preview {
+    @apply mx-auto w-full max-w-[360px];
+  }
+
+  .share-poster-card {
+    @apply relative isolate overflow-hidden rounded-lg border border-white/90 bg-card text-foreground shadow-soft;
+    background:
+      linear-gradient(90deg, hsl(var(--blush) / 0.34) 0 1px, transparent 1px) 0 0 / 1.35rem 1.35rem,
+      linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--background)) 54%, hsl(var(--cream) / 0.72) 100%);
+  }
+
+  .share-poster-safe {
+    @apply absolute inset-4 flex flex-col overflow-hidden rounded-lg border border-white/80 bg-card/70 p-4 shadow-sm;
+  }
+
+  .share-poster-pill {
+    @apply rounded-full border border-white/90 bg-card/85 px-3 py-1 text-xs font-black text-primary shadow-sm;
   }
 }
 

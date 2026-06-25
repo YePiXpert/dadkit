@@ -18,10 +18,7 @@ import {
   getCountdownLabel,
   getPregnancyProgress,
 } from "@/lib/presentation/home-dashboard";
-import {
-  formatBabyZodiacLine,
-  getBabyMascot,
-} from "@/lib/baby-profile";
+import { formatBabyZodiacLine } from "@/lib/baby-profile";
 import {
   buildHomeReadinessMetrics,
   buildHomeSummary,
@@ -235,10 +232,10 @@ function HomeHeroCard({
   const countdownNumber = countdownLabel.match(/\d+/)?.[0];
   const dueDateLabel = formatHomeDueDate(profile?.dueDate);
   const babyLine = formatBabyZodiacLine(profile);
-  const mascot = getBabyMascot(profile);
+  const journalStickerAlt = "Maternity preparation journal sticker";
 
   return (
-    <section className="pony-hero-card min-h-[11.25rem]">
+    <section className="journal-cover-card min-h-[12.75rem]">
       <span className="pointer-events-none absolute right-6 top-5 text-2xl text-amber">
         ✿
       </span>
@@ -249,8 +246,9 @@ function HomeHeroCard({
         ❤
       </span>
 
-      <div className="relative z-10 max-w-[58%]">
-        <p className="text-sm font-black text-primary-foreground/90">
+      <div className="relative z-10 max-w-[62%]">
+        <p className="journal-cover-kicker">待产准备小本本</p>
+        <p className="text-sm font-black text-primary">
           预产期倒计时
         </p>
         <h1 className="mt-2 flex items-end gap-1 text-[3.15rem] font-black leading-none tracking-normal">
@@ -263,24 +261,24 @@ function HomeHeroCard({
             <span className="text-3xl">{countdownLabel}</span>
           )}
         </h1>
-        <p className="mt-3 text-sm font-bold text-primary-foreground/95">
+        <p className="mt-3 text-sm font-bold text-muted-foreground">
           {dueDateLabel}
         </p>
-        <p className="mt-1 text-xs font-bold text-primary-foreground/90">
+        <p className="mt-1 text-xs font-bold text-muted-foreground">
           {babyLine}
         </p>
-        <p className="mt-1 text-xs font-bold text-primary-foreground/80">
+        <p className="mt-1 text-xs font-bold text-muted-foreground">
           {pregnancyProgress.label}
         </p>
       </div>
 
       <Image
-        alt={mascot.alt}
-        className="pointer-events-none absolute -right-9 bottom-[-1.7rem] h-[12rem] w-[12rem] object-contain drop-shadow-sm"
+        alt={journalStickerAlt}
+        className="pointer-events-none absolute -right-7 bottom-[-1rem] h-[11rem] w-[11rem] object-contain drop-shadow-sm"
         height={1254}
         priority
         sizes="220px"
-        src={mascot.src}
+        src="/illustrations/dadkit-home-journal-sticker-v2.png"
         width={1254}
       />
     </section>

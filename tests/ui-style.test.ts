@@ -82,6 +82,10 @@ const emptyState = readFileSync(
   join(process.cwd(), "components", "EmptyState.tsx"),
   "utf8",
 );
+const sharePosterCanvas = readFileSync(
+  join(process.cwd(), "components", "SharePosterCanvas.tsx"),
+  "utf8",
+);
 const banned = (...parts: string[]) => parts.join("");
 
 describe("cute maternity app visual direction", () => {
@@ -96,6 +100,10 @@ describe("cute maternity app visual direction", () => {
     expect(globals).toContain(".macaron-panel");
     expect(globals).toContain(".macaron-note");
     expect(globals).toContain(".app-hero-card");
+    expect(globals).toContain(".journal-cover-card");
+    expect(globals).toContain(".journal-cover-kicker");
+    expect(globals).toContain(".share-poster-card");
+    expect(globals).toContain(".share-poster-preview");
     expect(globals).toContain(".app-list-row");
     expect(globals).toContain("max-w-[390px]");
     expect(globals).toContain("max-width: min(100%, 390px)");
@@ -196,11 +204,13 @@ describe("cute maternity app visual direction", () => {
       ),
     ).toBe(true);
     for (const filename of [
-      "dadkit-checklist-bag-sticker.png",
-      "dadkit-hospital-route-sticker.png",
-      "dadkit-timeline-calendar-sticker.png",
+      "dadkit-checklist-bag-sticker-v2.png",
+      "dadkit-home-journal-sticker-v2.png",
+      "dadkit-hospital-route-sticker-v2.png",
+      "dadkit-maternity-journal-sticker.png",
       "dadkit-postpartum-paperwork-sticker.png",
-      "dadkit-share-summary-sticker.png",
+      "dadkit-share-summary-sticker-v2.png",
+      "dadkit-timeline-calendar-sticker-v2.png",
     ]) {
       expect(
         existsSync(join(process.cwd(), "public", "illustrations", filename)),
@@ -212,7 +222,9 @@ describe("cute maternity app visual direction", () => {
     expect(cuteIllustration).toContain("dadkit-bear-transparent.png");
     expect(cuteIllustration).toContain("CuteIllustrationVariant");
     expect(cuteIllustration).toContain('variant = "horse"');
-    expect(cuteIllustration).toContain("小马宝宝插图");
+    expect(cuteIllustration).toContain("homeJournal");
+    expect(cuteIllustration).toContain("maternityJournal");
+    expect(cuteIllustration).toContain("Maternity preparation journal");
     expect(pageIntro).toContain("CuteIllustration");
     expect(pageIntro).toContain("illustrationVariant");
     expect(pageIntro).toContain("sm:hidden");
@@ -222,6 +234,17 @@ describe("cute maternity app visual direction", () => {
     expect(pageIntro).toContain("bg-mint");
     expect(pageIntro).not.toContain("hidden size-24");
     expect(emptyState).toContain("macaron-panel");
+  });
+
+  it("supports a saveable share poster with responsive ratios", () => {
+    expect(sharePosterCanvas).toContain('import { toPng } from "html-to-image"');
+    expect(sharePosterCanvas).toContain("ratioConfig");
+    expect(sharePosterCanvas).toContain('aspectRatio: "9 / 16"');
+    expect(sharePosterCanvas).toContain('aspectRatio: "3 / 4"');
+    expect(sharePosterCanvas).toContain("dadkit-prep-poster");
+    expect(sharePosterCanvas).toContain("dadkit-share-summary-sticker-v2.png");
+    expect(sharePosterCanvas).toContain("share-poster-preview");
+    expect(sharePosterCanvas).toContain("share-poster-card");
   });
 
   it("extends the cute macaron treatment beyond the home page", () => {

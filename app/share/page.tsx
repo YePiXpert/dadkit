@@ -15,6 +15,7 @@ import {
 import { EmptyState } from "@/components/EmptyState";
 import { ExportTextArea } from "@/components/ExportTextArea";
 import { PageIntro } from "@/components/PageIntro";
+import { SharePosterCanvas } from "@/components/SharePosterCanvas";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -119,6 +120,8 @@ export default function SharePage() {
 
   return (
     <div className="page-shell">
+      <SharePosterCanvas babyLine={babyLine} metrics={posterCards} />
+
       <PageIntro
         eyebrow="导出"
         illustrationVariant="shareSummary"

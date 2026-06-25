@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v1.2.0-stickers";
+const CACHE_NAME = "dadkit-v1.2.0-journal-stickers";
 const PWA_ICON_ASSETS = [
   "/manifest.webmanifest",
   "/icon.svg",
@@ -12,6 +12,7 @@ const PWA_ILLUSTRATION_ASSETS = [
   "/illustrations/dadkit-baby-girl-timer.png",
   "/illustrations/dadkit-bear-transparent.png",
   "/illustrations/dadkit-checklist-bag-sticker.png",
+  "/illustrations/dadkit-checklist-bag-sticker-v2.png",
   "/illustrations/dadkit-dad-avatar.png",
   "/illustrations/dadkit-family-card-v2.png",
   "/illustrations/dadkit-family-transparent.png",
@@ -19,9 +20,14 @@ const PWA_ILLUSTRATION_ASSETS = [
   "/illustrations/dadkit-horse-girl.png",
   "/illustrations/dadkit-hospital-clipboard.png",
   "/illustrations/dadkit-hospital-route-sticker.png",
+  "/illustrations/dadkit-hospital-route-sticker-v2.png",
+  "/illustrations/dadkit-home-journal-sticker-v2.png",
+  "/illustrations/dadkit-maternity-journal-sticker.png",
   "/illustrations/dadkit-postpartum-paperwork-sticker.png",
   "/illustrations/dadkit-share-summary-sticker.png",
+  "/illustrations/dadkit-share-summary-sticker-v2.png",
   "/illustrations/dadkit-timeline-calendar-sticker.png",
+  "/illustrations/dadkit-timeline-calendar-sticker-v2.png",
 ];
 const PWA_ASSETS = [...PWA_ICON_ASSETS, ...PWA_ILLUSTRATION_ASSETS];
 const APP_SHELL = ["/", ...PWA_ASSETS];
