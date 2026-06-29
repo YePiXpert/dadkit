@@ -62,7 +62,7 @@ export function SharePosterCanvas({
     try {
       const dataUrl = await toPng(posterRef.current, {
         backgroundColor: "#fff7f8",
-        cacheBust: true,
+        cacheBust: false,
         pixelRatio: 3,
       });
       const link = document.createElement("a");
@@ -127,9 +127,10 @@ export function SharePosterCanvas({
             aria-hidden
             className="share-poster-photo"
             fill
+            unoptimized
             priority
             sizes={ratio === "story" ? "360px" : "390px"}
-            src="/illustrations/dadkit-real-share-prep-photo.png"
+            src="/illustrations/dadkit-real-prep-summary-photo.webp"
           />
           <div className="share-poster-safe">
             <div className="flex items-center justify-between gap-3">
@@ -161,6 +162,7 @@ export function SharePosterCanvas({
                 alt="Preparation summary share sticker illustration"
                 className="object-contain drop-shadow-sm"
                 fill
+                unoptimized
                 priority
                 sizes={ratio === "story" ? "80px" : "64px"}
                 src="/illustrations/dadkit-share-summary-sticker-v2.png"

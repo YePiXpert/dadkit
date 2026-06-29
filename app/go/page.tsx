@@ -7,6 +7,7 @@ import { Check } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
 import { GoAdmissionInfoCard } from "@/components/GoAdmissionInfoCard";
 import { Button } from "@/components/ui/button";
+import { buildPreparationSummary } from "@/lib/presentation/preparation-summary";
 import { useDadKitStore } from "@/lib/store";
 import {
   generateGoModeTasks,
@@ -65,7 +66,9 @@ export default function GoPage() {
   const profile = useDadKitStore((state) => state.profile);
   const checklist = useDadKitStore((state) => state.checklist);
   const birthPlan = useDadKitStore((state) => state.birthPlan);
+  const contractions = useDadKitStore((state) => state.contractions);
   const hospitalAnswers = useDadKitStore((state) => state.hospitalAnswers);
+  const postpartumTasks = useDadKitStore((state) => state.postpartumTasks);
   const timelineTaskStatuses = useDadKitStore(
     (state) => state.timelineTaskStatuses,
   );
@@ -93,9 +96,38 @@ export default function GoPage() {
       ).length,
     [checklist, hospitalAnswers, tasks, timelineTaskStatuses],
   );
-  const remainingCount = Math.max(0, tasks.length - completedCount);
+  const preparationSummary = useMemo(
+    () =>
+      profile
+        ? buildPreparationSummary({
+            birthPlan,
+            checklist,
+            contractions,
+            hospitalAnswers,
+            postpartumTasks,
+            profile,
+            timelineTaskStatuses,
+          })
+        : undefined,
+    [
+      birthPlan,
+      checklist,
+      contractions,
+      hospitalAnswers,
+      postpartumTasks,
+      profile,
+      timelineTaskStatuses,
+    ],
+  );
+  const goReadiness = preparationSummary?.modules.find(
+    (module) => module.id === "go",
+  );
+  const readinessCompleted = goReadiness?.completed ?? completedCount;
+  const readinessTotal = goReadiness?.total ?? tasks.length;
+  const remainingCount = Math.max(0, readinessTotal - readinessCompleted);
   const progressPercent =
-    tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
+    goReadiness?.percent ??
+    (tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100));
   const hasAnyAdmissionInfo = Boolean(
     birthPlan.hospitalPhone.trim() ||
       birthPlan.hospitalAddress.trim() ||
@@ -186,7 +218,10 @@ export default function GoPage() {
               {progressPercent}%
             </p>
             <p className="mt-2 text-sm font-bold text-white/90">
-              已完成 {completedCount} / 共 {tasks.length} 项
+              已完成 {readinessCompleted} / 共 {readinessTotal} 项
+            </p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-white/80">
+              含行动卡、路线电话和联系人
             </p>
           </div>
           <Image

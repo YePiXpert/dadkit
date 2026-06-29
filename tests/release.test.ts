@@ -94,12 +94,12 @@ describe("release endpoints and pages", () => {
     const illustrationAssets = readdirSync(
       join(process.cwd(), "public", "illustrations"),
     )
-      .filter((file) => file.endsWith(".png"))
+      .filter((file) => /\.(png|webp)$/.test(file))
       .map((file) => `/illustrations/${file}`)
       .sort();
 
     expect(illustrationAssets.length).toBeGreaterThan(0);
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.2.0-real-prep-photos"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.2.0-prep-summary-webp"');
     expect(sw).toContain('url.pathname.startsWith("/illustrations/")');
 
     for (const asset of illustrationAssets) {

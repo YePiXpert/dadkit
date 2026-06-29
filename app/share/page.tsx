@@ -37,13 +37,14 @@ import {
   generatePostpartumShareText,
 } from "@/lib/rc";
 import {
-  buildPlanPillars,
-  type PlanPillar,
-  type PlanPillarId,
-} from "@/lib/presentation/plan-pillars";
+  buildPreparationSummary,
+  type PreparationModule,
+  type PreparationModuleId,
+  type PreparationSummary,
+} from "@/lib/presentation/preparation-summary";
 import { useDadKitStore } from "@/lib/store";
 import { getDaysUntilDue } from "@/lib/timeline";
-import type { ChecklistItem, HospitalAnswer, UserProfile } from "@/lib/types";
+import type { UserProfile } from "@/lib/types";
 
 type SharePoster = {
   caption: string;
@@ -81,12 +82,16 @@ export default function SharePage() {
 
   const babyLine = formatBabyZodiacLine(profile);
   const mascot = getBabyMascot(profile);
-  const posterCards = buildSharePosters(
-    profile,
+  const preparationSummary = buildPreparationSummary({
+    birthPlan,
     checklist,
+    contractions,
     hospitalAnswers,
     postpartumTasks,
-  );
+    profile,
+    timelineTaskStatuses,
+  });
+  const posterCards = buildSharePosters(profile, preparationSummary);
   const leanText = generateLeanShareText(checklist, profile);
   const fullText = generateShareText(checklist, profile, "DadKit 完整待产准备清单");
   const dadText = generateDadExecutionShareText(checklist, profile);
@@ -309,13 +314,10 @@ function SharePosterCard({
 
 function buildSharePosters(
   profile: UserProfile,
-  checklist: ChecklistItem[],
-  hospitalAnswers: HospitalAnswer[],
-  postpartumTasks: Parameters<typeof buildPlanPillars>[0]["postpartumTasks"],
+  summary: PreparationSummary,
 ): SharePoster[] {
   const dueDate = profile.dueDate ?? "待填写";
   const daysLeft = getDaysUntilDue(profile);
-  const pillars = buildPlanPillars({ checklist, hospitalAnswers, postpartumTasks });
 
   return [
     {
@@ -326,27 +328,43 @@ function buildSharePosters(
       title: "预产期倒计时",
       tone: "coral",
     },
-    ...pillars.map(posterFromPillar),
+    {
+      caption: `${summary.shareSummary.title} ${summary.shareSummary.metric}。${summary.boundary}`,
+      detail: summary.nextAction.label,
+      icon: Sparkles,
+      metric: summary.shareSummary.metric,
+      title: summary.shareSummary.title,
+      tone: "mint",
+    },
+    ...summary.modules.map(posterFromModule),
+    {
+      caption: `${summary.contractionStatus.label}。${summary.contractionStatus.detail}。不计入总准备进度。`,
+      detail: "不计入总准备进度",
+      icon: CalendarClock,
+      metric: `${summary.contractionStatus.recentCount} 次`,
+      title: "宫缩记录状态",
+      tone: "lavender",
+    },
   ];
 }
 
-function posterFromPillar(pillar: PlanPillar): SharePoster {
+function posterFromModule(module: PreparationModule): SharePoster {
   return {
-    caption: `${pillar.title} ${pillar.completed}/${pillar.total}。${pillar.caption}。${pillar.boundary}`,
-    detail: pillar.caption,
-    icon: sharePillarIcon(pillar.id),
-    metric: `${pillar.completed}/${pillar.total}`,
-    title: pillar.title,
-    tone: sharePillarTone(pillar.id),
+    caption: `${module.title} ${module.completed}/${module.total}。${module.caption}。${module.boundary}`,
+    detail: module.caption,
+    icon: shareModuleIcon(module.id),
+    metric: `${module.percent}%`,
+    title: module.title,
+    tone: shareModuleTone(module.id),
   };
 }
 
-function sharePillarIcon(id: PlanPillarId): LucideIcon {
+function shareModuleIcon(id: PreparationModuleId): LucideIcon {
   if (id === "hospital") {
     return Hospital;
   }
 
-  if (id === "go_card") {
+  if (id === "go") {
     return ClipboardList;
   }
 
@@ -357,12 +375,12 @@ function sharePillarIcon(id: PlanPillarId): LucideIcon {
   return CheckCircle2;
 }
 
-function sharePillarTone(id: PlanPillarId): SharePoster["tone"] {
+function shareModuleTone(id: PreparationModuleId): SharePoster["tone"] {
   if (id === "hospital") {
     return "lavender";
   }
 
-  if (id === "go_card") {
+  if (id === "go") {
     return "amber";
   }
 

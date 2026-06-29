@@ -244,7 +244,9 @@ describe("cute maternity app visual direction", () => {
     expect(sharePosterCanvas).toContain('aspectRatio: "9 / 16"');
     expect(sharePosterCanvas).toContain('aspectRatio: "3 / 4"');
     expect(sharePosterCanvas).toContain("dadkit-prep-poster");
-    expect(sharePosterCanvas).toContain("dadkit-real-share-prep-photo.png");
+    expect(sharePosterCanvas).toContain("cacheBust: false");
+    expect(sharePosterCanvas).toContain("dadkit-real-prep-summary-photo.webp");
+    expect(sharePosterCanvas).toContain("unoptimized");
     expect(sharePosterCanvas).toContain("dadkit-share-summary-sticker-v2.png");
     expect(sharePosterCanvas).toContain("share-poster-preview");
     expect(sharePosterCanvas).toContain("share-poster-card");
@@ -265,6 +267,8 @@ describe("cute maternity app visual direction", () => {
 
   it("uses app-like hero, checklist and timer patterns on action pages", () => {
     expect(goPage).toContain("准备就绪度");
+    expect(goPage).toContain("buildPreparationSummary");
+    expect(goPage).toContain("含行动卡、路线电话和联系人");
     expect(goPage).toContain("必带物品");
     expect(goPage).toContain("GO_DISPLAY_ITEMS");
     expect(goPage).toContain("GoAdmissionInfoCard");
@@ -278,6 +282,10 @@ describe("cute maternity app visual direction", () => {
     expect(goPage).toContain("dadkit-horse-girl.png");
     expect(goPage).not.toContain("CuteIllustration");
     expect(contractionsPage).toContain("本次宫缩计时圆盘");
+    expect(contractionsPage).toContain("buildPreparationSummary");
+    expect(contractionsPage).toContain("待产准备状态");
+    expect(contractionsPage).toContain("不计入待产准备进度");
+    expect(contractionsPage).toContain("生成分享截图");
     expect(contractionsPage).toContain("conic-gradient");
     expect(contractionsPage).toContain("dadkit-baby-girl-timer.png");
     expect(contractionsPage).toContain("LABOR_URGENT_SIGNAL_CARDS");

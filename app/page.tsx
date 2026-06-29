@@ -20,15 +20,11 @@ import {
 } from "@/lib/presentation/home-dashboard";
 import { formatBabyZodiacLine } from "@/lib/baby-profile";
 import {
-  buildHomeReadinessMetrics,
-  buildHomeSummary,
-  type HomeReadinessMetric,
-} from "@/lib/presentation/home-summary";
-import {
-  buildPlanPillars,
-  type PlanPillar,
-  type PlanPillarId,
-} from "@/lib/presentation/plan-pillars";
+  buildPreparationSummary,
+  type PreparationModule,
+  type PreparationModuleId,
+  type PreparationSummary,
+} from "@/lib/presentation/preparation-summary";
 import { useDadKitStore } from "@/lib/store";
 import type { UserProfile } from "@/lib/types";
 import {
@@ -42,13 +38,33 @@ export default function HomePage() {
   const checklist = useDadKitStore((state) => state.checklist);
   const birthPlan = useDadKitStore((state) => state.birthPlan);
   const hospitalAnswers = useDadKitStore((state) => state.hospitalAnswers);
+  const contractions = useDadKitStore((state) => state.contractions);
   const postpartumTasks = useDadKitStore((state) => state.postpartumTasks);
   const timelineTaskStatuses = useDadKitStore(
     (state) => state.timelineTaskStatuses,
   );
-  const summary = useMemo(
-    () => buildHomeSummary(checklist, hospitalAnswers),
-    [checklist, hospitalAnswers],
+  const preparationSummary = useMemo(
+    () =>
+      profile
+        ? buildPreparationSummary({
+            birthPlan,
+            checklist,
+            contractions,
+            hospitalAnswers,
+            postpartumTasks,
+            profile,
+            timelineTaskStatuses,
+          })
+        : undefined,
+    [
+      birthPlan,
+      checklist,
+      contractions,
+      hospitalAnswers,
+      postpartumTasks,
+      profile,
+      timelineTaskStatuses,
+    ],
   );
   const daysLeft = useMemo(
     () => (profile ? getDaysUntilDue(profile) : undefined),
@@ -70,19 +86,6 @@ export default function HomePage() {
         : [],
     [checklist, hospitalAnswers, profile, timelineTaskStatuses],
   );
-  const readinessMetrics = useMemo(
-    () => buildHomeReadinessMetrics(summary),
-    [summary],
-  );
-  const planPillars = useMemo(
-    () =>
-      buildPlanPillars({
-        checklist,
-        hospitalAnswers,
-        postpartumTasks,
-      }),
-    [checklist, hospitalAnswers, postpartumTasks],
-  );
   const hasAdmissionInfo = Boolean(
     birthPlan.hospitalPhone.trim() ||
       birthPlan.hospitalAddress.trim() ||
@@ -99,12 +102,16 @@ export default function HomePage() {
           pregnancyProgress={pregnancyProgress}
           profile={profile}
         />
-        {profile?.dueDate ? <HomePlanReadyPanel pillars={planPillars} /> : null}
+        {preparationSummary ? (
+          <HomePlanReadyPanel summary={preparationSummary} />
+        ) : null}
         <TodayFocusPanel
           profileReady={Boolean(profile?.dueDate)}
           tasks={todayTasks}
         />
-        <ReadinessMetricsPanel metrics={readinessMetrics} />
+        {preparationSummary ? (
+          <ReadinessMetricsPanel summary={preparationSummary} />
+        ) : null}
         <HomeLaborModePanel hasAdmissionInfo={hasAdmissionInfo} />
         <HomeToolsPanel />
       </section>
@@ -116,7 +123,7 @@ export default function HomePage() {
   );
 }
 
-function HomePlanReadyPanel({ pillars }: { pillars: PlanPillar[] }) {
+function HomePlanReadyPanel({ summary }: { summary: PreparationSummary }) {
   const shareLink = { href: "/share", label: "导出与协作" };
 
   return (
@@ -138,9 +145,17 @@ function HomePlanReadyPanel({ pillars }: { pillars: PlanPillar[] }) {
           {shareLink.label}
         </Link>
       </div>
+      <div className="mb-3 rounded-lg border border-white/80 bg-background/65 px-3 py-2 shadow-sm">
+        <p className="text-xs font-black text-primary">
+          {summary.readiness.label} {summary.readiness.percent}%
+        </p>
+        <p className="mt-0.5 break-words text-xs font-semibold leading-4 text-muted-foreground">
+          下一步：{summary.nextAction.label}
+        </p>
+      </div>
       <div className="grid grid-cols-2 gap-2">
-        {pillars.map((pillar) => (
-          <HomePlanLink key={pillar.id} pillar={pillar} />
+        {summary.modules.map((module) => (
+          <HomePlanLink key={module.id} module={module} />
         ))}
       </div>
     </section>
@@ -148,41 +163,41 @@ function HomePlanReadyPanel({ pillars }: { pillars: PlanPillar[] }) {
 }
 
 function HomePlanLink({
-  pillar,
+  module,
 }: {
-  pillar: PlanPillar;
+  module: PreparationModule;
 }) {
-  const Icon = planPillarIcon(pillar.id);
+  const Icon = planModuleIcon(module.id);
 
   return (
     <Link
       className="grid min-h-[5.4rem] content-start gap-1.5 rounded-lg border border-white/80 bg-background/60 p-2.5 shadow-sm transition-colors active:bg-secondary"
-      href={pillar.href}
+      href={module.href}
     >
       <span className="flex items-center justify-between gap-2">
         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
           <Icon className="size-4" />
         </span>
         <span className="text-xs font-black text-primary">
-          {pillar.completed}/{pillar.total}
+          {module.percent}%
         </span>
       </span>
       <span className="block break-words text-sm font-black leading-5">
-        {pillar.title}
+        {module.title}
       </span>
       <span className="block break-words text-[0.68rem] font-semibold leading-4 text-muted-foreground">
-        {pillar.sourceLabel}
+        {module.sourceLabel}
       </span>
     </Link>
   );
 }
 
-function planPillarIcon(id: PlanPillarId): LucideIcon {
+function planModuleIcon(id: PreparationModuleId): LucideIcon {
   if (id === "hospital") {
     return Hospital;
   }
 
-  if (id === "go_card") {
+  if (id === "go") {
     return Share2;
   }
 
@@ -241,9 +256,10 @@ function HomeHeroCard({
         aria-hidden
         className="journal-cover-photo"
         fill
+        unoptimized
         priority
         sizes="(max-width: 768px) 100vw, 390px"
-        src="/illustrations/dadkit-real-home-prep-photo.png"
+        src="/illustrations/dadkit-real-home-prep-photo.webp"
       />
       <span className="pointer-events-none absolute right-6 top-5 z-20 text-2xl text-amber">
         ✿
@@ -437,23 +453,36 @@ function HomeActionRow({
   );
 }
 
-function ReadinessMetricsPanel({ metrics }: { metrics: HomeReadinessMetric[] }) {
+function ReadinessMetricsPanel({ summary }: { summary: PreparationSummary }) {
   return (
     <section className="pony-due-card p-3">
       <div className="mb-2 flex items-center justify-between gap-3">
         <h2 className="text-sm font-black tracking-normal">入院准备</h2>
-        <span className="text-xs font-bold text-muted-foreground">3 项</span>
+        <span className="text-xs font-bold text-muted-foreground">
+          {summary.readiness.percent}%
+        </span>
       </div>
       <div className="grid gap-2">
-        {metrics.map((metric) => (
+        {summary.modules.map((metric) => (
           <ReadinessMetricRow key={metric.id} metric={metric} />
         ))}
+        <Link
+          className="rounded-lg border border-white/80 bg-background/65 p-3 text-xs font-semibold leading-5 text-muted-foreground shadow-sm transition-colors active:bg-secondary"
+          href="/contractions"
+        >
+          <span className="block font-black text-primary">
+            {summary.contractionStatus.label}
+          </span>
+          <span className="mt-0.5 block break-words">
+            {summary.contractionStatus.detail} · 不计入总准备进度
+          </span>
+        </Link>
       </div>
     </section>
   );
 }
 
-function ReadinessMetricRow({ metric }: { metric: HomeReadinessMetric }) {
+function ReadinessMetricRow({ metric }: { metric: PreparationModule }) {
   return (
     <Link
       className="grid gap-2 rounded-lg border border-white/80 bg-background/65 p-3 shadow-sm transition-colors active:bg-secondary"
@@ -462,7 +491,7 @@ function ReadinessMetricRow({ metric }: { metric: HomeReadinessMetric }) {
       <span className="flex items-start justify-between gap-3">
         <span className="min-w-0">
           <span className="block break-words text-sm font-black leading-5">
-            {metric.label}
+            {metric.title}
           </span>
           <span className="mt-0.5 block break-words text-xs font-semibold leading-4 text-muted-foreground">
             {metric.caption}

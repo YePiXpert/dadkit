@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v1.2.0-real-prep-photos";
+const CACHE_NAME = "dadkit-v1.2.0-prep-summary-webp";
 const PWA_ICON_ASSETS = [
   "/manifest.webmanifest",
   "/icon.svg",
@@ -22,11 +22,12 @@ const PWA_ILLUSTRATION_ASSETS = [
   "/illustrations/dadkit-hospital-route-sticker.png",
   "/illustrations/dadkit-hospital-route-sticker-v2.png",
   "/illustrations/dadkit-home-journal-sticker-v2.png",
-    "/illustrations/dadkit-maternity-journal-sticker.png",
-    "/illustrations/dadkit-postpartum-paperwork-sticker.png",
-    "/illustrations/dadkit-real-home-prep-photo.png",
-    "/illustrations/dadkit-real-share-prep-photo.png",
-    "/illustrations/dadkit-share-summary-sticker.png",
+  "/illustrations/dadkit-maternity-journal-sticker.png",
+  "/illustrations/dadkit-postpartum-paperwork-sticker.png",
+  "/illustrations/dadkit-real-home-prep-photo.webp",
+  "/illustrations/dadkit-real-prep-summary-photo.webp",
+  "/illustrations/dadkit-real-share-prep-photo.webp",
+  "/illustrations/dadkit-share-summary-sticker.png",
   "/illustrations/dadkit-share-summary-sticker-v2.png",
   "/illustrations/dadkit-timeline-calendar-sticker.png",
   "/illustrations/dadkit-timeline-calendar-sticker-v2.png",

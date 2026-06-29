@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   CalendarClock,
@@ -24,10 +25,19 @@ import {
   formatDuration,
   generateContractionsShareText,
 } from "@/lib/rc";
+import { buildPreparationSummary } from "@/lib/presentation/preparation-summary";
 import { useDadKitStore } from "@/lib/store";
 
 export default function ContractionsPage() {
+  const profile = useDadKitStore((state) => state.profile);
+  const checklist = useDadKitStore((state) => state.checklist);
+  const birthPlan = useDadKitStore((state) => state.birthPlan);
   const contractions = useDadKitStore((state) => state.contractions);
+  const hospitalAnswers = useDadKitStore((state) => state.hospitalAnswers);
+  const postpartumTasks = useDadKitStore((state) => state.postpartumTasks);
+  const timelineTaskStatuses = useDadKitStore(
+    (state) => state.timelineTaskStatuses,
+  );
   const addContraction = useDadKitStore((state) => state.addContraction);
   const deleteContraction = useDadKitStore((state) => state.deleteContraction);
   const clearContractions = useDadKitStore((state) => state.clearContractions);
@@ -48,6 +58,29 @@ export default function ContractionsPage() {
   const exportText = useMemo(
     () => generateContractionsShareText(contractions),
     [contractions],
+  );
+  const preparationSummary = useMemo(
+    () =>
+      profile
+        ? buildPreparationSummary({
+            birthPlan,
+            checklist,
+            contractions,
+            hospitalAnswers,
+            postpartumTasks,
+            profile,
+            timelineTaskStatuses,
+          })
+        : undefined,
+    [
+      birthPlan,
+      checklist,
+      contractions,
+      hospitalAnswers,
+      postpartumTasks,
+      profile,
+      timelineTaskStatuses,
+    ],
   );
   const timerProgress = activeStartedAt
     ? Math.min(100, Math.round((elapsedSeconds / 90) * 100))
@@ -134,6 +167,35 @@ export default function ContractionsPage() {
           记录持续时间和间隔，便于沟通。
         </p>
       </section>
+
+      {preparationSummary ? (
+        <section className="mobile-shell lg:max-w-none">
+          <Card className="macaron-panel">
+            <CardContent className="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+              <div className="min-w-0">
+                <p className="section-kicker">待产准备状态</p>
+                <h2 className="mt-1 text-xl font-black tracking-normal">
+                  {preparationSummary.readiness.label}{" "}
+                  {preparationSummary.readiness.percent}%
+                </h2>
+                <p className="mt-2 break-words text-sm font-semibold leading-6 text-muted-foreground">
+                  {preparationSummary.contractionStatus.label} ·{" "}
+                  {preparationSummary.contractionStatus.detail}
+                </p>
+                <p className="mt-1 text-xs font-bold leading-5 text-muted-foreground">
+                  宫缩记录只用于保存和沟通，不计入待产准备进度。
+                </p>
+              </div>
+              <Link
+                className="inline-flex min-h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-black text-primary-foreground shadow-sm active:scale-[0.99]"
+                href="/share"
+              >
+                生成分享截图
+              </Link>
+            </CardContent>
+          </Card>
+        </section>
+      ) : null}
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[0.9fr_1.1fr]">
         <Card className="overflow-hidden border-coral/20 bg-card/95 shadow-soft">
