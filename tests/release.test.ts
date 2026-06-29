@@ -99,7 +99,7 @@ describe("release endpoints and pages", () => {
       .sort();
 
     expect(illustrationAssets.length).toBeGreaterThan(0);
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.2.0-journal-stickers"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.2.0-real-prep-photos"');
     expect(sw).toContain('url.pathname.startsWith("/illustrations/")');
 
     for (const asset of illustrationAssets) {

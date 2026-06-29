@@ -236,17 +236,26 @@ function HomeHeroCard({
 
   return (
     <section className="journal-cover-card min-h-[12.75rem]">
-      <span className="pointer-events-none absolute right-6 top-5 text-2xl text-amber">
+      <Image
+        alt=""
+        aria-hidden
+        className="journal-cover-photo"
+        fill
+        priority
+        sizes="(max-width: 768px) 100vw, 390px"
+        src="/illustrations/dadkit-real-home-prep-photo.png"
+      />
+      <span className="pointer-events-none absolute right-6 top-5 z-20 text-2xl text-amber">
         ✿
       </span>
-      <span className="pointer-events-none absolute right-28 top-9 text-xl text-amber-soft">
+      <span className="pointer-events-none absolute right-28 top-9 z-20 text-xl text-amber-soft">
         ✦
       </span>
-      <span className="pointer-events-none absolute right-[8.5rem] bottom-8 text-lg text-blush">
+      <span className="pointer-events-none absolute right-[8.5rem] bottom-8 z-20 text-lg text-blush">
         ❤
       </span>
 
-      <div className="relative z-10 max-w-[62%]">
+      <div className="relative z-20 max-w-[62%]">
         <p className="journal-cover-kicker">待产准备小本本</p>
         <p className="text-sm font-black text-primary">
           预产期倒计时
@@ -274,10 +283,10 @@ function HomeHeroCard({
 
       <Image
         alt={journalStickerAlt}
-        className="pointer-events-none absolute -right-7 bottom-[-1rem] h-[11rem] w-[11rem] object-contain drop-shadow-sm"
+        className="pointer-events-none absolute -right-2 bottom-[-0.55rem] z-20 h-[6.6rem] w-[6.6rem] object-contain opacity-95 drop-shadow-sm"
         height={1254}
         priority
-        sizes="220px"
+        sizes="132px"
         src="/illustrations/dadkit-home-journal-sticker-v2.png"
         width={1254}
       />

@@ -101,8 +101,10 @@ describe("cute maternity app visual direction", () => {
     expect(globals).toContain(".macaron-note");
     expect(globals).toContain(".app-hero-card");
     expect(globals).toContain(".journal-cover-card");
+    expect(globals).toContain(".journal-cover-photo");
     expect(globals).toContain(".journal-cover-kicker");
     expect(globals).toContain(".share-poster-card");
+    expect(globals).toContain(".share-poster-photo");
     expect(globals).toContain(".share-poster-preview");
     expect(globals).toContain(".app-list-row");
     expect(globals).toContain("max-w-[390px]");
@@ -242,9 +244,11 @@ describe("cute maternity app visual direction", () => {
     expect(sharePosterCanvas).toContain('aspectRatio: "9 / 16"');
     expect(sharePosterCanvas).toContain('aspectRatio: "3 / 4"');
     expect(sharePosterCanvas).toContain("dadkit-prep-poster");
+    expect(sharePosterCanvas).toContain("dadkit-real-share-prep-photo.png");
     expect(sharePosterCanvas).toContain("dadkit-share-summary-sticker-v2.png");
     expect(sharePosterCanvas).toContain("share-poster-preview");
     expect(sharePosterCanvas).toContain("share-poster-card");
+    expect(sharePosterCanvas).toContain("share-poster-photo");
   });
 
   it("extends the cute macaron treatment beyond the home page", () => {

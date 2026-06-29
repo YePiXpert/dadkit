@@ -122,6 +122,15 @@ export function SharePosterCanvas({
           ref={posterRef}
           style={{ aspectRatio: selectedRatio.aspectRatio }}
         >
+          <Image
+            alt=""
+            aria-hidden
+            className="share-poster-photo"
+            fill
+            priority
+            sizes={ratio === "story" ? "360px" : "390px"}
+            src="/illustrations/dadkit-real-share-prep-photo.png"
+          />
           <div className="share-poster-safe">
             <div className="flex items-center justify-between gap-3">
               <span className="share-poster-pill">待产准备卡</span>
@@ -144,8 +153,8 @@ export function SharePosterCanvas({
 
             <div
               className={cn(
-                "relative mx-auto my-3 shrink-0",
-                ratio === "story" ? "h-36 w-36" : "h-28 w-28",
+                "relative ml-auto mr-1 my-1 shrink-0",
+                ratio === "story" ? "h-20 w-20" : "h-16 w-16",
               )}
             >
               <Image
@@ -153,7 +162,7 @@ export function SharePosterCanvas({
                 className="object-contain drop-shadow-sm"
                 fill
                 priority
-                sizes={ratio === "story" ? "144px" : "112px"}
+                sizes={ratio === "story" ? "80px" : "64px"}
                 src="/illustrations/dadkit-share-summary-sticker-v2.png"
               />
             </div>

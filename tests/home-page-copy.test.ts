@@ -22,6 +22,8 @@ describe("home page copy", () => {
     expect(homePage).not.toContain("查看示例");
     expect(homePage).not.toContain('href="/example"');
     expect(homePage).toContain("formatBabyZodiacLine");
+    expect(homePage).toContain("dadkit-real-home-prep-photo.png");
+    expect(homePage).toContain("journal-cover-photo");
     expect(homePage).toContain("dadkit-home-journal-sticker-v2.png");
     expect(homePage).toContain("journal-cover-card");
     expect(homePage).toContain("journal-cover-kicker");

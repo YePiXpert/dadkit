@@ -137,14 +137,19 @@
   }
 
   .journal-cover-card {
-    @apply relative overflow-hidden rounded-lg border border-white/90 p-4 shadow-soft;
-    background:
-      linear-gradient(90deg, hsl(var(--card) / 0.92) 0 1px, transparent 1px) 0 0 / 1.45rem 1.45rem,
-      linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--blush) / 0.64) 58%, hsl(var(--cream) / 0.72) 100%);
+    @apply relative isolate overflow-hidden rounded-lg border border-white/90 p-4 shadow-soft;
+    background: hsl(var(--card));
   }
 
   .journal-cover-card::before {
-    @apply pointer-events-none absolute inset-x-4 top-3 h-px bg-white/80 content-[''];
+    @apply pointer-events-none absolute inset-0 z-10 content-[''];
+    background:
+      linear-gradient(90deg, hsl(var(--card) / 0.92) 0%, hsl(var(--card) / 0.78) 42%, hsl(var(--card) / 0.2) 72%, hsl(var(--card) / 0.05) 100%),
+      linear-gradient(180deg, hsl(var(--blush) / 0.28) 0%, hsl(var(--cream) / 0.42) 100%);
+  }
+
+  .journal-cover-photo {
+    @apply pointer-events-none absolute inset-0 z-0 size-full object-cover;
   }
 
   .journal-cover-kicker {
@@ -202,13 +207,22 @@
 
   .share-poster-card {
     @apply relative isolate overflow-hidden rounded-lg border border-white/90 bg-card text-foreground shadow-soft;
+    background: hsl(var(--background));
+  }
+
+  .share-poster-card::before {
+    @apply pointer-events-none absolute inset-0 z-10 content-[''];
     background:
-      linear-gradient(90deg, hsl(var(--blush) / 0.34) 0 1px, transparent 1px) 0 0 / 1.35rem 1.35rem,
-      linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--background)) 54%, hsl(var(--cream) / 0.72) 100%);
+      linear-gradient(180deg, hsl(var(--card) / 0.08) 0%, hsl(var(--card) / 0.4) 26%, hsl(var(--background) / 0.88) 58%, hsl(var(--cream) / 0.94) 100%),
+      linear-gradient(90deg, hsl(var(--blush) / 0.18) 0 1px, transparent 1px) 0 0 / 1.35rem 1.35rem;
+  }
+
+  .share-poster-photo {
+    @apply pointer-events-none absolute inset-0 z-0 size-full object-cover;
   }
 
   .share-poster-safe {
-    @apply absolute inset-4 flex flex-col overflow-hidden rounded-lg border border-white/80 bg-card/70 p-4 shadow-sm;
+    @apply absolute inset-4 z-20 flex flex-col overflow-hidden rounded-lg border border-white/80 bg-card/60 p-4 shadow-sm;
   }
 
   .share-poster-pill {
