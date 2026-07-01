@@ -1,4 +1,10 @@
 import {
+  Capacitor,
+  CapacitorHttp,
+  type HttpResponse,
+} from "@capacitor/core";
+
+import {
   createSnapshot,
   importData,
   type DadKitExportData,
@@ -15,6 +21,8 @@ const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
 const WEB_DAV_PROXY_PATH = "/api/webdav";
 const PROXY_HEADER = "x-dadkit-webdav-proxy";
 const PROXY_ERROR_HEADER = "x-dadkit-webdav-proxy-error";
+
+export type WebDavTransport = "browser-proxy" | "native-http" | "direct-fetch";
 
 type UploadOptions = {
   deviceId?: string;
@@ -289,8 +297,14 @@ async function webDavFetch(
   input: string,
   init: RequestInit,
 ): Promise<Response> {
-  if (shouldUseWebDavProxy()) {
-    return webDavProxyFetch(input, init);
+  const transport = getWebDavTransport();
+
+  if (transport === "native-http") {
+    return nativeWebDavFetch(input, init);
+  }
+
+  if (transport === "browser-proxy") {
+    return browserProxyWebDavFetch(input, init);
   }
 
   try {
@@ -308,11 +322,77 @@ async function webDavFetch(
   }
 }
 
-function shouldUseWebDavProxy() {
-  return typeof window !== "undefined";
+export function selectWebDavTransport({
+  isBrowser,
+  isNative,
+}: {
+  isBrowser: boolean;
+  isNative: boolean;
+}): WebDavTransport {
+  if (isNative) {
+    return "native-http";
+  }
+
+  return isBrowser ? "browser-proxy" : "direct-fetch";
 }
 
-async function webDavProxyFetch(
+export function getWebDavTransport(): WebDavTransport {
+  return selectWebDavTransport({
+    isBrowser: typeof window !== "undefined",
+    isNative: isNativeCapacitorRuntime(),
+  });
+}
+
+function isNativeCapacitorRuntime() {
+  try {
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+}
+
+async function nativeWebDavFetch(
+  input: string,
+  init: RequestInit,
+): Promise<Response> {
+  const response = await CapacitorHttp.request({
+    url: input,
+    method: init.method ?? "GET",
+    headers: headersToRecord(init.headers),
+    data: typeof init.body === "string" ? init.body : undefined,
+    responseType: "text",
+    disableRedirects: true,
+  });
+
+  return responseFromNativeWebDavResult(response);
+}
+
+export function responseFromNativeWebDavResult(
+  response: Pick<HttpResponse, "data" | "headers" | "status">,
+) {
+  const body = nativeResponseBody(response);
+
+  return new Response(body, {
+    status: response.status,
+    headers: response.headers,
+  });
+}
+
+function nativeResponseBody(response: Pick<HttpResponse, "data" | "status">) {
+  if ([204, 205, 304].includes(response.status)) {
+    return null;
+  }
+
+  if (response.data === undefined || response.data === null) {
+    return null;
+  }
+
+  return typeof response.data === "string"
+    ? response.data
+    : JSON.stringify(response.data);
+}
+
+async function browserProxyWebDavFetch(
   input: string,
   init: RequestInit,
 ): Promise<Response> {

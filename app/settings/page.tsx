@@ -40,6 +40,11 @@ import {
   formatBabyZodiacLine,
   getBabyMascot,
 } from "@/lib/baby-profile";
+import {
+  getReviewPageHref,
+  PUBLIC_PRIVACY_PATH,
+  PUBLIC_SUPPORT_PATH,
+} from "@/lib/app-routes";
 import { useDadKitStore } from "@/lib/store";
 import {
   clearSnapshots,
@@ -443,6 +448,18 @@ export default function SettingsPage() {
               title="免责声明"
             />
             <SettingsShortcutRow
+              caption="本地数据、WebDAV 和第三方服务说明"
+              href={getReviewPageHref(PUBLIC_PRIVACY_PATH)}
+              icon={<Info className="size-4" />}
+              title="隐私政策"
+            />
+            <SettingsShortcutRow
+              caption="问题反馈、测试说明和支持渠道"
+              href={getReviewPageHref(PUBLIC_SUPPORT_PATH)}
+              icon={<ArrowRight className="size-4" />}
+              title="支持与反馈"
+            />
+            <SettingsShortcutRow
               caption="本地数据和清单数量"
               href="#current-data-summary"
               icon={<Info className="size-4" />}
@@ -656,7 +673,7 @@ export default function SettingsPage() {
                   <Field label="WebDAV 地址" htmlFor="webdav-endpoint">
                     <Input
                       id="webdav-endpoint"
-                      placeholder="https://example.com/remote.php/dav/files/user"
+                      placeholder="https://webdav.123pan.cn/webdav"
                       type="url"
                       value={webDavConfig.endpoint}
                       onChange={(event) =>

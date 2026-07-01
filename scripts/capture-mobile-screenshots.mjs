@@ -27,6 +27,8 @@ const ROUTES = [
   ["08-postpartum", "/postpartum"],
   ["09-settings", "/settings"],
   ["10-share", "/share"],
+  ["11-privacy", "/privacy"],
+  ["12-support", "/support"],
 ];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

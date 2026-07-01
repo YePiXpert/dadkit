@@ -29,6 +29,8 @@ describe("settings page copy", () => {
     expect(settingsPage).toContain('href="#webdav-backup"');
     expect(settingsPage).toContain('href="#json-backup"');
     expect(settingsPage).toContain('href="#current-data-summary"');
+    expect(settingsPage).toContain("getReviewPageHref(PUBLIC_PRIVACY_PATH)");
+    expect(settingsPage).toContain("getReviewPageHref(PUBLIC_SUPPORT_PATH)");
     expect(settingsPage).toContain('id="local-snapshots"');
     expect(settingsPage).toContain('id="disclaimer"');
     expect(settingsPage).toContain('id="webdav-credentials"');
@@ -57,6 +59,8 @@ describe("settings page copy", () => {
     expect(settingsPage).toContain("清空本地数据");
     expect(settingsPage).toContain("关于 DadKit");
     expect(settingsPage).toContain("免责声明");
+    expect(settingsPage).toContain("隐私政策");
+    expect(settingsPage).toContain("支持与反馈");
     expect(settingsPage).toContain("WebDAV 凭据说明");
     expect(settingsPage).not.toContain("本地开发 / 未注入");
   });

@@ -25,6 +25,8 @@ import {
   importDadKitWebDavBackup,
   joinWebDavPath,
   normalizeWebDavEndpoint,
+  responseFromNativeWebDavResult,
+  selectWebDavTransport,
   testWebDavConnection,
 } from "@/lib/webdav/client";
 import { DEFAULT_WEBDAV_CONFIG } from "@/lib/webdav/types";
@@ -190,19 +192,25 @@ describe("webdav helpers", () => {
     expect(snapshots[0]?.data.checklist).toEqual([testItem("local-before-webdav")]);
   });
 
+  it("prefills the first native WebDAV target without storing secrets", () => {
+    expect(DEFAULT_WEBDAV_CONFIG.endpoint).toBe("https://webdav.123pan.cn/webdav");
+    expect(DEFAULT_WEBDAV_CONFIG.remoteDir).toBe("/DadKit");
+    expect(DEFAULT_WEBDAV_CONFIG.filename).toBe("dadkit-backup.json");
+    expect(DEFAULT_WEBDAV_CONFIG.username).toBe("");
+    expect(DEFAULT_WEBDAV_CONFIG.rememberSecret).toBe(false);
+  });
+
   it("uses the same-origin proxy for browser WebDAV requests", async () => {
     installStorage();
 
-    const fetchMock = vi.fn(
-      async (_input: RequestInfo | URL, _init?: RequestInit) => {
-        return new Response(null, {
-          status: 207,
-          headers: {
-            "x-dadkit-webdav-proxy": "1",
-          },
-        });
-      },
-    );
+    const fetchMock = vi.fn(async () => {
+      return new Response(null, {
+        status: 207,
+        headers: {
+          "x-dadkit-webdav-proxy": "1",
+        },
+      });
+    });
 
     vi.stubGlobal("fetch", fetchMock);
 
@@ -228,6 +236,59 @@ describe("webdav helpers", () => {
     });
     expect(payload.headers.authorization).toBe(buildAuthHeader("dad", "secret"));
     expect(payload.headers.depth).toBe("0");
+  });
+
+  it("selects the native WebDAV transport before browser proxy fallback", () => {
+    expect(selectWebDavTransport({ isBrowser: true, isNative: true })).toBe(
+      "native-http",
+    );
+    expect(selectWebDavTransport({ isBrowser: true, isNative: false })).toBe(
+      "browser-proxy",
+    );
+    expect(selectWebDavTransport({ isBrowser: false, isNative: false })).toBe(
+      "direct-fetch",
+    );
+  });
+
+  it("normalizes native WebDAV HTTP responses to Fetch responses", async () => {
+    const response = responseFromNativeWebDavResult({
+      data: { ok: true },
+      status: 207,
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+
+    expect(response.status).toBe(207);
+    expect(response.headers.get("content-type")).toBe("application/json");
+    expect(await response.text()).toBe(JSON.stringify({ ok: true }));
+  });
+
+  it("uses direct fetch when not running in a browser or native app", async () => {
+    const fetchMock = vi.fn(async () => {
+      return new Response(null, { status: 207 });
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await testWebDavConnection(
+      {
+        ...DEFAULT_WEBDAV_CONFIG,
+        endpoint: "https://example.com/dav",
+        username: "dad",
+      },
+      "secret",
+    );
+
+    const [url, init] = fetchMock.mock.calls[0] as [
+      RequestInfo | URL,
+      RequestInit,
+    ];
+
+    expect(result).toEqual({ ok: true, message: "WebDAV 连接成功" });
+    expect(url).toBe("https://example.com/dav/DadKit");
+    expect(init.method).toBe("PROPFIND");
+    expect(new Headers(init.headers).get("depth")).toBe("0");
   });
 
   it("surfaces same-origin proxy errors", async () => {

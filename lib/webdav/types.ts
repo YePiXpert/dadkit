@@ -45,7 +45,7 @@ export type WebDavSyncResult = {
 
 export const DEFAULT_WEBDAV_CONFIG: WebDavConfig = {
   enabled: false,
-  endpoint: "",
+  endpoint: "https://webdav.123pan.cn/webdav",
   username: "",
   remoteDir: "/DadKit",
   filename: "dadkit-backup.json",
