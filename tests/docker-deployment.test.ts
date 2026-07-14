@@ -34,6 +34,10 @@ describe("VPS Docker deployment", () => {
     expect(readme).toContain("DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS");
     expect(exampleEnv).toContain("DADKIT_BIND_ADDRESS=127.0.0.1");
     expect(exampleEnv).toContain("DADKIT_PUBLIC_ORIGIN=https://dadkit.example.com");
+    expect(exampleEnv).toMatch(/^DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS=$/m);
+    expect(exampleEnv).toContain(
+      "# Example: webdav.example.com,dav.example.com:8443",
+    );
     expect(dockerIgnore).toMatch(/^\.env$/m);
     expect(dockerIgnore).toContain("!.env.example");
   });
@@ -70,9 +74,16 @@ describe("VPS Docker deployment", () => {
       expect(script).toContain("if [ -e .env ] || [ -L .env ]; then");
       expect(script).toContain(": > .env");
       expect(script).toContain("chmod 600 .env");
-      expect(script).toMatch(/\nwrite_initial_env\nstart_and_wait/);
+      expect(script).toMatch(/\r?\nwrite_initial_env\r?\nstart_and_wait/);
+      expect(script).toContain(
+        'DADKIT_WAIT_TIMEOUT="${DADKIT_WAIT_TIMEOUT:-120}"',
+      );
       expect(script).toContain("--wait --wait-timeout");
+      expect(script).toContain(
+        'DadKit failed to become healthy within ${DADKIT_WAIT_TIMEOUT}s.',
+      );
       expect(script).toContain("compose logs --no-color --tail=100 dadkit");
+      expect(script).toMatch(/compose logs --no-color --tail=100 dadkit >&2 \|\| true\s+exit 1/);
       expect(script).toContain("compose port dadkit 3333");
     }
   });
