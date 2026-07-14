@@ -78,6 +78,11 @@ export type HospitalAnswerStatus =
   | "not_needed";
 
 export type HospitalAnswer = {
+  /**
+   * Optional only while reading legacy backups and component drafts. The store
+   * assigns the active hospital scope before persisting an answer.
+   */
+  hospitalId?: string;
   itemId: string;
   name: string;
   status: HospitalAnswerStatus;
@@ -111,6 +116,8 @@ export type ChecklistItem = {
   quantity?: string;
   note?: string;
   status: PackStatus;
+  /** True only when the current status was assigned by a hospital rule. */
+  hospitalProvidedByRule?: boolean;
   source: ItemSource;
   sourceLabel?: string;
   editable: boolean;
@@ -164,6 +171,7 @@ export type UserHospitalOverride = {
   hospitalId?: string;
   providedItemsOverride?: string[];
   requiredDocumentsOverride?: string[];
+  selectedProvidedItemIds?: string[];
   notesOverride?: string;
   updatedAt: string;
 };

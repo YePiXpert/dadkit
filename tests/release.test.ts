@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { runInNewContext } from "node:vm";
 
 import { describe, expect, it } from "vitest";
 
@@ -99,11 +100,111 @@ describe("release endpoints and pages", () => {
       .sort();
 
     expect(illustrationAssets.length).toBeGreaterThan(0);
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.2.0-prep-summary-webp"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.2.0-vps-safe-v1"');
+    expect(sw).toContain("const CORE_ROUTES = [");
+    expect(sw).toContain('"/checklist"');
+    expect(sw).toContain('"/hospital"');
+    expect(sw).toContain('"/timeline"');
+    expect(sw).toContain("precacheAppShell");
+    expect(sw).toContain('url.pathname === "/_next/image"');
     expect(sw).toContain('url.pathname.startsWith("/illustrations/")');
 
     for (const asset of illustrationAssets) {
       expect(sw).toContain(`"${asset}"`);
     }
+  });
+
+  it("extracts only real Next asset attributes from server HTML", () => {
+    const sw = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
+    const context = {
+      self: {
+        addEventListener: () => undefined,
+        location: { origin: "https://dadkit.example" },
+      },
+    } as Record<string, unknown>;
+
+    runInNewContext(
+      `${sw}\n;globalThis.__extractBuildAssets = extractBuildAssets;`,
+      context,
+    );
+    const extractBuildAssets = context.__extractBuildAssets as (
+      html: string,
+    ) => string[];
+    const assets = extractBuildAssets(`
+      <link href="/_next/static/css/app.css" rel="stylesheet">
+      <img srcset="/_next/image?url=%2Ficon.png&amp;w=256&amp;q=75 1x, /_next/image?url=%2Ficon.png&amp;w=512&amp;q=75 2x">
+      <script>self.__next_f.push([1,"href=\\\"/_next/static/css/flight.css\\\""])</script>
+    `);
+
+    expect(assets).toEqual([
+      "/_next/static/css/app.css",
+      "/_next/image?url=%2Ficon.png&w=256&q=75",
+      "/_next/image?url=%2Ficon.png&w=512&q=75",
+    ]);
+  });
+
+  it("keeps optional route and media failures from aborting app-shell install", async () => {
+    const sw = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
+    const cachedUrls: string[] = [];
+    class FakeRequest {
+      constructor(readonly url: string) {}
+    }
+    class FakeResponse {
+      readonly ok = true;
+      readonly type = "basic";
+
+      constructor(private readonly body: string) {}
+
+      clone() {
+        return new FakeResponse(this.body);
+      }
+
+      async text() {
+        return this.body;
+      }
+    }
+    const cache = {
+      async put(request: FakeRequest) {
+        cachedUrls.push(request.url);
+      },
+    };
+    const context = {
+      self: {
+        addEventListener: () => undefined,
+        location: { origin: "https://dadkit.example" },
+      },
+      caches: {
+        async open() {
+          return cache;
+        },
+      },
+      Request: FakeRequest,
+      async fetch(request: FakeRequest) {
+        if (
+          request.url === "/hospital" ||
+          request.url === "/manifest.webmanifest"
+        ) {
+          throw new Error("simulated optional fetch failure");
+        }
+
+        return new FakeResponse(
+          request.url === "/"
+            ? '<script src="/_next/static/chunks/root.js"></script>'
+            : "",
+        );
+      },
+    } as Record<string, unknown>;
+
+    runInNewContext(
+      `${sw}\n;globalThis.__precacheAppShell = precacheAppShell;`,
+      context,
+    );
+    const precacheAppShell = context.__precacheAppShell as () => Promise<void>;
+
+    await expect(precacheAppShell()).resolves.toBeUndefined();
+    expect(cachedUrls).toContain("/");
+    expect(cachedUrls).toContain("/_next/static/chunks/root.js");
+    expect(cachedUrls).not.toContain("/hospital");
+    expect(cachedUrls).not.toContain("/manifest.webmanifest");
   });
 });

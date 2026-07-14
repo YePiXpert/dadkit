@@ -259,7 +259,11 @@ export async function ensureRemoteDir(
 export function importDadKitWebDavBackup(
   backup: DadKitWebDavBackup,
 ): ImportResult {
-  createSnapshot("导入 WebDAV 备份前");
+  try {
+    createSnapshot("导入 WebDAV 备份前");
+  } catch (error) {
+    return { ok: false, message: webDavErrorMessage(error) };
+  }
 
   return importData(JSON.stringify(backup.data));
 }
@@ -283,8 +287,8 @@ function validateWebDavInput(
   try {
     const url = new URL(config.endpoint);
 
-    if (url.protocol !== "https:" && url.protocol !== "http:") {
-      return { ok: false, message: "WebDAV 地址必须是 http 或 https。" };
+    if (url.protocol !== "https:") {
+      return { ok: false, message: "WebDAV 地址必须使用 https。" };
     }
   } catch {
     return { ok: false, message: "WebDAV 地址格式不正确。" };

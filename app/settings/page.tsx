@@ -153,7 +153,19 @@ export default function SettingsPage() {
       return;
     }
 
-    clearAll();
+    try {
+      clearAll();
+    } catch (error) {
+      refreshSnapshots();
+      setMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "无法创建恢复快照，本地数据未清空。",
+      );
+      setMessageOk(false);
+      return;
+    }
+
     refreshSnapshots();
     refreshWebDavSettings();
     setMessage("本地数据已清空。");
@@ -161,7 +173,20 @@ export default function SettingsPage() {
   }
 
   function importData() {
-    const result = importJson(importText);
+    let result: ReturnType<typeof importJson>;
+
+    try {
+      result = importJson(importText);
+    } catch (error) {
+      refreshSnapshots();
+      setMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "无法创建恢复快照，导入已中止。",
+      );
+      setMessageOk(false);
+      return;
+    }
 
     refreshSnapshots();
     setMessage(result.message);

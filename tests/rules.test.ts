@@ -4,6 +4,7 @@ import {
   calculatePackingCompletion,
   filterItemsForChecklistMode,
   generateChecklist,
+  getHospitalIdForProfile,
   isPackingProgressItem,
 } from "@/lib/rules";
 import { STATUS_FLOW } from "@/lib/store";
@@ -245,6 +246,145 @@ describe("generateChecklist", () => {
     const padItem = items.find((item) => item.name === "产褥垫 / 产后卫生巾");
 
     expect(padItem?.status).toBe("hospital_provided");
+    expect(padItem?.hospitalProvidedByRule).toBe(true);
+  });
+
+  it("reverts a derived hospital-provided status when the hospital rule is removed", () => {
+    const providedItems = generateChecklist(
+      makeProfile({ hospitalProvidedItemIds: ["postpartum-pads"] }),
+    );
+    const regenerated = generateChecklist(
+      makeProfile({ hospitalProvidedItemIds: [] }),
+      { currentItems: providedItems },
+    );
+    const padItem = regenerated.find(
+      (item) => item.name === "产褥垫 / 产后卫生巾",
+    );
+
+    expect(padItem?.status).toBe("todo");
+    expect(padItem?.hospitalProvidedByRule).toBeUndefined();
+    expect(padItem?.note).not.toContain("用户标记为已向医院确认提供");
+  });
+
+  it("preserves a manually selected hospital-provided status", () => {
+    const currentItems = generateChecklist(makeProfile()).map((item) =>
+      item.name === "产褥垫 / 产后卫生巾"
+        ? { ...item, status: "hospital_provided" as const }
+        : item,
+    );
+    const regenerated = generateChecklist(makeProfile(), { currentItems });
+
+    expect(
+      regenerated.find((item) => item.name === "产褥垫 / 产后卫生巾")?.status,
+    ).toBe("hospital_provided");
+  });
+
+  it("does not take control back from an explicit manual hospital-provided status", () => {
+    const manualItems = generateChecklist(makeProfile()).map((item) =>
+      item.name === "产褥垫 / 产后卫生巾"
+        ? {
+            ...item,
+            status: "hospital_provided" as const,
+            hospitalProvidedByRule: false,
+          }
+        : item,
+    );
+    const whileRuleMatches = generateChecklist(
+      makeProfile({ hospitalProvidedItemIds: ["postpartum-pads"] }),
+      { currentItems: manualItems },
+    );
+    const afterRuleRemoval = generateChecklist(makeProfile(), {
+      currentItems: whileRuleMatches,
+    });
+    const padItem = afterRuleRemoval.find(
+      (item) => item.name === "产褥垫 / 产后卫生巾",
+    );
+
+    expect(padItem?.status).toBe("hospital_provided");
+    expect(padItem?.hospitalProvidedByRule).toBe(false);
+  });
+
+  it.each(["todo", "packed"] as const)(
+    "preserves an explicit manual %s status while a hospital rule matches",
+    (status) => {
+      const manualItems = generateChecklist(makeProfile()).map((item) =>
+        item.name === "产褥垫 / 产后卫生巾"
+          ? { ...item, status, hospitalProvidedByRule: false }
+          : item,
+      );
+      const regenerated = generateChecklist(
+        makeProfile({ hospitalProvidedItemIds: ["postpartum-pads"] }),
+        { currentItems: manualItems },
+      );
+      const padItem = regenerated.find(
+        (item) => item.name === "产褥垫 / 产后卫生巾",
+      );
+
+      expect(padItem?.status).toBe(status);
+      expect(padItem?.hospitalProvidedByRule).toBe(false);
+    },
+  );
+
+  it("lets a new hospital rule apply to legacy todo data without provenance", () => {
+    const legacyItems = generateChecklist(makeProfile()).map((item) => ({
+      ...item,
+      hospitalProvidedByRule: undefined,
+    }));
+    const regenerated = generateChecklist(
+      makeProfile({ hospitalProvidedItemIds: ["postpartum-pads"] }),
+      { currentItems: legacyItems },
+    );
+    const padItem = regenerated.find(
+      (item) => item.name === "产褥垫 / 产后卫生巾",
+    );
+
+    expect(padItem?.status).toBe("hospital_provided");
+    expect(padItem?.hospitalProvidedByRule).toBe(true);
+  });
+
+  it("preserves a genuine user packing status across hospital rule changes", () => {
+    const initialItems = generateChecklist(makeProfile()).map((item) =>
+      item.name === "产褥垫 / 产后卫生巾"
+        ? { ...item, status: "packed" as const }
+        : item,
+    );
+    const withProvidedRule = generateChecklist(
+      makeProfile({ hospitalProvidedItemIds: ["postpartum-pads"] }),
+      { currentItems: initialItems },
+    );
+    const withoutProvidedRule = generateChecklist(
+      makeProfile({ hospitalProvidedItemIds: [] }),
+      { currentItems: withProvidedRule },
+    );
+
+    expect(
+      withProvidedRule.find((item) => item.name === "产褥垫 / 产后卫生巾")
+        ?.status,
+    ).toBe("packed");
+    expect(
+      withoutProvidedRule.find((item) => item.name === "产褥垫 / 产后卫生巾")
+        ?.status,
+    ).toBe("packed");
+  });
+
+  it("uses the selected preset hospital even when a stale custom hospital remains", () => {
+    const profile = makeProfile({
+      hospitalMode: "preset",
+      hospitalId: "cn-bj-yuquan-hospital",
+      customHospital: {
+        mode: "custom",
+        hospitalId: "stale-custom-hospital",
+        name: "旧自定义医院",
+        country: "CN",
+        verificationStatus: "user_entered",
+        requiredDocuments: [],
+        hospitalProvidedItems: [],
+        recommendedItems: [],
+        notAllowedItems: [],
+      },
+    });
+
+    expect(getHospitalIdForProfile(profile)).toBe("cn-bj-yuquan-hospital");
   });
 
   it("does not mark any item as hospital_provided when provided items are unknown", () => {

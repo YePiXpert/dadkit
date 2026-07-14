@@ -115,14 +115,11 @@ describe("cute maternity app visual direction", () => {
     expect(header).not.toContain(banned("安心", "待产清单"));
     expect(header).toContain("getBabyMascot");
     expect(layout).toContain("#FF5C7A");
-    expect(layout).toContain("maximumScale: 1");
-    expect(layout).toContain("userScalable: false");
+    expect(layout).not.toContain("maximumScale");
+    expect(layout).not.toContain("userScalable");
     expect(layout).toContain('viewportFit: "cover"');
-    expect(pwaRegister).toContain("gesturestart");
-    expect(pwaRegister).toContain("touchmove");
-    expect(pwaRegister).toContain("touchend");
-    expect(pwaRegister).toContain("preventDoubleTapZoom");
-    expect(pwaRegister).toContain("passive: false");
+    expect(pwaRegister).not.toContain("gesturestart");
+    expect(pwaRegister).not.toContain("preventDoubleTapZoom");
     expect(mobileNav).toContain("bg-card/95");
     expect(mobileNav).toContain("after:bg-primary");
     expect(mobileNav).toContain("h-[3.25rem]");
@@ -312,7 +309,7 @@ describe("cute maternity app visual direction", () => {
     expect(setupPage).not.toContain("生成我的待产清单");
     expect(setupPage).toContain("宝宝性别");
     expect(setupPage).toContain("生肖会自动计算");
-    expect(setupPage).toContain("首次生产？");
+    expect(setupPage).not.toContain("首次生产？");
     expect(setupPage).toContain("更多医院信息（可选）");
     expect(setupPage).toContain("SegmentButton");
     expect(setupPage).toContain("grid grid-cols-2");

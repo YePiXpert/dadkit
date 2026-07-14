@@ -111,6 +111,19 @@ export default function ChecklistPage() {
       }),
     [filters.category, filters.priority, filters.status, groupedModeItems],
   );
+
+  function resetWithRecoverySnapshot() {
+    try {
+      resetChecklist();
+      setCopyMessage("清单已重置，并保留了重置前的本地快照。");
+    } catch (error) {
+      setCopyMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "无法创建恢复快照，清单未重置。",
+      );
+    }
+  }
   const groupCounts = useMemo(
     () =>
       Object.fromEntries(
@@ -296,7 +309,7 @@ export default function ChecklistPage() {
                 <RotateCcw className="size-4" />
                 重新生成
               </Button>
-              <Button variant="outline" onClick={resetChecklist}>
+              <Button variant="outline" onClick={resetWithRecoverySnapshot}>
                 重置
               </Button>
               {visualGroup === "shopping" ? (

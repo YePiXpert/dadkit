@@ -98,6 +98,26 @@ describe("webdav helpers", () => {
     );
   });
 
+  it("rejects cleartext WebDAV before sending credentials", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await testWebDavConnection(
+      {
+        ...DEFAULT_WEBDAV_CONFIG,
+        endpoint: "http://webdav.example/dav",
+        username: "dad",
+      },
+      "secret",
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      message: "WebDAV 地址必须使用 https。",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("joins webdav paths without duplicate slashes", () => {
     expect(
       joinWebDavPath("https://example.com/dav/", "/DadKit/", "dadkit-backup.json"),
@@ -173,7 +193,7 @@ describe("webdav helpers", () => {
     saveChecklist([testItem("local-before-webdav")]);
 
     const remoteData = {
-      version: 1 as const,
+      ...exportData(),
       exportedAt: "2026-06-09T00:00:00.000Z",
       userProfile: testProfile("2026-08-01"),
       checklistMode: "full" as const,
@@ -203,7 +223,7 @@ describe("webdav helpers", () => {
   it("uses the same-origin proxy for browser WebDAV requests", async () => {
     installStorage();
 
-    const fetchMock = vi.fn(async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => {
       return new Response(null, {
         status: 207,
         headers: {
@@ -222,10 +242,7 @@ describe("webdav helpers", () => {
       },
       "secret",
     );
-    const [url, init] = fetchMock.mock.calls[0] as [
-      RequestInfo | URL,
-      RequestInit,
-    ];
+    const [url, init = {}] = fetchMock.mock.calls[0]!;
     const payload = JSON.parse(String(init.body));
 
     expect(result).toEqual({ ok: true, message: "WebDAV 连接成功" });
@@ -265,7 +282,7 @@ describe("webdav helpers", () => {
   });
 
   it("uses direct fetch when not running in a browser or native app", async () => {
-    const fetchMock = vi.fn(async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => {
       return new Response(null, { status: 207 });
     });
 
@@ -280,10 +297,7 @@ describe("webdav helpers", () => {
       "secret",
     );
 
-    const [url, init] = fetchMock.mock.calls[0] as [
-      RequestInfo | URL,
-      RequestInit,
-    ];
+    const [url, init = {}] = fetchMock.mock.calls[0]!;
 
     expect(result).toEqual({ ok: true, message: "WebDAV 连接成功" });
     expect(url).toBe("https://example.com/dav/DadKit");

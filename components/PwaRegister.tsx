@@ -6,36 +6,44 @@ export function PwaRegister() {
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker>();
 
   useEffect(() => {
-    const preventGesture: EventListener = (event) => event.preventDefault();
-    let lastTouchEnd = 0;
-    const preventMultiTouch = (event: TouchEvent) => {
-      if (event.touches.length > 1) {
-        event.preventDefault();
+    const handleOfflineNavigation = (event: MouseEvent) => {
+      if (
+        navigator.onLine ||
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      ) {
+        return;
       }
-    };
-    const preventDoubleTapZoom = (event: TouchEvent) => {
-      const now = Date.now();
 
-      if (now - lastTouchEnd <= 300) {
-        event.preventDefault();
+      const target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
       }
 
-      lastTouchEnd = now;
+      const anchor = target.closest<HTMLAnchorElement>("a[href]");
+
+      if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) {
+        return;
+      }
+
+      const url = new URL(anchor.href, window.location.href);
+
+      if (url.origin !== window.location.origin) {
+        return;
+      }
+
+      event.preventDefault();
+      window.location.assign(url.href);
     };
 
-    document.addEventListener("gesturestart", preventGesture);
-    document.addEventListener("gesturechange", preventGesture);
-    document.addEventListener("gestureend", preventGesture);
-    document.addEventListener("touchmove", preventMultiTouch, { passive: false });
-    document.addEventListener("touchend", preventDoubleTapZoom, { passive: false });
+    document.addEventListener("click", handleOfflineNavigation, true);
 
-    return () => {
-      document.removeEventListener("gesturestart", preventGesture);
-      document.removeEventListener("gesturechange", preventGesture);
-      document.removeEventListener("gestureend", preventGesture);
-      document.removeEventListener("touchmove", preventMultiTouch);
-      document.removeEventListener("touchend", preventDoubleTapZoom);
-    };
+    return () => document.removeEventListener("click", handleOfflineNavigation, true);
   }, []);
 
   useEffect(() => {

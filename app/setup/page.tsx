@@ -90,7 +90,6 @@ export default function SetupPage() {
     createCustomHospitalProfile({ name: "自定义医院", city: "北京市" }),
   );
   const [otherProvided, setOtherProvided] = useState("");
-  const [firstBaby, setFirstBaby] = useState(true);
   const [message, setMessage] = useState("");
   const [wizardStep, setWizardStep] = useState(0);
 
@@ -165,10 +164,19 @@ export default function SetupPage() {
       hospitalProvidedItemIds: Array.from(new Set(providedIds)),
     };
 
-    if (profile) {
-      saveProfile(nextProfile);
-    } else {
-      createProfile(nextProfile);
+    try {
+      if (profile) {
+        saveProfile(nextProfile);
+      } else {
+        createProfile(nextProfile);
+      }
+    } catch (error) {
+      setMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "无法保存本地恢复快照，资料未被替换。",
+      );
+      return;
     }
 
     router.push("/");
@@ -251,6 +259,11 @@ export default function SetupPage() {
                     ...draft,
                     hospitalMode: value.hospitalMode,
                     hospitalId: value.hospitalId,
+                    hospitalProvidedItemIds:
+                      value.hospitalMode !== draft.hospitalMode ||
+                      value.hospitalId !== draft.hospitalId
+                        ? []
+                        : draft.hospitalProvidedItemIds,
                   })
                 }
               />
@@ -329,6 +342,11 @@ export default function SetupPage() {
                     ...draft,
                     hospitalMode: value.hospitalMode,
                     hospitalId: value.hospitalId,
+                    hospitalProvidedItemIds:
+                      value.hospitalMode !== draft.hospitalMode ||
+                      value.hospitalId !== draft.hospitalId
+                        ? []
+                        : draft.hospitalProvidedItemIds,
                   })
                 }
               />
@@ -340,18 +358,6 @@ export default function SetupPage() {
                 }
               />
 
-              <SegmentField label="首次生产？">
-                <SegmentButton
-                  active={firstBaby}
-                  label="是"
-                  onClick={() => setFirstBaby(true)}
-                />
-                <SegmentButton
-                  active={!firstBaby}
-                  label="否"
-                  onClick={() => setFirstBaby(false)}
-                />
-              </SegmentField>
             </section>
 
             <Button className="h-14 w-full bg-primary text-base shadow-soft" onClick={submit}>

@@ -6,17 +6,24 @@ services:
       args:
         DADKIT_BUILD_TIME: "${DADKIT_BUILD_TIME:-unknown}"
     image: "${DADKIT_IMAGE:-dadkit:latest}"
+    init: true
     ports:
-      - "${DADKIT_PORT:-3333}:${DADKIT_PORT:-3333}"
+      - "${DADKIT_BIND_ADDRESS:-127.0.0.1}:${DADKIT_PORT:-3333}:3333"
     environment:
       HOSTNAME: 0.0.0.0
-      PORT: "${DADKIT_PORT:-3333}"
+      PORT: "3333"
       NODE_ENV: production
       DADKIT_BUILD_TIME: "${DADKIT_BUILD_TIME:-unknown}"
+      DADKIT_PUBLIC_ORIGIN: "${DADKIT_PUBLIC_ORIGIN:-}"
+      DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS: "${DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS:-}"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     healthcheck:
       test:
         - CMD-SHELL
-        - node -e "const http=require('http');const port=process.env.PORT||3333;http.get({host:'127.0.0.1',port,path:'/healthz'},res=>process.exit(res.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+        - node -e "const http=require('http');http.get({host:'127.0.0.1',port:3333,path:'/healthz'},res=>process.exit(res.statusCode===200?0:1)).on('error',()=>process.exit(1))"
       interval: 30s
       timeout: 5s
       retries: 3

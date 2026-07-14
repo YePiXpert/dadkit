@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  loadHospitalAnswers,
   loadSnapshots,
   saveChecklist,
   saveUserProfile,
@@ -12,6 +13,7 @@ import {
   mergeBirthPlan,
   mergePostpartumTasks,
 } from "@/lib/rc";
+import { generateChecklist } from "@/lib/rules";
 import { useDadKitStore } from "@/lib/store";
 import type {
   ChecklistItem,
@@ -31,6 +33,22 @@ function installLocalStorage(initial: Record<string, string> = {}) {
   vi.stubGlobal("window", { localStorage });
 
   return store;
+}
+
+function failNextStorageWrite(key: string) {
+  const setItem = window.localStorage.setItem.bind(window.localStorage);
+  let shouldFail = true;
+
+  vi.spyOn(window.localStorage, "setItem").mockImplementation(
+    (candidateKey, value) => {
+      if (shouldFail && candidateKey === key) {
+        shouldFail = false;
+        throw new Error("simulated storage write failure");
+      }
+
+      setItem(candidateKey, value);
+    },
+  );
 }
 
 function testItem(id = "item-1"): ChecklistItem {
@@ -154,6 +172,56 @@ describe("store snapshots", () => {
 
     expect(result.ok).toBe(false);
     expect(loadSnapshots()).toEqual([]);
+  });
+
+  it("aborts importJson when its recovery snapshot cannot be saved", () => {
+    installLocalStorage();
+    const profile = testProfile();
+    const checklist = [testItem("before-failed-import")];
+
+    saveUserProfile(profile);
+    saveChecklist(checklist);
+    failNextStorageWrite(STORAGE_KEYS.snapshots);
+
+    expect(() =>
+      useDadKitStore.getState().importJson(
+        JSON.stringify({
+          version: 1,
+          exportedAt: "2026-06-09T00:00:00.000Z",
+          userProfile: testProfile("2026-08-01"),
+          checklist: [testItem("after-failed-import")],
+        }),
+      ),
+    ).toThrow("无法保存本地恢复快照，操作已中止。");
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEYS.userProfile)!)).toEqual(
+      profile,
+    );
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEYS.checklist)!)).toEqual(
+      checklist,
+    );
+  });
+
+  it("aborts clearAll when its recovery snapshot cannot be saved", () => {
+    installLocalStorage();
+    const profile = testProfile();
+    const checklist = [testItem("before-failed-clear")];
+
+    saveUserProfile(profile);
+    saveChecklist(checklist);
+    useDadKitStore.setState({ profile, checklist });
+    failNextStorageWrite(STORAGE_KEYS.snapshots);
+
+    expect(() => useDadKitStore.getState().clearAll()).toThrow(
+      "无法保存本地恢复快照，操作已中止。",
+    );
+    expect(useDadKitStore.getState().profile).toEqual(profile);
+    expect(useDadKitStore.getState().checklist).toEqual(checklist);
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEYS.userProfile)!)).toEqual(
+      profile,
+    );
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEYS.checklist)!)).toEqual(
+      checklist,
+    );
   });
 
   it("creates a snapshot before createProfile replaces existing data", () => {
@@ -294,6 +362,31 @@ describe("store snapshots", () => {
     expect(useDadKitStore.getState().checklist[0].status).toBe("todo");
   });
 
+  it("records an explicit status choice as user-controlled provenance", () => {
+    installLocalStorage();
+    const profile = {
+      ...testProfile(),
+      hospitalProvidedItemIds: ["postpartum-pads"],
+    };
+    const checklist = generateChecklist(profile);
+    const padItem = checklist.find(
+      (item) => item.name === "产褥垫 / 产后卫生巾",
+    )!;
+
+    expect(padItem.hospitalProvidedByRule).toBe(true);
+    useDadKitStore.setState({ profile, checklist });
+    useDadKitStore.getState().updateItem(padItem.id, {
+      status: "hospital_provided",
+    });
+    useDadKitStore.getState().updateProfile({ hospitalProvidedItemIds: [] });
+
+    const preserved = useDadKitStore
+      .getState()
+      .checklist.find((item) => item.id === padItem.id);
+    expect(preserved?.status).toBe("hospital_provided");
+    expect(preserved?.hospitalProvidedByRule).toBe(false);
+  });
+
   it("adds hospital-provided id when a provided answer is saved", () => {
     installLocalStorage();
     const profile = testProfile();
@@ -414,4 +507,165 @@ describe("store snapshots", () => {
       expect(loadSnapshots()).toEqual([]);
     },
   );
+
+  it("scopes hospital answers and restores them only when switching back", () => {
+    installLocalStorage();
+    const profile = {
+      ...testProfile(),
+      hospitalMode: "preset" as const,
+      hospitalId: "hospital-a",
+    };
+    const question = {
+      ...testQuestion("question-provided-postpartum-pads"),
+      name: "医院是否提供产褥垫？",
+    };
+
+    useDadKitStore.setState({
+      hydrated: true,
+      profile,
+      checklist: [question],
+      hospitalAnswers: [],
+    });
+    useDadKitStore.getState().updateHospitalAnswer({
+      itemId: question.id,
+      name: question.name,
+      status: "provided",
+      updatedAt: "2026-06-09T00:00:00.000Z",
+    });
+
+    expect(useDadKitStore.getState().hospitalAnswers[0]).toMatchObject({
+      hospitalId: "hospital-a",
+      itemId: question.id,
+    });
+    expect(loadHospitalAnswers()).toHaveLength(1);
+
+    useDadKitStore.getState().updateProfile({
+      hospitalMode: "preset",
+      hospitalId: "hospital-b",
+    });
+
+    expect(useDadKitStore.getState().hospitalAnswers).toEqual([]);
+    expect(
+      useDadKitStore.getState().profile?.hospitalProvidedItemIds,
+    ).toEqual([]);
+
+    useDadKitStore.getState().updateProfile({
+      hospitalMode: "preset",
+      hospitalId: "hospital-a",
+    });
+
+    expect(useDadKitStore.getState().hospitalAnswers).toHaveLength(1);
+    expect(useDadKitStore.getState().hospitalAnswers[0]).toMatchObject({
+      hospitalId: "hospital-a",
+      status: "provided",
+    });
+    expect(
+      useDadKitStore.getState().profile?.hospitalProvidedItemIds,
+    ).toContain("postpartum-pads");
+  });
+
+  it("restores manually selected hospital-provided items after switching back", () => {
+    installLocalStorage();
+    const profile = {
+      ...testProfile(),
+      hospitalMode: "preset" as const,
+      hospitalId: "hospital-a",
+      hospitalProvidedItemIds: ["baby-diapers", "自定义提供项"],
+    };
+
+    useDadKitStore.setState({
+      hydrated: true,
+      profile,
+      checklist: generateChecklist(profile),
+      hospitalAnswers: [],
+      hospitalOverrides: [],
+    });
+
+    useDadKitStore.getState().updateProfile({
+      hospitalMode: "preset",
+      hospitalId: "hospital-b",
+    });
+
+    expect(useDadKitStore.getState().profile?.hospitalProvidedItemIds).toEqual([]);
+
+    useDadKitStore.getState().updateProfile({
+      hospitalMode: "preset",
+      hospitalId: "hospital-a",
+    });
+
+    expect(useDadKitStore.getState().profile?.hospitalProvidedItemIds).toEqual([
+      "baby-diapers",
+      "自定义提供项",
+    ]);
+    expect(
+      useDadKitStore
+        .getState()
+        .hospitalOverrides.find((override) => override.hospitalId === "hospital-a")
+        ?.selectedProvidedItemIds,
+    ).toEqual(["baby-diapers", "自定义提供项"]);
+  });
+
+  it("removes a derived status when a hospital override is cleared", () => {
+    installLocalStorage();
+    const profile = {
+      ...testProfile(),
+      hospitalMode: "preset" as const,
+      hospitalId: "hospital-a",
+      hospitalProvidedItemIds: [],
+    };
+    const override = {
+      hospitalId: "hospital-a",
+      providedItemsOverride: ["产褥垫"],
+      updatedAt: "2026-06-09T00:00:00.000Z",
+    };
+    const checklist = generateChecklist(profile, {
+      hospitalOverrides: [override],
+    });
+
+    useDadKitStore.setState({
+      hydrated: true,
+      profile,
+      checklist,
+      hospitalOverrides: [override],
+    });
+    useDadKitStore.getState().updateHospitalOverride({
+      ...override,
+      providedItemsOverride: [],
+    });
+
+    expect(
+      useDadKitStore
+        .getState()
+        .checklist.find((item) => item.name === "产褥垫 / 产后卫生巾")
+        ?.status,
+    ).toBe("todo");
+  });
+
+  it("migrates legacy hospital answers into the active hospital scope", () => {
+    const profile = {
+      ...testProfile(),
+      hospitalMode: "preset" as const,
+      hospitalId: "hospital-a",
+    };
+    const legacyAnswer = {
+      itemId: "question-admission-phone",
+      name: "住院处或产科联系电话是多少？",
+      status: "confirmed" as const,
+      updatedAt: "2026-06-09T00:00:00.000Z",
+    };
+    const storage = installLocalStorage({
+      [STORAGE_KEYS.userProfile]: JSON.stringify(profile),
+      [STORAGE_KEYS.hospitalAnswers]: JSON.stringify([legacyAnswer]),
+    });
+
+    useDadKitStore.getState().hydrate();
+
+    expect(useDadKitStore.getState().hospitalAnswers[0]).toMatchObject({
+      ...legacyAnswer,
+      hospitalId: "hospital-a",
+    });
+    expect(
+      JSON.parse(storage.get(STORAGE_KEYS.hospitalAnswers) ?? "[]"),
+    ).toEqual([{ ...legacyAnswer, hospitalId: "hospital-a" }]);
+  });
 });

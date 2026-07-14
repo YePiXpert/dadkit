@@ -2,7 +2,11 @@
 
 import { create } from "zustand";
 
-import { generateChecklist, normalizeChecklistItem } from "@/lib/rules";
+import {
+  generateChecklist,
+  getHospitalAnswerScopeId,
+  normalizeChecklistItem,
+} from "@/lib/rules";
 import {
   getProvidedIdForQuestion,
   mapHospitalAnswerStatusToPackStatus,
@@ -161,21 +165,23 @@ function persistCoreState(state: Pick<
   | "customItems"
   | "hiddenTemplateItemIds"
   | "hospitalOverrides"
-  | "hospitalAnswers"
 >) {
   saveUserProfile(state.profile);
   saveChecklist(state.checklist);
   saveCustomItems(state.customItems);
   saveHiddenTemplateItemIds(state.hiddenTemplateItemIds);
   saveHospitalOverrides(state.hospitalOverrides);
-  saveHospitalAnswers(state.hospitalAnswers);
 }
 
 function buildChecklist(
   profile: UserProfile,
   state: Pick<
     DadKitState,
-    "checklist" | "customItems" | "hiddenTemplateItemIds" | "hospitalOverrides"
+    | "profile"
+    | "checklist"
+    | "customItems"
+    | "hiddenTemplateItemIds"
+    | "hospitalOverrides"
   >,
 ) {
   return generateChecklist(profile, {
@@ -203,6 +209,135 @@ function sameStringArray(left: string[], right: string[]) {
   );
 }
 
+type ScopedHospitalAnswer = HospitalAnswer & { hospitalId: string };
+
+function normalizeHospitalAnswers(
+  answers: HospitalAnswer[],
+  fallbackHospitalId: string,
+) {
+  const answersByScopeAndItem = new Map<string, ScopedHospitalAnswer>();
+
+  for (const answer of answers) {
+    const normalizedAnswer: ScopedHospitalAnswer = {
+      ...answer,
+      hospitalId: answer.hospitalId || fallbackHospitalId,
+    };
+
+    answersByScopeAndItem.set(
+      `${normalizedAnswer.hospitalId}\u0000${normalizedAnswer.itemId}`,
+      normalizedAnswer,
+    );
+  }
+
+  return Array.from(answersByScopeAndItem.values());
+}
+
+function mergeStoredHospitalAnswers(
+  state: Pick<DadKitState, "profile" | "hospitalAnswers">,
+) {
+  const activeHospitalId = getHospitalAnswerScopeId(state.profile);
+  const storedAnswers = normalizeHospitalAnswers(
+    loadHospitalAnswers(),
+    activeHospitalId,
+  );
+  const activeAnswers = normalizeHospitalAnswers(
+    state.hospitalAnswers.map((answer) => ({
+      ...answer,
+      hospitalId: activeHospitalId,
+    })),
+    activeHospitalId,
+  );
+
+  return [
+    ...storedAnswers.filter(
+      (answer) => answer.hospitalId !== activeHospitalId,
+    ),
+    ...activeAnswers,
+  ];
+}
+
+function answersForHospital(
+  answers: ScopedHospitalAnswer[],
+  profile?: UserProfile,
+) {
+  const hospitalId = getHospitalAnswerScopeId(profile);
+  return answers.filter((answer) => answer.hospitalId === hospitalId);
+}
+
+function providedIdsFromAnswers(answers: HospitalAnswer[]) {
+  return Array.from(
+    new Set(
+      answers.flatMap((answer) => {
+        if (answer.status !== "provided" && answer.status !== "partial") {
+          return [];
+        }
+
+        const providedId = getProvidedIdForQuestion(answer.name, answer.itemId);
+        return providedId ? [providedId] : [];
+      }),
+    ),
+  );
+}
+
+function transitionHospitalAnswers(
+  state: Pick<DadKitState, "profile" | "hospitalAnswers">,
+  nextProfile: UserProfile,
+) {
+  const previousHospitalId = getHospitalAnswerScopeId(state.profile);
+  const nextHospitalId = getHospitalAnswerScopeId(nextProfile);
+
+  if (previousHospitalId === nextHospitalId) {
+    return state.hospitalAnswers;
+  }
+
+  const allAnswers = mergeStoredHospitalAnswers(state);
+  saveHospitalAnswers(allAnswers);
+  return answersForHospital(allAnswers, nextProfile);
+}
+
+function transitionHospitalProvidedSelections(
+  state: Pick<DadKitState, "profile" | "hospitalOverrides">,
+  nextProfile: UserProfile,
+) {
+  const previousHospitalId = getHospitalAnswerScopeId(state.profile);
+  const nextHospitalId = getHospitalAnswerScopeId(nextProfile);
+
+  if (previousHospitalId === nextHospitalId) {
+    return {
+      hospitalOverrides: state.hospitalOverrides,
+      selectedProvidedItemIds: nextProfile.hospitalProvidedItemIds,
+    };
+  }
+
+  let hospitalOverrides = state.hospitalOverrides;
+
+  if (state.profile) {
+    const previousOverride = hospitalOverrides.find(
+      (override) => override.hospitalId === previousHospitalId,
+    );
+    hospitalOverrides = [
+      ...hospitalOverrides.filter(
+        (override) => override.hospitalId !== previousHospitalId,
+      ),
+      {
+        ...previousOverride,
+        hospitalId: previousHospitalId,
+        selectedProvidedItemIds: state.profile.hospitalProvidedItemIds,
+        updatedAt: nowIso(),
+      },
+    ];
+    saveHospitalOverrides(hospitalOverrides);
+  }
+
+  return {
+    hospitalOverrides,
+    selectedProvidedItemIds:
+      hospitalOverrides.find(
+        (override) => override.hospitalId === nextHospitalId,
+      )?.selectedProvidedItemIds ?? [],
+  };
+}
+
 function patchChecklistItem(
   item: ChecklistItem,
   patch: Partial<ChecklistItem>,
@@ -216,6 +351,8 @@ function patchChecklistItem(
   return normalizeChecklistItem({
     ...item,
     ...patch,
+    hospitalProvidedByRule:
+      "status" in patch ? false : item.hospitalProvidedByRule,
     preparationKind: shouldReinferPreparation
       ? undefined
       : patch.preparationKind ?? item.preparationKind,
@@ -232,13 +369,23 @@ function removeProvidedStatusForId(items: ChecklistItem[], providedId?: string) 
   return items.map((item) => {
     if (
       item.status !== "hospital_provided" ||
+      item.hospitalProvidedByRule !== true ||
       item.itemKind !== "item" ||
       !keywords.some((keyword) => item.name.includes(keyword))
     ) {
       return item;
     }
 
-    return { ...item, status: "todo" as const };
+    return {
+      ...item,
+      status: "todo" as const,
+      hospitalProvidedByRule: undefined,
+      note:
+        item.note ===
+        "用户标记为已向医院确认提供，仍建议确认具体规格、数量和是否需要少量备用。"
+          ? undefined
+          : item.note,
+    };
   });
 }
 
@@ -266,7 +413,13 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     const customItems = loadCustomItems();
     const hiddenTemplateItemIds = loadHiddenTemplateItemIds();
     const hospitalOverrides = loadHospitalOverrides();
-    const hospitalAnswers = loadHospitalAnswers();
+    const storedHospitalAnswers = loadHospitalAnswers();
+    const fallbackHospitalId = getHospitalAnswerScopeId(profile);
+    const allHospitalAnswers = normalizeHospitalAnswers(
+      storedHospitalAnswers,
+      fallbackHospitalId,
+    );
+    const hospitalAnswers = answersForHospital(allHospitalAnswers, profile);
     const timelineTaskStatuses = loadTimelineTaskStatuses();
     const contractions = loadContractions();
     const birthPlan = loadBirthPlan();
@@ -299,6 +452,10 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     if (profile) {
       saveChecklist(hydratedChecklist);
     }
+
+    if (storedHospitalAnswers.some((answer) => !answer.hospitalId)) {
+      saveHospitalAnswers(allHospitalAnswers);
+    }
   },
   createProfile: (input) => {
     snapshotBeforeChange("创建新清单前");
@@ -319,25 +476,91 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     return profile;
   },
   saveProfile: (profile) => {
+    const state = get();
+    const hospitalAnswers = transitionHospitalAnswers(state, profile);
+    const hospitalProvidedTransition = transitionHospitalProvidedSelections(
+      state,
+      profile,
+    );
+    const hospitalChanged =
+      getHospitalAnswerScopeId(state.profile) !==
+      getHospitalAnswerScopeId(profile);
     const updatedProfile = {
       ...profile,
+      hospitalProvidedItemIds: hospitalChanged
+        ? Array.from(
+            new Set([
+              ...hospitalProvidedTransition.selectedProvidedItemIds,
+              ...profile.hospitalProvidedItemIds,
+              ...providedIdsFromAnswers(hospitalAnswers),
+            ]),
+          )
+        : profile.hospitalProvidedItemIds,
       updatedAt: nowIso(),
     };
-    const state = get();
-    const checklist = buildChecklist(updatedProfile, state);
+    const nextState = {
+      ...state,
+      hospitalOverrides: hospitalProvidedTransition.hospitalOverrides,
+    };
+    const checklist = buildChecklist(updatedProfile, nextState);
 
-    set({ profile: updatedProfile, checklist });
-    persistCoreState({ ...state, profile: updatedProfile, checklist });
+    set({
+      profile: updatedProfile,
+      checklist,
+      hospitalAnswers,
+      hospitalOverrides: hospitalProvidedTransition.hospitalOverrides,
+    });
+    persistCoreState({ ...nextState, profile: updatedProfile, checklist });
   },
   updateProfile: (patch) => {
     const state = get();
-    const profile = state.profile
+    let profile = state.profile
       ? { ...state.profile, ...patch, updatedAt: nowIso() }
       : createDefaultProfile(patch);
-    const checklist = buildChecklist(profile, state);
+    const hospitalAnswers = transitionHospitalAnswers(state, profile);
+    const hospitalProvidedTransition = transitionHospitalProvidedSelections(
+      state,
+      profile,
+    );
+    const hospitalChanged =
+      getHospitalAnswerScopeId(state.profile) !==
+      getHospitalAnswerScopeId(profile);
 
-    set({ profile, checklist });
-    persistCoreState({ ...state, profile, checklist });
+    if (hospitalChanged) {
+      const answerProvidedIds = providedIdsFromAnswers(hospitalAnswers);
+      profile = {
+        ...profile,
+        hospitalProvidedItemIds:
+          "hospitalProvidedItemIds" in patch
+            ? Array.from(
+                new Set([
+                  ...hospitalProvidedTransition.selectedProvidedItemIds,
+                  ...profile.hospitalProvidedItemIds,
+                  ...answerProvidedIds,
+                ]),
+              )
+            : Array.from(
+                new Set([
+                  ...hospitalProvidedTransition.selectedProvidedItemIds,
+                  ...answerProvidedIds,
+                ]),
+              ),
+      };
+    }
+
+    const nextState = {
+      ...state,
+      hospitalOverrides: hospitalProvidedTransition.hospitalOverrides,
+    };
+    const checklist = buildChecklist(profile, nextState);
+
+    set({
+      profile,
+      checklist,
+      hospitalAnswers,
+      hospitalOverrides: hospitalProvidedTransition.hospitalOverrides,
+    });
+    persistCoreState({ ...nextState, profile, checklist });
   },
   setFilters: (patch) => {
     set((state) => ({ filters: { ...state.filters, ...patch } }));
@@ -466,11 +689,14 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   },
   updateHospitalOverride: (override) => {
     const state = get();
+    const previousOverride = state.hospitalOverrides.find(
+      (candidate) => candidate.hospitalId === override.hospitalId,
+    );
     const hospitalOverrides = [
       ...state.hospitalOverrides.filter(
         (candidate) => candidate.hospitalId !== override.hospitalId,
       ),
-      { ...override, updatedAt: nowIso() },
+      { ...previousOverride, ...override, updatedAt: nowIso() },
     ];
     const checklist = state.profile
       ? generateChecklist(state.profile, {
@@ -487,18 +713,26 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   },
   updateHospitalAnswer: (answer) => {
     const state = get();
+    const activeHospitalId = getHospitalAnswerScopeId(state.profile);
     const normalizedAnswer: HospitalAnswer = {
       ...answer,
+      hospitalId: activeHospitalId,
       name: answer.name.trim(),
       note: answer.note?.trim() || undefined,
       updatedAt: answer.updatedAt || nowIso(),
     };
-    const hospitalAnswers = [
-      ...state.hospitalAnswers.filter(
-        (candidate) => candidate.itemId !== normalizedAnswer.itemId,
+    const allHospitalAnswers = [
+      ...mergeStoredHospitalAnswers(state).filter(
+        (candidate) =>
+          candidate.hospitalId !== activeHospitalId ||
+          candidate.itemId !== normalizedAnswer.itemId,
       ),
-      normalizedAnswer,
+      normalizedAnswer as ScopedHospitalAnswer,
     ];
+    const hospitalAnswers = answersForHospital(
+      allHospitalAnswers,
+      state.profile,
+    );
     const providedId = getProvidedIdForQuestion(
       normalizedAnswer.name,
       normalizedAnswer.itemId,
@@ -559,7 +793,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     );
 
     set({ profile, checklist, hospitalAnswers });
-    saveHospitalAnswers(hospitalAnswers);
+    saveHospitalAnswers(allHospitalAnswers);
     saveChecklist(checklist);
 
     if (profileChanged) {
@@ -568,16 +802,47 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   },
   clearHospitalAnswer: (itemId) => {
     const state = get();
-    const hospitalAnswers = state.hospitalAnswers.filter(
-      (candidate) => candidate.itemId !== itemId,
+    const activeHospitalId = getHospitalAnswerScopeId(state.profile);
+    const removedAnswer = state.hospitalAnswers.find(
+      (candidate) => candidate.itemId === itemId,
     );
-    const checklist = state.checklist.map((item) =>
+    const allHospitalAnswers = mergeStoredHospitalAnswers(state).filter(
+      (candidate) =>
+        candidate.hospitalId !== activeHospitalId || candidate.itemId !== itemId,
+    );
+    const hospitalAnswers = answersForHospital(
+      allHospitalAnswers,
+      state.profile,
+    );
+    const providedId = removedAnswer
+      ? getProvidedIdForQuestion(removedAnswer.name, removedAnswer.itemId)
+      : undefined;
+    let profile = state.profile;
+
+    if (profile && providedId) {
+      profile = {
+        ...profile,
+        hospitalProvidedItemIds: profile.hospitalProvidedItemIds.filter(
+          (candidate) => candidate !== providedId,
+        ),
+        updatedAt: nowIso(),
+      };
+    }
+
+    let checklist = profile && providedId
+      ? buildChecklist(profile, state)
+      : state.checklist;
+    checklist = removeProvidedStatusForId(checklist, providedId).map((item) =>
       item.id === itemId ? { ...item, status: "todo" as const } : item,
     );
 
-    set({ hospitalAnswers, checklist });
-    saveHospitalAnswers(hospitalAnswers);
+    set({ profile, hospitalAnswers, checklist });
+    saveHospitalAnswers(allHospitalAnswers);
     saveChecklist(checklist);
+
+    if (profile !== state.profile) {
+      saveUserProfile(profile);
+    }
   },
   updateTimelineTaskStatus: (taskId, status) => {
     const timelineTaskStatuses = updateStoredTimelineTaskStatus(taskId, status);

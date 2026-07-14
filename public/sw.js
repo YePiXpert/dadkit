@@ -1,4 +1,19 @@
-const CACHE_NAME = "dadkit-v1.2.0-prep-summary-webp";
+const CACHE_NAME = "dadkit-v1.2.0-vps-safe-v1";
+const CORE_ROUTES = [
+  "/",
+  "/setup",
+  "/checklist",
+  "/hospital",
+  "/timeline",
+  "/go",
+  "/contractions",
+  "/birth-plan",
+  "/postpartum",
+  "/share",
+  "/settings",
+  "/privacy",
+  "/support",
+];
 const PWA_ICON_ASSETS = [
   "/manifest.webmanifest",
   "/icon.svg",
@@ -33,15 +48,10 @@ const PWA_ILLUSTRATION_ASSETS = [
   "/illustrations/dadkit-timeline-calendar-sticker-v2.png",
 ];
 const PWA_ASSETS = [...PWA_ICON_ASSETS, ...PWA_ILLUSTRATION_ASSETS];
-const APP_SHELL = ["/", ...PWA_ASSETS];
 const STATIC_ASSETS = new Set(PWA_ASSETS);
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(APP_SHELL);
-    }),
-  );
+  event.waitUntil(precacheAppShell());
 });
 
 self.addEventListener("activate", (event) => {
@@ -83,9 +93,93 @@ self.addEventListener("fetch", (event) => {
 function shouldCacheAsset(url) {
   return (
     url.pathname.startsWith("/_next/static/") ||
+    url.pathname === "/_next/image" ||
     url.pathname.startsWith("/illustrations/") ||
     STATIC_ASSETS.has(url.pathname)
   );
+}
+
+async function precacheAppShell() {
+  const cache = await caches.open(CACHE_NAME);
+  const homeHtml = await fetchAndCacheRoute(cache, CORE_ROUTES[0]);
+  const optionalRouteHtml = await Promise.all(
+    CORE_ROUTES.slice(1).map(async (route) => {
+      try {
+        return await fetchAndCacheRoute(cache, route);
+      } catch {
+        return "";
+      }
+    }),
+  );
+  const requiredBuildAssets = new Set(extractBuildAssets(homeHtml));
+
+  await Promise.all(
+    Array.from(requiredBuildAssets, (asset) => fetchAndCacheAsset(cache, asset)),
+  );
+
+  const optionalAssets = new Set(PWA_ASSETS);
+
+  for (const html of optionalRouteHtml) {
+    for (const asset of extractBuildAssets(html)) {
+      if (!requiredBuildAssets.has(asset)) {
+        optionalAssets.add(asset);
+      }
+    }
+  }
+
+  await Promise.all(
+    Array.from(optionalAssets, async (asset) => {
+      try {
+        await fetchAndCacheAsset(cache, asset);
+      } catch {
+        // Optional routes and media must not prevent an app-shell update.
+      }
+    }),
+  );
+}
+
+async function fetchAndCacheRoute(cache, route) {
+  const request = new Request(route, { cache: "reload" });
+  const response = await fetch(request);
+
+  if (!isCacheable(response)) {
+    throw new Error(`Unable to pre-cache ${route}.`);
+  }
+
+  await cache.put(request, response.clone());
+  return response.text();
+}
+
+async function fetchAndCacheAsset(cache, asset) {
+  const request = new Request(asset, { cache: "reload" });
+  const response = await fetch(request);
+
+  if (!isCacheable(response)) {
+    throw new Error(`Unable to pre-cache ${asset}.`);
+  }
+
+  await cache.put(request, response);
+}
+
+function extractBuildAssets(html) {
+  const assets = new Set();
+  const attributePattern = /\b(?:src|href|srcset)=["']([^"']+)["']/gi;
+
+  for (const match of html.matchAll(attributePattern)) {
+    for (const candidate of match[1].split(",")) {
+      const [rawUrl] = candidate.trim().split(/\s+/, 1);
+      const url = rawUrl?.replaceAll("&amp;", "&");
+
+      if (
+        url?.startsWith("/_next/static/") ||
+        url?.startsWith("/_next/image?")
+      ) {
+        assets.add(url);
+      }
+    }
+  }
+
+  return Array.from(assets);
 }
 
 async function networkFirst(request, fallbackToHome) {
@@ -100,7 +194,7 @@ async function networkFirst(request, fallbackToHome) {
 
     return response;
   } catch {
-    const cached = await cache.match(request);
+    const cached = await cache.match(request, { ignoreSearch: fallbackToHome });
 
     if (cached) {
       return cached;

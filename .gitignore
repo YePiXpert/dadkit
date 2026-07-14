@@ -22,12 +22,16 @@ pnpm-debug.log*
 .tmp-dev*.log
 
 # local env
+.env
+.env.*
+!.env.example
 .env*.local
 
 # test/cache
 coverage
 .vitest
 .visual-screenshots
+*.tsbuildinfo
 
 # local coding assistants
 .serena/

@@ -31,7 +31,11 @@ import {
   HOSPITAL_CONFIRMATION_QUESTIONS,
   type HospitalConfirmationGroupId,
 } from "@/lib/hospital/confirmation-plan";
-import { getHospitalForProfile } from "@/lib/rules";
+import {
+  getHospitalAnswerScopeId,
+  getHospitalForProfile,
+  getHospitalIdForProfile,
+} from "@/lib/rules";
 import {
   createCustomHospitalProfile,
   useDadKitStore,
@@ -124,7 +128,8 @@ export default function HospitalPage() {
   const [notesOverride, setNotesOverride] = useState("");
 
   const hospital = profile ? getHospitalForProfile(profile) : undefined;
-  const hospitalId = profile?.customHospital?.hospitalId ?? profile?.hospitalId;
+  const hospitalId = profile ? getHospitalIdForProfile(profile) : undefined;
+  const hospitalAnswerScopeId = getHospitalAnswerScopeId(profile);
   const answersByItemId = useMemo(
     () =>
       new Map(
@@ -332,7 +337,12 @@ export default function HospitalPage() {
           grouped
           title="医院规则确认表"
           answersByItemId={answersByItemId}
-          onChange={updateHospitalAnswer}
+          onChange={(answer) =>
+            updateHospitalAnswer({
+              ...answer,
+              hospitalId: hospitalAnswerScopeId,
+            })
+          }
         />
         <QuestionSection
           description="路线、电话、停车和证件包，是家人临近入院前要落实的行动。"
@@ -340,7 +350,12 @@ export default function HospitalPage() {
           items={dadConfirmItems}
           title="家人要确认"
           answersByItemId={answersByItemId}
-          onChange={updateHospitalAnswer}
+          onChange={(answer) =>
+            updateHospitalAnswer({
+              ...answer,
+              hospitalId: hospitalAnswerScopeId,
+            })
+          }
         />
       </section>
 

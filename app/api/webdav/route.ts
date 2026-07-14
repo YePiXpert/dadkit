@@ -1,15 +1,26 @@
 import {
   assertSafeWebDavUrl,
+  assertWebDavProxyEnabled,
+  assertWebDavProxyRequest,
+  createWebDavProxyConcurrencyLimiter,
+  createWebDavProxyRateLimiter,
   parseProxyPayload,
+  proxyClientKey,
+  readLimitedRequestText,
+  requestPinnedWebDav,
   sanitizeProxyHeaders,
+  sanitizeProxyResponseHeaders,
+  WebDavProxyError,
 } from "@/lib/webdav/proxy";
 
 export const runtime = "nodejs";
 
 const MAX_PROXY_REQUEST_BYTES = 3 * 1024 * 1024;
-const RELAY_RESPONSE_HEADERS = ["content-type", "etag", "last-modified"];
+const MAX_PROXY_REQUEST_DURATION_MS = 30_000;
 const PROXY_HEADER = "x-dadkit-webdav-proxy";
 const PROXY_ERROR_HEADER = "x-dadkit-webdav-proxy-error";
+const proxyRateLimiter = createWebDavProxyRateLimiter(60, 60_000);
+const proxyConcurrencyLimiter = createWebDavProxyConcurrencyLimiter(8, 2);
 
 export async function OPTIONS() {
   return new Response(null, {
@@ -19,35 +30,47 @@ export async function OPTIONS() {
 }
 
 export async function POST(request: Request) {
-  try {
-    const rawBody = await request.text();
+  let releaseConcurrency: (() => void) | undefined;
 
-    if (rawBody.length > MAX_PROXY_REQUEST_BYTES) {
-      return proxyError("WebDAV 代理请求过大。", 413);
+  try {
+    assertWebDavProxyRequest(request);
+    assertWebDavProxyEnabled();
+
+    const clientKey = proxyClientKey(request.headers);
+    const rateLimit = proxyRateLimiter.consume(clientKey);
+
+    if (!rateLimit.allowed) {
+      return proxyError("WebDAV 代理请求过于频繁，请稍后再试。", 429, {
+        "retry-after": String(rateLimit.retryAfterSeconds),
+      });
     }
 
+    releaseConcurrency = proxyConcurrencyLimiter.acquire(clientKey);
+    const rawBody = await readLimitedRequestText(
+      request,
+      MAX_PROXY_REQUEST_BYTES,
+      MAX_PROXY_REQUEST_DURATION_MS,
+    );
     const payload = parseProxyPayload(rawBody);
-    const targetUrl = new URL(payload.url);
+    let targetUrl: URL;
 
-    await assertSafeWebDavUrl(targetUrl);
+    try {
+      targetUrl = new URL(payload.url);
+    } catch {
+      throw new WebDavProxyError("WebDAV 代理地址不正确。", 400);
+    }
 
-    const upstream = await fetch(targetUrl, {
+    const resolvedTarget = await assertSafeWebDavUrl(targetUrl);
+
+    const upstream = await requestPinnedWebDav(targetUrl, resolvedTarget, {
       method: payload.method,
-      headers: sanitizeProxyHeaders(payload.headers),
+      headers: sanitizeProxyHeaders(payload.headers, targetUrl),
       body: payload.body,
-      cache: "no-store",
-      redirect: "manual",
+      signal: request.signal,
     });
 
-    const headers = proxyHeaders();
-
-    for (const headerName of RELAY_RESPONSE_HEADERS) {
-      const value = upstream.headers.get(headerName);
-
-      if (value) {
-        headers.set(headerName, value);
-      }
-    }
+    const headers = sanitizeProxyResponseHeaders(upstream.headers);
+    headers.set(PROXY_HEADER, "1");
 
     return new Response(upstream.body, {
       status: upstream.status,
@@ -55,21 +78,37 @@ export async function POST(request: Request) {
       headers,
     });
   } catch (error) {
-    return proxyError(webDavProxyErrorMessage(error));
+    return proxyError(
+      webDavProxyErrorMessage(error),
+      error instanceof WebDavProxyError ? error.status : 502,
+    );
+  } finally {
+    releaseConcurrency?.();
   }
 }
 
 function proxyHeaders() {
   return new Headers({
+    "cache-control": "no-store",
+    "content-security-policy": "default-src 'none'; sandbox",
     [PROXY_HEADER]: "1",
+    "x-content-type-options": "nosniff",
   });
 }
 
-function proxyError(message: string, status = 502) {
+function proxyError(
+  message: string,
+  status = 502,
+  additionalHeaders?: HeadersInit,
+) {
   const headers = proxyHeaders();
 
   headers.set(PROXY_ERROR_HEADER, "1");
   headers.set("content-type", "text/plain; charset=utf-8");
+
+  for (const [name, value] of new Headers(additionalHeaders)) {
+    headers.set(name, value);
+  }
 
   return new Response(message, { status, headers });
 }

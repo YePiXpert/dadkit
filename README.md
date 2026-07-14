@@ -75,18 +75,27 @@ npm run build
 
 ## 🚀 VPS Docker 部署
 
-容器默认端口为 `3333`。
+容器默认端口为 `3333`，并且只绑定 VPS 的 `127.0.0.1`。公网访问应通过 Caddy、Nginx 等 HTTPS 反向代理进入，不建议直接暴露 `3333` 端口。
 
-一键部署：
+一键部署（把域名替换成自己的 HTTPS 地址）：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docker-deploy.sh | sudo sh
+curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docker-deploy.sh \
+  | sudo env DADKIT_PUBLIC_ORIGIN=https://dadkit.example.com sh
 ```
 
-默认部署目录为 `/opt/dadkit`，访问地址：
+默认部署目录为 `/opt/dadkit`。DadKit 没有账号系统；只要实例能从公网访问，尤其启用 WebDAV 代理时，就必须在反向代理层配置 Basic Auth、单点登录或访问白名单。以 Caddy 的 `basic_auth` 为例，先用 `caddy hash-password` 生成密码哈希，再替换下面的占位值：
 
-```text
-http://服务器IP:3333
+一键脚本只会在部署目录尚无 `.env` 时，把显式传入的部署变量写入该文件；已有 `.env` 不会被脚本覆盖。后续调整域名、端口或 WebDAV 允许列表时，请编辑 `/opt/dadkit/.env` 后再运行更新脚本。
+
+```caddyfile
+dadkit.example.com {
+  encode zstd gzip
+  basic_auth {
+    dadkit <替换为密码哈希>
+  }
+  reverse_proxy 127.0.0.1:3333
+}
 ```
 
 健康检查：
@@ -107,20 +116,26 @@ curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docke
 curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docker-upgrade.sh | sudo env DADKIT_FORCE_RESET=1 sh
 ```
 
-自定义目录、端口或分支：
+自定义目录、端口、分支或公网地址：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docker-deploy.sh | sudo env DADKIT_DIR=/srv/dadkit DADKIT_PORT=3333 DADKIT_BRANCH=main sh
+curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docker-deploy.sh \
+  | sudo env DADKIT_DIR=/srv/dadkit DADKIT_PORT=3333 DADKIT_BRANCH=main \
+      DADKIT_PUBLIC_ORIGIN=https://dadkit.example.com sh
 ```
 
 可用环境变量：
 
 - `DADKIT_DIR`：部署目录，默认 `/opt/dadkit`
-- `DADKIT_PORT`：宿主机和容器端口，默认 `3333`
+- `DADKIT_PORT`：宿主机端口，默认 `3333`；容器内部固定使用 `3333`
+- `DADKIT_BIND_ADDRESS`：宿主机监听地址，默认 `127.0.0.1`；只有明确了解风险时才改为 `0.0.0.0`
+- `DADKIT_PUBLIC_ORIGIN`：反向代理对外提供的 HTTPS origin，例如 `https://dadkit.example.com`，不要带路径或末尾 `/`
+- `DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS`：WebDAV 代理允许访问的精确主机列表，逗号分隔，例如 `webdav.123pan.cn,dav.example.com:8443`；不支持通配符，留空时代理关闭
 - `DADKIT_BRANCH`：部署分支，默认 `main`
 - `DADKIT_REPO`：部署仓库，默认 `https://github.com/YePiXpert/dadkit.git`
 - `DADKIT_IMAGE`：Docker Compose 镜像名，默认 `dadkit:latest`
 - `DADKIT_BUILD_TIME`：构建时间，脚本默认自动写入 UTC 时间
+- `DADKIT_WAIT_TIMEOUT`：等待容器通过健康检查的秒数，默认 `120`
 - `DADKIT_FORCE_RESET=1`：强制把部署目录对齐到 `origin/$DADKIT_BRANCH`
 
 手动部署：
@@ -128,6 +143,8 @@ curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docke
 ```bash
 git clone https://github.com/YePiXpert/dadkit.git /opt/dadkit
 cd /opt/dadkit
+cp .env.example .env
+# 编辑 .env，至少填写 DADKIT_PUBLIC_ORIGIN；需要 WebDAV 时再填写允许的主机
 DADKIT_BUILD_TIME="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" docker compose up --build -d
 ```
 
@@ -180,7 +197,7 @@ JSON 导入导出不会包含 WebDAV 密码或应用密码。导入旧 JSON 时�
 
 本地快照只在导入、恢复、清空、创建新清单等可能覆盖数据的操作前自动创建，最多保留最近 5 份。
 
-WebDAV 备份是手动上传 / 下载 JSON 备份。浏览器请求会经 DadKit 同源代理转发，避免 WebDAV 服务 CORS 限制；DadKit 不会重写 WebDAV 协议，也不会自动同步。
+WebDAV 备份是手动上传 / 下载 JSON 备份。为避免凭据明文传输，连接地址必须使用 HTTPS。浏览器请求会经 DadKit 同源代理转发，避免 WebDAV 服务 CORS 限制；DadKit 不会重写 WebDAV 协议，也不会自动同步。VPS 部署时代理默认关闭，只有 `DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS` 中列出的公网主机可访问，并且公网入口必须有反向代理认证或访问白名单。代理将单次请求限制为 3 MiB、上游响应限制为 8 MiB，并对请求和响应应用 30 秒绝对时限；超出时请改用本地 JSON 导入导出。
 
 ## ⚕️ 发布边界
 

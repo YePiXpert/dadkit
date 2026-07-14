@@ -53,6 +53,9 @@ const PROVIDED_ITEM_LABELS: Record<string, string> = {
   unknown: "不确定",
 };
 
+const HOSPITAL_PROVIDED_RULE_NOTE =
+  "用户标记为已向医院确认提供，仍建议确认具体规格、数量和是否需要少量备用。";
+
 const TASK_KEYWORDS = [
   "确认",
   "保存",
@@ -219,6 +222,12 @@ export function normalizeChecklistItem(item: ChecklistItem): ChecklistItem {
     packTier,
     bag,
     bulk,
+    hospitalProvidedByRule:
+      item.status === "hospital_provided"
+        ? item.hospitalProvidedByRule
+        : item.hospitalProvidedByRule === false
+          ? false
+          : undefined,
     preparationKind: inferPreparationKind(baseItem),
   };
 }
@@ -284,14 +293,27 @@ export function getHospitalForProfile(
   );
 }
 
+export function getHospitalIdForProfile(profile: UserProfile) {
+  if (profile.hospitalMode === "custom") {
+    return profile.customHospital?.hospitalId;
+  }
+
+  if (profile.hospitalMode === "preset") {
+    return profile.hospitalId;
+  }
+
+  return undefined;
+}
+
+export function getHospitalAnswerScopeId(profile?: UserProfile) {
+  return profile ? getHospitalIdForProfile(profile) ?? "hospital:unknown" : "hospital:unknown";
+}
+
 function getHospitalOverride(
   profile: UserProfile,
   overrides?: UserHospitalOverride[],
 ) {
-  const id =
-    profile.hospitalMode === "custom"
-      ? profile.customHospital?.hospitalId
-      : profile.hospitalId;
+  const id = getHospitalIdForProfile(profile);
 
   if (!id) {
     return undefined;
@@ -903,18 +925,25 @@ function buildHospitalProvidedTips(providedIds: string[]) {
     });
 }
 
-function applyHospitalProvided(
-  items: ChecklistItem[],
+export function getHospitalProvidedIdsForProfile(
   profile: UserProfile,
   overrides?: UserHospitalOverride[],
 ) {
   const override = getHospitalOverride(profile, overrides);
-  const providedIds = Array.from(
+  return Array.from(
     new Set([
       ...profile.hospitalProvidedItemIds,
       ...(override?.providedItemsOverride ?? []),
     ]),
   );
+}
+
+function applyHospitalProvided(
+  items: ChecklistItem[],
+  profile: UserProfile,
+  overrides?: UserHospitalOverride[],
+) {
+  const providedIds = getHospitalProvidedIdsForProfile(profile, overrides);
 
   if (providedIds.length === 0 || providedIds.includes("unknown")) {
     return items;
@@ -931,9 +960,8 @@ function applyHospitalProvided(
       return {
         ...item,
         status: "hospital_provided" as const,
-        note:
-          item.note ??
-          "用户标记为已向医院确认提供，仍建议确认具体规格、数量和是否需要少量备用。",
+        hospitalProvidedByRule: true,
+        note: item.note ?? HOSPITAL_PROVIDED_RULE_NOTE,
       };
     }),
     ...buildHospitalProvidedTips(providedIds),
@@ -958,16 +986,51 @@ function preserveCurrentItemState(
       return item;
     }
 
+    const userControlled = previous.hospitalProvidedByRule === false;
+    const status = userControlled
+      ? previous.status
+      : previous.status === "todo" && item.status !== "todo"
+        ? item.status
+        : previous.status;
+    const hospitalProvidedByRule =
+      status !== "hospital_provided"
+        ? previous.hospitalProvidedByRule === false
+          ? false
+          : undefined
+        : previous.status === "hospital_provided"
+          ? previous.hospitalProvidedByRule === true &&
+            item.hospitalProvidedByRule === true
+            ? true
+            : previous.hospitalProvidedByRule
+          : item.hospitalProvidedByRule;
+
     return normalizeChecklistItem({
       ...item,
-      status:
-        previous.status === "todo" && item.status !== "todo"
-          ? item.status
-          : previous.status,
+      status,
+      hospitalProvidedByRule,
       quantity: previous.quantity ?? item.quantity,
       note: previous.note ?? item.note,
     });
   });
+}
+
+function resetRemovedHospitalProvidedStatuses(
+  items: ChecklistItem[] | undefined,
+  currentProvidedIds: string[],
+) {
+  return items?.map((item) =>
+    item.status === "hospital_provided" &&
+    item.hospitalProvidedByRule === true &&
+    !shouldMarkHospitalProvided(item, currentProvidedIds)
+      ? {
+          ...item,
+          status: "todo" as const,
+          hospitalProvidedByRule: undefined,
+          note:
+            item.note === HOSPITAL_PROVIDED_RULE_NOTE ? undefined : item.note,
+        }
+      : item,
+  );
 }
 
 function sortItems(items: ChecklistItem[]) {
@@ -1024,7 +1087,11 @@ export function generateChecklist(
   ].map(normalizeChecklistItem);
 
   const deduped = mergeDuplicateItems(withCustomItems);
-  const preserved = preserveCurrentItemState(deduped, persistence.currentItems);
+  const currentItems = resetRemovedHospitalProvidedStatuses(
+    persistence.currentItems,
+    getHospitalProvidedIdsForProfile(profile, persistence.hospitalOverrides),
+  );
+  const preserved = preserveCurrentItemState(deduped, currentItems);
 
   return sortItems(preserved.map(normalizeChecklistItem));
 }

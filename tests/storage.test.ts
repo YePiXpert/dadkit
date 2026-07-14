@@ -39,6 +39,22 @@ function installLocalStorage(initial: Record<string, string> = {}) {
   return store;
 }
 
+function failNextStorageWrite(key: string) {
+  const setItem = window.localStorage.setItem.bind(window.localStorage);
+  let shouldFail = true;
+
+  vi.spyOn(window.localStorage, "setItem").mockImplementation(
+    (candidateKey, value) => {
+      if (shouldFail && candidateKey === key) {
+        shouldFail = false;
+        throw new Error("simulated storage write failure");
+      }
+
+      setItem(candidateKey, value);
+    },
+  );
+}
+
 function testItem(id = "item-1"): ChecklistItem {
   return {
     id,
@@ -135,6 +151,128 @@ describe("storage import/export", () => {
 
     expect(result.ok).toBe(false);
     expect(result.message).toBe("不支持的备份版本，未修改本地数据。");
+  });
+
+  it("exports an absent profile explicitly and imports null by removing a profile", () => {
+    installLocalStorage();
+
+    const exported = exportData();
+
+    expect(exported.userProfile).toBeNull();
+    expect(JSON.parse(JSON.stringify(exported))).toHaveProperty(
+      "userProfile",
+      null,
+    );
+
+    saveUserProfile(testProfile());
+
+    const result = importData(
+      JSON.stringify({
+        version: 1,
+        exportedAt: "2026-06-09T00:00:00.000Z",
+        userProfile: null,
+      }),
+    );
+
+    expect(result).toEqual({ ok: true, message: "导入成功" });
+    expect(loadUserProfile()).toBeUndefined();
+  });
+
+  it("keeps an existing profile when importing a legacy backup that omits it", () => {
+    installLocalStorage();
+    const profile = testProfile();
+
+    saveUserProfile(profile);
+
+    const result = importData(
+      JSON.stringify({
+        version: 1,
+        exportedAt: "2026-06-09T00:00:00.000Z",
+        checklistMode: "full",
+      }),
+    );
+
+    expect(result.ok).toBe(true);
+    expect(loadUserProfile()).toEqual(profile);
+  });
+
+  it("rejects malformed user profiles including nested fields", () => {
+    installLocalStorage();
+    const profile = testProfile();
+
+    saveUserProfile(profile);
+
+    const result = importData(
+      JSON.stringify({
+        version: 1,
+        exportedAt: "2026-06-09T00:00:00.000Z",
+        userProfile: {
+          ...testProfile("2026-08-01"),
+          hospitalProvidedItemIds: [123],
+        },
+      }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("userProfile 内容无效");
+    expect(loadUserProfile()).toEqual(profile);
+  });
+
+  it.each([
+    ["checklist", [{ ...testItem(), status: "invalid" }]],
+    ["customItems", [{ ...testItem(), appliesTo: { deliveryMode: ["invalid"] } }]],
+    ["hiddenTemplateItemIds", [123]],
+    ["hospitalOverrides", [{}]],
+    ["hospitalAnswers", [{ ...testHospitalAnswer(), hospitalId: 123 }]],
+    ["timelineTaskStatuses", [{}]],
+    ["contractions", [{}]],
+    ["postpartumTasks", [{}]],
+  ])("rejects invalid members in %s", (field, value) => {
+    installLocalStorage();
+    const existingChecklist = [testItem("existing")];
+
+    saveChecklist(existingChecklist);
+
+    const result = importData(
+      JSON.stringify({
+        version: 1,
+        exportedAt: "2026-06-09T00:00:00.000Z",
+        [field]: value,
+      }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain(`${field} 包含无效数据`);
+    expect(loadChecklist()).toEqual(existingChecklist);
+  });
+
+  it("rolls back every field when an import write fails", () => {
+    installLocalStorage();
+    const profile = testProfile();
+    const checklist = [testItem("before")];
+
+    saveUserProfile(profile);
+    saveChecklist(checklist);
+    saveChecklistMode("lean");
+    failNextStorageWrite(STORAGE_KEYS.checklist);
+
+    const result = importData(
+      JSON.stringify({
+        version: 1,
+        exportedAt: "2026-06-09T00:00:00.000Z",
+        userProfile: testProfile("2026-08-01"),
+        checklist: [testItem("after")],
+        checklistMode: "full",
+      }),
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      message: "导入失败，未修改本地数据。",
+    });
+    expect(loadUserProfile()).toEqual(profile);
+    expect(loadChecklist()).toEqual(checklist);
+    expect(loadChecklistMode()).toBe("lean");
   });
 
   it("does not clear existing arrays when import omits array fields", () => {
@@ -350,6 +488,18 @@ describe("storage import/export", () => {
     ]);
   });
 
+  it("throws when a recovery snapshot cannot be persisted", () => {
+    installLocalStorage();
+
+    saveChecklist([testItem("existing")]);
+    failNextStorageWrite(STORAGE_KEYS.snapshots);
+
+    expect(() => createSnapshot("必须成功的备份")).toThrow(
+      "无法保存本地恢复快照，操作已中止。",
+    );
+    expect(loadSnapshots()).toEqual([]);
+  });
+
   it("restores userProfile, checklist, and checklistMode from a snapshot", () => {
     installLocalStorage();
     const profile = testProfile();
@@ -389,5 +539,108 @@ describe("storage import/export", () => {
     expect(result.ok).toBe(true);
     expect(snapshots[0]?.reason).toBe("恢复本地备份前");
     expect(snapshots[0]?.data.checklist).toEqual([testItem("current")]);
+  });
+
+  it("keeps the recovery snapshot when restoring fails but the import rolls back", () => {
+    installLocalStorage();
+
+    saveUserProfile(testProfile("2026-07-21"));
+    saveChecklist([testItem("snapshot")]);
+    const snapshot = createSnapshot("目标备份");
+
+    const currentProfile = testProfile("2026-08-01");
+    const currentChecklist = [testItem("current")];
+    saveUserProfile(currentProfile);
+    saveChecklist(currentChecklist);
+    failNextStorageWrite(STORAGE_KEYS.checklist);
+
+    const result = restoreSnapshot(snapshot?.id ?? "");
+    const recoverySnapshot = loadSnapshots()[0];
+
+    expect(result).toEqual({
+      ok: false,
+      message: "导入失败，未修改本地数据。",
+    });
+    expect(loadUserProfile()).toEqual(currentProfile);
+    expect(loadChecklist()).toEqual(currentChecklist);
+    expect(recoverySnapshot?.reason).toBe("恢复本地备份前");
+    expect(recoverySnapshot?.data.userProfile).toEqual(currentProfile);
+    expect(recoverySnapshot?.data.checklist).toEqual(currentChecklist);
+  });
+
+  it("keeps the recovery snapshot when the failed import cannot fully roll back", () => {
+    installLocalStorage();
+
+    saveUserProfile(testProfile("2026-07-21"));
+    saveChecklist([testItem("snapshot")]);
+    const snapshot = createSnapshot("目标备份");
+
+    const currentProfile = testProfile("2026-08-01");
+    const currentChecklist = [testItem("current")];
+    saveUserProfile(currentProfile);
+    saveChecklist(currentChecklist);
+
+    const setItem = window.localStorage.setItem.bind(window.localStorage);
+    let profileWrites = 0;
+    let checklistWrites = 0;
+
+    vi.spyOn(window.localStorage, "setItem").mockImplementation(
+      (candidateKey, value) => {
+        if (candidateKey === STORAGE_KEYS.userProfile) {
+          profileWrites += 1;
+
+          if (profileWrites === 2) {
+            throw new Error("simulated rollback failure");
+          }
+        }
+
+        if (candidateKey === STORAGE_KEYS.checklist) {
+          checklistWrites += 1;
+
+          if (checklistWrites === 1) {
+            throw new Error("simulated import failure");
+          }
+        }
+
+        setItem(candidateKey, value);
+      },
+    );
+
+    const result = restoreSnapshot(snapshot?.id ?? "");
+    const recoverySnapshot = loadSnapshots()[0];
+
+    expect(result).toEqual({
+      ok: false,
+      message: "导入失败，且本地数据无法完整回滚，请从备份恢复。",
+    });
+    expect(recoverySnapshot?.reason).toBe("恢复本地备份前");
+    expect(recoverySnapshot?.data.userProfile).toEqual(currentProfile);
+    expect(recoverySnapshot?.data.checklist).toEqual(currentChecklist);
+  });
+
+  it("does not restore when the pre-restore recovery snapshot cannot be saved", () => {
+    installLocalStorage();
+
+    saveUserProfile(testProfile("2026-07-21"));
+    saveChecklist([testItem("snapshot")]);
+    const snapshot = createSnapshot("目标备份");
+
+    const currentProfile = testProfile("2026-08-01");
+    const currentChecklist = [testItem("current")];
+    saveUserProfile(currentProfile);
+    saveChecklist(currentChecklist);
+    failNextStorageWrite(STORAGE_KEYS.snapshots);
+
+    const result = restoreSnapshot(snapshot?.id ?? "");
+
+    expect(result).toEqual({
+      ok: false,
+      message: "恢复失败，未修改本地数据。",
+    });
+    expect(loadUserProfile()).toEqual(currentProfile);
+    expect(loadChecklist()).toEqual(currentChecklist);
+    expect(loadSnapshots().map((candidate) => candidate.reason)).toEqual([
+      "目标备份",
+    ]);
   });
 });
