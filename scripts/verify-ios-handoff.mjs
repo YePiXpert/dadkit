@@ -11,7 +11,7 @@ import {
   IOS_XCODE_PROJECT,
 } from "./mobile-env.mjs";
 
-const EXPECTED_BUILD = "1";
+const EXPECTED_BUILD = "2";
 const REQUIRED_FILES = [
   IOS_XCODE_PROJECT,
   join(IOS_APP_DIR, "Info.plist"),

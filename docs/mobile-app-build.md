@@ -43,12 +43,12 @@ android/app/build/outputs/apk/debug/app-debug.apk
 The Android tester handoff package is produced at:
 
 ```text
-dist/mobile-handoff/dadkit-1.2.0-debug.apk
+dist/mobile-handoff/dadkit-1.3.0-debug.apk
 dist/mobile-handoff/index.html
 dist/mobile-handoff/cover.png
 dist/mobile-handoff/google-play-feature.png
 dist/mobile-handoff/tester-guide.md
-dist/mobile-handoff/dadkit-1.2.0-mobile-handoff.zip
+dist/mobile-handoff/dadkit-1.3.0-mobile-handoff.zip
 dist/mobile-handoff/store-screenshots/app-store-6-9/
 ```
 
@@ -65,7 +65,7 @@ captured screenshots, screenshot horizontal-overflow diagnostics, App Store
 dimensions/color type, and the shareable ZIP contents. It writes
 `dist/mobile-handoff/readiness-report.md`,
 `dist/mobile-handoff/readiness-report.json`, and refreshes
-`dist/mobile-handoff/dadkit-1.2.0-mobile-handoff.zip` after successful
+`dist/mobile-handoff/dadkit-1.3.0-mobile-handoff.zip` after successful
 verification.
 
 ## Android prerequisites
@@ -101,7 +101,8 @@ are present. Keep the keystore and passwords outside the repository.
 
 On the current Windows host, `npm run mobile:android:debug` produces a debug
 APK at `android/app/build/outputs/apk/debug/app-debug.apk`. The generated debug
-APK has package id `com.yepixpert.dadkit`, app label `DadKit`, version `1.2.0`,
+APK has package id `com.yepixpert.dadkit`, app label `DadKit`, version `1.3.0`
+(version code `2`),
 `minSdkVersion` 24, and `targetSdkVersion` 36. It verifies with APK Signature
 Scheme v2.
 
@@ -156,8 +157,8 @@ The current handoff project is configured as:
 
 - Bundle id: `com.yepixpert.dadkit`
 - Display name: `DadKit`
-- Marketing version: `1.2.0`
-- Build number: `1`
+- Marketing version: `1.3.0`
+- Build number: `2`
 - iOS deployment target: `15.0`
 
 TestFlight handoff checklist:

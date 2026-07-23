@@ -9,8 +9,8 @@ account data, phone numbers, hospital IDs, or private family data.
 1. Use a test profile and sample due date. Do not use real family documents or
    private screenshots during beta testing.
 2. If the package was sent as one file, unzip
-   `dist/mobile-handoff/dadkit-1.2.0-mobile-handoff.zip` first.
-3. Install the APK from `dist/mobile-handoff/dadkit-1.2.0-debug.apk`.
+   `dist/mobile-handoff/dadkit-1.3.0-mobile-handoff.zip` first.
+3. Install the APK from `dist/mobile-handoff/dadkit-1.3.0-debug.apk`.
 4. Open `dist/mobile-handoff/index.html` to review the APK checksum, cover,
    screenshots, readiness report, and expected test focus.
 5. If Android blocks installation, enable install-from-this-source for the file

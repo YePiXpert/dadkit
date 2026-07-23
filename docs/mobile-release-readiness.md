@@ -7,12 +7,14 @@ Status as of 2026-06-30.
 - Android debug APK path:
   `android/app/build/outputs/apk/debug/app-debug.apk`
 - Android test handoff package:
-  `dist/mobile-handoff/dadkit-1.2.0-debug.apk`
+  `dist/mobile-handoff/dadkit-1.3.0-debug.apk`
 - Android tester handoff ZIP:
-  `dist/mobile-handoff/dadkit-1.2.0-mobile-handoff.zip`
+  `dist/mobile-handoff/dadkit-1.3.0-mobile-handoff.zip`
 - Android package id: `com.yepixpert.dadkit`
 - App name: `DadKit`
-- Version: `1.2.0`
+- Version: `1.3.0`
+- Android version code: `2`
+- iOS build number: `2`
 - iOS handoff project: `ios/App/App.xcodeproj`
 - iOS bundle id: `com.yepixpert.dadkit`
 - Privacy route: `/privacy`
@@ -41,7 +43,7 @@ npm run mobile:handoff:verify
 ```
 
 After `npm run mobile:handoff:verify`, send the tester the ZIP at
-`dist/mobile-handoff/dadkit-1.2.0-mobile-handoff.zip` or open
+`dist/mobile-handoff/dadkit-1.3.0-mobile-handoff.zip` or open
 `dist/mobile-handoff/index.html` and use the direct APK link.
 If only the existing handoff folder needs to be re-zipped, run
 `npm run mobile:handoff:archive`.
@@ -90,7 +92,7 @@ project files, handoff index, image2 cover PNG dimensions, screenshot manifest,
 success it writes
 `dist/mobile-handoff/readiness-report.md`,
 `dist/mobile-handoff/readiness-report.json`, and refreshes
-`dist/mobile-handoff/dadkit-1.2.0-mobile-handoff.zip`.
+`dist/mobile-handoff/dadkit-1.3.0-mobile-handoff.zip`.
 
 ## Android release later
 

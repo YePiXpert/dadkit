@@ -33,6 +33,11 @@ const mobileTesterGuideDocs = readFileSync(
   join(process.cwd(), "docs", "mobile-tester-guide.md"),
   "utf8",
 );
+const packageJson = JSON.parse(
+  readFileSync(join(process.cwd(), "package.json"), "utf8"),
+) as { version: string };
+const handoffApkPath = `dist/mobile-handoff/dadkit-${packageJson.version}-debug.apk`;
+const handoffArchivePath = `dist/mobile-handoff/dadkit-${packageJson.version}-mobile-handoff.zip`;
 
 describe("app review support pages", () => {
   it("ships a privacy policy URL target for app metadata", () => {
@@ -99,9 +104,7 @@ describe("app review support pages", () => {
     expect(mobileBuildDocs).toContain(
       "dist/mobile-handoff/store-screenshots/app-store-6-9/",
     );
-    expect(mobileBuildDocs).toContain(
-      "dist/mobile-handoff/dadkit-1.2.0-mobile-handoff.zip",
-    );
+    expect(mobileBuildDocs).toContain(handoffArchivePath);
     expect(mobileBuildDocs).toContain("cover.png");
     expect(mobileBuildDocs).toContain("google-play-feature.png");
     expect(mobileBuildDocs).toContain(
@@ -143,12 +146,8 @@ describe("app review support pages", () => {
     expect(mobileReleaseReadinessDocs).toContain(
       "android/app/build/outputs/apk/debug/app-debug.apk",
     );
-    expect(mobileReleaseReadinessDocs).toContain(
-      "dist/mobile-handoff/dadkit-1.2.0-debug.apk",
-    );
-    expect(mobileReleaseReadinessDocs).toContain(
-      "dist/mobile-handoff/dadkit-1.2.0-mobile-handoff.zip",
-    );
+    expect(mobileReleaseReadinessDocs).toContain(handoffApkPath);
+    expect(mobileReleaseReadinessDocs).toContain(handoffArchivePath);
     expect(mobileReleaseReadinessDocs).toContain("dist/mobile-handoff/index.html");
     expect(mobileReleaseReadinessDocs).toContain("docs/mobile-tester-guide.md");
     expect(mobileReleaseReadinessDocs).toContain(

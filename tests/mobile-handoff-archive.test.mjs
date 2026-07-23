@@ -15,15 +15,18 @@ import {
   createMobileHandoffArchive,
   readZipEntryNames,
 } from "../scripts/create-mobile-handoff-archive.mjs";
+import { APP_VERSION } from "../scripts/mobile-env.mjs";
 
 describe("mobile handoff archive", () => {
   it("creates a shareable ZIP without nesting ZIP files", () => {
     const handoffDir = mkdtempSync(join(tmpdir(), "dadkit-handoff-"));
+    const apkName = `dadkit-${APP_VERSION}-debug.apk`;
+    const checksumName = `${apkName}.sha256`;
 
     try {
       mkdirSync(join(handoffDir, "screenshots"), { recursive: true });
-      writeFileSync(join(handoffDir, "dadkit-1.2.0-debug.apk"), "apk");
-      writeFileSync(join(handoffDir, "dadkit-1.2.0-debug.apk.sha256"), "sha");
+      writeFileSync(join(handoffDir, apkName), "apk");
+      writeFileSync(join(handoffDir, checksumName), "sha");
       writeFileSync(join(handoffDir, "index.html"), "<a>Download APK</a>");
       writeFileSync(join(handoffDir, "tester-guide.md"), "Smoke test");
       writeFileSync(join(handoffDir, "screenshots", "01-home.png"), "png");
@@ -34,8 +37,8 @@ describe("mobile handoff archive", () => {
           (file) => file.name,
         ),
       ).toEqual([
-        "dadkit-1.2.0-debug.apk",
-        "dadkit-1.2.0-debug.apk.sha256",
+        apkName,
+        checksumName,
         "index.html",
         "screenshots/01-home.png",
         "tester-guide.md",
@@ -52,8 +55,8 @@ describe("mobile handoff archive", () => {
         "504b0304",
       );
       expect(readZipEntryNames(archive.path)).toEqual([
-        "dadkit-1.2.0-debug.apk",
-        "dadkit-1.2.0-debug.apk.sha256",
+        apkName,
+        checksumName,
         "index.html",
         "screenshots/01-home.png",
         "tester-guide.md",

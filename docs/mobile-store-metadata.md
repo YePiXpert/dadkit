@@ -9,8 +9,8 @@ keys, screenshots containing private family data, or WebDAV secrets.
 
 - App name: `DadKit`
 - Bundle/package id: `com.yepixpert.dadkit`
-- Version: `1.2.0`
-- Build number: `1`
+- Version: `1.3.0`
+- Build number: `2`
 - Primary category candidate: Health & Fitness
 - Alternate category candidate: Productivity
 - Privacy Policy URL: `<public-origin>/privacy`
@@ -135,7 +135,7 @@ added.
 
 ## Google Play / Android notes
 
-- Direct APK testing uses `dist/mobile-handoff/dadkit-1.2.0-debug.apk`.
+- Direct APK testing uses `dist/mobile-handoff/dadkit-1.3.0-debug.apk`.
 - Google Play release testing should use a signed AAB from
   `npm run mobile:android:release:aab`.
 - Google Play feature graphic draft:

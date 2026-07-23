@@ -13,6 +13,7 @@ import {
 
 const EXPECTED_MIN_SDK = "24";
 const EXPECTED_TARGET_SDK = "36";
+const EXPECTED_VERSION_CODE = "2";
 
 if (!existsSync(ANDROID_DEBUG_APK)) {
   console.error(
@@ -33,6 +34,7 @@ const signature = run(
 ).stdout;
 
 assertIncludes(badging, `package: name='${ANDROID_PACKAGE_ID}'`);
+assertIncludes(badging, `versionCode='${EXPECTED_VERSION_CODE}'`);
 assertIncludes(badging, `versionName='${APP_VERSION}'`);
 assertIncludes(badging, `application-label:'${APP_NAME}'`);
 assertIncludes(badging, `sdkVersion:'${EXPECTED_MIN_SDK}'`);
@@ -42,7 +44,7 @@ assertIncludes(signature, "Verified using v2 scheme (APK Signature Scheme v2): t
 
 console.log(`Verified ${ANDROID_DEBUG_APK}`);
 console.log(`Package: ${ANDROID_PACKAGE_ID}`);
-console.log(`Version: ${APP_VERSION}`);
+console.log(`Version: ${APP_VERSION} (code ${EXPECTED_VERSION_CODE})`);
 console.log(`Label: ${APP_NAME}`);
 console.log(`SDK: min ${EXPECTED_MIN_SDK}, target ${EXPECTED_TARGET_SDK}`);
 console.log("Signature: APK Signature Scheme v2");
