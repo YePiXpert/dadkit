@@ -28,7 +28,7 @@
 
 ## 形状、阴影、排版
 
-- `--radius: 0.75rem`；卡片一律 `rounded-xl`，行 `rounded-xl`，图标块 `rounded-lg`，按钮 `rounded-lg`（Badge 保持 `rounded-full`）
+- `--radius: 1rem`；卡片一律 `rounded-xl`，行 `rounded-xl`，图标块 `rounded-lg`，按钮 `rounded-lg`（Badge 保持 `rounded-full`）
 - 阴影只有一档：`shadow-sm`（tailwind.config 已覆盖为 `0 1px 2px rgb(0 0 0/.04), 0 4px 16px rgb(0 0 0/.05)`）。弹层可用 `shadow-md`/`shadow-lg`
 - 页面标题：`text-xl sm:text-2xl font-semibold`；卡片标题：`text-sm font-semibold`（`CardTitle` 默认已是）；正文：`text-sm`；辅助：`text-xs text-muted-foreground`
 - 字重最多 `font-bold`，优先 `font-semibold`；全站禁止 `font-black`
@@ -37,7 +37,7 @@
 
 - 卡片：`<Card>`（已是新样式）或 `className="card-surface"`
 - 行：`className="list-row"`（图标块 + 标题 + 副文 + chevron 的统一行）
-- 图标块：`className="icon-tile"`（`size-10 rounded-lg bg-secondary text-primary`，可用 `size-9`/`size-11` 微调）
+- 图标块：`className="icon-tile"`（`size-10 rounded-lg bg-secondary text-primary`，可用 `size-9`/`size-11` 微调）；清单物品行用 `lib/presentation/item-icons.ts` 的 `getChecklistItemIcon(item)` 取物品级图标，配 `ITEM_TILE_TONE_STYLES` 按包着色的 tile
 - 小节标签：`className="section-kicker"`（`text-xs font-semibold text-muted-foreground`）
 - 页眉：`<PageIntro eyebrow title description>`（已无 `illustrationVariant`/`mascot` prop）
 - Badge variant：`default | secondary | outline | muted | success | warning`
