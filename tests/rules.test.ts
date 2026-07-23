@@ -214,7 +214,7 @@ describe("generateChecklist", () => {
     expect(names).toContain("宝宝住院衣物（连体衣/和尚服），如医院不提供");
     expect(names).toContain("纱布巾 / 小方巾");
     expect(items.find((item) => item.name === "一次性内裤")?.quantity).toBe(
-      "5 条或按预计住院天数准备",
+      "5-6 条或按预计住院天数准备",
     );
     expect(items.find((item) => item.name === "哺乳内衣")?.quantity).toBe(
       "2-3 件",
@@ -232,10 +232,37 @@ describe("generateChecklist", () => {
   it("adds c-section items when deliveryMode is c_section", () => {
     const items = generateChecklist(makeProfile({ deliveryMode: "c_section" }));
 
+    expect(items.some((item) => item.name === "收腹带")).toBe(true);
     expect(items.some((item) => item.name === "高腰一次性内裤")).toBe(true);
     expect(items.some((item) => item.name === "宽松高腰出院裤")).toBe(true);
     expect(items.some((item) => item.name === "剖腹产术后护理问题待确认")).toBe(
       true,
+    );
+  });
+
+  it("covers hospital bag staples learned from mature checklists", () => {
+    const items = generateChecklist(makeProfile({ breastfeeding: true }));
+    const names = items.map((item) => item.name);
+
+    expect(names).toContain("结婚证");
+    expect(names).toContain("户口本");
+    expect(names).toContain("生育服务单 / 生育登记凭证");
+    expect(names).toContain("刀纸 / 产褥卫生纸");
+    expect(names).toContain("计量型卫生巾");
+    expect(names).toContain("一次性马桶垫");
+    expect(names).toContain("月子帽 / 月子鞋");
+    expect(names).toContain("小罐奶粉 + 奶瓶 / 硅胶小勺（备用）");
+    expect(names).toContain("医院是否要求购买本院无菌待产包？");
+    expect(names).toContain("医院对奶粉、奶瓶的政策是什么？");
+    expect(names).toContain("陪产家属的陪护床 / 被褥是否提供？");
+    expect(names).toContain("无痛分娩是否需要提前预约？麻醉师是否 24 小时在岗？");
+    expect(names).toContain("病房类型有哪些？单人间如何预约？");
+    expect(names).toContain("是否需要自带便盆 / 胎心监护带？");
+    expect(
+      items.find((item) => item.name === "产褥垫 / 产后卫生巾")?.quantity,
+    ).toBe("10-20 片");
+    expect(items.find((item) => item.name === "尿不湿")?.note).toContain(
+      "NB 码",
     );
   });
 

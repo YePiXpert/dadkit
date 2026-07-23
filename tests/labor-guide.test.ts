@@ -71,4 +71,12 @@ describe("labor guide content", () => {
         ?.placeholder,
     ).toContain("无痛");
   });
+
+  it("gives an actionable 511 rule for regular contractions", () => {
+    expect(
+      LABOR_URGENT_SIGNAL_CARDS.find(
+        (card) => card.id === "regular-contractions",
+      )?.description,
+    ).toContain("511");
+  });
 });

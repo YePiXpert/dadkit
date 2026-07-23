@@ -88,7 +88,7 @@ export const LABOR_URGENT_SIGNAL_CARDS: LaborUrgentSignalCard[] = [
   {
     id: "regular-contractions",
     title: "规律宫缩",
-    description: "记录开始时间、持续时间、间隔和强度变化，方便和医院沟通。",
+    description: "记录开始时间、持续时间、间隔和强度变化。一般宫缩每 5 分钟一次、每次约 1 分钟、持续 1 小时以上（511 法则）时，联系医院确认是否出发。",
     actionLabel: "联系医院确认",
     notePrompt: "例：10 分钟一次，每次约 40 秒，强度逐渐增加。",
   },

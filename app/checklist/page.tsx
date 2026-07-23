@@ -426,6 +426,7 @@ function ChecklistGroupSummaryCard({
           <ArrowRight className="size-4" />
         </span>
       </div>
+      <Progress className="mt-3 h-1.5" value={completion.percent} />
     </button>
   );
 }

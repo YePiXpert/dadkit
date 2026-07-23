@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useDadKitStore } from "@/lib/store";
+import { getChecklistItemIcon } from "@/lib/presentation/item-icons";
 import {
   PREPARATION_KIND_LABELS,
   getQuickStatusOptionsForItem,
@@ -43,6 +44,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   const removeItem = useDadKitStore((state) => state.removeItem);
   const itemKind = item.itemKind ?? "item";
   const preparationKind = inferPreparationKind(item);
+  const ItemIcon = getChecklistItemIcon(item.category, itemKind);
   const hasDetails = Boolean(item.note);
   const isDone = ["packed", "hospital_provided", "not_needed"].includes(
     item.status,
@@ -67,6 +69,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
       className={cn(
         "grid grid-cols-[auto_1fr] gap-3 rounded-xl border border-border p-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center",
         rowTone,
+        isDone && "opacity-70",
       )}
     >
       <Button
@@ -86,7 +89,13 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
       </Button>
       <div className="min-w-0 space-y-1.5">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="min-w-0 break-words text-sm font-semibold leading-6">
+          <ItemIcon className="size-4 shrink-0 text-muted-foreground" />
+          <h3
+            className={cn(
+              "min-w-0 break-words text-sm font-semibold leading-6",
+              isDone && "text-muted-foreground line-through",
+            )}
+          >
             {item.name}
           </h3>
           <ItemTag item={item} />
@@ -99,15 +108,15 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             <span>放置：{BAG_LABELS[item.bag]}</span>
           ) : null}
         </div>
+        {item.note ? (
+          <p className="break-words text-xs leading-5 text-muted-foreground">
+            {item.note}
+          </p>
+        ) : null}
         {hasDetails ? (
           <details className="text-xs leading-5 text-muted-foreground">
-            <summary className="cursor-pointer select-none">备注/来源</summary>
+            <summary className="cursor-pointer select-none">时机/放置</summary>
             <div className="mt-1 grid gap-1">
-              {item.note ? (
-                <p className="break-words text-sm leading-6 text-muted-foreground">
-                  {item.note}
-                </p>
-              ) : null}
               <span>时机：{TIMING_LABELS[item.timing]}</span>
               {item.bag ? <span>放置：{BAG_LABELS[item.bag]}</span> : null}
             </div>
