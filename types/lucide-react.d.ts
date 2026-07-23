@@ -19,6 +19,7 @@ declare module "lucide-react" {
   export const CheckCircle2: LucideIcon;
   export const ChevronDown: LucideIcon;
   export const Cloud: LucideIcon;
+  export const ClipboardCheck: LucideIcon;
   export const ClipboardList: LucideIcon;
   export const Copy: LucideIcon;
   export const Download: LucideIcon;
@@ -26,6 +27,7 @@ declare module "lucide-react" {
   export const History: LucideIcon;
   export const Home: LucideIcon;
   export const Hospital: LucideIcon;
+  export const Inbox: LucideIcon;
   export const Info: LucideIcon;
   export const PackageCheck: LucideIcon;
   export const PackageOpen: LucideIcon;
