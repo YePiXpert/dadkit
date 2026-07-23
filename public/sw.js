@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v1.3.0-vps-safe-v1";
+const CACHE_NAME = "dadkit-v1.3.0-coral-v1";
 const CORE_ROUTES = [
   "/",
   "/setup",

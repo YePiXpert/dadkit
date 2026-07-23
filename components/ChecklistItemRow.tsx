@@ -16,7 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useDadKitStore } from "@/lib/store";
-import { getChecklistItemIcon } from "@/lib/presentation/item-icons";
+import {
+  ITEM_TILE_TONE_STYLES,
+  getChecklistItemIcon,
+  getItemTileTone,
+} from "@/lib/presentation/item-icons";
 import {
   PREPARATION_KIND_LABELS,
   getQuickStatusOptionsForItem,
@@ -44,7 +48,8 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   const removeItem = useDadKitStore((state) => state.removeItem);
   const itemKind = item.itemKind ?? "item";
   const preparationKind = inferPreparationKind(item);
-  const ItemIcon = getChecklistItemIcon(item.category, itemKind);
+  const ItemIcon = getChecklistItemIcon(item);
+  const tileToneStyle = ITEM_TILE_TONE_STYLES[getItemTileTone(item)];
   const hasDetails = Boolean(item.note);
   const isDone = ["packed", "hospital_provided", "not_needed"].includes(
     item.status,
@@ -67,7 +72,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   return (
     <div
       className={cn(
-        "grid grid-cols-[auto_1fr] gap-3 rounded-xl border border-border p-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center",
+        "grid grid-cols-[auto_auto_1fr] gap-3 rounded-xl border border-border p-3 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto] sm:items-center",
         rowTone,
         isDone && "opacity-70",
       )}
@@ -87,9 +92,14 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
         {isDone ? <RotateCcw className="size-4" /> : <CheckCircle2 className="size-4" />}
         <span className="sr-only">{quickActionLabel}</span>
       </Button>
+      <span
+        className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl sm:mt-0"
+        style={tileToneStyle}
+      >
+        <ItemIcon className="size-5" />
+      </span>
       <div className="min-w-0 space-y-1.5">
         <div className="flex flex-wrap items-center gap-2">
-          <ItemIcon className="size-4 shrink-0 text-muted-foreground" />
           <h3
             className={cn(
               "min-w-0 break-words text-sm font-semibold leading-6",
@@ -123,7 +133,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
           </details>
         ) : null}
       </div>
-      <div className="col-span-2 flex flex-wrap items-center justify-end gap-1.5 sm:col-span-1 sm:flex-nowrap">
+      <div className="col-span-3 flex flex-wrap items-center justify-end gap-1.5 sm:col-span-1 sm:flex-nowrap">
         {isHospitalConfirmation ? (
           <Button asChild className="shrink-0" size="sm" variant="outline">
             <Link href="/hospital">

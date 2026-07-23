@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { Progress } from "@/components/ui/progress";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import {
   getCountdownLabel,
   getPregnancyProgress,
@@ -113,6 +114,7 @@ export default function HomePage() {
         ) : null}
         <HomeLaborModePanel hasAdmissionInfo={hasAdmissionInfo} />
         <HomeToolsPanel />
+        <InstallPrompt />
       </section>
 
       <p className="mobile-shell text-center text-xs leading-5 text-muted-foreground">

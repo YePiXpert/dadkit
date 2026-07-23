@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "mobile:assets": "npx @capacitor/assets generate --assetPath resources --ios --android --iconBackgroundColor \"#C84161\" --iconBackgroundColorDark \"#C84161\" --splashBackgroundColor \"#FAF9F8\" --splashBackgroundColorDark \"#FAF9F8\"",
+    "mobile:assets": "npx @capacitor/assets generate --assetPath resources --ios --android --iconBackgroundColor \"#EA5371\" --iconBackgroundColorDark \"#EA5371\" --splashBackgroundColor \"#FCF8F9\" --splashBackgroundColorDark \"#FCF8F9\"",
     "mobile:web": "node scripts/build-mobile-web.mjs",
     "mobile:sync": "npm run mobile:web && npx cap sync && npm run mobile:assets",
     "mobile:android:debug": "npm run mobile:sync && node scripts/build-android-debug.mjs && npm run mobile:android:verify",

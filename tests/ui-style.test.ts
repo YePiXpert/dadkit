@@ -117,13 +117,13 @@ const appSources = {
 
 describe("modern minimal visual direction", () => {
   it("uses the warm minimal palette and reusable surface markers", () => {
-    expect(globals).toContain("--background: 30 20% 98%");
-    expect(globals).toContain("--foreground: 20 10% 14%");
-    expect(globals).toContain("--primary: 346 55% 52%");
-    expect(globals).toContain("--secondary: 346 30% 95%");
-    expect(globals).toContain("--muted: 30 12% 94%");
-    expect(globals).toContain("--border: 30 10% 89%");
-    expect(globals).toContain("--radius: 0.75rem");
+    expect(globals).toContain("--background: 350 33% 98%");
+    expect(globals).toContain("--foreground: 345 15% 20%");
+    expect(globals).toContain("--primary: 348 78% 62%");
+    expect(globals).toContain("--secondary: 350 70% 96%");
+    expect(globals).toContain("--muted: 350 20% 95%");
+    expect(globals).toContain("--border: 350 25% 91%");
+    expect(globals).toContain("--radius: 1rem");
     expect(globals).toContain(".card-surface");
     expect(globals).toContain(".list-row");
     expect(globals).toContain(".icon-tile");
@@ -142,7 +142,7 @@ describe("modern minimal visual direction", () => {
     expect(header).not.toContain(banned("安心", "待产清单"));
     expect(header).not.toContain("getBabyMascot");
     expect(header).not.toContain("next/image");
-    expect(layout).toContain("#C84161");
+    expect(layout).toContain("#EA5371");
     expect(layout).not.toContain("#FF5C7A");
     expect(layout).not.toContain("maximumScale");
     expect(layout).not.toContain("userScalable");

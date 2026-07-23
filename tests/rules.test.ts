@@ -103,6 +103,7 @@ describe("generateChecklist", () => {
       (item) =>
         item.category === "documents" &&
         item.itemKind === "item" &&
+        item.id !== "general-doc-bank-card" &&
         (item.name.includes("支付") ||
           item.name.includes("押金") ||
           item.name.includes("银行卡")),

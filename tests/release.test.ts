@@ -100,7 +100,7 @@ describe("release endpoints and pages", () => {
       .sort();
 
     expect(illustrationAssets.length).toBeGreaterThan(0);
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.3.0-vps-safe-v1"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.3.0-coral-v1"');
     expect(sw).toContain("const CORE_ROUTES = [");
     expect(sw).toContain('"/checklist"');
     expect(sw).toContain('"/hospital"');

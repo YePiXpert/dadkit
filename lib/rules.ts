@@ -886,7 +886,7 @@ function applyStayDayQuantities(item: ChecklistItem, profile: UserProfile) {
   if (item.name === "一次性内裤") {
     return {
       ...item,
-      quantity: `${Math.max(5, profile.expectedStayDays)} 条或按预计住院天数准备`,
+      quantity: `${Math.max(5, profile.expectedStayDays)}-${Math.max(6, profile.expectedStayDays + 1)} 条或按预计住院天数准备`,
     };
   }
 

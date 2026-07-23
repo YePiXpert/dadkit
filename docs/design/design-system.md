@@ -6,14 +6,20 @@
 
 | 角色 | 值（HSL） | Tailwind 用法 |
 | --- | --- | --- |
-| background | 30 20% 98%（暖纸白，纯色无渐变） | `bg-background` |
-| foreground | 20 10% 14%（暖墨色） | `text-foreground` |
+| background | 350 33% 98%（微粉暖白，纯色无渐变） | `bg-background` |
+| foreground | 345 15% 20%（暖墨色） | `text-foreground` |
 | card | 0 0% 100%（纯白卡片） | `bg-card` / `text-card-foreground` |
-| primary | 346 55% 52%（去饱和玫瑰色） | `bg-primary` / `text-primary` / `text-primary-foreground` |
-| secondary | 346 30% 95%（主色极浅底，hover/选中） | `bg-secondary` / `text-secondary-foreground` |
-| muted | 30 12% 94%（分隔、弱底） | `bg-muted` / `text-muted-foreground` |
-| border | 30 10% 89%（真实边框色） | `border-border`（输入框用 `border-input`） |
+| primary | 348 78% 62%（珊瑚粉） | `bg-primary` / `text-primary` / `text-primary-foreground` |
+| secondary | 350 70% 96%（主色极浅底，hover/选中） | `bg-secondary` / `text-secondary-foreground` |
+| muted | 350 20% 95%（分隔、弱底） | `bg-muted` / `text-muted-foreground` |
+| border | 350 25% 91%（真实边框色） | `border-border`（输入框用 `border-input`） |
 | destructive | 3 62% 45% | `bg-destructive` |
+
+物品图标彩色底（清单行内 tile，按所属包着色）：
+
+- `--tile-mom-bg/fg`（妈妈包·粉）、`--tile-baby-bg/fg`（宝宝包·杏）、`--tile-docs-bg/fg`（证件包·蓝灰）
+- `--tile-dad-bg/fg`（爸爸背包·灰绿）、`--tile-car-bg/fg`（车上·灰紫）、`--tile-lastminute-bg/fg`（临出门·玫红）
+- 用法：`lib/presentation/item-icons.ts` 的 `getItemTileTone(item)` + `ITEM_TILE_TONE_STYLES`，经内联 style 应用
 
 状态色一律用 Tailwind 标准色淡底：
 
