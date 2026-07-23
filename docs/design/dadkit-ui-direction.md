@@ -1,5 +1,7 @@
 # DadKit UI direction
 
+> **已归档（2026-07）**：本文描述的是旧「粉色贴纸可爱风」方向，已被全站改版的「精致现代简约风」取代。当前有效规范见 [design-system.md](./design-system.md)（暖纸白底 + 去饱和玫瑰主色、`card-surface`/`list-row`/`icon-tile` 标准件、无贴纸插画引用）。下文仅作历史记录保留。
+
 ## Visual references
 
 - 美柚：多阶段女性健康服务，强调经期、备孕、怀孕、育儿的身份切换和工具入口密度。

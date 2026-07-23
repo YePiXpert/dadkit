@@ -36,7 +36,7 @@ export default function BirthPlanPage() {
       />
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[1fr_0.9fr]">
-        <Card className="macaron-panel">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ClipboardList className="size-4 text-primary" />
@@ -102,7 +102,7 @@ export default function BirthPlanPage() {
               </Field>
             ))}
 
-            <p className="macaron-note inline-flex items-center gap-2">
+            <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
               <Save className="size-4" />
               已自动保存到当前浏览器。
             </p>
@@ -110,7 +110,7 @@ export default function BirthPlanPage() {
         </Card>
 
         <div className="grid gap-3">
-          <Card className="macaron-panel">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ClipboardList className="size-4 text-primary" />
@@ -119,8 +119,11 @@ export default function BirthPlanPage() {
             </CardHeader>
             <CardContent className="grid gap-2">
               {PARTNER_SUPPORT_ACTIONS.map((action) => (
-                <div className="soft-detail" key={action.title}>
-                  <p className="text-sm font-bold">{action.title}</p>
+                <div
+                  className="rounded-lg border border-border bg-background p-3"
+                  key={action.title}
+                >
+                  <p className="text-sm font-semibold">{action.title}</p>
                   <p className="mt-1 text-sm leading-6 text-muted-foreground">
                     {action.description}
                   </p>
@@ -129,7 +132,7 @@ export default function BirthPlanPage() {
             </CardContent>
           </Card>
 
-          <Card className="macaron-panel">
+          <Card>
             <CardHeader>
               <CardTitle>复制 / 导出沟通卡</CardTitle>
             </CardHeader>

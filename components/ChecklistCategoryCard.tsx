@@ -34,14 +34,14 @@ export function ChecklistCategoryCard({
   }
 
   return (
-    <section className="macaron-panel p-3">
+    <section className="card-surface p-3">
       <div className="space-y-3">
         <button
-          className="app-list-row w-full bg-card/90 text-left"
+          className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-secondary/60"
           type="button"
           onClick={() => setOpen((value) => !value)}
         >
-          <span className="app-icon-tile size-10 rounded-md">
+          <span className="icon-tile">
             {completion.percent === 100 ? (
               <CheckCircle2 className="size-5" />
             ) : (
@@ -49,16 +49,16 @@ export function ChecklistCategoryCard({
             )}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block break-words text-base font-bold leading-5 tracking-normal">
+            <span className="block break-words text-sm font-semibold leading-5">
               {title}
             </span>
-            <span className="mt-1 block text-xs font-semibold text-muted-foreground">
+            <span className="mt-1 block text-xs text-muted-foreground">
               已完成 {completion.completed} 项 · 未完成{" "}
               {Math.max(0, completion.total - completion.completed)} 项
             </span>
           </span>
           <span className="flex shrink-0 items-center gap-2">
-            <span className="rounded-full bg-mint px-2.5 py-1 text-sm font-semibold text-mint-foreground">
+            <span className="rounded-full bg-secondary px-2.5 py-1 text-sm font-semibold text-primary">
               {completion.percent}%
             </span>
             <ChevronDown

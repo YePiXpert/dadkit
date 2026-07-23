@@ -22,12 +22,11 @@ describe("home page copy", () => {
     expect(homePage).not.toContain("查看示例");
     expect(homePage).not.toContain('href="/example"');
     expect(homePage).toContain("formatBabyZodiacLine");
-    expect(homePage).toContain("dadkit-real-home-prep-photo.webp");
-    expect(homePage).toContain("journal-cover-photo");
-    expect(homePage).toContain("dadkit-home-journal-sticker-v2.png");
-    expect(homePage).toContain("journal-cover-card");
-    expect(homePage).toContain("journal-cover-kicker");
-    expect(homePage).toContain("Maternity preparation journal sticker");
+    expect(homePage).not.toContain("dadkit-real-home-prep-photo.webp");
+    expect(homePage).not.toContain("journal-cover-photo");
+    expect(homePage).not.toContain("dadkit-home-journal-sticker-v2.png");
+    expect(homePage).not.toContain("journal-cover-card");
+    expect(homePage).not.toContain("journal-cover-kicker");
     expect(homePage).toContain("预产期倒计时");
     expect(homePage).not.toContain(banned("女宝", "倒计时"));
     expect(homePage).toContain("方案已生成");

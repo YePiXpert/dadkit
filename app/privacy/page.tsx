@@ -28,10 +28,10 @@ export default function PrivacyPage() {
   return (
     <div className="page-shell">
       <section className="mobile-shell grid gap-3 lg:max-w-3xl">
-        <Card className="macaron-panel">
+        <Card>
           <CardHeader>
             <p className="section-kicker">DadKit</p>
-            <CardTitle className="text-2xl leading-tight">隐私政策</CardTitle>
+            <CardTitle className="text-xl font-semibold leading-tight sm:text-2xl">隐私政策</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm leading-6 text-muted-foreground">
             <p>
@@ -43,20 +43,23 @@ export default function PrivacyPage() {
           </CardContent>
         </Card>
 
-        <Card className="app-list-card">
+        <Card>
           <CardHeader>
             <CardTitle>本地保存的数据</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2">
             {localDataItems.map((item) => (
-              <p className="soft-detail text-sm leading-6" key={item}>
+              <p
+                className="rounded-lg border border-border bg-background p-3 text-sm leading-6"
+                key={item}
+              >
                 {item}
               </p>
             ))}
           </CardContent>
         </Card>
 
-        <Card className="app-list-card">
+        <Card>
           <CardHeader>
             <CardTitle>不会做的事</CardTitle>
           </CardHeader>
@@ -68,7 +71,7 @@ export default function PrivacyPage() {
           </CardContent>
         </Card>
 
-        <Card className="app-list-card">
+        <Card>
           <CardHeader>
             <CardTitle>WebDAV 备份</CardTitle>
           </CardHeader>
@@ -85,20 +88,23 @@ export default function PrivacyPage() {
           </CardContent>
         </Card>
 
-        <Card className="app-list-card">
+        <Card>
           <CardHeader>
             <CardTitle>用户控制</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2">
             {userControls.map((item) => (
-              <p className="soft-detail text-sm leading-6" key={item}>
+              <p
+                className="rounded-lg border border-border bg-background p-3 text-sm leading-6"
+                key={item}
+              >
                 {item}
               </p>
             ))}
           </CardContent>
         </Card>
 
-        <Card className="app-list-card">
+        <Card>
           <CardHeader>
             <CardTitle>联系与更新</CardTitle>
           </CardHeader>

@@ -19,7 +19,7 @@ export function DueDateCard({ dueDate }: DueDateCardProps) {
   const percent = Math.max(0, Math.min(100, Math.round(((280 - daysLeft) / 280) * 100)));
 
   return (
-    <Card className="macaron-panel">
+    <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <CalendarClock className="size-4 text-primary" />
@@ -36,13 +36,13 @@ export function DueDateCard({ dueDate }: DueDateCardProps) {
               {daysLeft >= 0 ? `${daysLeft} 天` : "已到期"}
             </p>
           </div>
-          <span className="rounded-full bg-mint px-3 py-1 text-sm font-semibold text-primary">
+          <span className="rounded-full bg-secondary px-3 py-1 text-sm font-semibold text-primary">
             {percent}%
           </span>
         </div>
         <Progress value={percent} />
         {daysLeft < 21 ? (
-          <p className="rounded-lg border border-coral/25 bg-peach px-3 py-2 text-sm leading-6 text-peach-foreground">
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-800">
             建议尽快完成待产包打包，并把临出门物品放在固定位置。
           </p>
         ) : null}

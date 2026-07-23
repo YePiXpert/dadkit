@@ -1,14 +1,11 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-
 type ActionCardProps = {
   href: string;
   icon: LucideIcon;
   title: string;
   description: string;
-  tone?: "primary" | "amber" | "coral";
 };
 
 export function ActionCard({
@@ -16,29 +13,16 @@ export function ActionCard({
   href,
   icon: Icon,
   title,
-  tone = "primary",
 }: ActionCardProps) {
   return (
     <Link
-      className={cn(
-        "grid min-h-[132px] gap-3 rounded-lg border border-white/80 bg-card/95 p-4 shadow-soft transition-all active:scale-[0.99]",
-        tone === "primary" && "bg-mint/55 hover:border-primary/40 hover:bg-mint/75",
-        tone === "amber" && "border-amber/35 bg-amber-soft/65",
-        tone === "coral" && "border-coral/30 bg-peach/75",
-      )}
+      className="card-surface grid min-h-[132px] content-start gap-3 p-4 transition-colors hover:border-primary/30 hover:bg-secondary/40"
       href={href}
     >
-      <div
-        className={cn(
-          "flex size-11 items-center justify-center rounded-lg text-primary-foreground shadow-sm",
-          tone === "primary" && "bg-primary",
-          tone === "amber" && "bg-amber text-amber-foreground",
-          tone === "coral" && "bg-coral text-coral-foreground",
-        )}
-      >
+      <span className="icon-tile size-11">
         <Icon className="size-5" />
-      </div>
-      <h3 className="text-base font-semibold">{title}</h3>
+      </span>
+      <h3 className="text-sm font-semibold">{title}</h3>
       <p className="text-sm leading-6 text-muted-foreground">{description}</p>
     </Link>
   );

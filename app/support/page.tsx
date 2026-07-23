@@ -27,10 +27,10 @@ export default function SupportPage() {
   return (
     <div className="page-shell">
       <section className="mobile-shell grid gap-3 lg:max-w-3xl">
-        <Card className="macaron-panel">
+        <Card>
           <CardHeader>
             <p className="section-kicker">DadKit</p>
-            <CardTitle className="text-2xl leading-tight">支持与反馈</CardTitle>
+            <CardTitle className="text-xl font-semibold leading-tight sm:text-2xl">支持与反馈</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm leading-6 text-muted-foreground">
             <p>
@@ -51,33 +51,39 @@ export default function SupportPage() {
           </CardContent>
         </Card>
 
-        <Card className="app-list-card">
+        <Card>
           <CardHeader>
             <CardTitle>TestFlight / APK 测试建议</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2">
             {testChecklist.map((item) => (
-              <p className="soft-detail text-sm leading-6" key={item}>
+              <p
+                className="rounded-lg border border-border bg-background p-3 text-sm leading-6"
+                key={item}
+              >
                 {item}
               </p>
             ))}
           </CardContent>
         </Card>
 
-        <Card className="app-list-card">
+        <Card>
           <CardHeader>
             <CardTitle>反馈时请附上</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2">
             {feedbackItems.map((item) => (
-              <p className="soft-detail text-sm leading-6" key={item}>
+              <p
+                className="rounded-lg border border-border bg-background p-3 text-sm leading-6"
+                key={item}
+              >
                 {item}
               </p>
             ))}
           </CardContent>
         </Card>
 
-        <Card className="app-list-card">
+        <Card>
           <CardHeader>
             <CardTitle>WebDAV 排查</CardTitle>
           </CardHeader>
@@ -88,7 +94,7 @@ export default function SupportPage() {
           </CardContent>
         </Card>
 
-        <Card className="app-list-card">
+        <Card>
           <CardHeader>
             <CardTitle>医疗边界</CardTitle>
           </CardHeader>

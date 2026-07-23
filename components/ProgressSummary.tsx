@@ -25,11 +25,11 @@ export function ProgressSummary({ items }: ProgressSummaryProps) {
   const categories = calculateCategoryCompletion(items).filter((item) => item.total > 0);
 
   return (
-    <Card className="macaron-panel">
+    <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-base">
           <span>核心打包进度</span>
-          <span className="rounded-full bg-primary px-2.5 py-1 text-sm text-primary-foreground">
+          <span className="rounded-full bg-secondary px-2.5 py-1 text-sm font-semibold text-primary">
             {packing.percent}%
           </span>
         </CardTitle>
@@ -51,11 +51,11 @@ export function ProgressSummary({ items }: ProgressSummaryProps) {
           />
         </div>
         {categories.length > 0 ? (
-          <details className="soft-detail">
+          <details className="rounded-lg border border-border">
             <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-muted-foreground">
               查看分类进度
             </summary>
-            <div className="grid gap-2 border-t border-white/80 p-3 sm:grid-cols-2">
+            <div className="grid gap-2 border-t border-border p-3 sm:grid-cols-2">
               {categories.map((category) => (
                 <CategoryProgress
                   category={category.category}
@@ -85,9 +85,9 @@ function SummaryPill({
   total: number;
 }) {
   return (
-    <div className="rounded-lg border border-white/80 bg-mint/80 p-2.5 text-sm shadow-sm">
+    <div className="rounded-lg bg-muted p-2.5 text-sm">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="font-medium text-secondary-foreground">{label}</span>
+        <span className="font-medium">{label}</span>
         <span className="text-muted-foreground">
           {completed}/{total}
         </span>
@@ -109,7 +109,7 @@ function CategoryProgress({
   total: number;
 }) {
   return (
-    <div className="rounded-lg border border-white/80 bg-card/80 p-2.5 shadow-sm">
+    <div className="rounded-lg bg-muted p-2.5">
       <div className="mb-2 flex items-center justify-between text-sm">
         <span className="font-medium">{CATEGORY_LABELS[category]}</span>
         <span className="text-muted-foreground">

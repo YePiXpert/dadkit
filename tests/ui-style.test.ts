@@ -4,6 +4,10 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const globals = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
+const tailwindConfig = readFileSync(
+  join(process.cwd(), "tailwind.config.ts"),
+  "utf8",
+);
 const button = readFileSync(
   join(process.cwd(), "components", "ui", "button.tsx"),
   "utf8",
@@ -46,6 +50,10 @@ const postpartumPage = readFileSync(
   join(process.cwd(), "app", "postpartum", "page.tsx"),
   "utf8",
 );
+const sharePage = readFileSync(
+  join(process.cwd(), "app", "share", "page.tsx"),
+  "utf8",
+);
 const hospitalQuestionCard = readFileSync(
   join(process.cwd(), "components", "HospitalQuestionCard.tsx"),
   "utf8",
@@ -60,10 +68,6 @@ const timelineDashboard = readFileSync(
 );
 const pageIntro = readFileSync(
   join(process.cwd(), "components", "PageIntro.tsx"),
-  "utf8",
-);
-const cuteIllustration = readFileSync(
-  join(process.cwd(), "components", "CuteIllustration.tsx"),
   "utf8",
 );
 const mobileNav = readFileSync(
@@ -88,40 +92,64 @@ const sharePosterCanvas = readFileSync(
 );
 const banned = (...parts: string[]) => parts.join("");
 
-describe("cute maternity app visual direction", () => {
-  it("uses the warm DadKit palette and reusable cute markers", () => {
-    expect(globals).toContain("--blush");
-    expect(globals).toContain("--lavender");
-    expect(globals).toContain("--coral");
-    expect(globals).toContain("--cream");
-    expect(globals).toContain("--peach");
-    expect(globals).toContain("--mint");
-    expect(globals).toContain(".cute-eyebrow");
-    expect(globals).toContain(".macaron-panel");
-    expect(globals).toContain(".macaron-note");
-    expect(globals).toContain(".app-hero-card");
-    expect(globals).toContain(".journal-cover-card");
-    expect(globals).toContain(".journal-cover-photo");
-    expect(globals).toContain(".journal-cover-kicker");
-    expect(globals).toContain(".share-poster-card");
-    expect(globals).toContain(".share-poster-photo");
-    expect(globals).toContain(".share-poster-preview");
-    expect(globals).toContain(".app-list-row");
+const appSources = {
+  button,
+  card,
+  checklistCategoryCard,
+  checklistPage,
+  contractionsPage,
+  emptyState,
+  goPage,
+  header,
+  homePage,
+  hospitalPage,
+  hospitalQuestionCard,
+  mobileNav,
+  pageIntro,
+  postpartumPage,
+  settingsPage,
+  setupPage,
+  sharePage,
+  sharePosterCanvas,
+  timelineDashboard,
+  timelinePage,
+};
+
+describe("modern minimal visual direction", () => {
+  it("uses the warm minimal palette and reusable surface markers", () => {
+    expect(globals).toContain("--background: 30 20% 98%");
+    expect(globals).toContain("--foreground: 20 10% 14%");
+    expect(globals).toContain("--primary: 346 55% 52%");
+    expect(globals).toContain("--secondary: 346 30% 95%");
+    expect(globals).toContain("--muted: 30 12% 94%");
+    expect(globals).toContain("--border: 30 10% 89%");
+    expect(globals).toContain("--radius: 0.75rem");
+    expect(globals).toContain(".card-surface");
+    expect(globals).toContain(".list-row");
+    expect(globals).toContain(".icon-tile");
+    expect(globals).toContain(".section-kicker");
     expect(globals).toContain("max-w-[390px]");
     expect(globals).toContain("max-width: min(100%, 390px)");
     expect(globals).toContain("overflow-x: hidden");
     expect(globals).toContain("touch-action: pan-x pan-y");
+    expect(globals).not.toContain("radial-gradient");
+    expect(globals).not.toContain("linear-gradient");
+    expect(tailwindConfig).not.toContain("cream");
+    expect(tailwindConfig).not.toContain("peach");
+    expect(tailwindConfig).not.toContain("lavender");
+    expect(tailwindConfig).not.toContain("soft:");
     expect(header).toContain("待产准备");
     expect(header).not.toContain(banned("安心", "待产清单"));
-    expect(header).toContain("getBabyMascot");
-    expect(layout).toContain("#FF5C7A");
+    expect(header).not.toContain("getBabyMascot");
+    expect(header).not.toContain("next/image");
+    expect(layout).toContain("#C84161");
+    expect(layout).not.toContain("#FF5C7A");
     expect(layout).not.toContain("maximumScale");
     expect(layout).not.toContain("userScalable");
     expect(layout).toContain('viewportFit: "cover"');
     expect(pwaRegister).not.toContain("gesturestart");
     expect(pwaRegister).not.toContain("preventDoubleTapZoom");
     expect(mobileNav).toContain("bg-card/95");
-    expect(mobileNav).toContain("after:bg-primary");
     expect(mobileNav).toContain("h-[3.25rem]");
     expect(mobileNav).toContain("mobile-shell grid");
     expect(mobileNav).toContain('label: "设置"');
@@ -141,69 +169,43 @@ describe("cute maternity app visual direction", () => {
     ).toBe(false);
   });
 
-  it("ships transparent cute illustration assets used by page headers", () => {
-    expect(
-      existsSync(
-        join(
-          process.cwd(),
-          "public",
-          "illustrations",
-          "dadkit-family-transparent.png",
-        ),
-      ),
-    ).toBe(true);
-    expect(
-      existsSync(
-        join(
-          process.cwd(),
-          "public",
-          "illustrations",
-          "dadkit-horse-girl.png",
-        ),
-      ),
-    ).toBe(true);
-    expect(
-      existsSync(
-        join(
-          process.cwd(),
-          "public",
-          "illustrations",
-          "dadkit-bear-transparent.png",
-        ),
-      ),
-    ).toBe(true);
-    expect(
-      existsSync(
-        join(
-          process.cwd(),
-          "public",
-          "illustrations",
-          "dadkit-go-bunny.png",
-        ),
-      ),
-    ).toBe(true);
-    expect(
-      existsSync(
-        join(
-          process.cwd(),
-          "public",
-          "illustrations",
-          "dadkit-baby-girl-timer.png",
-        ),
-      ),
-    ).toBe(true);
-    expect(
-      existsSync(
-        join(
-          process.cwd(),
-          "public",
-          "illustrations",
-          "dadkit-dad-avatar.png",
-        ),
-      ),
-    ).toBe(true);
+  it("purged the cute sticker style from design tokens and app code", () => {
+    expect(globals).not.toContain("--blush");
+    expect(globals).not.toContain("--lavender");
+    expect(globals).not.toContain("--coral");
+    expect(globals).not.toContain("--cream");
+    expect(globals).not.toContain("--peach");
+    expect(globals).not.toContain("--mint");
+    expect(globals).not.toContain(".cute-eyebrow");
+    expect(globals).not.toContain(".macaron-");
+    expect(globals).not.toContain(".pony-");
+    expect(globals).not.toContain(".journal-");
+    expect(globals).not.toContain(".share-poster-");
+    expect(globals).not.toContain(".app-list-");
+    expect(globals).not.toContain(".app-icon-tile");
+    expect(globals).not.toContain(".soft-detail");
+    for (const [name, source] of Object.entries(appSources)) {
+      expect(source, name).not.toMatch(
+        /pony-|macaron-|journal-|cute-eyebrow|sticker-surface|app-hero-card|app-list-card|app-list-row|app-icon-tile|soft-panel|paper-card|soft-detail|share-poster-|shadow-soft/,
+      );
+      expect(source, name).not.toMatch(
+        /bg-(cream|peach|mint|blush|lavender|coral)|text-(cream|peach|mint|blush|lavender|coral|amber)-foreground|border-white\/[89]0/,
+      );
+      expect(source, name).not.toContain("font-black");
+      expect(source, name).not.toContain("/illustrations/");
+      expect(source, name).not.toContain("CuteIllustration");
+    }
+  });
+
+  it("keeps illustration asset files on disk for the service worker cache", () => {
     for (const filename of [
+      "dadkit-baby-girl-timer.png",
+      "dadkit-bear-transparent.png",
       "dadkit-checklist-bag-sticker-v2.png",
+      "dadkit-dad-avatar.png",
+      "dadkit-family-transparent.png",
+      "dadkit-go-bunny.png",
+      "dadkit-horse-girl.png",
       "dadkit-home-journal-sticker-v2.png",
       "dadkit-hospital-route-sticker-v2.png",
       "dadkit-maternity-journal-sticker.png",
@@ -214,52 +216,39 @@ describe("cute maternity app visual direction", () => {
       expect(
         existsSync(join(process.cwd(), "public", "illustrations", filename)),
       ).toBe(true);
-      expect(cuteIllustration).toContain(filename);
     }
-    expect(cuteIllustration).toContain("dadkit-family-transparent.png");
-    expect(cuteIllustration).toContain("dadkit-horse-girl.png");
-    expect(cuteIllustration).toContain("dadkit-bear-transparent.png");
-    expect(cuteIllustration).toContain("CuteIllustrationVariant");
-    expect(cuteIllustration).toContain('variant = "horse"');
-    expect(cuteIllustration).toContain("homeJournal");
-    expect(cuteIllustration).toContain("maternityJournal");
-    expect(cuteIllustration).toContain("Maternity preparation journal");
-    expect(pageIntro).toContain("CuteIllustration");
-    expect(pageIntro).toContain("illustrationVariant");
-    expect(pageIntro).toContain("sm:hidden");
-    expect(pageIntro).toContain("sm:block");
+    expect(
+      existsSync(join(process.cwd(), "components", "CuteIllustration.tsx")),
+    ).toBe(false);
     expect(pageIntro).toContain("section-kicker");
-    expect(pageIntro).toContain("bg-peach");
-    expect(pageIntro).toContain("bg-mint");
-    expect(pageIntro).not.toContain("hidden size-24");
-    expect(emptyState).toContain("macaron-panel");
+    expect(pageIntro).not.toContain("illustrationVariant");
+    expect(emptyState).toContain("card-surface");
+    expect(emptyState).not.toContain("macaron-panel");
   });
 
-  it("supports a saveable share poster with responsive ratios", () => {
+  it("ships a saveable share poster with responsive ratios", () => {
     expect(sharePosterCanvas).toContain('import { toPng } from "html-to-image"');
     expect(sharePosterCanvas).toContain("ratioConfig");
     expect(sharePosterCanvas).toContain('aspectRatio: "9 / 16"');
     expect(sharePosterCanvas).toContain('aspectRatio: "3 / 4"');
     expect(sharePosterCanvas).toContain("dadkit-prep-poster");
     expect(sharePosterCanvas).toContain("cacheBust: false");
-    expect(sharePosterCanvas).toContain("dadkit-real-prep-summary-photo.webp");
-    expect(sharePosterCanvas).toContain("unoptimized");
-    expect(sharePosterCanvas).toContain("dadkit-share-summary-sticker-v2.png");
-    expect(sharePosterCanvas).toContain("share-poster-preview");
-    expect(sharePosterCanvas).toContain("share-poster-card");
-    expect(sharePosterCanvas).toContain("share-poster-photo");
+    expect(sharePosterCanvas).not.toContain("dadkit-real-prep-summary-photo.webp");
+    expect(sharePosterCanvas).not.toContain("dadkit-share-summary-sticker-v2.png");
+    expect(sharePosterCanvas).not.toContain("share-poster-photo");
+    expect(sharePosterCanvas).not.toContain("next/image");
   });
 
-  it("extends the cute macaron treatment beyond the home page", () => {
+  it("extends the minimal treatment beyond the home page", () => {
     expect(checklistPage).toContain("ChecklistProgressCard");
     expect(checklistPage).toContain("ChecklistGroupSummaryCard");
     expect(checklistPage).toContain("待产包进度");
     expect(checklistPage).not.toContain("清单总进度");
-    expect(hospitalPage).toContain("macaron-panel");
-    expect(settingsPage).toContain("macaron-panel");
-    expect(checklistPage).toContain("macaron-note");
-    expect(hospitalPage).toContain("soft-detail");
-    expect(settingsPage).toContain("soft-detail");
+    expect(homePage).toContain("card-surface");
+    expect(hospitalPage).toContain("card-surface");
+    expect(settingsPage).toContain("card-surface");
+    expect(checklistPage).toContain("card-surface");
+    expect(goPage).toContain("card-surface");
   });
 
   it("uses app-like hero, checklist and timer patterns on action pages", () => {
@@ -275,22 +264,19 @@ describe("cute maternity app visual direction", () => {
     expect(goPage).toContain("全部确认，出发");
     expect(goPage).not.toContain(banned("全部 ", "OK", "，出发！"));
     expect(goPage).toContain("markAllDone");
-    expect(goPage).toContain("bg-[linear-gradient(100deg,#ff8385");
-    expect(goPage).toContain("dadkit-horse-girl.png");
-    expect(goPage).not.toContain("CuteIllustration");
+    expect(goPage).not.toContain("linear-gradient");
     expect(contractionsPage).toContain("本次宫缩计时圆盘");
     expect(contractionsPage).toContain("buildPreparationSummary");
     expect(contractionsPage).toContain("待产准备状态");
     expect(contractionsPage).toContain("不计入待产准备进度");
     expect(contractionsPage).toContain("生成分享截图");
     expect(contractionsPage).toContain("conic-gradient");
-    expect(contractionsPage).toContain("dadkit-baby-girl-timer.png");
+    expect(contractionsPage).toContain("hsl(var(--primary))");
     expect(contractionsPage).toContain("LABOR_URGENT_SIGNAL_CARDS");
     expect(contractionsPage).toContain("WATER_BREAK_STEPS");
     expect(contractionsPage).toContain('id="labor-alerts"');
-    expect(contractionsPage).not.toContain("CuteIllustration");
     expect(postpartumPage).toContain("产后提醒");
-    expect(postpartumPage).toContain('illustrationVariant="postpartumPaperwork"');
+    expect(postpartumPage).not.toContain("illustrationVariant");
     expect(postpartumPage).toContain("窗口待确认");
     expect(postpartumPage).toContain("不判断政策是否最新");
     expect(postpartumPage).toContain("mergePostpartumTasks");
@@ -314,7 +300,6 @@ describe("cute maternity app visual direction", () => {
     expect(setupPage).toContain("SegmentButton");
     expect(setupPage).toContain("grid grid-cols-2");
     expect(setupPage).toContain("grid-cols-3");
-    expect(hospitalPage).toContain("pony-soft-card");
     expect(hospitalPage).toContain(
       "入院流程、医院提供物品、陪产和缴费信息提前确认",
     );
@@ -322,10 +307,8 @@ describe("cute maternity app visual direction", () => {
     expect(hospitalPage).toContain("趁早确认，入院更从容");
     expect(hospitalPage).not.toContain("dadkit-hospital-clipboard.png");
     expect(hospitalPage).toContain("HospitalQuickGrid");
-    expect(hospitalPage).toContain("CuteIllustration");
-    expect(hospitalPage).toContain('variant="hospitalRoute"');
     expect(hospitalPage).not.toContain("TabsTrigger");
-    expect(hospitalQuestionCard).toContain("app-icon-tile");
+    expect(hospitalQuestionCard).toContain("icon-tile");
     expect(hospitalQuestionCard).toContain("ClipboardList");
     expect(hospitalQuestionCard).toContain("Hospital");
   });
@@ -345,7 +328,7 @@ describe("cute maternity app visual direction", () => {
     expect(timelineDashboard).toContain("formatDueDateLabel");
     expect(timelineDashboard).toContain("mobile-shell grid gap-3 overflow-hidden");
     expect(timelineDashboard).toContain("formatBabyZodiacLine");
-    expect(timelineDashboard).toContain("getBabyMascot");
+    expect(timelineDashboard).not.toContain("getBabyMascot");
     expect(timelineDashboard).toContain("打开临出门检查");
     expect(timelineDashboard).toContain("阶段安排");
     expect(timelineDashboard).toContain("查看其他阶段");
@@ -359,10 +342,8 @@ describe("cute maternity app visual direction", () => {
     expect(timelinePage).not.toContain("lg:max-w-none");
     expect(timelinePage).not.toContain("TIMELINE_MILESTONES");
     expect(timelineDashboard).not.toContain("TimelineMilestoneRow");
-    expect(timelineDashboard).toContain("CuteIllustration");
-    expect(timelineDashboard).toContain('variant="timelineCalendar"');
     expect(settingsPage).toContain("formatBabyZodiacLine");
-    expect(settingsPage).toContain("getBabyMascot");
+    expect(settingsPage).not.toContain("getBabyMascot");
     expect(settingsPage).not.toContain("dadkit-dad-avatar.png");
     expect(settingsPage).toContain("备份与恢复");
     expect(settingsPage).toContain("应用信息");
@@ -375,8 +356,11 @@ describe("cute maternity app visual direction", () => {
   });
 
   it("keeps controls soft without reintroducing embedded page scrollers", () => {
-    expect(button).toContain("rounded-full");
-    expect(card).toContain("bg-card/95");
+    expect(button).toContain("rounded-lg");
+    expect(button).not.toContain("linear-gradient");
+    expect(card).toContain("rounded-xl");
+    expect(card).toContain("border-border");
+    expect(card).toContain("bg-card");
     expect(checklistPage).not.toContain("sticky top-0");
     expect(checklistPage).not.toContain("overflow-x-auto");
     expect(checklistPage).not.toContain("min-w-max");
@@ -396,11 +380,11 @@ describe("cute maternity app visual direction", () => {
     expect(checklistCategoryCard).not.toContain(
       "block truncate text-base font-bold tracking-normal",
     );
-    expect(homePage).toContain("break-words text-sm font-bold leading-5");
+    expect(homePage).toContain("break-words text-sm font-semibold leading-5");
     expect(goPage).toContain(
-      "min-w-0 break-words text-base font-bold leading-5 tracking-normal",
+      "min-w-0 break-words text-sm font-semibold leading-5 tracking-normal",
     );
-    expect(hospitalPage).toContain("break-words text-base font-black");
+    expect(hospitalPage).toContain("break-words text-sm font-semibold");
     expect(settingsPage).toContain(
       "block break-words text-xs leading-4 text-muted-foreground",
     );
@@ -408,7 +392,7 @@ describe("cute maternity app visual direction", () => {
       "break-words text-xs leading-4 text-muted-foreground",
     );
     expect(checklistCategoryCard).toContain(
-      "block break-words text-base font-bold leading-5 tracking-normal",
+      "block break-words text-sm font-semibold leading-5",
     );
   });
 });

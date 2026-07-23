@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
 import {
@@ -127,29 +126,29 @@ function HomePlanReadyPanel({ summary }: { summary: PreparationSummary }) {
   const shareLink = { href: "/share", label: "导出与协作" };
 
   return (
-    <section className="pony-soft-card p-3">
+    <section className="card-surface p-3">
       <div className="mb-3 flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-mint text-primary">
+        <span className="icon-tile">
           <CheckCircle2 className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-base font-black tracking-normal">方案已生成</h2>
-          <p className="mt-1 text-xs font-semibold leading-5 text-muted-foreground">
+          <h2 className="text-sm font-semibold">方案已生成</h2>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
             四件事按状态推进，今天先做最影响入院准备的事。
           </p>
         </div>
         <Link
-          className="shrink-0 rounded-full bg-card px-3 py-1.5 text-xs font-black text-primary shadow-sm"
+          className="shrink-0 rounded-lg bg-secondary px-3 py-1.5 text-xs font-semibold text-primary"
           href={shareLink.href}
         >
           {shareLink.label}
         </Link>
       </div>
-      <div className="mb-3 rounded-lg border border-white/80 bg-background/65 px-3 py-2 shadow-sm">
-        <p className="text-xs font-black text-primary">
+      <div className="mb-3 rounded-lg border border-border bg-muted px-3 py-2">
+        <p className="text-xs font-semibold text-primary">
           {summary.readiness.label} {summary.readiness.percent}%
         </p>
-        <p className="mt-0.5 break-words text-xs font-semibold leading-4 text-muted-foreground">
+        <p className="mt-0.5 break-words text-xs leading-4 text-muted-foreground">
           下一步：{summary.nextAction.label}
         </p>
       </div>
@@ -171,21 +170,21 @@ function HomePlanLink({
 
   return (
     <Link
-      className="grid min-h-[5.4rem] content-start gap-1.5 rounded-lg border border-white/80 bg-background/60 p-2.5 shadow-sm transition-colors active:bg-secondary"
+      className="grid min-h-[5.4rem] content-start gap-1.5 rounded-lg border border-border bg-background p-2.5 transition-colors active:bg-secondary"
       href={module.href}
     >
       <span className="flex items-center justify-between gap-2">
         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
           <Icon className="size-4" />
         </span>
-        <span className="text-xs font-black text-primary">
+        <span className="text-xs font-semibold text-primary">
           {module.percent}%
         </span>
       </span>
-      <span className="block break-words text-sm font-black leading-5">
+      <span className="block break-words text-sm font-semibold leading-5">
         {module.title}
       </span>
-      <span className="block break-words text-[0.68rem] font-semibold leading-4 text-muted-foreground">
+      <span className="block break-words text-xs leading-4 text-muted-foreground">
         {module.sourceLabel}
       </span>
     </Link>
@@ -215,18 +214,18 @@ function HomeLaborModePanel({
 }) {
   return (
     <Link
-      className="pony-soft-card flex min-h-[5.25rem] items-center gap-3 p-3 transition-colors active:bg-secondary"
+      className="card-surface flex min-h-[5.25rem] items-center gap-3 p-3 transition-colors active:bg-secondary"
       href="/go"
     >
-      <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-mint text-primary">
+      <span className="icon-tile size-11">
         <Hospital className="size-5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-black text-primary">临出门检查</span>
-        <span className="mt-1 block break-words text-base font-black leading-5">
+        <span className="block text-xs font-semibold text-primary">临出门检查</span>
+        <span className="mt-1 block break-words text-sm font-semibold leading-5">
           电话 / 路线 / 必带物品确认
         </span>
-        <span className="mt-1 block break-words text-xs font-semibold leading-4 text-muted-foreground">
+        <span className="mt-1 block break-words text-xs leading-4 text-muted-foreground">
           {hasAdmissionInfo ? "联系信息已填写" : "补充电话与路线"}
         </span>
       </span>
@@ -247,65 +246,30 @@ function HomeHeroCard({
   const countdownNumber = countdownLabel.match(/\d+/)?.[0];
   const dueDateLabel = formatHomeDueDate(profile?.dueDate);
   const babyLine = formatBabyZodiacLine(profile);
-  const journalStickerAlt = "Maternity preparation journal sticker";
 
   return (
-    <section className="journal-cover-card min-h-[12.75rem]">
-      <Image
-        alt=""
-        aria-hidden
-        className="journal-cover-photo"
-        fill
-        unoptimized
-        priority
-        sizes="(max-width: 768px) 100vw, 390px"
-        src="/illustrations/dadkit-real-home-prep-photo.webp"
-      />
-      <span className="pointer-events-none absolute right-6 top-5 z-20 text-2xl text-amber">
-        ✿
-      </span>
-      <span className="pointer-events-none absolute right-28 top-9 z-20 text-xl text-amber-soft">
-        ✦
-      </span>
-      <span className="pointer-events-none absolute right-[8.5rem] bottom-8 z-20 text-lg text-blush">
-        ❤
-      </span>
-
-      <div className="relative z-20 max-w-[62%]">
-        <p className="journal-cover-kicker">待产准备小本本</p>
-        <p className="text-sm font-black text-primary">
-          预产期倒计时
-        </p>
-        <h1 className="mt-2 flex items-end gap-1 text-[3.15rem] font-black leading-none tracking-normal">
-          {countdownNumber ? (
-            <>
-              <span>{countdownNumber}</span>
-              <span className="mb-1 text-lg font-bold">天</span>
-            </>
-          ) : (
-            <span className="text-3xl">{countdownLabel}</span>
-          )}
-        </h1>
-        <p className="mt-3 text-sm font-bold text-muted-foreground">
-          {dueDateLabel}
-        </p>
-        <p className="mt-1 text-xs font-bold text-muted-foreground">
-          {babyLine}
-        </p>
-        <p className="mt-1 text-xs font-bold text-muted-foreground">
-          {pregnancyProgress.label}
-        </p>
+    <section className="card-surface p-4">
+      <p className="section-kicker">待产准备小本本</p>
+      <p className="mt-1 text-sm font-semibold text-primary">预产期倒计时</p>
+      <h1 className="mt-2 flex items-end gap-1 text-5xl font-semibold leading-none tracking-normal">
+        {countdownNumber ? (
+          <>
+            <span>{countdownNumber}</span>
+            <span className="mb-1 text-lg font-semibold">天</span>
+          </>
+        ) : (
+          <span className="text-2xl">{countdownLabel}</span>
+        )}
+      </h1>
+      <p className="mt-3 text-sm text-muted-foreground">{dueDateLabel}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{babyLine}</p>
+      <div className="mt-4 grid gap-1.5">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{pregnancyProgress.label}</span>
+          <span>{pregnancyProgress.percent}%</span>
+        </div>
+        <Progress value={pregnancyProgress.percent} />
       </div>
-
-      <Image
-        alt={journalStickerAlt}
-        className="pointer-events-none absolute -right-2 bottom-[-0.55rem] z-20 h-[6.6rem] w-[6.6rem] object-contain opacity-95 drop-shadow-sm"
-        height={1254}
-        priority
-        sizes="132px"
-        src="/illustrations/dadkit-home-journal-sticker-v2.png"
-        width={1254}
-      />
     </section>
   );
 }
@@ -356,9 +320,9 @@ function TodayFocusPanel({
   return (
     <section className="grid gap-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-black tracking-normal">今日重点</h2>
+        <h2 className="text-sm font-semibold">今日重点</h2>
         <Link
-          className="inline-flex items-center gap-1 text-xs font-bold text-primary"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-primary"
           href={profileReady ? "/timeline" : "/setup"}
         >
           准备节奏
@@ -367,7 +331,7 @@ function TodayFocusPanel({
       </div>
       {primaryAction ? <PrimaryActionCard action={primaryAction} /> : null}
       {secondaryActions.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-white/90 bg-card/95 shadow-soft">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           {secondaryActions.map((action) => (
             <HomeActionRow action={action} key={`${action.href}-${action.title}`} />
           ))}
@@ -392,17 +356,17 @@ function PrimaryActionCard({
 
   return (
     <Link
-      className="pony-soft-card flex min-h-[6.4rem] items-center gap-3 p-4 transition-colors active:bg-secondary"
+      className="card-surface flex min-h-[6.4rem] items-center gap-3 p-4 transition-colors active:bg-secondary"
       href={action.href}
     >
-      <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-secondary text-primary">
+      <span className="icon-tile size-11">
         <Icon className="size-5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-xs font-black text-primary">
+        <span className="block text-xs font-semibold text-primary">
           {action.subtitle}
         </span>
-        <span className="mt-1 block break-words text-lg font-black leading-6">
+        <span className="mt-1 block break-words text-sm font-semibold leading-6">
           {action.title}
         </span>
       </span>
@@ -423,28 +387,20 @@ function HomeActionRow({
   };
 }) {
   const Icon = action.icon;
-  const toneClass =
-    action.tone === "coral"
-      ? "bg-secondary text-primary"
-      : action.tone === "blue"
-        ? "bg-lavender text-lavender-foreground"
-        : "bg-mint text-primary";
 
   return (
     <Link
-      className="flex min-h-[3.85rem] items-center gap-3 border-b border-muted/60 bg-background/55 px-3 py-2.5 transition-colors last:border-b-0 active:bg-secondary"
+      className="flex min-h-[3.85rem] items-center gap-3 border-b border-border px-3 py-2.5 transition-colors last:border-b-0 active:bg-secondary"
       href={action.href}
     >
-      <span
-        className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${toneClass}`}
-      >
+      <span className="icon-tile">
         <Icon className="size-4" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block break-words text-sm font-bold leading-5">
+        <span className="block break-words text-sm font-semibold leading-5">
           {action.title}
         </span>
-        <span className="mt-0.5 block text-xs font-semibold text-primary">
+        <span className="mt-0.5 block text-xs text-primary">
           {action.subtitle}
         </span>
       </span>
@@ -455,10 +411,10 @@ function HomeActionRow({
 
 function ReadinessMetricsPanel({ summary }: { summary: PreparationSummary }) {
   return (
-    <section className="pony-due-card p-3">
+    <section className="card-surface p-3">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-black tracking-normal">入院准备</h2>
-        <span className="text-xs font-bold text-muted-foreground">
+        <h2 className="text-sm font-semibold">入院准备</h2>
+        <span className="text-xs text-muted-foreground">
           {summary.readiness.percent}%
         </span>
       </div>
@@ -467,10 +423,10 @@ function ReadinessMetricsPanel({ summary }: { summary: PreparationSummary }) {
           <ReadinessMetricRow key={metric.id} metric={metric} />
         ))}
         <Link
-          className="rounded-lg border border-white/80 bg-background/65 p-3 text-xs font-semibold leading-5 text-muted-foreground shadow-sm transition-colors active:bg-secondary"
+          className="rounded-lg border border-border bg-background p-3 text-xs leading-5 text-muted-foreground transition-colors active:bg-secondary"
           href="/contractions"
         >
-          <span className="block font-black text-primary">
+          <span className="block font-semibold text-primary">
             {summary.contractionStatus.label}
           </span>
           <span className="mt-0.5 block break-words">
@@ -485,23 +441,23 @@ function ReadinessMetricsPanel({ summary }: { summary: PreparationSummary }) {
 function ReadinessMetricRow({ metric }: { metric: PreparationModule }) {
   return (
     <Link
-      className="grid gap-2 rounded-lg border border-white/80 bg-background/65 p-3 shadow-sm transition-colors active:bg-secondary"
+      className="grid gap-2 rounded-lg border border-border bg-background p-3 transition-colors active:bg-secondary"
       href={metric.href}
     >
       <span className="flex items-start justify-between gap-3">
         <span className="min-w-0">
-          <span className="block break-words text-sm font-black leading-5">
+          <span className="block break-words text-sm font-semibold leading-5">
             {metric.title}
           </span>
-          <span className="mt-0.5 block break-words text-xs font-semibold leading-4 text-muted-foreground">
+          <span className="mt-0.5 block break-words text-xs leading-4 text-muted-foreground">
             {metric.caption}
           </span>
         </span>
-        <span className="shrink-0 text-sm font-black text-primary">
+        <span className="shrink-0 text-sm font-semibold text-primary">
           {metric.completed}/{metric.total}
         </span>
       </span>
-      <Progress className="h-2 bg-primary/12" value={metric.percent} />
+      <Progress value={metric.percent} />
     </Link>
   );
 }
@@ -532,8 +488,8 @@ const homeTools = [
 
 function HomeToolsPanel() {
   return (
-    <section className="pony-soft-card p-3">
-      <h2 className="mb-2 text-sm font-black tracking-normal">快捷操作</h2>
+    <section className="card-surface p-3">
+      <h2 className="mb-2 text-sm font-semibold">快捷操作</h2>
       <div className="grid grid-cols-3 gap-2">
         {homeTools.map((tool) => (
           <HomeToolLink key={tool.href} tool={tool} />
@@ -555,25 +511,17 @@ function HomeToolLink({
   };
 }) {
   const Icon = tool.icon;
-  const toneClass =
-    tool.tone === "coral"
-      ? "bg-secondary text-primary"
-      : tool.tone === "blue"
-        ? "bg-lavender text-lavender-foreground"
-        : "bg-mint text-primary";
 
   return (
     <Link
-      className="grid min-h-[5.7rem] content-start gap-1 rounded-lg border border-white/80 bg-background/60 px-2.5 py-3 text-center shadow-sm transition-colors active:bg-secondary"
+      className="grid min-h-[5.7rem] content-start gap-1 rounded-lg border border-border bg-background px-2.5 py-3 text-center transition-colors active:bg-secondary"
       href={tool.href}
     >
-      <span
-        className={`mx-auto flex size-9 items-center justify-center rounded-full ${toneClass}`}
-      >
+      <span className="icon-tile size-9 mx-auto">
         <Icon className="size-4" />
       </span>
-      <span className="mt-1 text-xs font-black leading-4">{tool.title}</span>
-      <span className="text-[0.68rem] font-semibold leading-4 text-muted-foreground">
+      <span className="mt-1 text-xs font-semibold leading-4">{tool.title}</span>
+      <span className="text-xs leading-4 text-muted-foreground">
         {tool.subtitle}
       </span>
     </Link>

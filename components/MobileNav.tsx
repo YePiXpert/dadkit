@@ -30,7 +30,7 @@ export function MobileNav() {
   }
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/80 bg-card/95 pb-[max(env(safe-area-inset-bottom),0.55rem)] pt-1.5 shadow-soft backdrop-blur sm:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 pb-[max(env(safe-area-inset-bottom),0.55rem)] pt-1.5 backdrop-blur sm:hidden">
       <div className="mobile-shell grid grid-cols-5 gap-1 px-2">
         {navItems.map((item) => {
           const active =
@@ -45,9 +45,8 @@ export function MobileNav() {
           return (
             <Link
               className={cn(
-                "relative flex h-[3.25rem] min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-semibold text-muted-foreground transition-colors active:bg-secondary",
-                active &&
-                  "text-primary after:absolute after:-top-1.5 after:h-1 after:w-6 after:rounded-full after:bg-primary",
+                "flex h-[3.25rem] min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-medium text-muted-foreground transition-colors hover:bg-secondary/70",
+                active && "bg-secondary font-semibold text-primary",
               )}
               href={item.href}
               key={item.href}

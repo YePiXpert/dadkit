@@ -14,7 +14,6 @@ import { AddItemDialog } from "@/components/AddItemDialog";
 import { ChecklistCategoryCard } from "@/components/ChecklistCategoryCard";
 import { ChecklistGroupTabs } from "@/components/ChecklistGroupTabs";
 import { ChecklistModeNotice } from "@/components/ChecklistModeNotice";
-import { CuteIllustration } from "@/components/CuteIllustration";
 import { DisclaimerBox } from "@/components/DisclaimerBox";
 import { EmptyState } from "@/components/EmptyState";
 import { ModeToggle } from "@/components/ModeToggle";
@@ -190,29 +189,20 @@ export default function ChecklistPage() {
   return (
     <div className="page-shell">
       <section className="mobile-shell grid gap-3 lg:max-w-none">
-        <div className="flex items-start justify-between gap-3 px-1">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-black leading-tight tracking-normal">
-              清单
-            </h1>
-            <p className="mt-1 text-sm font-medium leading-6 text-muted-foreground">
-              为{getBabySexLabel(profile)}的待产包逐项打勾
-            </p>
-          </div>
-          <CuteIllustration
-            className="size-16 shrink-0 overflow-visible rounded-none border-0 bg-transparent shadow-none"
-            imageClassName="object-contain"
-            priority
-            sizes="64px"
-            variant="checklistBag"
-          />
+        <div className="px-1">
+          <h1 className="text-xl font-semibold leading-tight sm:text-2xl">
+            清单
+          </h1>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            为{getBabySexLabel(profile)}的待产包逐项打勾
+          </p>
         </div>
 
         <ChecklistProgressCard packing={packing} />
 
         <div className="grid gap-2">
           <div className="flex items-center justify-between px-1">
-            <p className="text-sm font-bold">打包分组</p>
+            <p className="text-sm font-semibold">打包分组</p>
             <p className="text-xs font-semibold text-muted-foreground">
               共 {CHECKLIST_VISUAL_GROUPS.length} 类
             </p>
@@ -226,12 +216,12 @@ export default function ChecklistPage() {
       </section>
 
       <section className="mobile-shell grid gap-3 lg:max-w-none">
-        <details className="rounded-lg border border-white/90 bg-card/90 p-3 shadow-sm">
+        <details className="card-surface p-3">
           <summary className="cursor-pointer text-sm font-semibold text-primary">
             清单操作
           </summary>
           <div className="mt-3 grid gap-3">
-            <p className="macaron-note">
+            <p className="text-xs text-muted-foreground">
               筛选和批量处理放在这里，医院规则确认统一放在医院页。
             </p>
             <ModeToggle mode={checklistMode} onChange={setChecklistMode} />
@@ -320,7 +310,7 @@ export default function ChecklistPage() {
               ) : null}
             </div>
             {copyMessage ? (
-              <p className="macaron-note">{copyMessage}</p>
+              <p className="text-xs text-muted-foreground">{copyMessage}</p>
             ) : null}
           </div>
         </details>
@@ -366,22 +356,22 @@ function ChecklistProgressCard({
   packing: { completed: number; percent: number; total: number };
 }) {
   return (
-    <section className="pony-soft-card p-4">
+    <section className="card-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-bold text-muted-foreground">待产包进度</p>
+          <p className="section-kicker">待产包进度</p>
           <div className="mt-1 flex items-end gap-2">
-            <span className="text-3xl font-black leading-none text-primary">
+            <span className="text-3xl font-semibold leading-none text-primary">
               {packing.percent}%
             </span>
           </div>
         </div>
-        <span className="text-sm font-black text-primary">
+        <span className="text-sm font-semibold text-primary">
           {packing.completed}/{packing.total}
         </span>
       </div>
-      <Progress className="mt-3 h-2.5 bg-primary/12" value={packing.percent} />
-      <p className="mt-2 text-xs font-semibold text-muted-foreground">
+      <Progress className="mt-3 h-2" value={packing.percent} />
+      <p className="mt-2 text-xs text-muted-foreground">
         已完成 {packing.completed} 项，共 {packing.total} 项
       </p>
     </section>
@@ -421,18 +411,18 @@ function ChecklistGroupSummaryCard({
 
   return (
     <button
-      className="rounded-lg border border-white/90 bg-card/95 p-4 text-left shadow-sm transition-colors hover:border-primary/40"
+      className="card-surface p-4 text-left transition-colors hover:border-primary/40"
       type="button"
       onClick={onOpen}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-base font-semibold tracking-normal">{group.label}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-sm font-semibold">{group.label}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
             已完成 {completion.completed} 项 · 未完成 {remaining} 项
           </p>
         </div>
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-peach text-peach-foreground">
+        <span className="icon-tile size-9">
           <ArrowRight className="size-4" />
         </span>
       </div>

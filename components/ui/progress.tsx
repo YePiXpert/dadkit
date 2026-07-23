@@ -11,7 +11,7 @@ export function Progress({ className, value, ...props }: ProgressProps) {
 
   return (
     <div
-      className={cn("h-2.5 w-full overflow-hidden rounded-full bg-secondary/80", className)}
+      className={cn("h-2 w-full overflow-hidden rounded-full bg-secondary", className)}
       role="progressbar"
       aria-valuenow={safeValue}
       aria-valuemin={0}
@@ -19,7 +19,7 @@ export function Progress({ className, value, ...props }: ProgressProps) {
       {...props}
     >
       <div
-        className="h-full rounded-full bg-[linear-gradient(90deg,hsl(var(--primary)),hsl(348_100%_76%))] transition-all"
+        className="h-full rounded-full bg-primary transition-all"
         style={{ width: `${safeValue}%` }}
       />
     </div>

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   CalendarClock,
   CheckCircle2,
@@ -16,6 +15,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ExportTextArea } from "@/components/ExportTextArea";
 import { PageIntro } from "@/components/PageIntro";
 import { SharePosterCanvas } from "@/components/SharePosterCanvas";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,10 +27,7 @@ import {
   generateShareText,
   generateTimelineShareText,
 } from "@/lib/export";
-import {
-  formatBabyZodiacLine,
-  getBabyMascot,
-} from "@/lib/baby-profile";
+import { formatBabyZodiacLine } from "@/lib/baby-profile";
 import {
   generateBirthPlanShareText,
   generateContractionsShareText,
@@ -51,7 +48,6 @@ type SharePoster = {
   detail: string;
   icon: LucideIcon;
   metric: string;
-  tone: "mint" | "coral" | "lavender" | "amber";
   title: string;
 };
 
@@ -81,7 +77,6 @@ export default function SharePage() {
   }
 
   const babyLine = formatBabyZodiacLine(profile);
-  const mascot = getBabyMascot(profile);
   const preparationSummary = buildPreparationSummary({
     birthPlan,
     checklist,
@@ -129,26 +124,23 @@ export default function SharePage() {
 
       <PageIntro
         eyebrow="导出"
-        illustrationVariant="shareSummary"
         title="导出与协作"
         description="汇总关键准备状态，可复制或保存备份。"
       />
 
-      <Card className="mobile-shell app-hero-card lg:max-w-none">
+      <Card className="mobile-shell lg:max-w-none">
         <CardContent className="flex items-center justify-between gap-4 p-5">
           <div className="min-w-0">
-            <p className="break-words text-2xl font-semibold tracking-normal">
-              准备摘要
-            </p>
-            <p className="mt-2 text-sm leading-6 text-primary-foreground/75">
+            <p className="break-words text-base font-semibold">准备摘要</p>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {babyLine}
             </p>
-            <p className="text-sm leading-6 text-primary-foreground/75">
+            <p className="text-sm leading-6 text-muted-foreground">
               医院确认 · 核心待产包 · 临出门沟通 · 产后提醒
             </p>
           </div>
           <Button
-            className="bg-card text-primary hover:bg-card/90"
+            variant="outline"
             onClick={() => navigator.clipboard.writeText(dadText)}
           >
             <Copy className="size-4" />
@@ -157,9 +149,9 @@ export default function SharePage() {
         </CardContent>
       </Card>
 
-      <SharePosterSection cards={posterCards} mascot={mascot} />
+      <SharePosterSection cards={posterCards} />
 
-      <Card className="mobile-shell macaron-panel lg:max-w-none">
+      <Card className="mobile-shell lg:max-w-none">
         <CardHeader>
           <CardTitle>详细文本</CardTitle>
         </CardHeader>
@@ -184,7 +176,7 @@ export default function SharePage() {
               <ExportTextArea value={fullText} />
             </TabsContent>
             <TabsContent value="dad">
-              <div className="macaron-note mb-3">
+              <div className="mb-3 rounded-lg bg-muted px-3 py-2 text-xs leading-5 text-muted-foreground">
                 只保留要拿、要问、要确认的事项，便于家人分工确认。
               </div>
               <ExportTextArea value={dadText} />
@@ -199,7 +191,7 @@ export default function SharePage() {
               <ExportTextArea value={birthPlanText} />
             </TabsContent>
             <TabsContent value="postpartum">
-              <div className="macaron-note mb-3">
+              <div className="mb-3 rounded-lg bg-muted px-3 py-2 text-xs leading-5 text-muted-foreground">
                 只整理办理事项和备注口径，最终以当地窗口、医院和官方渠道为准。
               </div>
               <ExportTextArea value={postpartumText} />
@@ -226,87 +218,48 @@ export default function SharePage() {
   );
 }
 
-function SharePosterSection({
-  cards,
-  mascot,
-}: {
-  cards: SharePoster[];
-  mascot: { alt: string; src: string };
-}) {
+function SharePosterSection({ cards }: { cards: SharePoster[] }) {
   return (
     <section className="mobile-shell grid gap-3 lg:max-w-none">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-black tracking-normal">摘要卡片</h2>
-        <span className="rounded-full bg-mint px-3 py-1 text-xs font-bold text-primary">
-          {cards.length} 项
-        </span>
+        <h2 className="text-base font-semibold tracking-normal">摘要卡片</h2>
+        <Badge variant="secondary">{cards.length} 项</Badge>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        {cards.map((card, index) => (
-          <SharePosterCard
-            card={card}
-            key={card.title}
-            mascot={index === 0 ? mascot : undefined}
-          />
+        {cards.map((card) => (
+          <SharePosterCard card={card} key={card.title} />
         ))}
       </div>
     </section>
   );
 }
 
-function SharePosterCard({
-  card,
-  mascot,
-}: {
-  card: SharePoster;
-  mascot?: { alt: string; src: string };
-}) {
+function SharePosterCard({ card }: { card: SharePoster }) {
   const Icon = card.icon;
-  const toneClass = {
-    amber: "border-amber/35 bg-amber-soft/70 text-amber-foreground",
-    coral: "border-coral/25 bg-secondary/75 text-primary",
-    lavender: "border-lavender/40 bg-lavender/70 text-lavender-foreground",
-    mint: "border-primary/20 bg-mint/70 text-primary",
-  }[card.tone];
 
   return (
-    <article className="relative min-h-[10.5rem] overflow-hidden rounded-lg border border-white/90 bg-card/95 p-4 shadow-soft">
-      {mascot ? (
-        <Image
-          alt={mascot.alt}
-          className="pointer-events-none absolute -right-6 bottom-[-1.25rem] h-28 w-28 object-contain opacity-95"
-          height={1254}
-          priority
-          sizes="112px"
-          src={mascot.src}
-          width={1254}
-        />
-      ) : null}
-      <div className="relative z-10 grid min-h-[8.5rem] content-between gap-4 pr-16">
-        <div>
-          <span
-            className={`inline-flex size-10 items-center justify-center rounded-full border ${toneClass}`}
-          >
-            <Icon className="size-5" />
-          </span>
-          <h3 className="mt-3 break-words text-lg font-black leading-6 tracking-normal">
-            {card.title}
-          </h3>
-          <p className="mt-1 break-words text-xs font-semibold leading-5 text-muted-foreground">
-            {card.detail}
-          </p>
-        </div>
-        <div className="flex items-end justify-between gap-3">
-          <p className="text-2xl font-black text-primary">{card.metric}</p>
-          <Button
-            className="h-9 px-3 text-xs"
-            variant="outline"
-            onClick={() => navigator.clipboard.writeText(card.caption)}
-          >
-            <Copy className="size-3.5" />
-            复制摘要
-          </Button>
-        </div>
+    <article className="card-surface flex min-h-[10.5rem] flex-col justify-between gap-4 p-4">
+      <div>
+        <span className="icon-tile">
+          <Icon className="size-5" />
+        </span>
+        <h3 className="mt-3 break-words text-sm font-semibold leading-6 tracking-normal">
+          {card.title}
+        </h3>
+        <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">
+          {card.detail}
+        </p>
+      </div>
+      <div className="flex items-end justify-between gap-3">
+        <p className="text-xl font-semibold text-primary">{card.metric}</p>
+        <Button
+          className="h-9 px-3 text-xs"
+          variant="outline"
+          onClick={() => navigator.clipboard.writeText(card.caption)}
+        >
+          <Copy className="size-3.5" />
+          复制摘要
+        </Button>
       </div>
     </article>
   );
@@ -326,7 +279,6 @@ function buildSharePosters(
       icon: Sparkles,
       metric: formatDaysMetric(daysLeft),
       title: "预产期倒计时",
-      tone: "coral",
     },
     {
       caption: `${summary.shareSummary.title} ${summary.shareSummary.metric}。${summary.boundary}`,
@@ -334,7 +286,6 @@ function buildSharePosters(
       icon: Sparkles,
       metric: summary.shareSummary.metric,
       title: summary.shareSummary.title,
-      tone: "mint",
     },
     ...summary.modules.map(posterFromModule),
     {
@@ -343,7 +294,6 @@ function buildSharePosters(
       icon: CalendarClock,
       metric: `${summary.contractionStatus.recentCount} 次`,
       title: "宫缩记录状态",
-      tone: "lavender",
     },
   ];
 }
@@ -355,7 +305,6 @@ function posterFromModule(module: PreparationModule): SharePoster {
     icon: shareModuleIcon(module.id),
     metric: `${module.percent}%`,
     title: module.title,
-    tone: shareModuleTone(module.id),
   };
 }
 
@@ -373,22 +322,6 @@ function shareModuleIcon(id: PreparationModuleId): LucideIcon {
   }
 
   return CheckCircle2;
-}
-
-function shareModuleTone(id: PreparationModuleId): SharePoster["tone"] {
-  if (id === "hospital") {
-    return "lavender";
-  }
-
-  if (id === "go") {
-    return "amber";
-  }
-
-  if (id === "postpartum") {
-    return "coral";
-  }
-
-  return "mint";
 }
 
 function formatDaysMetric(daysLeft?: number) {

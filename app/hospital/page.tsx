@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 
 import { CustomHospitalForm } from "@/components/CustomHospitalForm";
-import { CuteIllustration } from "@/components/CuteIllustration";
 import { DisclaimerBox } from "@/components/DisclaimerBox";
 import { EmptyState } from "@/components/EmptyState";
 import {
@@ -19,6 +18,7 @@ import {
   type HospitalQuestionCardInput,
 } from "@/components/HospitalQuestionCard";
 import { HospitalSelector } from "@/components/HospitalSelector";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -181,14 +181,12 @@ export default function HospitalPage() {
   const quickConfirmRows: HospitalQuickRowInput[] = groupIds.map((groupId, index) => {
     const stats = groupConfirmationStats(groupId, answersByItemId);
     const icons = [ClipboardList, Hospital, CheckCircle2] as const;
-    const tones = ["mint", "lavender", "coral", "amber", "peach"] as const;
 
     return {
       caption: `${stats.completed}/${stats.total} 项已确认`,
       done: stats.total > 0 && stats.completed === stats.total,
       groupId,
       icon: icons[index % icons.length],
-      tone: tones[index % tones.length],
       title: HOSPITAL_CONFIRMATION_GROUP_LABELS[groupId],
     };
   });
@@ -248,51 +246,45 @@ export default function HospitalPage() {
 
   return (
     <div className="page-shell">
-      <section className="mobile-shell flex items-start justify-between gap-3 lg:max-w-none">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-black tracking-normal">医院规则</h1>
-          <p className="text-sm font-medium leading-6 text-muted-foreground">
-            入院流程、医院提供物品、陪产和缴费信息提前确认
-          </p>
-        </div>
-        <CuteIllustration
-          className="size-16 shrink-0 overflow-visible rounded-none border-0 bg-transparent shadow-none"
-          imageClassName="object-contain"
-          priority
-          sizes="64px"
-          variant="hospitalRoute"
-        />
+      <section className="mobile-shell lg:max-w-none">
+        <h1 className="text-xl font-semibold sm:text-2xl">医院规则</h1>
+        <p className="text-sm leading-6 text-muted-foreground">
+          入院流程、医院提供物品、陪产和缴费信息提前确认
+        </p>
       </section>
 
-      <Card className="mobile-shell pony-soft-card overflow-hidden lg:max-w-none">
+      <Card className="mobile-shell overflow-hidden lg:max-w-none">
         <CardContent className="p-3">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
-              <Hospital className="size-6" />
+            <span className="icon-tile size-11">
+              <Hospital className="size-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="break-words text-base font-black">
+              <p className="break-words text-sm font-semibold">
                 {hospital?.name ?? "暂未确定医院"}
               </p>
               <p className="mt-0.5 text-xs font-semibold text-muted-foreground">
                 趁早确认，入院更从容
               </p>
             </div>
-            <span className="shrink-0 rounded-full bg-mint px-3 py-1 text-xs font-bold text-mint-foreground">
+            <Badge
+              className="shrink-0"
+              variant={hospital ? "success" : "warning"}
+            >
               {hospital ? "已确认" : "待确认"}
-            </span>
+            </Badge>
           </div>
-          <div className="mt-3 grid gap-3 rounded-lg border border-white/90 bg-background/70 p-3">
+          <div className="mt-3 grid gap-3 rounded-lg border border-border bg-background p-3">
             <div>
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-black">
+                <p className="text-sm font-semibold">
                   医院规则 {hospitalProgress.completed}/{hospitalProgress.total}
                 </p>
-                <span className="text-sm font-black text-primary">
+                <span className="text-sm font-semibold text-primary">
                   {hospitalProgress.percent}%
                 </span>
               </div>
-              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-primary/12">
+              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full bg-primary transition-all"
                   style={{ width: `${hospitalProgress.percent}%` }}
@@ -301,14 +293,14 @@ export default function HospitalPage() {
             </div>
             <div>
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-black">
+                <p className="text-sm font-semibold">
                   家人确认 {dadProgress.completed}/{dadProgress.total}
                 </p>
-                <span className="text-sm font-black text-primary">
+                <span className="text-sm font-semibold text-primary">
                   {dadProgress.percent}%
                 </span>
               </div>
-              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-primary/12">
+              <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full bg-primary transition-all"
                   style={{ width: `${dadProgress.percent}%` }}
@@ -317,9 +309,9 @@ export default function HospitalPage() {
             </div>
           </div>
           {primaryPendingQuestion ? (
-            <div className="mt-3 rounded-lg border border-primary/15 bg-secondary/45 p-3">
-              <p className="text-xs font-black text-primary">下一项先确认</p>
-              <p className="mt-1 break-words text-sm font-bold leading-5">
+            <div className="mt-3 rounded-lg border border-border bg-secondary p-3">
+              <p className="text-xs font-semibold text-primary">下一项先确认</p>
+              <p className="mt-1 break-words text-sm font-semibold leading-5">
                 {primaryPendingQuestion.title}
               </p>
             </div>
@@ -359,8 +351,8 @@ export default function HospitalPage() {
         />
       </section>
 
-      <details className="mobile-shell macaron-panel p-4 lg:max-w-none">
-        <summary className="cursor-pointer text-base font-bold">
+      <details className="mobile-shell card-surface p-4 lg:max-w-none">
+        <summary className="cursor-pointer text-sm font-semibold">
           高级设置
         </summary>
         <div className="mt-3">
@@ -430,17 +422,17 @@ function QuestionSection({
     : [{ groupId: "admission_flow" as const, label: "", items }];
 
   return (
-    <Card className="macaron-panel">
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
+        <CardTitle className="flex items-center gap-2">
           <Icon className="size-5 text-primary" />
           {title}
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-2">
-        <p className="macaron-note">{description}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
         {items.length === 0 ? (
-          <p className="soft-detail text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             暂时没有匹配的待确认事项。
           </p>
         ) : (
@@ -451,7 +443,7 @@ function QuestionSection({
               key={group.groupId}
             >
               {group.label ? (
-                <p className="mt-2 text-xs font-semibold text-muted-foreground">
+                <p className="section-kicker mt-2">
                   {group.label}
                 </p>
               ) : null}
@@ -477,7 +469,6 @@ type HospitalQuickRowInput = {
   groupId: HospitalConfirmationGroupId;
   icon: LucideIcon;
   title: string;
-  tone: "mint" | "lavender" | "coral" | "amber" | "peach";
 };
 
 function HospitalQuickGrid({ items }: { items: HospitalQuickRowInput[] }) {
@@ -492,28 +483,21 @@ function HospitalQuickGrid({ items }: { items: HospitalQuickRowInput[] }) {
 
 function HospitalQuickGridItem({ item }: { item: HospitalQuickRowInput }) {
   const Icon = item.icon;
-  const toneClass = {
-    amber: "bg-amber-soft text-amber-foreground",
-    coral: "bg-coral-soft text-coral-foreground",
-    lavender: "bg-lavender text-lavender-foreground",
-    mint: "bg-mint text-primary",
-    peach: "bg-peach text-peach-foreground",
-  }[item.tone];
 
   return (
     <a
-      className="grid min-h-[4.5rem] min-w-0 gap-1.5 rounded-lg border border-white/80 bg-card/95 p-2.5 shadow-sm transition-colors active:bg-secondary"
+      className="grid min-h-[4.5rem] min-w-0 gap-1.5 rounded-xl border border-border bg-card p-2.5 shadow-sm transition-colors active:bg-secondary"
       href={`#hospital-confirmation-${item.groupId}`}
     >
       <span className="flex items-start justify-between gap-2">
-        <span className={`app-icon-tile size-8 rounded-md ${toneClass}`}>
+        <span className="icon-tile size-8">
           <Icon className="size-4" />
         </span>
         <span className="shrink-0 text-xs font-semibold text-muted-foreground">
           {item.done ? "已确认" : "待确认"}
         </span>
       </span>
-      <span className="block break-words text-sm font-bold leading-5">
+      <span className="block break-words text-sm font-semibold leading-5">
         {item.title}
       </span>
       <span className="block break-words text-xs leading-4 text-muted-foreground">
@@ -537,8 +521,10 @@ function ManualProvidedPicker({
 
         return (
           <button
-            className={`flex items-center gap-2 rounded-lg border bg-cream/85 px-3 py-2 text-left text-sm font-semibold ${
-              checked ? "border-primary bg-mint text-primary" : "border-white/80"
+            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm font-semibold ${
+              checked
+                ? "border-primary bg-secondary text-primary"
+                : "border-border bg-card"
             }`}
             key={id}
             type="button"
@@ -548,7 +534,7 @@ function ManualProvidedPicker({
               className={`flex size-5 items-center justify-center rounded-md border ${
                 checked
                   ? "border-primary bg-primary text-primary-foreground"
-                  : "border-primary/60"
+                  : "border-input"
               }`}
             >
               {checked ? <CheckCircle2 className="size-3.5" /> : null}
@@ -602,9 +588,9 @@ function AdvancedSettings({
 }) {
   return (
     <div className="grid gap-3">
-      <Card className="macaron-panel">
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
+          <CardTitle className="flex items-center gap-2">
             <Settings className="size-5 text-primary" />
             医院模式
           </CardTitle>
@@ -621,9 +607,9 @@ function AdvancedSettings({
       </Card>
 
       {profileHospitalMode === "custom" ? (
-        <Card className="macaron-panel">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg">自定义医院信息</CardTitle>
+            <CardTitle>自定义医院信息</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
             <CustomHospitalForm
@@ -639,9 +625,9 @@ function AdvancedSettings({
       ) : null}
 
       {profileHospitalMode !== "unknown" ? (
-        <Card className="macaron-panel">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-lg">用户覆盖信息</CardTitle>
+            <CardTitle>用户覆盖信息</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
             <Field label="入院证件要求覆盖">
@@ -674,22 +660,22 @@ function AdvancedSettings({
           </CardContent>
         </Card>
       ) : (
-        <Card className="macaron-panel">
+        <Card>
           <CardContent className="p-4 text-sm leading-6 text-muted-foreground">
             暂未确定医院时，DadKit 会保留医院相关待确认事项。确定医院后，可以在这里选择模板或填写自定义医院。
           </CardContent>
         </Card>
       )}
 
-      <Card className="macaron-panel">
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
+          <CardTitle className="flex items-center gap-2">
             <CheckCircle2 className="size-5 text-primary" />
             手动医院提供标记
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <details className="soft-detail">
+          <details>
             <summary className="cursor-pointer text-sm font-semibold">
               高级：手动标记医院已确认提供的物品
             </summary>

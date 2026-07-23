@@ -14,18 +14,6 @@ type ChecklistGroupTabsProps = {
   >;
 };
 
-const groupTone: Record<ChecklistVisualGroup, string> = {
-  all: "border-primary/20 bg-secondary text-primary",
-  baby_bag: "border-coral/25 bg-secondary text-primary",
-  dad: "border-amber/35 bg-amber-soft text-amber-foreground",
-  documents_folder: "border-mint bg-mint text-primary",
-  go: "border-peach bg-peach text-peach-foreground",
-  going_home: "border-lavender bg-lavender text-lavender-foreground",
-  last_minute: "border-blush bg-blush text-blush-foreground",
-  mom_bag: "border-blush bg-blush text-blush-foreground",
-  shopping: "border-peach bg-peach text-peach-foreground",
-};
-
 export function ChecklistGroupTabs({
   counts,
   value,
@@ -40,9 +28,8 @@ export function ChecklistGroupTabs({
         return (
           <button
             className={cn(
-              "grid min-h-[3.9rem] grid-cols-[2.25rem_1fr] items-center gap-2 rounded-lg border border-white/80 bg-card/90 px-2.5 py-2 text-left text-sm font-semibold leading-5 text-muted-foreground shadow-sm transition-colors active:scale-[0.99]",
-              active &&
-                "border-primary/40 bg-secondary text-primary shadow-soft",
+              "grid min-h-[3.9rem] grid-cols-[2.25rem_1fr] items-center gap-2 rounded-xl border border-border bg-card px-2.5 py-2 text-left text-sm font-medium leading-5 text-muted-foreground transition-colors hover:bg-secondary/60",
+              active && "border-primary/30 bg-secondary text-foreground",
             )}
             key={group.id}
             type="button"
@@ -50,9 +37,8 @@ export function ChecklistGroupTabs({
           >
             <span
               className={cn(
-                "flex size-8 items-center justify-center rounded-lg border shadow-sm",
-                groupTone[group.id],
-                active && "border-primary/35 bg-primary text-primary-foreground",
+                "flex size-8 items-center justify-center rounded-lg bg-secondary text-primary",
+                active && "bg-primary text-primary-foreground",
               )}
             >
               <ChecklistGroupIcon className="size-6" group={group.id} />
@@ -60,7 +46,7 @@ export function ChecklistGroupTabs({
             <span className="min-w-0">
               <span className="block break-words">{group.label}</span>
               {count ? (
-                <span className="mt-0.5 block break-words text-xs font-medium opacity-75">
+                <span className="mt-0.5 block break-words text-xs opacity-75">
                   未完成 {count.remaining} 项
                 </span>
               ) : null}

@@ -38,36 +38,6 @@ const config: Config = {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
-        cream: {
-          DEFAULT: "hsl(var(--cream))",
-          foreground: "hsl(var(--cream-foreground))",
-        },
-        peach: {
-          DEFAULT: "hsl(var(--peach))",
-          foreground: "hsl(var(--peach-foreground))",
-        },
-        mint: {
-          DEFAULT: "hsl(var(--mint))",
-          foreground: "hsl(var(--mint-foreground))",
-        },
-        amber: {
-          DEFAULT: "hsl(var(--amber))",
-          soft: "hsl(var(--amber-soft))",
-          foreground: "hsl(var(--amber-foreground))",
-        },
-        coral: {
-          DEFAULT: "hsl(var(--coral))",
-          soft: "hsl(var(--coral-soft))",
-          foreground: "hsl(var(--coral-foreground))",
-        },
-        blush: {
-          DEFAULT: "hsl(var(--blush))",
-          foreground: "hsl(var(--blush-foreground))",
-        },
-        lavender: {
-          DEFAULT: "hsl(var(--lavender))",
-          foreground: "hsl(var(--lavender-foreground))",
-        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -87,7 +57,7 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        soft: "0 12px 34px rgba(210, 81, 104, 0.13)",
+        sm: "0 1px 2px rgb(0 0 0 / 0.04), 0 4px 16px rgb(0 0 0 / 0.05)",
       },
     },
   },

@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo } from "react";
-import { Check } from "lucide-react";
+import { Check, ClipboardCheck } from "lucide-react";
 
 import { EmptyState } from "@/components/EmptyState";
 import { GoAdmissionInfoCard } from "@/components/GoAdmissionInfoCard";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { buildPreparationSummary } from "@/lib/presentation/preparation-summary";
 import { useDadKitStore } from "@/lib/store";
 import {
@@ -16,47 +16,38 @@ import {
   type TimelineTaskStatus,
 } from "@/lib/timeline";
 import type { ChecklistItem, HospitalAnswer } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 type GoChecklistDisplayItem = {
-  accent: "teal" | "pink";
   taskIds: string[];
   title: string;
 };
 
 const GO_DISPLAY_ITEMS: GoChecklistDisplayItem[] = [
   {
-    accent: "teal",
     taskIds: ["timeline-go-documents"],
     title: "证件包（身份证、医保卡等）",
   },
   {
-    accent: "teal",
     taskIds: ["timeline-go-phone", "timeline-go-charger"],
     title: "手机 + 充电器",
   },
   {
-    accent: "pink",
     taskIds: ["timeline-go-labor-signal-note"],
     title: "临产信号记录（破水/见红/胎动）",
   },
   {
-    accent: "teal",
     taskIds: ["timeline-go-wallet"],
     title: "钱包 / 现金",
   },
   {
-    accent: "teal",
     taskIds: ["timeline-go-medical-card"],
     title: "医保卡 / 就诊卡",
   },
   {
-    accent: "pink",
     taskIds: ["timeline-go-mom-bag", "timeline-go-baby-bag"],
     title: "待产包（妈妈包 + 宝宝包）",
   },
   {
-    accent: "teal",
     taskIds: ["timeline-go-water-cup"],
     title: "水杯 / 吸管杯",
   },
@@ -192,46 +183,37 @@ export default function GoPage() {
 
   return (
     <div className="page-shell">
-      <section className="mobile-shell grid gap-4 bg-card px-4 pb-4 pt-1 lg:max-w-none">
+      <section className="mobile-shell grid gap-4 lg:max-w-none">
         <div className="grid gap-1">
-          <h1 className="text-[1.7rem] font-black leading-tight tracking-normal">
+          <h1 className="text-xl font-semibold tracking-normal sm:text-2xl">
             临出门检查
           </h1>
-          <p className="text-sm font-semibold leading-6 text-muted-foreground">
+          <p className="text-sm leading-6 text-muted-foreground">
             出发前快速确认
           </p>
         </div>
 
-        <div className="relative min-h-[8.25rem] overflow-hidden rounded-lg bg-[linear-gradient(100deg,#ff8385_0%,#ffa1ad_50%,#ffe4e8_100%)] p-4 shadow-sm">
-          <span className="pointer-events-none absolute right-[7.2rem] top-5 text-lg text-amber">
-            ★
-          </span>
-          <span className="pointer-events-none absolute right-[5.8rem] top-9 text-xs text-coral">
-            ❤
-          </span>
-          <span className="pointer-events-none absolute right-8 top-4 text-xs text-blush">
-            ❤
-          </span>
-          <div className="relative z-10 max-w-[58%]">
-            <p className="text-sm font-bold text-white/85">准备就绪度</p>
-            <p className="mt-1 text-4xl font-black leading-none tracking-normal text-white">
-              {progressPercent}%
-            </p>
-            <p className="mt-2 text-sm font-bold text-white/90">
+        <div className="card-surface grid gap-3 p-4">
+          <div className="flex items-center gap-3">
+            <span className="icon-tile">
+              <ClipboardCheck className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="section-kicker">准备就绪度</p>
+              <p className="mt-0.5 text-2xl font-semibold tracking-normal">
+                {progressPercent}%
+              </p>
+            </div>
+          </div>
+          <Progress value={progressPercent} />
+          <div className="grid gap-1">
+            <p className="text-sm font-semibold">
               已完成 {readinessCompleted} / 共 {readinessTotal} 项
             </p>
-            <p className="mt-1 text-xs font-semibold leading-5 text-white/80">
+            <p className="text-xs leading-5 text-muted-foreground">
               含行动卡、路线电话和联系人
             </p>
           </div>
-          <Image
-            alt="临出门检查插图"
-            className="absolute -bottom-5 -right-5 h-40 w-40 object-contain object-bottom"
-            height={1254}
-            priority
-            src="/illustrations/dadkit-horse-girl.png"
-            width={1254}
-          />
         </div>
 
         <GoAdmissionInfoCard
@@ -240,16 +222,16 @@ export default function GoPage() {
           onUpdate={saveBirthPlan}
         />
 
-        <section className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm">
-          <div className="border-b border-border/80 px-4 py-3">
-            <h2 className="text-base font-black tracking-normal">
+        <section className="card-surface overflow-hidden">
+          <div className="border-b border-border px-4 py-3">
+            <h2 className="text-sm font-semibold tracking-normal">
               必带物品
-              <span className="ml-2 text-sm font-semibold text-muted-foreground">
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
                 （部分示例）
               </span>
             </h2>
           </div>
-          <div className="grid divide-y divide-border/70">
+          <div className="grid divide-y divide-border">
             {GO_DISPLAY_ITEMS.map((item) => (
               <GoChecklistRow
                 done={displayItemDone(item)}
@@ -262,7 +244,7 @@ export default function GoPage() {
         </section>
 
         <Button
-          className="h-14 w-full rounded-lg bg-primary text-base font-black shadow-soft"
+          className="h-14 w-full text-base"
           disabled={tasks.length === 0 && remainingCount === 0}
           onClick={markAllDone}
         >
@@ -284,25 +266,24 @@ function GoChecklistRow({
 }) {
   return (
     <button
-      className="grid min-h-[3.35rem] grid-cols-[2rem_1fr_2rem] items-center gap-2 px-4 text-left transition hover:bg-muted/45"
+      className="grid min-h-[3.35rem] grid-cols-[2rem_1fr_2rem] items-center gap-2 px-4 text-left transition-colors hover:bg-secondary/40"
       onClick={onToggle}
       type="button"
     >
       <span
-        className={cn(
-          "flex size-5 items-center justify-center rounded-md border-2",
-          item.accent === "pink"
-            ? "border-coral/65 text-coral-foreground"
-            : "border-primary/60 text-primary",
-        )}
+        className={
+          done
+            ? "flex size-5 items-center justify-center rounded-md border-2 border-primary bg-primary text-primary-foreground"
+            : "flex size-5 items-center justify-center rounded-md border-2 border-primary/60 text-primary"
+        }
       >
         {done ? <Check className="size-3.5 stroke-[3]" /> : null}
       </span>
-      <span className="min-w-0 break-words text-base font-bold leading-5 tracking-normal">
+      <span className="min-w-0 break-words text-sm font-semibold leading-5 tracking-normal">
         {item.title}
       </span>
       <span className="justify-self-end text-primary">
-        <Check className="size-4 stroke-[3]" />
+        {done ? <Check className="size-4 stroke-[3]" /> : null}
       </span>
     </button>
   );

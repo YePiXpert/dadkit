@@ -9,15 +9,15 @@ export function ItemTag({ item }: ItemTagProps) {
   const itemKind = item.itemKind ?? "item";
   const kindTag =
     itemKind === "task" ? (
-      <Badge className="bg-secondary text-primary">任务</Badge>
+      <Badge variant="outline">任务</Badge>
     ) : itemKind === "question" ? (
-      <Badge className="bg-amber-soft text-amber-foreground">问题</Badge>
+      <Badge variant="warning">问题</Badge>
     ) : null;
 
   if (item.status === "hospital_provided") {
     return (
       <>
-        <Badge variant="calm">医院提供</Badge>
+        <Badge variant="success">医院提供</Badge>
         {kindTag}
       </>
     );
@@ -26,7 +26,7 @@ export function ItemTag({ item }: ItemTagProps) {
   if (item.status === "last_minute" || item.bag === "last_minute") {
     return (
       <>
-        <Badge className="bg-coral-soft text-coral-foreground">临出门</Badge>
+        <Badge variant="warning">临出门</Badge>
         {kindTag}
       </>
     );
@@ -35,7 +35,7 @@ export function ItemTag({ item }: ItemTagProps) {
   if (item.packTier === "confirm" || item.itemKind === "question") {
     return (
       <>
-        <Badge className="bg-amber-soft text-amber-foreground">待确认</Badge>
+        <Badge variant="warning">待确认</Badge>
         {kindTag}
       </>
     );
@@ -44,7 +44,7 @@ export function ItemTag({ item }: ItemTagProps) {
   if (item.packTier === "core") {
     return (
       <>
-        <Badge variant="soft">核心</Badge>
+        <Badge variant="secondary">核心</Badge>
         {kindTag}
       </>
     );
@@ -53,7 +53,7 @@ export function ItemTag({ item }: ItemTagProps) {
   if (item.packTier === "hidden") {
     return (
       <>
-        <Badge variant="outline">完整模式</Badge>
+        <Badge variant="muted">完整模式</Badge>
         {kindTag}
       </>
     );

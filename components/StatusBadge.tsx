@@ -17,9 +17,9 @@ type StatusBadgeProps = {
 export function StatusBadge({ item, itemKind = "item", status }: StatusBadgeProps) {
   const variant =
     COMPLETED_STATUSES.includes(status)
-      ? "calm"
+      ? "success"
       : status === "last_minute"
-        ? "soft"
+        ? "warning"
         : "outline";
   const label = item
     ? getStatusLabelForItem(status, item)

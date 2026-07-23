@@ -286,7 +286,7 @@ function renderIndex({ apkName, sha256, createdAt, screenshots, storeScreenshots
     .panel { background: rgba(255, 255, 255, 0.86); border: 1px solid #f4dfe5; border-radius: 8px; padding: 18px; box-shadow: 0 14px 40px rgba(130, 43, 68, 0.08); }
     .cover { display: block; width: 100%; border-radius: 8px; margin: 0 0 18px; border: 1px solid #f4dfe5; box-shadow: 0 18px 60px rgba(130, 43, 68, 0.12); }
     .feature { display: block; width: 100%; border-radius: 8px; margin-top: 12px; border: 1px solid #f4dfe5; }
-    .cta { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border-radius: 999px; background: #ff5a7a; color: #fff; text-decoration: none; }
+    .cta { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border-radius: 999px; background: #C84161; color: #fff; text-decoration: none; }
     .muted { color: #64747c; }
     .checksum { word-break: break-all; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 0.9rem; }
     .screenshots { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }

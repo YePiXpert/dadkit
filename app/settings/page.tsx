@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -36,10 +35,7 @@ import {
   type BirthPlan,
   type PostpartumTask,
 } from "@/lib/rc";
-import {
-  formatBabyZodiacLine,
-  getBabyMascot,
-} from "@/lib/baby-profile";
+import { formatBabyZodiacLine } from "@/lib/baby-profile";
 import {
   getReviewPageHref,
   PUBLIC_PRIVACY_PATH,
@@ -109,7 +105,7 @@ export default function SettingsPage() {
   const [uploadConflict, setUploadConflict] = useState(false);
   const [releaseInfo, setReleaseInfo] = useState<ReleaseInfo>({
     ok: true,
-    version: "1.2.0",
+    version: "1.3.0",
     buildTime: "unknown",
   });
   const hasLocalData =
@@ -120,7 +116,6 @@ export default function SettingsPage() {
     hasBirthPlanData(birthPlan) ||
     hasPostpartumData(postpartumTasks);
   const recentSnapshots = snapshots.slice(0, 2);
-  const babyMascot = getBabyMascot(profile);
 
   function refreshSnapshots() {
     setSnapshots(loadSnapshots());
@@ -382,18 +377,8 @@ export default function SettingsPage() {
 
   return (
     <div className="page-shell">
-      <Card className="mobile-shell app-list-card lg:max-w-none">
-        <CardContent className="app-list-row p-3">
-          <span className="relative flex size-14 shrink-0 overflow-hidden rounded-full border border-white/80 bg-peach shadow-sm">
-            <Image
-              alt={babyMascot.alt}
-              className="object-contain p-0.5"
-              fill
-              priority
-              sizes="56px"
-              src={babyMascot.src}
-            />
-          </span>
+      <Card className="mobile-shell lg:max-w-none">
+        <CardContent className="flex items-center gap-3 p-4">
           <div className="min-w-0 flex-1">
             <p className="text-base font-semibold">
               {profile ? formatBabyZodiacLine(profile) : "待产资料"}
@@ -402,16 +387,16 @@ export default function SettingsPage() {
               {profile ? "待产清单已生成" : "创建资料后生成清单"}
             </p>
           </div>
-          <span className="shrink-0 rounded-full bg-mint px-3 py-1 text-xs font-bold text-primary">
+          <span className="shrink-0 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-primary">
             v{releaseInfo.version}
           </span>
         </CardContent>
       </Card>
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-3">
-        <Card className="app-list-card">
+        <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">资料</CardTitle>
+            <CardTitle>资料</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 p-2 pt-0">
             <SettingsShortcutRow
@@ -429,9 +414,9 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="app-list-card">
+        <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">备份与恢复</CardTitle>
+            <CardTitle>备份与恢复</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 p-2 pt-0">
             <SettingsShortcutRow
@@ -455,9 +440,9 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="app-list-card">
+        <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">应用信息</CardTitle>
+            <CardTitle>应用信息</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 p-2 pt-0">
             <SettingsShortcutRow
@@ -500,7 +485,7 @@ export default function SettingsPage() {
           id="local-snapshots"
           title="最近备份"
         >
-          <Card className="macaron-panel">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <History className="size-4 text-primary" />
@@ -517,7 +502,7 @@ export default function SettingsPage() {
                   <div className="grid gap-2">
                     {recentSnapshots.map((snapshot) => (
                       <div
-                        className="soft-detail flex flex-wrap items-center justify-between gap-3"
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/50 p-3"
                         key={snapshot.id}
                       >
                         <div className="min-w-0">
@@ -539,14 +524,14 @@ export default function SettingsPage() {
                     ))}
                   </div>
 
-                  <details className="soft-detail">
+                  <details className="rounded-lg border border-border bg-muted/50 p-3">
                     <summary className="cursor-pointer text-sm font-semibold">
                       查看全部备份
                     </summary>
                     <div className="mt-3 grid gap-2">
                       {snapshots.map((snapshot) => (
                         <div
-                          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/80 bg-card/80 p-3 shadow-sm"
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 shadow-sm"
                           key={snapshot.id}
                         >
                           <div className="min-w-0">
@@ -587,7 +572,7 @@ export default function SettingsPage() {
           id="json-backup"
           title="JSON 备份"
         >
-          <Card className="macaron-panel">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Upload className="size-4 text-primary" />
@@ -595,7 +580,7 @@ export default function SettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3">
-              <details className="soft-detail">
+              <details className="rounded-lg border border-border bg-muted/50 p-3">
                 <summary className="cursor-pointer text-sm font-semibold">
                   导入 / 复制 JSON
                 </summary>
@@ -625,7 +610,7 @@ export default function SettingsPage() {
                 <p
                   className={`rounded-lg px-3 py-2 text-sm ${
                     messageOk === false
-                      ? "bg-coral-soft text-coral-foreground"
+                      ? "bg-destructive/10 text-destructive"
                       : "bg-secondary text-primary"
                   }`}
                 >
@@ -641,7 +626,7 @@ export default function SettingsPage() {
           id="webdav-backup"
           title="WebDAV 备份"
         >
-          <Card className="macaron-panel">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Cloud className="size-4 text-primary" />
@@ -653,7 +638,7 @@ export default function SettingsPage() {
                 手动上传或下载 JSON 备份，不会自动同步。浏览器请求会经 DadKit 同源代理转发。
               </p>
 
-              <div className="soft-detail flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/50 p-3">
                 <div>
                   <Label htmlFor="webdav-enabled">启用 WebDAV 备份</Label>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -690,7 +675,7 @@ export default function SettingsPage() {
                 </Button>
               </div>
 
-              <details className="soft-detail">
+              <details className="rounded-lg border border-border bg-muted/50 p-3">
                 <summary className="cursor-pointer text-sm font-semibold">
                   连接设置
                 </summary>
@@ -759,7 +744,7 @@ export default function SettingsPage() {
                       }
                     />
                   </Field>
-                  <div className="flex items-center justify-between gap-3 rounded-lg border border-white/80 bg-card/80 p-3 shadow-sm">
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 shadow-sm">
                     <div>
                       <Label htmlFor="webdav-remember-secret">
                         记住密码在本设备
@@ -780,7 +765,7 @@ export default function SettingsPage() {
               </details>
 
               {uploadConflict ? (
-                <div className="grid gap-2 rounded-lg border border-amber/30 bg-amber-soft p-3 text-sm text-amber-foreground">
+                <div className="grid gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
                   <p>远端备份与当前本地数据不同。你可以用本地覆盖远端，或取消。</p>
                   <div className="flex flex-wrap gap-2">
                     <Button size="sm" onClick={() => uploadCurrentBackup(true)}>
@@ -798,7 +783,7 @@ export default function SettingsPage() {
               ) : null}
 
               {pendingRemoteBackup ? (
-                <div className="soft-detail grid gap-3 text-sm">
+                <div className="grid gap-3 rounded-lg border border-border bg-muted/50 p-3 text-sm">
                   <div className="grid gap-2 sm:grid-cols-4">
                     <StatusTile
                       label="更新时间"
@@ -833,7 +818,7 @@ export default function SettingsPage() {
                 <p
                   className={`rounded-lg px-3 py-2 text-sm ${
                     webDavMessageOk === false
-                      ? "bg-coral-soft text-coral-foreground"
+                      ? "bg-destructive/10 text-destructive"
                       : "bg-secondary text-primary"
                   }`}
                 >
@@ -871,7 +856,7 @@ export default function SettingsPage() {
           id="current-data-summary"
           title="当前数据摘要"
         >
-          <Card className="macaron-panel">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Info className="size-4 text-primary" />
@@ -895,7 +880,7 @@ export default function SettingsPage() {
           id="danger-zone"
           title="清空本地数据"
         >
-          <Card className="macaron-panel">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <RotateCcw className="size-4 text-primary" />
@@ -914,7 +899,7 @@ export default function SettingsPage() {
                 <p
                   className={`rounded-lg px-3 py-2 text-sm ${
                     messageOk === false
-                      ? "bg-coral-soft text-coral-foreground"
+                      ? "bg-destructive/10 text-destructive"
                       : "bg-secondary text-primary"
                   }`}
                 >
@@ -930,7 +915,7 @@ export default function SettingsPage() {
           id="about-dadkit"
           title="关于 DadKit"
         >
-          <Card className="macaron-panel">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Info className="size-4 text-primary" />
@@ -968,7 +953,7 @@ export default function SettingsPage() {
           id="disclaimer"
           title="免责声明"
         >
-          <Card className="macaron-panel">
+          <Card>
             <CardHeader>
               <CardTitle>免责声明</CardTitle>
             </CardHeader>
@@ -983,7 +968,7 @@ export default function SettingsPage() {
           id="webdav-credentials"
           title="WebDAV 凭据说明"
         >
-          <Card className="macaron-panel">
+          <Card>
             <CardHeader>
               <CardTitle>WebDAV 凭据说明</CardTitle>
             </CardHeader>
@@ -1014,10 +999,10 @@ function SettingsShortcutRow({
   title: string;
 }) {
   return (
-    <Link className="app-list-row min-h-16 bg-card/90" href={href}>
-      <span className="app-icon-tile size-9 rounded-md">{icon}</span>
+    <Link className="list-row" href={href}>
+      <span className="icon-tile size-9">{icon}</span>
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-bold leading-5">{title}</span>
+        <span className="block text-sm font-semibold leading-5">{title}</span>
         <span className="mt-0.5 block break-words text-xs leading-4 text-muted-foreground">
           {caption}
         </span>
@@ -1040,10 +1025,10 @@ function SettingsDetailsSection({
 }) {
   return (
     <details
-      className="mobile-shell scroll-mt-24 rounded-lg border border-white/90 bg-card/95 p-4 shadow-soft lg:max-w-none"
+      className="mobile-shell card-surface scroll-mt-24 p-4 lg:max-w-none"
       id={id}
     >
-      <summary className="cursor-pointer list-none text-base font-bold">
+      <summary className="cursor-pointer list-none text-sm font-semibold">
         <span className="inline-flex items-center gap-2">
           {icon}
           {title}
@@ -1093,7 +1078,7 @@ function Field({
 
 function StatusTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-white/80 bg-cream/70 px-3 py-2 shadow-sm">
+    <div className="rounded-lg bg-muted px-3 py-2">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 break-words font-semibold">{value}</p>
     </div>

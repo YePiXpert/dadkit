@@ -30,12 +30,12 @@ type HospitalQuestionCardProps = {
 };
 
 const STATUS_BADGE_CLASSES: Record<HospitalAnswerStatus, string> = {
-  todo: "border-white/80 bg-cream text-muted-foreground",
-  confirmed: "border-primary/20 bg-mint text-primary",
-  provided: "border-primary/20 bg-mint text-primary",
-  not_provided: "border-amber/40 bg-amber-soft text-amber-foreground",
-  partial: "border-amber/40 bg-amber-soft text-amber-foreground",
-  not_needed: "border-white/80 bg-lavender text-lavender-foreground",
+  todo: "border-border bg-muted text-muted-foreground",
+  confirmed: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  provided: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  not_provided: "border-amber-200 bg-amber-50 text-amber-800",
+  partial: "border-amber-200 bg-amber-50 text-amber-800",
+  not_needed: "border-border bg-muted text-muted-foreground",
 };
 
 function statusFromPackStatus(status: PackStatus): HospitalAnswerStatus {
@@ -127,10 +127,10 @@ export function HospitalQuestionCard({
   }
 
   return (
-    <section className="rounded-lg border border-white/90 bg-card/95 shadow-sm">
+    <section className="card-surface">
       <div className="flex w-full items-start justify-between gap-3 px-3 py-3">
         <span className="flex min-w-0 gap-3">
-          <span className="app-icon-tile size-9 rounded-md">
+          <span className="icon-tile size-9">
             {normalizedItem.kind === "task" ? (
               <Hospital className="size-4" />
             ) : (
@@ -170,10 +170,10 @@ export function HospitalQuestionCard({
           {options.map((option) => (
             <button
               className={cn(
-                "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition-colors",
+                "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors",
                 status === option
                   ? STATUS_BADGE_CLASSES[option]
-                  : "border-white/80 bg-cream/70 text-muted-foreground",
+                  : "border-border bg-card text-muted-foreground hover:bg-secondary",
               )}
               key={option}
               type="button"
@@ -186,7 +186,7 @@ export function HospitalQuestionCard({
         </div>
 
         <button
-          className="flex items-center justify-between rounded-lg border border-white/80 bg-peach/55 px-3 py-2 text-sm font-semibold text-primary"
+          className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary"
           type="button"
           onClick={() => setOpen((value) => !value)}
         >
@@ -200,7 +200,7 @@ export function HospitalQuestionCard({
         </button>
 
         {open ? (
-          <div className="grid gap-3 border-t border-white/80 pt-3">
+          <div className="grid gap-3 border-t border-border pt-3">
             <Textarea
               className="min-h-24 resize-y"
               placeholder="记录医院答复、电话、入口、时间或需要下次再问的细节"

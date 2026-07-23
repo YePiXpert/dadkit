@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
@@ -162,43 +161,40 @@ export default function ContractionsPage() {
   return (
     <div className="page-shell">
       <section className="mobile-shell grid gap-1 lg:max-w-none">
-        <h1 className="text-2xl font-black tracking-normal">宫缩记录</h1>
-        <p className="text-sm font-medium leading-6 text-muted-foreground">
+        <h1 className="text-xl font-semibold tracking-normal sm:text-2xl">宫缩记录</h1>
+        <p className="text-sm leading-6 text-muted-foreground">
           记录持续时间和间隔，便于沟通。
         </p>
       </section>
 
       {preparationSummary ? (
         <section className="mobile-shell lg:max-w-none">
-          <Card className="macaron-panel">
+          <Card>
             <CardContent className="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
               <div className="min-w-0">
                 <p className="section-kicker">待产准备状态</p>
-                <h2 className="mt-1 text-xl font-black tracking-normal">
+                <h2 className="mt-1 text-xl font-semibold tracking-normal">
                   {preparationSummary.readiness.label}{" "}
                   {preparationSummary.readiness.percent}%
                 </h2>
-                <p className="mt-2 break-words text-sm font-semibold leading-6 text-muted-foreground">
+                <p className="mt-2 break-words text-sm leading-6 text-muted-foreground">
                   {preparationSummary.contractionStatus.label} ·{" "}
                   {preparationSummary.contractionStatus.detail}
                 </p>
-                <p className="mt-1 text-xs font-bold leading-5 text-muted-foreground">
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
                   宫缩记录只用于保存和沟通，不计入待产准备进度。
                 </p>
               </div>
-              <Link
-                className="inline-flex min-h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-black text-primary-foreground shadow-sm active:scale-[0.99]"
-                href="/share"
-              >
-                生成分享截图
-              </Link>
+              <Button asChild>
+                <Link href="/share">生成分享截图</Link>
+              </Button>
             </CardContent>
           </Card>
         </section>
       ) : null}
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[0.9fr_1.1fr]">
-        <Card className="overflow-hidden border-coral/20 bg-card/95 shadow-soft">
+        <Card>
           <CardContent className="grid gap-4 p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -209,15 +205,15 @@ export default function ContractionsPage() {
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-72 pb-8">
+            <div className="mx-auto w-full max-w-72">
               <div
                 aria-label="本次宫缩计时圆盘"
-                className="mx-auto flex size-48 items-center justify-center rounded-full p-3 shadow-soft"
+                className="mx-auto flex size-48 items-center justify-center rounded-full p-3 shadow-sm"
                 style={{
-                  background: `conic-gradient(hsl(var(--coral)) ${timerProgress}%, hsl(var(--blush)) ${timerProgress}% 100%)`,
+                  background: `conic-gradient(hsl(var(--primary)) ${timerProgress}%, hsl(var(--secondary)) ${timerProgress}% 100%)`,
                 }}
               >
-                <div className="flex size-full flex-col items-center justify-center rounded-full border border-white/90 bg-card text-center shadow-sm">
+                <div className="flex size-full flex-col items-center justify-center rounded-full border border-border bg-card text-center shadow-sm">
                   <CalendarClock className="mb-2 size-6 text-primary" />
                   <p className="text-4xl font-bold tracking-normal text-foreground">
                     {formatDuration(elapsedSeconds)}
@@ -227,18 +223,10 @@ export default function ContractionsPage() {
                   </p>
                 </div>
               </div>
-              <Image
-                alt="宫缩记录插图"
-                className="absolute -bottom-1 right-0 h-24 w-32 object-contain drop-shadow-sm"
-                height={96}
-                priority
-                src="/illustrations/dadkit-baby-girl-timer.png"
-                width={128}
-              />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <div className="soft-detail text-center">
+              <div className="rounded-lg border border-border bg-background p-3 text-center">
                 <p className="text-xs font-semibold text-muted-foreground">
                   上次间隔
                 </p>
@@ -246,7 +234,7 @@ export default function ContractionsPage() {
                   {formatDuration(stats.averageIntervalSeconds)}
                 </p>
               </div>
-              <div className="soft-detail text-center">
+              <div className="rounded-lg border border-border bg-background p-3 text-center">
                 <p className="text-xs font-semibold text-muted-foreground">
                   平均持续
                 </p>
@@ -278,13 +266,13 @@ export default function ContractionsPage() {
               </Button>
             </div>
 
-            <p className="macaron-note">
+            <p className="text-xs leading-5 text-muted-foreground">
               是否去医院以医生/医院要求为准；DadKit 只帮你保存记录。
             </p>
           </CardContent>
         </Card>
 
-        <Card className="macaron-panel">
+        <Card>
           <CardHeader>
             <CardTitle>手动添加</CardTitle>
           </CardHeader>
@@ -312,7 +300,7 @@ export default function ContractionsPage() {
               添加记录
             </Button>
             {message ? (
-              <p className="macaron-note">
+              <p className="text-xs leading-5 text-muted-foreground">
                 {message}
               </p>
             ) : null}
@@ -324,7 +312,7 @@ export default function ContractionsPage() {
         className="mobile-shell grid gap-3 lg:max-w-none"
         id="labor-alerts"
       >
-        <Card className="macaron-panel">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarClock className="size-4 text-primary" />
@@ -335,14 +323,14 @@ export default function ContractionsPage() {
             <div className="grid gap-2 sm:grid-cols-2">
               {LABOR_URGENT_SIGNAL_CARDS.map((card) => (
                 <div
-                  className="rounded-lg border border-mint/70 bg-card/85 p-3 shadow-sm"
+                  className="rounded-lg border border-border bg-background p-3"
                   key={card.id}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="min-w-0 break-words text-sm font-black">
+                    <p className="min-w-0 break-words text-sm font-semibold">
                       {card.title}
                     </p>
-                    <span className="shrink-0 rounded-full bg-mint px-2 py-1 text-[0.68rem] font-bold text-primary">
+                    <span className="shrink-0 rounded-full bg-secondary px-2 py-1 text-[0.68rem] font-semibold text-primary">
                       {card.actionLabel}
                     </span>
                   </div>
@@ -356,14 +344,17 @@ export default function ContractionsPage() {
               ))}
             </div>
 
-            <div className="rounded-lg border border-primary/15 bg-mint/30 p-3">
-              <h3 className="flex items-center gap-2 text-sm font-black">
+            <div className="rounded-lg bg-secondary/50 p-3">
+              <h3 className="flex items-center gap-2 text-sm font-semibold">
                 <CalendarClock className="size-4 text-primary" />
                 破水先这样记录
               </h3>
               <div className="mt-3 grid gap-2">
                 {WATER_BREAK_STEPS.map((step) => (
-                  <div className="soft-detail" key={step.title}>
+                  <div
+                    className="rounded-lg border border-border bg-card p-3"
+                    key={step.title}
+                  >
                     <p className="text-sm font-bold">{step.title}</p>
                     <p className="mt-1 text-sm leading-6 text-muted-foreground">
                       {step.description}
@@ -373,7 +364,7 @@ export default function ContractionsPage() {
               </div>
             </div>
 
-            <p className="macaron-note">
+            <p className="text-xs leading-5 text-muted-foreground">
               这些内容只帮助家人记录和沟通，不替代医生判断；是否去医院以医院/医生要求为准。
             </p>
           </CardContent>
@@ -393,7 +384,7 @@ export default function ContractionsPage() {
       </section>
 
       <section className="mobile-shell grid gap-3 lg:max-w-none">
-        <Card className="macaron-panel">
+        <Card>
           <CardHeader>
             <CardTitle>记录明细</CardTitle>
           </CardHeader>
@@ -405,7 +396,7 @@ export default function ContractionsPage() {
             ) : (
               contractions.map((record) => (
                 <div
-                  className="soft-detail grid gap-2 sm:grid-cols-[1fr_auto]"
+                  className="grid gap-2 rounded-lg border border-border bg-background p-3 sm:grid-cols-[1fr_auto]"
                   key={record.id}
                 >
                   <div className="min-w-0">
@@ -432,7 +423,7 @@ export default function ContractionsPage() {
           </CardContent>
         </Card>
 
-        <Card className="macaron-panel">
+        <Card>
           <CardHeader>
             <CardTitle>导出记录</CardTitle>
           </CardHeader>
@@ -464,7 +455,7 @@ function Field({
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="macaron-strip">
+    <Card>
       <CardContent className="p-4">
         <p className="text-sm text-muted-foreground">{label}</p>
         <p className="mt-1 text-2xl font-semibold tracking-normal">{value}</p>

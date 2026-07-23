@@ -55,17 +55,17 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   const statusOptions = getStatusOptionsForItem(item);
   const rowTone =
     item.packTier === "confirm" || itemKind === "question"
-      ? "border-amber/35 bg-amber-soft/55"
+      ? "border-amber-200 bg-amber-50/60"
       : itemKind === "task"
-        ? "border-primary/20 bg-secondary/70"
+        ? "bg-secondary/50"
       : item.packTier === "optional" || item.packTier === "hidden"
-        ? "bg-card/60 opacity-85"
+        ? "bg-muted/50"
         : "bg-card";
 
   return (
     <div
       className={cn(
-        "grid grid-cols-[auto_1fr] gap-3 rounded-lg border border-white/80 p-3 shadow-sm sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center",
+        "grid grid-cols-[auto_1fr] gap-3 rounded-xl border border-border p-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center",
         rowTone,
       )}
     >
@@ -129,7 +129,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             updateItem(item.id, { status: value as PackStatus })
           }
         >
-          <SelectTrigger className="h-8 w-[116px] shrink-0 rounded-full bg-card text-xs">
+          <SelectTrigger className="h-8 w-[116px] shrink-0 rounded-lg bg-card text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

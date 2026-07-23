@@ -10,10 +10,10 @@ type ModeToggleProps = {
 
 export function ModeToggle({ mode, onChange }: ModeToggleProps) {
   return (
-    <div className="grid grid-cols-2 rounded-full border border-white/80 bg-cream/80 p-1 shadow-inner">
+    <div className="grid grid-cols-2 rounded-lg border border-border bg-muted p-1">
       {(["lean", "full"] satisfies ChecklistMode[]).map((candidate) => (
         <Button
-          className="h-9 rounded-full"
+          className="h-9 rounded-md"
           key={candidate}
           variant={mode === candidate ? "default" : "ghost"}
           onClick={() => onChange(candidate)}

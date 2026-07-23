@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -11,6 +10,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   TIMELINE_KIND_LABELS,
@@ -25,8 +26,7 @@ import {
   type TimelineTask,
   type TimelineTaskStatus,
 } from "@/lib/timeline";
-import { CuteIllustration } from "@/components/CuteIllustration";
-import { formatBabyZodiacLine, getBabyMascot } from "@/lib/baby-profile";
+import { formatBabyZodiacLine } from "@/lib/baby-profile";
 import type { ChecklistItem, HospitalAnswer, UserProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -61,33 +61,33 @@ const taskKindIcons: Record<TimelineTask["kind"], LucideIcon> = {
 const stageTone: Record<
   StageVisualState,
   {
+    badge: "default" | "muted" | "success" | "warning";
     card: string;
-    chip: string;
     dot: string;
     status: string;
   }
 > = {
   current: {
-    card: "border-primary/40 bg-secondary/60 shadow-soft",
-    chip: "bg-primary text-primary-foreground",
-    dot: "border-primary bg-primary text-primary-foreground shadow-soft",
+    badge: "default",
+    card: "border-primary/40 bg-secondary/60",
+    dot: "border-primary bg-primary text-primary-foreground",
     status: "本阶段",
   },
   done: {
-    card: "border-mint bg-card/95",
-    chip: "bg-mint text-primary",
-    dot: "border-mint bg-mint text-primary",
+    badge: "success",
+    card: "border-emerald-200 bg-card",
+    dot: "border-emerald-200 bg-emerald-50 text-emerald-700",
     status: "已完成",
   },
   late: {
-    card: "border-amber/55 bg-amber-soft/65",
-    chip: "bg-amber-soft text-amber-foreground",
-    dot: "border-amber bg-amber-soft text-amber-foreground",
+    badge: "warning",
+    card: "border-amber-200 bg-amber-50",
+    dot: "border-amber-200 bg-amber-100 text-amber-800",
     status: "需补齐",
   },
   upcoming: {
-    card: "border-border bg-card/90",
-    chip: "bg-secondary text-muted-foreground",
+    badge: "muted",
+    card: "border-border bg-card",
     dot: "border-border bg-card text-muted-foreground",
     status: "后面再看",
   },
@@ -177,10 +177,8 @@ export function TimelineDashboard({
       />
 
       <div className="flex items-center justify-between px-1">
-        <h2 className="text-sm font-black tracking-normal">阶段安排</h2>
-        <span className="text-xs font-bold text-muted-foreground">
-          先处理本阶段
-        </span>
+        <h2 className="text-sm font-semibold tracking-normal">阶段安排</h2>
+        <span className="text-xs text-muted-foreground">先处理本阶段</span>
       </div>
       <ol className="grid min-w-0 gap-3 overflow-hidden">
         {currentStageList.map((stage) => {
@@ -202,8 +200,8 @@ export function TimelineDashboard({
         })}
       </ol>
       {otherStageList.length > 0 ? (
-        <details className="rounded-lg border border-white/90 bg-card/90 p-3 shadow-sm">
-          <summary className="cursor-pointer text-sm font-bold text-primary">
+        <details className="card-surface p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-primary">
             查看其他阶段
           </summary>
           <ol className="mt-3 grid min-w-0 gap-3 overflow-hidden">
@@ -232,13 +230,12 @@ export function TimelineDashboard({
 
       <TimelineDueDateCard profile={profile} />
 
-      <Link
-        className="pony-gradient-button inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-4 text-sm font-bold"
-        href="/go"
-      >
-        打开临出门检查
-        <ArrowRight className="size-4" />
-      </Link>
+      <Button asChild className="w-full" size="lg">
+        <Link href="/go">
+          打开临出门检查
+          <ArrowRight className="size-4" />
+        </Link>
+      </Button>
     </section>
   );
 }
@@ -259,37 +256,28 @@ function CurrentStagePanel({
   stageStats?: { completed: number; percent: number; total: number };
 }) {
   return (
-    <section className="pony-soft-card w-full max-w-full overflow-hidden p-4">
-      <div className="flex min-w-0 items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="section-kicker">时间线</p>
-          <h1 className="mt-1 break-words text-2xl font-black leading-tight tracking-normal">
-            {stage ? stage.title : "准备时间线"}
-          </h1>
-          <p className="mt-2 break-words text-sm font-medium leading-6 text-muted-foreground">
-            预产期 {formatDueDateLabel(dueDate)}
-            {typeof daysLeft === "number" ? ` · ${formatDaysLeft(daysLeft)}` : ""}
-          </p>
-        </div>
-        <CuteIllustration
-          className="size-16 shrink-0 overflow-visible rounded-none border-0 bg-transparent shadow-none"
-          imageClassName="object-contain"
-          priority
-          sizes="64px"
-          variant="timelineCalendar"
-        />
+    <section className="card-surface w-full max-w-full overflow-hidden p-4">
+      <div className="min-w-0">
+        <p className="section-kicker">时间线</p>
+        <h1 className="mt-1 break-words text-xl font-semibold leading-tight tracking-normal sm:text-2xl">
+          {stage ? stage.title : "准备时间线"}
+        </h1>
+        <p className="mt-2 break-words text-sm leading-6 text-muted-foreground">
+          预产期 {formatDueDateLabel(dueDate)}
+          {typeof daysLeft === "number" ? ` · ${formatDaysLeft(daysLeft)}` : ""}
+        </p>
       </div>
 
-      <div className="mt-4 grid min-w-0 gap-3 rounded-lg border border-white/90 bg-background/70 p-3">
+      <div className="mt-4 grid min-w-0 gap-3 rounded-lg border border-border bg-background p-3">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-sm font-bold">整体进度</span>
-          <span className="text-sm font-black text-primary">
+          <span className="text-sm font-semibold">整体进度</span>
+          <span className="text-sm font-semibold text-primary">
             {overallStats.completed}/{overallStats.total}
           </span>
         </div>
-        <Progress className="h-2.5 bg-primary/12" value={overallPercent} />
+        <Progress className="h-2.5" value={overallPercent} />
         {stageStats ? (
-          <p className="text-xs font-medium text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             当前阶段完成 {stageStats.completed}/{stageStats.total} 项
           </p>
         ) : null}
@@ -313,11 +301,11 @@ function PriorityTasksPanel({
 }) {
   if (tasks.length === 0) {
     return (
-      <section className="rounded-lg border border-mint bg-mint/45 p-4 shadow-sm">
+      <section className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
         <div className="flex items-center gap-3">
-          <CheckCircle2 className="size-5 text-primary" />
+          <CheckCircle2 className="size-5 text-emerald-700" />
           <div>
-            <h2 className="text-base font-bold">当前阶段已处理完</h2>
+            <h2 className="text-sm font-semibold">当前阶段已处理完</h2>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
               可前往临出门检查确认关键事项。
             </p>
@@ -330,10 +318,12 @@ function PriorityTasksPanel({
   return (
     <section className="grid w-full min-w-0 max-w-full gap-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-black tracking-normal">当前优先</h2>
-        <span className="text-xs font-bold text-primary">{tasks.length} 项</span>
+        <h2 className="text-sm font-semibold tracking-normal">当前优先</h2>
+        <span className="text-xs font-semibold text-primary">
+          {tasks.length} 项
+        </span>
       </div>
-      <div className="w-full overflow-hidden rounded-lg border border-white/90 bg-card/95 shadow-soft">
+      <div className="card-surface w-full overflow-hidden">
         {tasks.map((task) => (
           <TaskRow
             checklist={checklist}
@@ -389,7 +379,7 @@ function TimelineStageRow({
     <li className="min-w-0">
       <article
         className={cn(
-          "min-w-0 overflow-hidden rounded-lg border p-3 shadow-sm",
+          "min-w-0 overflow-hidden rounded-xl border p-3 shadow-sm",
           tone.card,
         )}
       >
@@ -397,35 +387,30 @@ function TimelineStageRow({
           <div className="flex min-w-0 gap-3">
             <span
               className={cn(
-                "flex size-10 shrink-0 items-center justify-center rounded-full border-2",
+                "flex size-10 shrink-0 items-center justify-center rounded-lg border",
                 tone.dot,
               )}
             >
               <StageIcon className="size-5" />
             </span>
             <div className="min-w-0">
-              <h3 className="break-words text-base font-black leading-6 tracking-normal">
+              <h3 className="break-words text-sm font-semibold leading-6 tracking-normal">
                 {stage.title}
               </h3>
-              <p className="mt-1 break-words text-xs font-semibold text-muted-foreground">
+              <p className="mt-1 break-words text-xs text-muted-foreground">
                 {stage.subtitle} · {formatTargetDate(dueDate, stage.targetDaysBeforeDue)}
               </p>
             </div>
           </div>
-          <span
-            className={cn(
-              "shrink-0 rounded-full px-2.5 py-1 text-xs font-bold",
-              tone.chip,
-            )}
-          >
+          <Badge className="shrink-0" variant={tone.badge}>
             {tone.status}
-          </span>
+          </Badge>
         </div>
 
         <div className="mt-3 grid gap-2">
-          <div className="flex items-center justify-between text-xs font-bold">
+          <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">完成进度</span>
-            <span className="text-primary">
+            <span className="font-semibold text-primary">
               {stats.completed}/{stats.total}
             </span>
           </div>
@@ -444,7 +429,7 @@ function TimelineStageRow({
             />
           ))}
           {pendingTasks.length > 3 ? (
-            <p className="text-xs font-medium text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               还有 {pendingTasks.length - 3} 项待处理
             </p>
           ) : null}
@@ -456,31 +441,21 @@ function TimelineStageRow({
 
 function TimelineDueDateCard({ profile }: { profile: UserProfile }) {
   const dueDate = profile.dueDate ?? "";
-  const mascot = getBabyMascot(profile);
 
   return (
-    <section className="pony-due-card relative min-h-[5.8rem] overflow-hidden p-4">
-      <div className="relative z-10 pr-20">
-        <p className="text-sm font-black text-amber-foreground">预产期</p>
-        <p className="mt-1 break-words text-base font-black text-amber-foreground">
+    <section className="card-surface flex items-center gap-3 p-4">
+      <span className="icon-tile">
+        <CalendarClock className="size-5" />
+      </span>
+      <div className="min-w-0">
+        <p className="section-kicker">预产期</p>
+        <p className="mt-1 break-words text-sm font-semibold">
           {formatDueDateLabel(dueDate)}
         </p>
-        <p className="mt-1 text-xs font-bold text-primary">
+        <p className="mt-1 text-xs text-muted-foreground">
           {formatBabyZodiacLine(profile)}
         </p>
       </div>
-      <span className="pointer-events-none absolute left-5 top-12 text-2xl text-amber">
-        ♥
-      </span>
-      <Image
-        alt={mascot.alt}
-        className="pointer-events-none absolute -right-5 bottom-[-1.2rem] h-28 w-28 object-contain"
-        height={1254}
-        priority
-        sizes="112px"
-        src={mascot.src}
-        width={1254}
-      />
     </section>
   );
 }
@@ -513,16 +488,18 @@ function TaskRow({
       className={cn(
         "flex w-full min-w-0 max-w-full items-center gap-2 overflow-hidden text-left transition-colors",
         compact
-          ? "min-h-[3.35rem] border-b border-muted/60 bg-background/55 px-3 py-2.5 last:border-b-0 active:bg-secondary"
-          : "rounded-md bg-background/65 px-2.5 py-2 active:bg-secondary",
+          ? "min-h-[3.35rem] border-b border-border px-3 py-2.5 last:border-b-0 active:bg-secondary"
+          : "rounded-lg bg-background px-3 py-2 active:bg-secondary",
       )}
       type="button"
       onClick={() => onToggleTask(task)}
     >
       <span
         className={cn(
-          "flex size-8 shrink-0 items-center justify-center rounded-full",
-          complete ? "bg-mint text-primary" : "bg-secondary text-muted-foreground",
+          "flex size-8 shrink-0 items-center justify-center rounded-lg",
+          complete
+            ? "bg-emerald-50 text-emerald-700"
+            : "bg-secondary text-muted-foreground",
         )}
       >
         {complete ? (
@@ -534,13 +511,13 @@ function TaskRow({
       <span className="min-w-0 flex-1">
         <span
           className={cn(
-            "block whitespace-normal break-words text-sm font-bold leading-5",
+            "block whitespace-normal break-words text-sm font-medium leading-5",
             complete && "text-muted-foreground line-through",
           )}
         >
           {task.title}
         </span>
-        <span className="mt-0.5 block text-xs font-medium text-muted-foreground">
+        <span className="mt-0.5 block text-xs text-muted-foreground">
           {TIMELINE_KIND_LABELS[task.kind]}
         </span>
       </span>

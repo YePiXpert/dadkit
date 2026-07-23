@@ -31,7 +31,8 @@ describe("hospital page copy", () => {
     expect(hospitalPage).toContain("HospitalQuickGrid");
     expect(hospitalPage).toContain("grid-cols-2");
     expect(hospitalPage).toContain("lg:grid-cols-[1.15fr_0.85fr]");
-    expect(hospitalPage).toContain("macaron-panel p-4");
+    expect(hospitalPage).not.toContain("macaron-panel");
+    expect(hospitalPage).toContain("card-surface");
     expect(hospitalPage).not.toContain("TabsTrigger");
     expect(hospitalPage).not.toContain("TabsList");
   });

@@ -7,7 +7,11 @@ type PriorityBadgeProps = {
 
 export function PriorityBadge({ priority }: PriorityBadgeProps) {
   const variant =
-    priority === "must" ? "soft" : priority === "recommended" ? "calm" : "outline";
+    priority === "must"
+      ? "secondary"
+      : priority === "recommended"
+        ? "outline"
+        : "muted";
 
   return <Badge variant={variant}>{PRIORITY_LABELS[priority]}</Badge>;
 }

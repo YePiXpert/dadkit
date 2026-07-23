@@ -8,7 +8,7 @@ import { GET } from "@/app/healthz/route";
 import packageJson from "@/package.json";
 
 describe("release endpoints and pages", () => {
-  it("ships v1.2 release metadata", () => {
+  it("ships v1.3 release metadata", () => {
     const readme = readFileSync(join(process.cwd(), "README.md"), "utf8");
     const settingsPage = readFileSync(
       join(process.cwd(), "app", "settings", "page.tsx"),
@@ -21,12 +21,12 @@ describe("release endpoints and pages", () => {
       description: string;
     };
 
-    expect(packageJson.version).toBe("1.2.0");
-    expect(settingsPage).toContain('version: "1.2.0"');
+    expect(packageJson.version).toBe("1.3.0");
+    expect(settingsPage).toContain('version: "1.3.0"');
     expect(manifest.name).toBe("DadKit 待产准备");
     expect(manifest.description).toContain("医院确认");
     expect(manifest.description).toContain("临出门沟通卡");
-    expect(readme).toContain("# DadKit v1.2");
+    expect(readme).toContain("# DadKit v1.3");
     expect(readme).toContain("四根柱子");
     expect(readme).toContain("医院确认、核心待产包、临出门沟通卡和产后提醒");
     expect(readme).toContain("![DadKit README 展示横幅]");
@@ -100,7 +100,7 @@ describe("release endpoints and pages", () => {
       .sort();
 
     expect(illustrationAssets.length).toBeGreaterThan(0);
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.2.0-vps-safe-v1"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.3.0-vps-safe-v1"');
     expect(sw).toContain("const CORE_ROUTES = [");
     expect(sw).toContain('"/checklist"');
     expect(sw).toContain('"/hospital"');

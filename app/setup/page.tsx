@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, ChevronDown, Home } from "lucide-react";
 
 import { CustomHospitalForm } from "@/components/CustomHospitalForm";
-import { CuteIllustration } from "@/components/CuteIllustration";
 import { HospitalSelector } from "@/components/HospitalSelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -202,21 +201,21 @@ export default function SetupPage() {
         <SetupHeader firstRun={isFirstRun} />
 
         {isFirstRun ? (
-          <section className="grid gap-3 rounded-lg border border-white/90 bg-card/95 p-3 shadow-soft">
+          <section className="card-surface grid gap-3 p-3">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xs font-black text-primary">
+                <p className="text-xs font-semibold text-primary">
                   {currentWizardStep.eyebrow} / 4 步生成可信方案
                 </p>
-                <h2 className="mt-1 text-lg font-black leading-6">
+                <h2 className="mt-1 text-base font-semibold leading-6">
                   {currentWizardStep.title}
                 </h2>
               </div>
-              <span className="rounded-full bg-mint px-3 py-1 text-xs font-black text-primary">
+              <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-primary">
                 {wizardStep + 1}/4
               </span>
             </div>
-            <p className="text-sm font-medium leading-6 text-muted-foreground">
+            <p className="text-sm leading-6 text-muted-foreground">
               {currentWizardStep.description}
             </p>
             <WizardProgress currentStep={wizardStep} />
@@ -269,7 +268,11 @@ export default function SetupPage() {
               />
             ) : null}
 
-            {message ? <p className="macaron-note">{message}</p> : null}
+            {message ? (
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-800">
+                {message}
+              </p>
+            ) : null}
 
             <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2">
               <Button
@@ -286,14 +289,14 @@ export default function SetupPage() {
               </Button>
               {wizardStep < WIZARD_STEPS.length - 1 ? (
                 <Button
-                  className="h-12 w-full bg-primary text-base shadow-soft"
+                  className="h-12 w-full text-base"
                   onClick={goToNextWizardStep}
                 >
                   继续
                 </Button>
               ) : (
                 <Button
-                  className="h-12 w-full bg-primary text-base shadow-soft"
+                  className="h-12 w-full text-base"
                   onClick={submit}
                 >
                   生成我的可信方案
@@ -306,7 +309,7 @@ export default function SetupPage() {
           </section>
         ) : (
           <>
-            <section className="grid gap-3 rounded-lg border border-white/90 bg-card/95 p-3 shadow-soft">
+            <section className="card-surface grid gap-3 p-3">
               <DueDateField
                 draft={draft}
                 onChange={(dueDate) => {
@@ -360,22 +363,26 @@ export default function SetupPage() {
 
             </section>
 
-            <Button className="h-14 w-full bg-primary text-base shadow-soft" onClick={submit}>
+            <Button className="h-14 w-full text-base" onClick={submit}>
               保存并回到首页
             </Button>
             <p className="text-center text-xs font-medium text-muted-foreground">
               保存后可随时修改
             </p>
 
-            {message ? <p className="macaron-note">{message}</p> : null}
+            {message ? (
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-800">
+                {message}
+              </p>
+            ) : null}
 
-            <details className="rounded-lg border border-white/90 bg-card/90 p-3 shadow-sm">
-              <summary className="cursor-pointer text-sm font-bold text-primary">
+            <details className="card-surface p-3">
+              <summary className="cursor-pointer text-sm font-semibold text-primary">
                 更多医院信息（可选）
               </summary>
               <div className="mt-4 grid gap-4">
                 {selectedHospital?.verificationStatus === "unverified" ? (
-                  <p className="rounded-lg border border-amber/35 bg-amber-soft px-3 py-2 text-sm leading-6 text-amber-foreground">
+                  <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-800">
                     该医院模板尚未核验，请以最近一次产检、入院须知或医院通知为准。
                   </p>
                 ) : null}
@@ -388,7 +395,7 @@ export default function SetupPage() {
 
                 <SetupFieldRow label="预计住院天数" valueHint={`${draft.expectedStayDays} 天`}>
                   <Input
-                    className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus-visible:ring-0"
+                    className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-semibold shadow-none focus-visible:ring-0"
                     min={1}
                     type="number"
                     value={draft.expectedStayDays}
@@ -427,7 +434,7 @@ export default function SetupPage() {
 
                 <section className="grid gap-3">
                   <div>
-                    <p className="text-sm font-bold">医院明确提供哪些物品？</p>
+                    <p className="text-sm font-semibold">医院明确提供哪些物品？</p>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
                       只有已经从医院确认过的物品才勾选。拿不准就选不确定。
                     </p>
@@ -436,9 +443,9 @@ export default function SetupPage() {
                     {PROVIDED_OPTIONS.map((option) => (
                       <button
                         className={cn(
-                          "min-h-10 rounded-lg border border-white/90 bg-background/75 px-3 text-left text-sm font-semibold shadow-sm",
+                          "min-h-10 rounded-lg border border-border bg-card px-3 text-left text-sm font-semibold shadow-sm",
                           selectedProvided.has(option.id) &&
-                            "border-primary/40 bg-mint text-primary",
+                            "border-primary/40 bg-secondary text-primary",
                         )}
                         key={option.id}
                         type="button"
@@ -477,31 +484,21 @@ export default function SetupPage() {
 
 function SetupHeader({ firstRun }: { firstRun: boolean }) {
   return (
-    <section className="relative grid min-h-24 grid-cols-[auto_minmax(0,1fr)_5.5rem] items-center gap-3">
+    <section className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
       <Link
         aria-label="返回首页"
-        className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/90 bg-card text-primary shadow-sm"
+        className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-primary shadow-sm"
         href="/"
       >
         <Home className="size-4" />
       </Link>
       <div className="min-w-0">
-        <h1 className="text-2xl font-black leading-tight tracking-normal">
+        <h1 className="text-xl font-semibold leading-tight tracking-normal sm:text-2xl">
           创建资料
         </h1>
-        <p className="mt-1 text-sm font-medium leading-6 text-muted-foreground">
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">
           {firstRun ? "填写基础信息，生成可信方案" : "填写基础信息，生成待产清单"}
         </p>
-      </div>
-      <div className="relative h-24">
-        <span className="absolute left-0 top-2 rounded-full border border-peach/40 bg-card px-3 py-1 text-lg text-coral shadow-sm">
-          ☁
-        </span>
-        <CuteIllustration
-          className="absolute bottom-0 right-0 size-24 border-transparent bg-transparent shadow-none"
-          imageClassName="object-contain"
-          priority
-        />
       </div>
     </section>
   );
@@ -538,7 +535,7 @@ function DueDateField({
     >
       <Input
         required
-        className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus-visible:ring-0"
+        className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-semibold shadow-none focus-visible:ring-0"
         type="date"
         value={draft.dueDate ?? ""}
         onChange={(event) => onChange(event.target.value || undefined)}
@@ -557,7 +554,7 @@ function RegionField({
   return (
     <SetupFieldRow label="所在地" valueHint="北京市">
       <Select value={draft.regionId} onValueChange={onChange}>
-        <SelectTrigger className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus:ring-0 [&>svg]:hidden">
+        <SelectTrigger className="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-semibold shadow-none focus:ring-0 [&>svg]:hidden">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -584,7 +581,7 @@ function HospitalField({
       valueHint={selectedHospital?.name ?? "我还没确定医院"}
     >
       <HospitalSelector
-        triggerClassName="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-bold shadow-none focus:ring-0 [&>svg]:hidden"
+        triggerClassName="h-auto border-0 bg-transparent px-0 py-0 text-right text-sm font-semibold shadow-none focus:ring-0 [&>svg]:hidden"
         value={{
           hospitalMode: draft.hospitalMode,
           hospitalId: draft.hospitalId,
@@ -626,9 +623,9 @@ function SetupFieldRow({
   valueHint: string;
 }) {
   return (
-    <div className="grid min-h-[4.1rem] grid-cols-[minmax(0,1fr)_minmax(8.5rem,42%)] items-center gap-3 rounded-lg border border-white/90 bg-background/70 px-3 py-2 shadow-sm">
+    <div className="grid min-h-[4.1rem] grid-cols-[minmax(0,1fr)_minmax(8.5rem,42%)] items-center gap-3 rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
       <div className="min-w-0">
-        <p className="text-sm font-bold leading-5">{label}</p>
+        <p className="text-sm font-semibold leading-5">{label}</p>
         <p className="mt-0.5 break-words text-xs leading-4 text-muted-foreground">
           {valueHint}
         </p>
@@ -651,8 +648,8 @@ function SegmentField({
   label: string;
 }) {
   return (
-    <section className="grid gap-2 rounded-lg border border-white/90 bg-background/70 p-3 shadow-sm">
-      <p className="text-sm font-bold leading-5">{label}</p>
+    <section className="grid gap-2 rounded-xl border border-border bg-card p-3 shadow-sm">
+      <p className="text-sm font-semibold leading-5">{label}</p>
       <div className={cn("grid gap-2", columns === 3 ? "grid-cols-3" : "grid-cols-2")}>
         {children}
       </div>
@@ -672,10 +669,10 @@ function SegmentButton({
   return (
     <button
       className={cn(
-        "flex min-h-12 items-center justify-center gap-1 rounded-lg border px-3 text-sm font-bold shadow-sm transition-colors",
+        "flex min-h-12 items-center justify-center gap-1 rounded-lg border px-3 text-sm font-semibold shadow-sm transition-colors",
         active
           ? "border-primary bg-primary text-primary-foreground"
-          : "border-white/90 bg-card text-muted-foreground hover:bg-mint/70",
+          : "border-border bg-card text-muted-foreground hover:bg-secondary",
       )}
       type="button"
       onClick={onClick}
@@ -711,7 +708,7 @@ function SwitchField({
   onCheckedChange: (value: boolean) => void;
 }) {
   return (
-    <div className="flex min-h-12 items-center justify-between gap-3 rounded-lg border border-white/90 bg-background/75 px-3 py-2 shadow-sm">
+    <div className="flex min-h-12 items-center justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
       <Label className="font-semibold">{label}</Label>
       <Switch checked={checked} onCheckedChange={onCheckedChange} />
     </div>

@@ -31,19 +31,19 @@ export function GoAdmissionInfoCard({
   const phoneHref = buildPhoneHref(birthPlan.hospitalPhone);
 
   return (
-    <Card className="macaron-panel overflow-hidden">
+    <Card className="overflow-hidden">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-base">
           <Hospital className="size-4 text-primary" />
           联系医院和入院路线
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
-        <div className="grid gap-2 rounded-lg border border-primary/15 bg-mint/30 p-3">
+        <div className="grid gap-2 rounded-lg bg-secondary/50 p-3">
           <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
             <div className="min-w-0">
-              <p className="text-xs font-bold text-primary">先确认，再出发</p>
-              <p className="mt-1 break-words text-sm font-semibold leading-5 text-muted-foreground">
+              <p className="text-xs font-semibold text-primary">先确认，再出发</p>
+              <p className="mt-1 break-words text-sm leading-5 text-muted-foreground">
                 打电话时说明孕周、临产信号、破水/见红/胎动情况和当前位置。
               </p>
             </div>
@@ -71,7 +71,7 @@ export function GoAdmissionInfoCard({
           </div>
 
           {!hasAnyAdmissionInfo ? (
-            <p className="rounded-md bg-card/80 px-2 py-1.5 text-xs font-semibold leading-5 text-muted-foreground">
+            <p className="rounded-md border border-border bg-card px-2 py-1.5 text-xs leading-5 text-muted-foreground">
               补充电话、入口和停车备注，出发时可直接查看。
             </p>
           ) : null}
@@ -154,9 +154,9 @@ function AdmissionHint({
   value: string;
 }) {
   return (
-    <div className="soft-detail min-w-0">
-      <div className="flex items-center gap-1.5 text-xs font-black text-primary">
-        <Icon className="size-3.5" />
+    <div className="min-w-0 rounded-lg border border-border bg-background p-3">
+      <div className="flex items-center gap-1.5 text-xs font-semibold">
+        <Icon className="size-3.5 text-primary" />
         {label}
       </div>
       <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">
