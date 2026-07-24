@@ -89,7 +89,7 @@ describe("timeline", () => {
     );
 
     expect(titles).toContain("到下次产检问清楚医院是否提供产褥垫");
-    expect(titles).toContain("保存产科/住院处电话");
+    expect(titles).toContain("到下次产检问清楚医院是否提供宝宝衣物");
   });
 
   it("includes shopping and washing tasks around 28 days before due", () => {
@@ -112,13 +112,12 @@ describe("timeline", () => {
     expect(titles).toContain("宝宝包核心物品完成打包");
   });
 
-  it("includes admission route, deposit, and car seat tasks around 7 days before due", () => {
+  it("includes deposit, car seat, and labor alert tasks around 7 days before due", () => {
     const profile = makeProfile({ dueDate: dueDateIn(7) });
     const titles = generateTodayTasks(profile, checklistFor(profile)).map(
       (task) => task.title,
     );
 
-    expect(titles).toContain("确认夜间入院路线");
     expect(titles).toContain("确认支付方式和住院押金");
     expect(titles).toContain("确认安全座椅安装");
     expect(titles).toContain("确认破水/见红较多/胎动异常时的联系流程");
@@ -133,9 +132,9 @@ describe("timeline", () => {
 
     expect(titles.slice(0, 3)).toEqual(
       expect.arrayContaining([
-        "确认夜间入院路线",
         "确认支付方式和住院押金",
         "确认破水/见红较多/胎动异常时的联系流程",
+        "确认医保结算方式",
       ]),
     );
   });

@@ -70,8 +70,8 @@
     <circle cx="44" cy="46" r="24" fill="#ffe09b"/>
     <text x="36" y="54" class="badge">4</text>
     <text x="34" y="106" class="step">临出门检查</text>
-    <text x="34" y="142" class="body">证件、手机、包、路线</text>
-    <text x="34" y="170" class="body">医院电话和沟通卡</text>
+    <text x="34" y="142" class="body">证件、手机、待产包</text>
+    <text x="34" y="170" class="body">必带物品和沟通卡</text>
     <text x="34" y="198" class="body">出发前统一确认</text>
   </g>
 

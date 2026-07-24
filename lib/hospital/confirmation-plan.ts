@@ -100,26 +100,6 @@ export const HOSPITAL_CONFIRMATION_QUESTIONS: HospitalConfirmationQuestion[] = [
     answerType: "confirmation",
   },
   {
-    id: "question-admission-day-entrance",
-    groupId: "admission_flow",
-    title: "白天从哪个入口入院？",
-    answerType: "confirmation",
-    homeCore: true,
-  },
-  {
-    id: "question-admission-night-route",
-    groupId: "admission_flow",
-    title: "夜间从哪个入口 / 急诊路线？",
-    answerType: "confirmation",
-    homeCore: true,
-  },
-  {
-    id: "question-admission-phone",
-    groupId: "admission_flow",
-    title: "住院处或产科联系电话是多少？",
-    answerType: "confirmation",
-  },
-  {
     id: "question-admission-precheck",
     groupId: "admission_flow",
     title: "是否需要提前办理住院手续？",
@@ -228,29 +208,6 @@ export const HOSPITAL_CONFIRMATION_QUESTIONS: HospitalConfirmationQuestion[] = [
 
 export const DAD_ACTION_TASKS: DadActionTask[] = [
   {
-    id: "dad-save-phone",
-    title: "保存医院电话",
-    description: "把产科、住院处或夜间入口电话保存到手机。",
-    relatedQuestionIds: ["question-admission-phone"],
-    homeCore: true,
-  },
-  {
-    id: "dad-save-night-navigation",
-    title: "收藏夜间入院导航",
-    description: "确认白天和夜间分别从哪里进。",
-    relatedQuestionIds: [
-      "question-admission-day-entrance",
-      "question-admission-night-route",
-    ],
-    homeCore: true,
-  },
-  {
-    id: "dad-confirm-parking",
-    title: "确认停车方案",
-    description: "停车场入口、夜间是否开放、是否方便临停。",
-    homeCore: true,
-  },
-  {
     id: "dad-place-documents",
     title: "证件包放到固定位置",
     description: "身份证、医保卡、母子健康手册或电子条形码、产检资料。",
@@ -280,11 +237,8 @@ export const DAD_ACTION_TASKS: DadActionTask[] = [
   {
     id: "dad-confirm-labor-urgent-flow",
     title: "确认临产异常联系流程",
-    description: "把破水、见红较多、胎动异常时要联系的电话和入口写清楚。",
-    relatedQuestionIds: [
-      "question-labor-urgent-contact",
-      "question-admission-night-route",
-    ],
+    description: "把破水、见红较多、胎动异常时该联系哪里写清楚。",
+    relatedQuestionIds: ["question-labor-urgent-contact"],
   },
   {
     id: "dad-prepare-labor-support",

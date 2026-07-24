@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatBabyZodiacLine,
-  getBabyMascot,
   getBabySex,
   getChineseZodiacInfo,
 } from "@/lib/baby-profile";
@@ -27,8 +26,5 @@ describe("baby profile helpers", () => {
   it("falls back to neutral baby copy for missing or invalid profile values", () => {
     expect(getBabySex({ babySex: "invalid" as never })).toBe("unknown");
     expect(formatBabyZodiacLine({ dueDate: undefined })).toBe("宝宝");
-    expect(getBabyMascot({ babySex: "boy", dueDate: "2026-09-04" })).toMatchObject({
-      src: "/illustrations/dadkit-bear-transparent.png",
-    });
   });
 });

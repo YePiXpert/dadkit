@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v1.3.0-coral-v1";
+const CACHE_NAME = "dadkit-v1.3.0-coral-v2";
 const CORE_ROUTES = [
   "/",
   "/setup",
@@ -23,31 +23,7 @@ const PWA_ICON_ASSETS = [
   "/maskable-icon-512.png",
   "/apple-touch-icon.png",
 ];
-const PWA_ILLUSTRATION_ASSETS = [
-  "/illustrations/dadkit-baby-girl-timer.png",
-  "/illustrations/dadkit-bear-transparent.png",
-  "/illustrations/dadkit-checklist-bag-sticker.png",
-  "/illustrations/dadkit-checklist-bag-sticker-v2.png",
-  "/illustrations/dadkit-dad-avatar.png",
-  "/illustrations/dadkit-family-card-v2.png",
-  "/illustrations/dadkit-family-transparent.png",
-  "/illustrations/dadkit-go-bunny.png",
-  "/illustrations/dadkit-horse-girl.png",
-  "/illustrations/dadkit-hospital-clipboard.png",
-  "/illustrations/dadkit-hospital-route-sticker.png",
-  "/illustrations/dadkit-hospital-route-sticker-v2.png",
-  "/illustrations/dadkit-home-journal-sticker-v2.png",
-  "/illustrations/dadkit-maternity-journal-sticker.png",
-  "/illustrations/dadkit-postpartum-paperwork-sticker.png",
-  "/illustrations/dadkit-real-home-prep-photo.webp",
-  "/illustrations/dadkit-real-prep-summary-photo.webp",
-  "/illustrations/dadkit-real-share-prep-photo.webp",
-  "/illustrations/dadkit-share-summary-sticker.png",
-  "/illustrations/dadkit-share-summary-sticker-v2.png",
-  "/illustrations/dadkit-timeline-calendar-sticker.png",
-  "/illustrations/dadkit-timeline-calendar-sticker-v2.png",
-];
-const PWA_ASSETS = [...PWA_ICON_ASSETS, ...PWA_ILLUSTRATION_ASSETS];
+const PWA_ASSETS = [...PWA_ICON_ASSETS];
 const STATIC_ASSETS = new Set(PWA_ASSETS);
 
 self.addEventListener("install", (event) => {
@@ -94,7 +70,6 @@ function shouldCacheAsset(url) {
   return (
     url.pathname.startsWith("/_next/static/") ||
     url.pathname === "/_next/image" ||
-    url.pathname.startsWith("/illustrations/") ||
     STATIC_ASSETS.has(url.pathname)
   );
 }

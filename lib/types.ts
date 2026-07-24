@@ -155,7 +155,6 @@ export type HospitalProfile = {
   partnerPolicyNotes?: string;
   wardNotes?: string;
   paymentNotes?: string;
-  parkingNotes?: string;
   sourceNotes?: string[];
 };
 

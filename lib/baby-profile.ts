@@ -9,11 +9,6 @@ type ChineseNewYearBoundary = {
   year: number;
 };
 
-export type BabyMascot = {
-  alt: string;
-  src: string;
-};
-
 export type BabyZodiacInfo = {
   animal: string;
   branch: string;
@@ -103,39 +98,6 @@ export function formatBabyZodiacLine(
   }
 
   return `${zodiac.stem}${zodiac.branch}年 · ${zodiac.element}${zodiac.animal}${sexLabel}`;
-}
-
-export function getBabyMascot(
-  profile?: Pick<UserProfile, "babySex" | "dueDate">,
-): BabyMascot {
-  const zodiac = getChineseZodiacInfo(profile?.dueDate);
-  const sex = getBabySex(profile);
-
-  if (!profile?.dueDate && sex === "unknown") {
-    return {
-      alt: "待产准备小马插图",
-      src: "/illustrations/dadkit-horse-girl.png",
-    };
-  }
-
-  if (zodiac?.animal === "马" && sex === "girl") {
-    return {
-      alt: "小马女宝待产插图",
-      src: "/illustrations/dadkit-horse-girl.png",
-    };
-  }
-
-  if (sex === "girl") {
-    return {
-      alt: "女宝待产插图",
-      src: "/illustrations/dadkit-baby-girl-timer.png",
-    };
-  }
-
-  return {
-    alt: "待产准备插图",
-    src: "/illustrations/dadkit-bear-transparent.png",
-  };
 }
 
 function positiveModulo(value: number, divisor: number) {

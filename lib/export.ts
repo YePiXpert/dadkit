@@ -28,16 +28,10 @@ const DAD_EXECUTION_KEYWORDS = [
   "证件",
   "身份证",
   "医保卡",
-  "电话",
-  "入口",
-  "路线",
-  "停车",
   "支付",
   "押金",
   "临出门",
   "安全座椅",
-  "产科",
-  "住院处",
 ];
 
 function formatProfile(profile: UserProfile | undefined, title: string) {
@@ -188,19 +182,6 @@ export function generateDadExecutionShareText(
 ) {
   const dadItems = dadExecutionItems(items);
   const docs = dadItems.filter((item) => item.category === "documents");
-  const phone = dadItems.filter(
-    (item) =>
-      item.name.includes("电话") ||
-      item.name.includes("产科") ||
-      item.name.includes("住院处") ||
-      item.name.includes("急诊"),
-  );
-  const route = dadItems.filter(
-    (item) =>
-      item.name.includes("入口") ||
-      item.name.includes("路线") ||
-      item.name.includes("停车"),
-  );
   const payment = dadItems.filter(
     (item) => item.name.includes("支付") || item.name.includes("押金"),
   );
@@ -228,8 +209,6 @@ export function generateDadExecutionShareText(
 
   return [
     formatProfile(profile, "DadKit 家人协作清单"),
-    section("保存电话", phone),
-    section("确认路线", route),
     section("证件包", docs),
     section("支付 / 押金", payment),
     section("临出门拿", lastMinute),
@@ -346,14 +325,8 @@ export function generateHospitalCommunicationShareText(
   const questions = normalizedItems.filter(
     (item) => item.itemKind === "question" || item.category === "hospital_questions",
   );
-  const routeAndContacts = normalizedItems.filter(
+  const settlement = normalizedItems.filter(
     (item) =>
-      item.name.includes("电话") ||
-      item.name.includes("产科") ||
-      item.name.includes("住院处") ||
-      item.name.includes("入口") ||
-      item.name.includes("路线") ||
-      item.name.includes("停车") ||
       item.name.includes("医保") ||
       item.name.includes("押金") ||
       item.name.includes("支付"),
@@ -362,7 +335,7 @@ export function generateHospitalCommunicationShareText(
   return [
     formatProfile(profile, "DadKit 医院沟通版"),
     section("医院规则确认", questions),
-    section("电话、路线和结算确认", routeAndContacts),
+    section("结算确认", settlement),
   ]
     .filter(Boolean)
     .join("\n");

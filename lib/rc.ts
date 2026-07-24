@@ -12,11 +12,6 @@ export type ContractionRecord = {
 export type BirthPlan = {
   emergencyContact: string;
   supportPerson: string;
-  hospitalPhone: string;
-  hospitalAddress: string;
-  hospitalRouteNotes: string;
-  nightEntranceNotes: string;
-  parkingNotes: string;
   medicationNotes: string;
   birthPreferences: string;
   painManagement: string;
@@ -67,11 +62,6 @@ export const POSTPARTUM_STATUS_LABELS: Record<PostpartumTaskStatus, string> = {
 export const DEFAULT_BIRTH_PLAN: BirthPlan = {
   emergencyContact: "",
   supportPerson: "",
-  hospitalPhone: "",
-  hospitalAddress: "",
-  hospitalRouteNotes: "",
-  nightEntranceNotes: "",
-  parkingNotes: "",
   medicationNotes: "",
   ...DEFAULT_BIRTH_PLAN_LABOR_PROMPTS,
 };
@@ -278,11 +268,6 @@ export function generateBirthPlanShareText(plan: BirthPlan) {
     "",
     `紧急联系人：${valueOrEmpty(merged.emergencyContact)}`,
     `陪产人：${valueOrEmpty(merged.supportPerson)}`,
-    `医院电话：${valueOrEmpty(merged.hospitalPhone)}`,
-    `入院地址：${valueOrEmpty(merged.hospitalAddress)}`,
-    `入院路线：${valueOrEmpty(merged.hospitalRouteNotes)}`,
-    `夜间入口：${valueOrEmpty(merged.nightEntranceNotes)}`,
-    `停车备注：${valueOrEmpty(merged.parkingNotes)}`,
     `过敏/长期用药备注：${valueOrEmpty(merged.medicationNotes)}`,
     "",
     "## 沟通偏好",

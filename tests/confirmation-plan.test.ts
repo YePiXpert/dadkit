@@ -14,7 +14,6 @@ describe("hospital confirmation plan", () => {
         "医院是否提供产褥垫？",
         "医院是否提供宝宝尿不湿？",
         "医院是否提供宝宝衣物？",
-        "夜间从哪个入口 / 急诊路线？",
         "是否允许陪产？",
         "住院押金大概多少？",
         "分娩镇痛的时机和费用？",
@@ -37,9 +36,6 @@ describe("hospital confirmation plan", () => {
   it("lists the fixed dad action tasks", () => {
     expect(DAD_ACTION_TASKS.map((task) => task.title)).toEqual(
       expect.arrayContaining([
-        "保存医院电话",
-        "收藏夜间入院导航",
-        "确认停车方案",
         "证件包放到固定位置",
         "确认支付方式",
         "确认陪产人证件",
@@ -62,7 +58,7 @@ describe("hospital confirmation plan", () => {
       completed: 0,
       total: DAD_ACTION_TASKS.length,
     });
-    expect(hospitalProgress.total).toBe(23);
-    expect(dadProgress.total).toBe(9);
+    expect(hospitalProgress.total).toBe(20);
+    expect(dadProgress.total).toBe(6);
   });
 });

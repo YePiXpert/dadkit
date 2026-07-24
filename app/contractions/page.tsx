@@ -171,7 +171,7 @@ export default function ContractionsPage() {
         <section className="mobile-shell lg:max-w-none">
           <Card>
             <CardContent className="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="section-kicker">待产准备状态</p>
                 <h2 className="mt-1 text-xl font-semibold tracking-normal">
                   {preparationSummary.readiness.label}{" "}
@@ -185,9 +185,11 @@ export default function ContractionsPage() {
                   宫缩记录只用于保存和沟通，不计入待产准备进度。
                 </p>
               </div>
-              <Button asChild>
-                <Link href="/share">生成分享截图</Link>
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button asChild>
+                  <Link href="/share">生成分享截图</Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </section>

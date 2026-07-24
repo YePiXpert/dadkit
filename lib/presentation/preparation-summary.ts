@@ -106,12 +106,7 @@ function countPostpartumProgress(tasks: PostpartumTask[]) {
 }
 
 function countBirthPlanReadiness(plan: BirthPlan) {
-  const checks = [
-    Boolean(plan.hospitalPhone.trim()),
-    Boolean(plan.hospitalAddress.trim() || plan.hospitalRouteNotes.trim()),
-    Boolean(plan.nightEntranceNotes.trim() || plan.parkingNotes.trim()),
-    Boolean(plan.emergencyContact.trim() || plan.supportPerson.trim()),
-  ];
+  const checks = [Boolean(plan.emergencyContact.trim() || plan.supportPerson.trim())];
 
   return progress(
     checks.length,
@@ -218,7 +213,7 @@ function buildModules({
       ...go,
       actionLabel: "整理临出门行动卡",
       boundary: "Go 模式只做行动核对，不判断是否应该入院。",
-      caption: "证件、路线、联系人、付款和入院沟通卡",
+      caption: "证件、联系人、付款和入院沟通卡",
       href: "/go",
       id: "go",
       sourceLabel: `行动卡 ${moduleSource(go)}`,

@@ -648,8 +648,8 @@ describe("store snapshots", () => {
       hospitalId: "hospital-a",
     };
     const legacyAnswer = {
-      itemId: "question-admission-phone",
-      name: "住院处或产科联系电话是多少？",
+      itemId: "question-payment-deposit",
+      name: "住院押金大概多少？",
       status: "confirmed" as const,
       updatedAt: "2026-06-09T00:00:00.000Z",
     };

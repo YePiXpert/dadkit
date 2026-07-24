@@ -470,7 +470,7 @@ export default function SetupPage() {
                     onChange={(event) =>
                       setDraft({ ...draft, hospitalNotes: event.target.value })
                     }
-                    placeholder="例如：产检时听到的入院入口、护士提醒、需要再次确认的事项"
+                    placeholder="例如：产检时听到的护士提醒、需要再次确认的事项"
                   />
                 </Field>
               </div>
@@ -492,7 +492,7 @@ function SetupHeader({ firstRun }: { firstRun: boolean }) {
       >
         <Home className="size-4" />
       </Link>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <h1 className="text-xl font-semibold leading-tight tracking-normal sm:text-2xl">
           创建资料
         </h1>

@@ -54,10 +54,6 @@ function goDoneStatuses(
 
 const birthPlan: Partial<BirthPlan> = {
   emergencyContact: "爸爸 13800000000",
-  hospitalAddress: "产科楼东门",
-  hospitalPhone: "010-12345678",
-  hospitalRouteNotes: "白天走住院部",
-  nightEntranceNotes: "夜间走急诊入口",
 };
 
 describe("preparation summary", () => {

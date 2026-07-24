@@ -30,35 +30,13 @@ export type PartnerSupportAction = {
 };
 
 export type BirthPlanShortField = {
-  key: keyof Pick<BirthPlan, "emergencyContact" | "supportPerson" | "hospitalPhone">;
+  key: keyof Pick<BirthPlan, "emergencyContact" | "supportPerson">;
   label: string;
   placeholder: string;
-};
-
-export type BirthPlanAdmissionField = {
-  key: keyof Pick<
-    BirthPlan,
-    | "hospitalAddress"
-    | "hospitalRouteNotes"
-    | "nightEntranceNotes"
-    | "parkingNotes"
-  >;
-  label: string;
-  placeholder: string;
-  multiline?: boolean;
 };
 
 export type BirthPlanLongField = {
-  key: keyof Omit<
-    BirthPlan,
-    | "emergencyContact"
-    | "supportPerson"
-    | "hospitalPhone"
-    | "hospitalAddress"
-    | "hospitalRouteNotes"
-    | "nightEntranceNotes"
-    | "parkingNotes"
-  >;
+  key: keyof Omit<BirthPlan, "emergencyContact" | "supportPerson">;
   label: string;
   placeholder: string;
 };
@@ -68,7 +46,7 @@ export const LABOR_PREPARATION_AREAS: LaborPreparationArea[] = [
     id: "material",
     title: "物质准备",
     description: "把医院会用、路上要拿、产房可带的物品先问清楚。",
-    items: ["待产包", "证件资料", "入院路线", "临时购买清单"],
+    items: ["待产包", "证件资料", "医院提供物品", "临时购买清单"],
   },
   {
     id: "body",
@@ -186,37 +164,6 @@ export const BIRTH_PLAN_SHORT_FIELDS: BirthPlanShortField[] = [
     key: "supportPerson",
     label: "陪产人",
     placeholder: "陪产人姓名和联系方式",
-  },
-  {
-    key: "hospitalPhone",
-    label: "医院电话",
-    placeholder: "产科 / 住院处 / 急诊电话",
-  },
-];
-
-export const BIRTH_PLAN_ADMISSION_FIELDS: BirthPlanAdmissionField[] = [
-  {
-    key: "hospitalAddress",
-    label: "入院地址",
-    placeholder: "医院地址 / 产科楼 / 住院部位置",
-  },
-  {
-    key: "hospitalRouteNotes",
-    label: "入院路线",
-    placeholder: "白天走哪个门、先到哪里、需要带什么材料",
-    multiline: true,
-  },
-  {
-    key: "nightEntranceNotes",
-    label: "夜间入口",
-    placeholder: "夜间急诊入口、分诊台、值班电话等",
-    multiline: true,
-  },
-  {
-    key: "parkingNotes",
-    label: "停车备注",
-    placeholder: "停车场入口、楼层、电梯、缴费方式",
-    multiline: true,
   },
 ];
 

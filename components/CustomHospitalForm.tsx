@@ -101,24 +101,14 @@ export function CustomHospitalForm({
           />
         </Field>
       </div>
-      <div className="field-grid">
-        <Field label="停车/入院动线备注">
-          <Textarea
-            value={hospital.parkingNotes ?? ""}
-            onChange={(event) =>
-              onChange({ ...hospital, parkingNotes: event.target.value })
-            }
-          />
-        </Field>
-        <Field label="护士/医生特别提醒">
-          <Textarea
-            value={hospital.admissionNotes ?? ""}
-            onChange={(event) =>
-              onChange({ ...hospital, admissionNotes: event.target.value })
-            }
-          />
-        </Field>
-      </div>
+      <Field label="护士/医生特别提醒">
+        <Textarea
+          value={hospital.admissionNotes ?? ""}
+          onChange={(event) =>
+            onChange({ ...hospital, admissionNotes: event.target.value })
+          }
+        />
+      </Field>
     </div>
   );
 }

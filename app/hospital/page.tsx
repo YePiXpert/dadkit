@@ -24,6 +24,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  ITEM_TILE_TONE_STYLES,
+  type ItemTileTone,
+} from "@/lib/presentation/item-icons";
+import {
   DAD_ACTION_TASKS,
   getDadActionProgress,
   getHospitalQuestionProgress,
@@ -337,7 +341,7 @@ export default function HospitalPage() {
           }
         />
         <QuestionSection
-          description="路线、电话、停车和证件包，是家人临近入院前要落实的行动。"
+          description="证件包、支付方式和临产异常联系流程，是家人临近入院前要落实的行动。"
           icon={Hospital}
           items={dadConfirmItems}
           title="家人要确认"
@@ -471,29 +475,56 @@ type HospitalQuickRowInput = {
   title: string;
 };
 
+const QUICK_GRID_TONES: ItemTileTone[] = [
+  "mom",
+  "docs",
+  "baby",
+  "dad",
+  "car",
+  "lastminute",
+];
+
 function HospitalQuickGrid({ items }: { items: HospitalQuickRowInput[] }) {
   return (
     <section className="mobile-shell grid grid-cols-2 gap-2 lg:max-w-none">
-      {items.map((item) => (
-        <HospitalQuickGridItem item={item} key={item.title} />
+      {items.map((item, index) => (
+        <HospitalQuickGridItem
+          item={item}
+          key={item.title}
+          tone={QUICK_GRID_TONES[index % QUICK_GRID_TONES.length]}
+        />
       ))}
     </section>
   );
 }
 
-function HospitalQuickGridItem({ item }: { item: HospitalQuickRowInput }) {
+function HospitalQuickGridItem({
+  item,
+  tone,
+}: {
+  item: HospitalQuickRowInput;
+  tone: ItemTileTone;
+}) {
   const Icon = item.icon;
+  const toneStyle = ITEM_TILE_TONE_STYLES[tone];
 
   return (
     <a
-      className="grid min-h-[4.5rem] min-w-0 gap-1.5 rounded-xl border border-border bg-card p-2.5 shadow-sm transition-colors active:bg-secondary"
+      className="grid min-h-[4.5rem] min-w-0 gap-1.5 rounded-xl p-2.5 shadow-sm transition-transform active:scale-[0.98]"
       href={`#hospital-confirmation-${item.groupId}`}
+      style={{ backgroundColor: toneStyle.backgroundColor }}
     >
       <span className="flex items-start justify-between gap-2">
-        <span className="icon-tile size-8">
+        <span
+          className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/85"
+          style={{ color: toneStyle.color }}
+        >
           <Icon className="size-4" />
         </span>
-        <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+        <span
+          className="shrink-0 text-xs font-semibold"
+          style={{ color: toneStyle.color }}
+        >
           {item.done ? "已确认" : "待确认"}
         </span>
       </span>
@@ -650,7 +681,7 @@ function AdvancedSettings({
               <Textarea
                 value={notesOverride}
                 onChange={(event) => onNotesOverrideChange(event.target.value)}
-                placeholder="例如：最近一次产检确认的入院入口、停车、陪产提醒"
+                placeholder="例如：最近一次产检确认的医院提供物品、陪产提醒"
               />
             </Field>
             <Button className="w-full sm:w-fit" onClick={onSaveOverride}>

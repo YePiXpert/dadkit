@@ -177,7 +177,7 @@ describe("preparation semantics", () => {
 
   it("uses question and task labels for hospital questions and dad tasks", () => {
     const question = generatedItem("general-question-pads");
-    const task = generatedItem("general-partner-save-phone");
+    const task = generatedItem("general-partner-doc-folder");
 
     expect(inferPreparationKind(question)).toBe("question");
     expect(getStatusLabelForItem("todo", question)).toBe("待问");

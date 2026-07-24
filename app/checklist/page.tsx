@@ -32,6 +32,7 @@ import {
   filterItemsForChecklistMode,
 } from "@/lib/rules";
 import { getBabySexLabel } from "@/lib/baby-profile";
+import { HERO_GRADIENT } from "@/lib/presentation/hero-gradient";
 import { useDadKitStore } from "@/lib/store";
 import {
   CATEGORY_LABELS,
@@ -127,16 +128,6 @@ export default function ChecklistPage() {
     () =>
       Object.fromEntries(
         CHECKLIST_VISUAL_GROUPS.map((group) => {
-          if (group.id === "all") {
-            return [
-              group.id,
-              {
-                remaining: Math.max(0, packing.total - packing.completed),
-                total: packing.total,
-              },
-            ];
-          }
-
           const items = getChecklistVisualGroupItems(modeItems, group.id);
           const stats = calculateCompletion(items);
 
@@ -149,7 +140,7 @@ export default function ChecklistPage() {
           ];
         }),
       ) as Record<ChecklistVisualGroup, { total: number; remaining: number }>,
-    [modeItems, packing.completed, packing.total],
+    [modeItems],
   );
   const renderedGroups = useMemo(
     () =>
@@ -356,22 +347,34 @@ function ChecklistProgressCard({
   packing: { completed: number; percent: number; total: number };
 }) {
   return (
-    <section className="card-surface p-4">
+    <section
+      className="rounded-2xl p-4 text-primary-foreground shadow-sm"
+      style={{ background: HERO_GRADIENT }}
+    >
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="section-kicker">待产包进度</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold text-primary-foreground/80">
+            待产包进度
+          </p>
           <div className="mt-1 flex items-end gap-2">
-            <span className="text-3xl font-semibold leading-none text-primary">
+            <span className="text-3xl font-semibold leading-none">
               {packing.percent}%
+            </span>
+            <span className="text-sm font-semibold">
+              {packing.completed}/{packing.total}
             </span>
           </div>
         </div>
-        <span className="text-sm font-semibold text-primary">
-          {packing.completed}/{packing.total}
-        </span>
       </div>
-      <Progress className="mt-3 h-2" value={packing.percent} />
-      <p className="mt-2 text-xs text-muted-foreground">
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/30">
+        <div
+          className="h-full rounded-full bg-white"
+          style={{
+            width: `${Math.min(100, Math.max(0, packing.percent))}%`,
+          }}
+        />
+      </div>
+      <p className="mt-2 text-xs text-primary-foreground/85">
         已完成 {packing.completed} 项，共 {packing.total} 项
       </p>
     </section>
@@ -386,7 +389,7 @@ function getEmptyStateCopy(visualGroup: ChecklistVisualGroup) {
     };
   }
 
-  if (visualGroup === "go" || visualGroup === "last_minute") {
+  if (visualGroup === "go") {
     return {
       title: "临出门事项已收口",
       description: "可以回到全部清单查看其他准备项目。",

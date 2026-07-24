@@ -4,6 +4,10 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const globals = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
+const heroGradient = readFileSync(
+  join(process.cwd(), "lib", "presentation", "hero-gradient.ts"),
+  "utf8",
+);
 const tailwindConfig = readFileSync(
   join(process.cwd(), "tailwind.config.ts"),
   "utf8",
@@ -50,6 +54,10 @@ const postpartumPage = readFileSync(
   join(process.cwd(), "app", "postpartum", "page.tsx"),
   "utf8",
 );
+const birthPlanPage = readFileSync(
+  join(process.cwd(), "app", "birth-plan", "page.tsx"),
+  "utf8",
+);
 const sharePage = readFileSync(
   join(process.cwd(), "app", "share", "page.tsx"),
   "utf8",
@@ -93,6 +101,7 @@ const sharePosterCanvas = readFileSync(
 const banned = (...parts: string[]) => parts.join("");
 
 const appSources = {
+  birthPlanPage,
   button,
   card,
   checklistCategoryCard,
@@ -193,37 +202,25 @@ describe("modern minimal visual direction", () => {
       );
       expect(source, name).not.toContain("font-black");
       expect(source, name).not.toContain("/illustrations/");
-      expect(source, name).not.toContain("CuteIllustration");
     }
   });
 
-  it("keeps illustration asset files on disk for the service worker cache", () => {
-    for (const filename of [
-      "dadkit-baby-girl-timer.png",
-      "dadkit-bear-transparent.png",
-      "dadkit-checklist-bag-sticker-v2.png",
-      "dadkit-dad-avatar.png",
-      "dadkit-family-transparent.png",
-      "dadkit-go-bunny.png",
-      "dadkit-horse-girl.png",
-      "dadkit-home-journal-sticker-v2.png",
-      "dadkit-hospital-route-sticker-v2.png",
-      "dadkit-maternity-journal-sticker.png",
-      "dadkit-postpartum-paperwork-sticker.png",
-      "dadkit-share-summary-sticker-v2.png",
-      "dadkit-timeline-calendar-sticker-v2.png",
-    ]) {
-      expect(
-        existsSync(join(process.cwd(), "public", "illustrations", filename)),
-      ).toBe(true);
-    }
+  it("removed the shared illustration component and props", () => {
     expect(
       existsSync(join(process.cwd(), "components", "CuteIllustration.tsx")),
     ).toBe(false);
     expect(pageIntro).toContain("section-kicker");
     expect(pageIntro).not.toContain("illustrationVariant");
     expect(emptyState).toContain("card-surface");
+    expect(emptyState).toContain("icon-tile");
     expect(emptyState).not.toContain("macaron-panel");
+  });
+
+  it("does not use illustrations anywhere in app code", () => {
+    for (const [name, source] of Object.entries(appSources)) {
+      expect(source, name).not.toContain("CuteIllustration");
+      expect(source, name).not.toContain("illustrationVariant");
+    }
   });
 
   it("ships a saveable share poster with responsive ratios", () => {
@@ -246,7 +243,6 @@ describe("modern minimal visual direction", () => {
     expect(checklistPage).not.toContain("清单总进度");
     expect(homePage).toContain("card-surface");
     expect(hospitalPage).toContain("card-surface");
-    expect(settingsPage).toContain("card-surface");
     expect(checklistPage).toContain("card-surface");
     expect(goPage).toContain("card-surface");
   });
@@ -254,17 +250,18 @@ describe("modern minimal visual direction", () => {
   it("uses app-like hero, checklist and timer patterns on action pages", () => {
     expect(goPage).toContain("准备就绪度");
     expect(goPage).toContain("buildPreparationSummary");
-    expect(goPage).toContain("含行动卡、路线电话和联系人");
     expect(goPage).toContain("必带物品");
     expect(goPage).toContain("GO_DISPLAY_ITEMS");
-    expect(goPage).toContain("GoAdmissionInfoCard");
-    expect(goPage).toContain("hospitalRouteNotes");
-    expect(goPage).toContain("nightEntranceNotes");
-    expect(goPage).toContain("parkingNotes");
+    expect(goPage).not.toContain("GoAdmissionInfoCard");
+    expect(goPage).not.toContain("hospitalRouteNotes");
+    expect(goPage).not.toContain("nightEntranceNotes");
+    expect(goPage).not.toContain("parkingNotes");
+    expect(goPage).not.toContain("hospitalPhone");
     expect(goPage).toContain("全部确认，出发");
     expect(goPage).not.toContain(banned("全部 ", "OK", "，出发！"));
     expect(goPage).toContain("markAllDone");
-    expect(goPage).not.toContain("linear-gradient");
+    expect(goPage).toContain("HERO_GRADIENT");
+    expect(heroGradient).toContain("linear-gradient");
     expect(contractionsPage).toContain("本次宫缩计时圆盘");
     expect(contractionsPage).toContain("buildPreparationSummary");
     expect(contractionsPage).toContain("待产准备状态");
@@ -345,12 +342,15 @@ describe("modern minimal visual direction", () => {
     expect(settingsPage).toContain("formatBabyZodiacLine");
     expect(settingsPage).not.toContain("getBabyMascot");
     expect(settingsPage).not.toContain("dadkit-dad-avatar.png");
+    expect(settingsPage).not.toContain("CuteIllustration");
     expect(settingsPage).toContain("备份与恢复");
-    expect(settingsPage).toContain("应用信息");
-    expect(settingsPage).toContain("SettingsDetailsSection");
+    expect(settingsPage).toContain("关于 DadKit");
+    expect(settingsPage).toContain("清空本地数据");
+    expect(settingsPage).not.toContain("应用信息");
+    expect(settingsPage).not.toContain("SettingsDetailsSection");
     expect(settingsPage).toContain("<details");
-    expect(settingsPage).toMatch(/<SettingsDetailsSection[\s\S]*title="最近备份"/);
-    expect(settingsPage).toMatch(/<SettingsDetailsSection[\s\S]*title="WebDAV 备份"/);
+    expect(settingsPage).toContain("最近备份");
+    expect(settingsPage).toContain("WebDAV 备份");
     expect(settingsPage).not.toContain("常用小工具");
     expect(settingsPage).not.toContain("完整工具目录");
   });

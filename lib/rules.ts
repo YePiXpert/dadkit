@@ -566,7 +566,6 @@ function buildHospitalItems(
     hospital.partnerPolicyNotes,
     hospital.wardNotes,
     hospital.paymentNotes,
-    hospital.parkingNotes,
     ...(hospital.sourceNotes ?? []),
     profile.hospitalNotes,
     override?.notesOverride,

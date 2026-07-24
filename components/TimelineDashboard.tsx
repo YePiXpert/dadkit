@@ -257,15 +257,19 @@ function CurrentStagePanel({
 }) {
   return (
     <section className="card-surface w-full max-w-full overflow-hidden p-4">
-      <div className="min-w-0">
-        <p className="section-kicker">时间线</p>
-        <h1 className="mt-1 break-words text-xl font-semibold leading-tight tracking-normal sm:text-2xl">
-          {stage ? stage.title : "准备时间线"}
-        </h1>
-        <p className="mt-2 break-words text-sm leading-6 text-muted-foreground">
-          预产期 {formatDueDateLabel(dueDate)}
-          {typeof daysLeft === "number" ? ` · ${formatDaysLeft(daysLeft)}` : ""}
-        </p>
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="section-kicker">时间线</p>
+          <h1 className="mt-1 break-words text-xl font-semibold leading-tight tracking-normal sm:text-2xl">
+            {stage ? stage.title : "准备时间线"}
+          </h1>
+          <p className="mt-2 break-words text-sm leading-6 text-muted-foreground">
+            预产期 {formatDueDateLabel(dueDate)}
+            {typeof daysLeft === "number"
+              ? ` · ${formatDaysLeft(daysLeft)}`
+              : ""}
+          </p>
+        </div>
       </div>
 
       <div className="mt-4 grid min-w-0 gap-3 rounded-lg border border-border bg-background p-3">

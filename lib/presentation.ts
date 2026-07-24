@@ -14,22 +14,19 @@ export type ChecklistVisualGroup =
   | "dad"
   | "shopping"
   | "go"
-  | "last_minute"
   | "going_home";
 
 export const CHECKLIST_VISUAL_GROUPS: Array<{
   id: ChecklistVisualGroup;
   label: string;
 }> = [
-  { id: "all", label: "待产包" },
   { id: "documents_folder", label: "证件包检查" },
   { id: "mom_bag", label: "妈妈包" },
   { id: "baby_bag", label: "宝宝包" },
   { id: "shopping", label: "购物清单" },
   { id: "dad", label: "爸爸背包" },
   { id: "going_home", label: "出院返家" },
-  { id: "go", label: "临出门检查" },
-  { id: "last_minute", label: "临出门拿" },
+  { id: "go", label: "临出门" },
 ];
 
 export const CHECKLIST_GROUP_LABELS: Record<ChecklistVisualGroup, string> = {
@@ -39,8 +36,7 @@ export const CHECKLIST_GROUP_LABELS: Record<ChecklistVisualGroup, string> = {
   baby_bag: "宝宝包",
   dad: "爸爸背包",
   shopping: "购物清单",
-  go: "临出门检查",
-  last_minute: "临出门拿",
+  go: "临出门",
   going_home: "出院返家",
 };
 
@@ -50,7 +46,7 @@ export const CHECKLIST_GROUP_ORDER: ChecklistVisualGroup[] = [
   "baby_bag",
   "dad",
   "going_home",
-  "last_minute",
+  "go",
 ];
 
 export function isPackingChecklistItem(item: ChecklistItem) {
@@ -85,7 +81,7 @@ export function getChecklistVisualGroup(item: ChecklistItem): ChecklistVisualGro
     normalized.status === "last_minute" ||
     normalized.bag === "last_minute"
   ) {
-    return "last_minute";
+    return "go";
   }
 
   if (normalized.category === "partner") {
@@ -118,7 +114,9 @@ export function getChecklistVisualGroupItems(
   }
 
   if (visualGroup === "go") {
-    return items.map(normalizeChecklistItem).filter(isGoCheckItem);
+    return items
+      .map(normalizeChecklistItem)
+      .filter((item) => isGoCheckItem(item) || item.status === "last_minute");
   }
 
   if (visualGroup === "dad") {

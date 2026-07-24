@@ -975,7 +975,6 @@ export function createCustomHospitalProfile(
     partnerPolicyNotes: patch.partnerPolicyNotes,
     wardNotes: patch.wardNotes,
     paymentNotes: patch.paymentNotes,
-    parkingNotes: patch.parkingNotes,
     sourceNotes: patch.sourceNotes,
   };
 }

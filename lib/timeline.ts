@@ -142,7 +142,7 @@ function todayTaskDecisionScore(task: TimelineTask) {
     score += 160;
   }
 
-  if (titleHas(task, "证件", "电话", "路线", "停车", "支付", "押金", "安全座椅")) {
+  if (titleHas(task, "证件", "支付", "押金", "安全座椅")) {
     score += 120;
   }
 
@@ -302,26 +302,6 @@ export function generateTimeline(
           undefined,
           ["question-provided-baby-clothes"],
         ),
-        task(
-          "six_weeks",
-          "timeline-save-phone",
-          "保存产科/住院处电话",
-          "dad_task",
-          "must",
-          relatedIds(items, (item) => nameIncludes(item, "产科", "住院处")),
-          undefined,
-          ["question-admission-phone", "question-labor-urgent-contact"],
-        ),
-        task(
-          "six_weeks",
-          "timeline-entrance-parking",
-          "确认入院入口和停车方案",
-          "dad_task",
-          "must",
-          relatedIds(items, (item) => nameIncludes(item, "入院入口", "停车")),
-          undefined,
-          ["question-admission-day-entrance", "question-admission-night-route"],
-        ),
       ],
     },
     {
@@ -468,8 +448,6 @@ export function generateTimeline(
             "question-provided-postpartum-pads",
             "question-provided-baby-diapers",
             "question-provided-baby-clothes",
-            "question-admission-day-entrance",
-            "question-admission-night-route",
           ],
         ),
       ],
@@ -480,26 +458,6 @@ export function generateTimeline(
       subtitle: "预产期前 1 周",
       targetDaysBeforeDue: 7,
       tasks: [
-        task(
-          "one_week",
-          "timeline-night-route",
-          "确认夜间入院路线",
-          "dad_task",
-          "must",
-          relatedIds(items, (item) => nameIncludes(item, "夜间入院", "急诊入院")),
-          undefined,
-          ["question-admission-night-route"],
-        ),
-        task(
-          "one_week",
-          "timeline-parking",
-          "确认停车方案",
-          "dad_task",
-          "must",
-          relatedIds(items, (item) => nameIncludes(item, "停车")),
-          undefined,
-          ["question-admission-day-entrance", "question-admission-night-route"],
-        ),
         task(
           "one_week",
           "timeline-payment-deposit",
@@ -546,8 +504,8 @@ export function generateTimeline(
               item.itemKind === "question" &&
               nameIncludes(item, "破水", "见红", "胎动异常"),
           ),
-          "保存产科、急诊或住院处电话，并确认白天/夜间应该走哪条路线。",
-          ["question-labor-urgent-contact", "question-admission-night-route"],
+          "提前和家人说好出现这些情况时联系哪里、由谁记录宫缩和胎动变化。",
+          ["question-labor-urgent-contact"],
         ),
         task(
           "one_week",

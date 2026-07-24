@@ -5,6 +5,7 @@ import {
   CHECKLIST_VISUAL_GROUPS,
   type ChecklistVisualGroup,
 } from "@/lib/presentation";
+import { CHECKLIST_GROUP_TILE_STYLES } from "@/lib/presentation/item-icons";
 
 type ChecklistGroupTabsProps = {
   value: ChecklistVisualGroup;
@@ -36,10 +37,8 @@ export function ChecklistGroupTabs({
             onClick={() => onChange(group.id)}
           >
             <span
-              className={cn(
-                "flex size-8 items-center justify-center rounded-lg bg-secondary text-primary",
-                active && "bg-primary text-primary-foreground",
-              )}
+              className="flex size-9 items-center justify-center rounded-xl"
+              style={CHECKLIST_GROUP_TILE_STYLES[group.id]}
             >
               <ChecklistGroupIcon className="size-6" group={group.id} />
             </span>
@@ -115,19 +114,16 @@ function ChecklistGroupIcon({
       <svg aria-hidden="true" className={className} viewBox="0 0 32 32">
         <rect fill={softFill} height="17" rx="4" stroke={stroke} strokeWidth="2.2" width="18" x="7" y="9" />
         <path d="M11 7v5M21 7v5M7 15h18" stroke={stroke} strokeLinecap="round" strokeWidth="2.2" />
-        <path d="M13 20h6" stroke={stroke} strokeLinecap="round" strokeWidth="2.2" />
+        <path d="m12 20 2.5 2.5L20 17" fill="none" stroke={stroke} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" />
       </svg>
     );
   }
 
-  if (group === "last_minute" || group === "documents_folder") {
+  if (group === "documents_folder") {
     return (
       <svg aria-hidden="true" className={className} viewBox="0 0 32 32">
         <rect fill={softFill} height="17" rx="3" stroke={stroke} strokeWidth="2.2" width="18" x="7" y="10" />
         <path d="M11 10V8h10v2M12 17h8M12 22h5" stroke={stroke} strokeLinecap="round" strokeWidth="2.2" />
-        {group === "last_minute" ? (
-          <path d="m19 22 2 2 4-5" fill="none" stroke={stroke} strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" />
-        ) : null}
       </svg>
     );
   }

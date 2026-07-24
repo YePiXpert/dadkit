@@ -245,8 +245,7 @@ export function getItemTileTone(item: ChecklistItem): ItemTileTone {
 export const ITEM_TILE_TONE_STYLES: Record<
   ItemTileTone,
   { backgroundColor: string; color: string }
-> = {
-  mom: {
+> = {  mom: {
     backgroundColor: "hsl(var(--tile-mom-bg))",
     color: "hsl(var(--tile-mom-fg))",
   },
@@ -273,5 +272,51 @@ export const ITEM_TILE_TONE_STYLES: Record<
   default: {
     backgroundColor: "hsl(var(--muted))",
     color: "hsl(var(--muted-foreground))",
+  },
+};
+
+/**
+ * Tile colors for the checklist visual groups (打包分组 tabs). Kept here so
+ * group tabs and item rows share one palette.
+ */
+export const CHECKLIST_GROUP_TILE_STYLES: Record<
+  string,
+  { backgroundColor: string; color: string }
+> = {
+  all: {
+    backgroundColor: "hsl(var(--secondary))",
+    color: "hsl(var(--primary))",
+  },
+  documents_folder: {
+    backgroundColor: "hsl(var(--tile-docs-bg))",
+    color: "hsl(var(--tile-docs-fg))",
+  },
+  mom_bag: {
+    backgroundColor: "hsl(var(--tile-mom-bg))",
+    color: "hsl(var(--tile-mom-fg))",
+  },
+  baby_bag: {
+    backgroundColor: "hsl(var(--tile-baby-bg))",
+    color: "hsl(var(--tile-baby-fg))",
+  },
+  shopping: {
+    backgroundColor: "hsl(var(--tile-dad-bg))",
+    color: "hsl(var(--tile-dad-fg))",
+  },
+  dad: {
+    backgroundColor: "hsl(var(--tile-docs-bg))",
+    color: "hsl(var(--tile-docs-fg))",
+  },
+  going_home: {
+    backgroundColor: "hsl(var(--tile-car-bg))",
+    color: "hsl(var(--tile-car-fg))",
+  },
+  go: {
+    backgroundColor: "hsl(var(--primary))",
+    color: "hsl(var(--primary-foreground))",
+  },
+  last_minute: {
+    backgroundColor: "hsl(var(--tile-lastminute-bg))",
+    color: "hsl(var(--tile-lastminute-fg))",
   },
 };

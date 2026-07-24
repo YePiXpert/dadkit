@@ -491,7 +491,6 @@ function isHospitalProfile(value: unknown): value is HospitalProfile {
       "partnerPolicyNotes",
       "wardNotes",
       "paymentNotes",
-      "parkingNotes",
     ].every((key) => hasOptionalString(value, key))
   );
 }

@@ -21,11 +21,7 @@
 
 ## Illustration system
 
-- 主视觉：`public/illustrations/dadkit-horse-girl.png`，用于首页首屏、空状态、时间线预产期卡和临出门 hero。
-- 备用家庭视觉：`public/illustrations/dadkit-family-transparent.png`，仅在需要共育场景说明时使用。
-- 旧贴纸：`public/illustrations/dadkit-bear-transparent.png` 保留为历史兼容素材，不再作为默认 IP。
-- 插画资源使用透明 alpha PNG，保持矢量感和柔和母婴 App 气质，避免矩形背景破坏卡片融合。
-- 插画不承载医疗判断，不放文字、Logo 或品牌符号，作为温和引导和情绪缓冲。
+- 界面不使用插画；视觉依靠珊瑚渐变 hero、6 色图标 tile 与 lucide 图标撑住，页面源码禁止引用 `public/illustrations/` 素材。
 
 ## Interaction rules
 

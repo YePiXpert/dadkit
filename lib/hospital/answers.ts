@@ -12,10 +12,6 @@ const PROVIDED_ID_BY_QUESTION_ID: Record<string, string> = {
 };
 
 const CONFIRMATION_QUESTION_KEYWORDS = [
-  "入院入口",
-  "夜间路线",
-  "停车",
-  "电话",
   "支付",
   "押金",
   "医保结算",

@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  BIRTH_PLAN_ADMISSION_FIELDS,
   BIRTH_PLAN_LONG_FIELDS,
   BIRTH_PLAN_SHORT_FIELDS,
   PARTNER_SUPPORT_ACTIONS,
@@ -32,7 +31,7 @@ export default function BirthPlanPage() {
       <PageIntro
         eyebrow="沟通小抄"
         title="临出门沟通卡"
-        description="这不是医疗建议，只整理联系人、路线、偏好和备注，方便家人、护士和医生快速沟通。"
+        description="这不是医疗建议，只整理联系人、偏好和备注，方便家人、护士和医生快速沟通。"
       />
 
       <section className="mobile-shell grid gap-3 lg:max-w-none lg:grid-cols-[1fr_0.9fr]">
@@ -44,7 +43,7 @@ export default function BirthPlanPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               {BIRTH_PLAN_SHORT_FIELDS.map((field) => (
                 <Field
                   htmlFor={`birth-plan-${field.key}`}
@@ -57,32 +56,6 @@ export default function BirthPlanPage() {
                     value={birthPlan[field.key]}
                     onChange={(event) => updateField(field.key, event.target.value)}
                   />
-                </Field>
-              ))}
-            </div>
-
-            <div className="grid gap-3">
-              {BIRTH_PLAN_ADMISSION_FIELDS.map((field) => (
-                <Field
-                  htmlFor={`birth-plan-${field.key}`}
-                  key={field.key}
-                  label={field.label}
-                >
-                  {field.multiline ? (
-                    <Textarea
-                      id={`birth-plan-${field.key}`}
-                      placeholder={field.placeholder}
-                      value={birthPlan[field.key]}
-                      onChange={(event) => updateField(field.key, event.target.value)}
-                    />
-                  ) : (
-                    <Input
-                      id={`birth-plan-${field.key}`}
-                      placeholder={field.placeholder}
-                      value={birthPlan[field.key]}
-                      onChange={(event) => updateField(field.key, event.target.value)}
-                    />
-                  )}
                 </Field>
               ))}
             </div>

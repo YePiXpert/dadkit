@@ -4,9 +4,8 @@ import { useMemo } from "react";
 import { Check, ClipboardCheck } from "lucide-react";
 
 import { EmptyState } from "@/components/EmptyState";
-import { GoAdmissionInfoCard } from "@/components/GoAdmissionInfoCard";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { HERO_GRADIENT } from "@/lib/presentation/hero-gradient";
 import { buildPreparationSummary } from "@/lib/presentation/preparation-summary";
 import { useDadKitStore } from "@/lib/store";
 import {
@@ -63,7 +62,6 @@ export default function GoPage() {
   const timelineTaskStatuses = useDadKitStore(
     (state) => state.timelineTaskStatuses,
   );
-  const saveBirthPlan = useDadKitStore((state) => state.saveBirthPlan);
   const updateTimelineTaskStatus = useDadKitStore(
     (state) => state.updateTimelineTaskStatus,
   );
@@ -119,13 +117,6 @@ export default function GoPage() {
   const progressPercent =
     goReadiness?.percent ??
     (tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100));
-  const hasAnyAdmissionInfo = Boolean(
-    birthPlan.hospitalPhone.trim() ||
-      birthPlan.hospitalAddress.trim() ||
-      birthPlan.hospitalRouteNotes.trim() ||
-      birthPlan.nightEntranceNotes.trim() ||
-      birthPlan.parkingNotes.trim(),
-  );
 
   function displayItemDone(item: GoChecklistDisplayItem) {
     return item.taskIds.every((taskId) =>
@@ -193,34 +184,40 @@ export default function GoPage() {
           </p>
         </div>
 
-        <div className="card-surface grid gap-3 p-4">
+        <div
+          className="grid gap-3 rounded-2xl p-4 text-primary-foreground shadow-sm"
+          style={{ background: HERO_GRADIENT }}
+        >
           <div className="flex items-center gap-3">
-            <span className="icon-tile">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white/25">
               <ClipboardCheck className="size-5" />
             </span>
-            <div className="min-w-0">
-              <p className="section-kicker">准备就绪度</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-primary-foreground/80">
+                准备就绪度
+              </p>
               <p className="mt-0.5 text-2xl font-semibold tracking-normal">
                 {progressPercent}%
               </p>
             </div>
           </div>
-          <Progress value={progressPercent} />
+          <div className="h-2 overflow-hidden rounded-full bg-white/30">
+            <div
+              className="h-full rounded-full bg-white"
+              style={{
+                width: `${Math.min(100, Math.max(0, progressPercent))}%`,
+              }}
+            />
+          </div>
           <div className="grid gap-1">
             <p className="text-sm font-semibold">
               已完成 {readinessCompleted} / 共 {readinessTotal} 项
             </p>
-            <p className="text-xs leading-5 text-muted-foreground">
-              含行动卡、路线电话和联系人
+            <p className="text-xs leading-5 text-primary-foreground/85">
+              含行动卡和联系人
             </p>
           </div>
         </div>
-
-        <GoAdmissionInfoCard
-          birthPlan={birthPlan}
-          hasAnyAdmissionInfo={hasAnyAdmissionInfo}
-          onUpdate={saveBirthPlan}
-        />
 
         <section className="card-surface overflow-hidden">
           <div className="border-b border-border px-4 py-3">

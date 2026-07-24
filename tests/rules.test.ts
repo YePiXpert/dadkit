@@ -181,8 +181,7 @@ describe("generateChecklist", () => {
       (item) => item.category === "partner" && item.itemKind === "task",
     );
 
-    expect(dadTasks.some((item) => item.name === "保存产科/住院处电话")).toBe(true);
-    expect(dadTasks.some((item) => item.name === "确认夜间入院入口")).toBe(true);
+    expect(dadTasks.some((item) => item.name === "确认证件包位置")).toBe(true);
     expect(dadTasks.some((item) => item.name === "确认安全座椅安装")).toBe(true);
   });
 
@@ -441,12 +440,13 @@ describe("generateChecklist", () => {
     ).toBe(true);
   });
 
-  it("keeps obstetrics or admission phone question", () => {
-    const items = generateChecklist(makeProfile());
+  it("drops phone, parking and entrance questions and tasks", () => {
+    const items = generateChecklist(makeProfile({ partnerPresent: true }));
 
-    expect(
-      items.some((item) => item.name === "产科 / 住院处联系电话是否已保存？"),
-    ).toBe(true);
+    expect(items.some((item) => item.name.includes("停车"))).toBe(false);
+    expect(items.some((item) => item.name.includes("联系电话"))).toBe(false);
+    expect(items.some((item) => item.name.includes("入院入口"))).toBe(false);
+    expect(items.some((item) => item.name.includes("入院路线"))).toBe(false);
   });
 
   it("does not count hospital questions toward packing completion", () => {

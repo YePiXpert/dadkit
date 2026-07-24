@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 
@@ -90,28 +90,18 @@ describe("release endpoints and pages", () => {
     ).toBe(true);
   });
 
-  it("pre-caches app illustrations for installed PWA sessions", () => {
+  it("does not pre-cache app illustrations for installed PWA sessions", () => {
     const sw = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
-    const illustrationAssets = readdirSync(
-      join(process.cwd(), "public", "illustrations"),
-    )
-      .filter((file) => /\.(png|webp)$/.test(file))
-      .map((file) => `/illustrations/${file}`)
-      .sort();
 
-    expect(illustrationAssets.length).toBeGreaterThan(0);
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.3.0-coral-v1"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.3.0-coral-v2"');
     expect(sw).toContain("const CORE_ROUTES = [");
     expect(sw).toContain('"/checklist"');
     expect(sw).toContain('"/hospital"');
     expect(sw).toContain('"/timeline"');
     expect(sw).toContain("precacheAppShell");
     expect(sw).toContain('url.pathname === "/_next/image"');
-    expect(sw).toContain('url.pathname.startsWith("/illustrations/")');
-
-    for (const asset of illustrationAssets) {
-      expect(sw).toContain(`"${asset}"`);
-    }
+    expect(sw).not.toContain("/illustrations/");
+    expect(sw).not.toContain('url.pathname.startsWith("/illustrations/")');
   });
 
   it("extracts only real Next asset attributes from server HTML", () => {
