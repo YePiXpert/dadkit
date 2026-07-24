@@ -36,17 +36,17 @@ export function ChecklistGroupTabs({
             aria-pressed={active}
             className={cn(
               "flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-semibold text-muted-foreground transition-all",
-              active && "bg-card text-foreground shadow-sm",
+              active && "bg-primary text-primary-foreground shadow-sm",
             )}
             key={view.id}
             type="button"
             onClick={() => onChange(view.id)}
           >
             <span className="flex items-center gap-1.5">
-              <Icon className={cn("size-4", active && "text-primary")} />
+              <Icon className={cn("size-4", active && "text-primary-foreground")} />
               <span className="truncate">{view.shortLabel}</span>
             </span>
-            <span className={cn("text-[10px]", active && "text-primary")}>
+            <span className={cn("text-[10px]", active && "text-primary-foreground")}>
               {counts[view.id]} 项
             </span>
           </button>

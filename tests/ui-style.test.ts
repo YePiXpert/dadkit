@@ -37,18 +37,21 @@ const packageJson = JSON.parse(readSource("package.json")) as {
 
 describe("V2 PWA visual and navigation contract", () => {
   it("keeps the warm, compact mobile design tokens", () => {
-    expect(globals).toContain("--background: 350 33% 98%");
+    expect(globals).toContain("--background: 36 55% 96%");
     expect(globals).toContain("--foreground: 345 15% 20%");
-    expect(globals).toContain("--primary: 348 78% 62%");
+    expect(globals).toContain("--primary: 348 72% 48%");
     expect(globals).toContain("--secondary: 350 70% 96%");
-    expect(globals).toContain("--muted: 350 20% 95%");
-    expect(globals).toContain("--border: 350 25% 91%");
+    expect(globals).toContain("--muted: 36 32% 93%");
+    expect(globals).toContain("--border: 33 30% 89%");
     expect(globals).toContain("--radius: 1rem");
     expect(globals).toContain("max-w-[390px]");
     expect(globals).toContain("max-width: min(100%, 390px)");
     expect(globals).toContain("overflow-x: hidden");
     expect(globals).toContain("touch-action: pan-x pan-y");
-    expect(layout).toContain('themeColor: "#EA5371"');
+    expect(layout).toContain('themeColor: "#D32246"');
+    expect(layout).toContain(
+      '{ url: "/maskable-icon-512.png", sizes: "512x512", type: "image/png" }',
+    );
     expect(layout).toContain('viewportFit: "cover"');
   });
 

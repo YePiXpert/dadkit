@@ -93,7 +93,7 @@ describe("release endpoints and pages", () => {
   it("pre-caches the V2 web app shell without illustrations", () => {
     const sw = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.0.0-pwa"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.0.0-pwa-r2"');
     expect(sw).toContain("const CORE_ROUTES = [");
     expect(sw).toContain('"/hospital"');
     expect(sw).toContain('"/timeline"');

@@ -119,7 +119,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             </p>
           ) : null}
           {item.note ? (
-            <p className="mt-1 line-clamp-2 break-words text-xs leading-5 text-muted-foreground">
+            <p className="mt-1.5 line-clamp-2 break-words rounded-lg bg-muted px-2.5 py-1.5 text-xs leading-5 text-muted-foreground">
               {item.note}
             </p>
           ) : null}

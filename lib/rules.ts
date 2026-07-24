@@ -695,19 +695,6 @@ function buildDeliveryModeItems(profile: UserProfile) {
       createGeneratedItem(
         "general",
         "用户条件",
-        "mom_postpartum",
-        "会阴冷敷/清洁相关用品",
-        "optional",
-        "自然产时按医院建议确认是否需要。",
-        {
-          packTier: "optional",
-          itemKind: "item",
-          bag: "mom_bag",
-        },
-      ),
-      createGeneratedItem(
-        "general",
-        "用户条件",
         "mom_labor",
         "分娩舒缓用品",
         "optional",

@@ -63,7 +63,7 @@ describe("V2 my page", () => {
     expect(settingsPage).toContain("恢复通用清单");
     expect(settingsPage).toContain("恢复为全新清单");
     expect(settingsPage).toContain(
-      "清除当前进度、可选资料和备份设置，并立即重新生成一份开箱即用的通用清单。",
+      "清除当前 V2 进度、可选资料、WebDAV 设置和本机物品照片，并立即重新生成一份通用清单。操作前会保留一份本地恢复快照。",
     );
   });
 });

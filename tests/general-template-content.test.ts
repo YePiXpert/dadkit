@@ -12,8 +12,8 @@ describe("general template content", () => {
   it("keeps every physical item actionable", () => {
     const physicalItems = generalTemplate.filter((item) => item.itemKind === "item");
 
-    expect(generalTemplate).toHaveLength(116);
-    expect(physicalItems).toHaveLength(74);
+    expect(generalTemplate).toHaveLength(119);
+    expect(physicalItems).toHaveLength(77);
     expect(
       physicalItems.filter((item) => !item.quantity?.trim()).map((item) => item.id),
     ).toEqual([]);
@@ -60,5 +60,18 @@ describe("general template content", () => {
     expect(diapers.quantity).toContain("NB 码先备 1 小包");
     expect(diapers.note).toContain("宝宝体重");
     expect(diapers.note).toContain("决定是否换码");
+  });
+
+  it("classifies the newly added optional supplies explicitly", () => {
+    const coldPack = getTemplateItem("general-postpartum-cold-pack");
+    const basins = getTemplateItem("general-postpartum-basins");
+    const babyLaundry = getTemplateItem("general-baby-laundry");
+
+    expect(coldPack.priority).toBe("optional");
+    expect(coldPack.packTier).toBe("optional");
+    expect(coldPack.preparationKind).toBe("buy_and_pack");
+    expect(coldPack.appliesTo?.deliveryMode).toEqual(["vaginal", "unknown"]);
+    expect(basins.preparationKind).toBe("buy_and_pack");
+    expect(babyLaundry.preparationKind).toBe("buy_and_pack");
   });
 });

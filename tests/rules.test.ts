@@ -240,6 +240,19 @@ describe("generateChecklist", () => {
     );
   });
 
+  it("shows the perineal cold pack only when vaginal delivery remains possible", () => {
+    const vaginalItems = generateChecklist(makeProfile({ deliveryMode: "vaginal" }));
+    const unknownItems = generateChecklist(makeProfile({ deliveryMode: "unknown" }));
+    const cSectionItems = generateChecklist(makeProfile({ deliveryMode: "c_section" }));
+
+    expect(vaginalItems.filter((item) => item.name === "会阴冷敷贴")).toHaveLength(1);
+    expect(unknownItems.filter((item) => item.name === "会阴冷敷贴")).toHaveLength(1);
+    expect(cSectionItems.some((item) => item.name === "会阴冷敷贴")).toBe(false);
+    expect(
+      vaginalItems.some((item) => item.name === "会阴冷敷/清洁相关用品"),
+    ).toBe(false);
+  });
+
   it("covers hospital bag staples learned from mature checklists", () => {
     const items = generateChecklist(makeProfile({ breastfeeding: true }));
     const names = items.map((item) => item.name);

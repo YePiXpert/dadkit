@@ -569,6 +569,17 @@ export default function SettingsPage() {
               </div>
             </details>
 
+            <div className="grid gap-2 rounded-lg border border-border bg-muted/50 p-3">
+              <p className="text-sm font-semibold">恢复通用清单</p>
+              <p className="text-sm leading-6 text-muted-foreground">
+                清除当前 V2 进度、可选资料、WebDAV 设置和本机物品照片，并立即重新生成一份通用清单。操作前会保留一份本地恢复快照。
+              </p>
+              <Button className="justify-self-start" variant="outline" onClick={clearData}>
+                <RotateCcw className="size-4" />
+                恢复为全新清单
+              </Button>
+            </div>
+
             {message ? (
               <p
                 className={`rounded-lg px-3 py-2 text-sm ${
@@ -814,26 +825,8 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="grid gap-3">
             <p className="text-sm leading-6 text-muted-foreground">
-              DadKit 是一个开源待产准备清单工具，不需要登录，数据保存在本地浏览器，不上传用户隐私数据。
+              开源待产清单工具，无需登录，数据保存在本地浏览器。医院模板仅用于整理待确认事项，以医院实际要求为准。
             </p>
-            <p className="text-sm leading-6 text-muted-foreground">
-              医院模板用于帮助整理待确认事项。未核验模板不会作为官方入院要求，也不会写死医院一定提供某些物品。
-            </p>
-            <div className="grid gap-2 sm:grid-cols-3">
-              <StatusTile label="版本" value={`v${releaseInfo.version}`} />
-              <StatusTile
-                label="构建时间"
-                value={
-                  releaseInfo.buildTime === "unknown"
-                    ? "暂未记录"
-                    : formatSnapshotTime(releaseInfo.buildTime)
-                }
-              />
-              <StatusTile
-                label="健康检查"
-                value={releaseInfo.ok ? "正常" : "未连接"}
-              />
-            </div>
             <div className="grid gap-2">
               <SettingsShortcutRow
                 caption="本地数据、WebDAV 和第三方服务说明"
@@ -849,32 +842,6 @@ export default function SettingsPage() {
               />
             </div>
             <DisclaimerBox />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>恢复通用清单</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            <p className="text-sm leading-6 text-muted-foreground">
-              清除当前进度、可选资料和备份设置，并立即重新生成一份开箱即用的通用清单。
-            </p>
-            <Button className="justify-self-start" variant="outline" onClick={clearData}>
-              <RotateCcw className="size-4" />
-              恢复为全新清单
-            </Button>
-            {message ? (
-              <p
-                className={`rounded-lg px-3 py-2 text-sm ${
-                  messageOk === false
-                    ? "bg-destructive/10 text-destructive"
-                    : "bg-secondary text-primary"
-                }`}
-              >
-                {message}
-              </p>
-            ) : null}
           </CardContent>
         </Card>
       </section>
