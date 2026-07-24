@@ -144,7 +144,7 @@ describe("store snapshots", () => {
 
     const result = useDadKitStore.getState().importJson(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-09T00:00:00.000Z",
         userProfile: testProfile("2026-08-01"),
         checklist: [testItem("after-import")],
@@ -186,7 +186,7 @@ describe("store snapshots", () => {
     expect(() =>
       useDadKitStore.getState().importJson(
         JSON.stringify({
-          version: 1,
+          version: 2,
           exportedAt: "2026-06-09T00:00:00.000Z",
           userProfile: testProfile("2026-08-01"),
           checklist: [testItem("after-failed-import")],

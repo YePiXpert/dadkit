@@ -124,9 +124,9 @@ export function buildAcceptanceBackup(marker, timestamp) {
   const data = buildAcceptanceData(marker, timestamp);
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     app: "DadKit",
-    deviceId: "dadkit-acceptance-android",
+    deviceId: "dadkit-acceptance-pwa",
     backupId: `webdav-acceptance-${marker}-${timestamp}`,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -273,7 +273,7 @@ function assertBackupMatches(actual, expected) {
 
 function buildAcceptanceData(marker, timestamp) {
   return {
-    version: 1,
+    version: 2,
     exportedAt: timestamp,
     checklistMode: "lean",
     checklist: [acceptanceChecklistItem(marker, timestamp)],
@@ -365,7 +365,7 @@ function webDavStatusError(action, status) {
 function isDadKitBackup(value) {
   return (
     isRecord(value) &&
-    value.schemaVersion === 1 &&
+    value.schemaVersion === 2 &&
     value.app === "DadKit" &&
     typeof value.deviceId === "string" &&
     typeof value.backupId === "string" &&
@@ -373,7 +373,7 @@ function isDadKitBackup(value) {
     typeof value.updatedAt === "string" &&
     typeof value.checksum === "string" &&
     isRecord(value.data) &&
-    value.data.version === 1
+    value.data.version === 2
   );
 }
 

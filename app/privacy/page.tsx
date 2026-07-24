@@ -120,7 +120,7 @@ export default function PrivacyPage() {
               。
             </p>
             <p>
-              隐私政策如果更新，会在此页面调整生效日期，并保持与 App Store Connect / TestFlight 元数据一致。
+              隐私政策如果更新，会在此页面调整生效日期，并同步说明 PWA 的数据处理方式。
             </p>
           </CardContent>
         </Card>

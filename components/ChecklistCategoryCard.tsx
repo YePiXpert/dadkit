@@ -1,32 +1,80 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, ChevronDown, ClipboardList } from "lucide-react";
+import {
+  AlarmClock,
+  Baby,
+  Backpack,
+  Check,
+  ChevronDown,
+  FileText,
+  HeartHandshake,
+  Home,
+} from "lucide-react";
 
 import { ChecklistItemRow } from "@/components/ChecklistItemRow";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { calculateCompletion } from "@/lib/rules";
+import {
+  getChecklistItemState,
+  type ChecklistSectionId,
+} from "@/lib/checklist-v2";
 import type { ChecklistItem } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+const SECTION_META = {
+  documents: {
+    icon: FileText,
+    className: "bg-[hsl(var(--tile-docs-bg))] text-[hsl(var(--tile-docs-fg))]",
+  },
+  mom: {
+    icon: Backpack,
+    className: "bg-[hsl(var(--tile-mom-bg))] text-[hsl(var(--tile-mom-fg))]",
+  },
+  baby: {
+    icon: Baby,
+    className: "bg-[hsl(var(--tile-baby-bg))] text-[hsl(var(--tile-baby-fg))]",
+  },
+  partner: {
+    icon: HeartHandshake,
+    className: "bg-[hsl(var(--tile-dad-bg))] text-[hsl(var(--tile-dad-fg))]",
+  },
+  home: {
+    icon: Home,
+    className: "bg-[hsl(var(--tile-car-bg))] text-[hsl(var(--tile-car-fg))]",
+  },
+  lastMinute: {
+    icon: AlarmClock,
+    className:
+      "bg-[hsl(var(--tile-lastminute-bg))] text-[hsl(var(--tile-lastminute-fg))]",
+  },
+} satisfies Record<ChecklistSectionId, { icon: typeof Baby; className: string }>;
 
 type ChecklistCategoryCardProps = {
+  caption?: string;
   defaultOpen?: boolean;
   items: ChecklistItem[];
+  sectionId: ChecklistSectionId;
   title: string;
 };
 
 export function ChecklistCategoryCard({
+  caption,
   defaultOpen = false,
   items,
+  sectionId,
   title,
 }: ChecklistCategoryCardProps) {
   const [open, setOpen] = useState(defaultOpen);
-  const completion = calculateCompletion(items);
+  const resolved = items.filter((item) =>
+    ["packed", "not_needed"].includes(getChecklistItemState(item)),
+  ).length;
+  const remaining = items.filter((item) =>
+    ["todo", "ready"].includes(getChecklistItemState(item)),
+  ).length;
+  const meta = SECTION_META[sectionId];
+  const Icon = resolved === items.length ? Check : meta.icon;
 
   useEffect(() => {
-    if (defaultOpen) {
-      setOpen(true);
-    }
+    setOpen(defaultOpen);
   }, [defaultOpen]);
 
   if (items.length === 0) {
@@ -34,55 +82,43 @@ export function ChecklistCategoryCard({
   }
 
   return (
-    <section className="card-surface p-3">
-      <div className="space-y-3">
-        <button
-          className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-secondary/60"
-          type="button"
-          onClick={() => setOpen((value) => !value)}
+    <section className="overflow-hidden rounded-3xl border border-border/80 bg-card shadow-sm">
+      <button
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-muted/45"
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span
+          className={cn(
+            "flex size-11 shrink-0 items-center justify-center rounded-2xl",
+            meta.className,
+          )}
         >
-          <span className="icon-tile">
-            {completion.percent === 100 ? (
-              <CheckCircle2 className="size-5" />
-            ) : (
-              <ClipboardList className="size-5" />
-            )}
+          <Icon className="size-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block break-words text-sm font-semibold leading-5">
+            {title}
           </span>
-          <span className="min-w-0 flex-1">
-            <span className="block break-words text-sm font-semibold leading-5">
-              {title}
-            </span>
-            <span className="mt-1 block text-xs text-muted-foreground">
-              已完成 {completion.completed} 项 · 未完成{" "}
-              {Math.max(0, completion.total - completion.completed)} 项
-            </span>
+          <span className="mt-0.5 block text-xs leading-4 text-muted-foreground">
+            {caption ? `${caption} · ` : ""}
+            {remaining > 0 ? `还剩 ${remaining} 项` : "这一包已完成"}
           </span>
-          <span className="flex shrink-0 items-center gap-2">
-            <span className="rounded-full bg-secondary px-2.5 py-1 text-sm font-semibold text-primary">
-              {completion.percent}%
-            </span>
-            <ChevronDown
-              className={`size-4 shrink-0 text-muted-foreground transition-transform ${
-                open ? "" : "-rotate-90"
-              }`}
-            />
-          </span>
-        </button>
-        <div className="flex items-center gap-3">
-          <Progress value={completion.percent} />
-          {!open ? (
-            <Button
-              className="h-8 shrink-0 px-2 text-xs"
-              variant="ghost"
-              onClick={() => setOpen(true)}
-            >
-              展开
-            </Button>
-          ) : null}
-        </div>
-      </div>
+        </span>
+        <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+          {resolved}/{items.length}
+        </span>
+        <ChevronDown
+          className={cn(
+            "size-4 shrink-0 text-muted-foreground transition-transform",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+
       {open ? (
-        <div className="mt-3 grid gap-2">
+        <div className="grid gap-2 border-t border-border/70 bg-background/55 p-2">
           {items.map((item) => (
             <ChecklistItemRow item={item} key={item.id} />
           ))}

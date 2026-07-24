@@ -2,35 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  CalendarClock,
-  CalendarDays,
-  ClipboardList,
-  Home,
-  Hospital,
-  Settings,
-} from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { useDadKitStore } from "@/lib/store";
+import {
+  isPrimaryNavigationItemActive,
+  PRIMARY_NAVIGATION_ITEMS,
+} from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
-const desktopNavItems = [
-  { href: "/", label: "首页", icon: Home },
-  { href: "/checklist", label: "清单", icon: ClipboardList },
-  { href: "/hospital", label: "医院", icon: Hospital },
-  { href: "/timeline", label: "时间线", icon: CalendarClock },
-  { href: "/settings", label: "设置", icon: Settings },
-];
-
-const secondaryRouteOwners: Record<string, string[]> = {
-  "/checklist": ["/go", "/share"],
-  "/hospital": ["/birth-plan"],
-  "/timeline": ["/contractions"],
-};
-
 export function AppHeader() {
-  const profile = useDadKitStore((state) => state.profile);
   const pathname = usePathname();
 
   return (
@@ -46,19 +25,14 @@ export function AppHeader() {
             </span>
           </span>
         </Link>
-        <nav className="hidden items-center gap-1 lg:flex">
-          {desktopNavItems.map((item) => {
-            const active =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href) ||
-                  secondaryRouteOwners[item.href]?.some((route) =>
-                    pathname.startsWith(route),
-                  );
+        <nav aria-label="主导航" className="flex items-center gap-1">
+          {PRIMARY_NAVIGATION_ITEMS.map((item) => {
+            const active = isPrimaryNavigationItemActive(pathname, item);
             const Icon = item.icon;
 
             return (
               <Link
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "inline-flex h-9 items-center gap-2 rounded-lg px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-secondary-foreground",
                   active && "bg-secondary text-primary hover:bg-secondary hover:text-primary",
@@ -72,17 +46,6 @@ export function AppHeader() {
             );
           })}
         </nav>
-        <div className="hidden items-center gap-2 sm:flex">
-          {profile?.dueDate ? (
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
-              <CalendarDays className="size-4" />
-              <span>预产期 {profile.dueDate}</span>
-            </div>
-          ) : null}
-          <Button asChild size="sm">
-            <Link href="/setup">编辑资料</Link>
-          </Button>
-        </div>
       </div>
     </header>
   );

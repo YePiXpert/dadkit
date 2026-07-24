@@ -8,7 +8,6 @@ out
 
 # production
 build
-dist/mobile-handoff/
 
 # misc
 .DS_Store

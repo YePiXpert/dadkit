@@ -8,16 +8,5 @@ export function getReviewPageHref(path: string) {
     throw new Error(`Unsupported app review page path: ${path}`);
   }
 
-  if (!isCapacitorStaticExport()) {
-    return path;
-  }
-
-  return `${path}/index.html`;
-}
-
-function isCapacitorStaticExport() {
-  return (
-    process.env.NEXT_PUBLIC_DADKIT_CAPACITOR_EXPORT === "1" ||
-    process.env.DADKIT_CAPACITOR_EXPORT === "1"
-  );
+  return path;
 }

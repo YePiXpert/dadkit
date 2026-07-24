@@ -215,7 +215,7 @@ describe("timeline", () => {
     ];
     const result = importData(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-11T00:00:00.000Z",
         timelineTaskStatuses: imported,
       }),
@@ -282,7 +282,7 @@ describe("timeline", () => {
 
     const result = importData(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-11T00:00:00.000Z",
         checklistMode: "full",
       }),
@@ -299,7 +299,7 @@ describe("timeline", () => {
 
     const result = importData(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-11T00:00:00.000Z",
         timelineTaskStatuses: {},
       }),

@@ -225,7 +225,7 @@ function buildModules({
       actionLabel: "核对核心待产包",
       boundary: "清单用于家庭准备，不做商品推荐或购买建议。",
       caption: "证件、妈妈包、宝宝包和核心必带物品",
-      href: "/checklist",
+      href: "/",
       id: "checklist",
       sourceLabel: `核心清单 ${moduleSource(checklistProgress)}`,
       title: "核心待产清单",

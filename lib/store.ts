@@ -11,6 +11,7 @@ import {
   getProvidedIdForQuestion,
   mapHospitalAnswerStatusToPackStatus,
 } from "@/lib/hospital/answers";
+import { clearItemPhotos, deleteItemPhoto } from "@/lib/item-photos";
 import { getQuickStatusOptionsForItem } from "@/lib/preparation";
 import {
   applyImportData,
@@ -72,6 +73,11 @@ type FilterState = {
 
 type CreateProfileInput = Partial<UserProfile>;
 
+export type AddCustomItemResult = {
+  itemId: string;
+  merged: boolean;
+};
+
 type DadKitState = {
   hydrated: boolean;
   profile?: UserProfile;
@@ -96,10 +102,12 @@ type DadKitState = {
   resetChecklist: () => void;
   updateItem: (id: string, patch: Partial<ChecklistItem>) => void;
   cycleItemStatus: (id: string) => void;
+  advanceItem: (id: string) => void;
+  toggleItemSkipped: (id: string) => void;
   addCustomItem: (
     item: Pick<ChecklistItem, "name" | "category" | "priority"> &
       Partial<ChecklistItem>,
-  ) => void;
+  ) => AddCustomItemResult;
   removeItem: (id: string) => void;
   updateHospitalOverride: (override: UserHospitalOverride) => void;
   updateHospitalAnswer: (answer: HospitalAnswer) => void;
@@ -139,12 +147,38 @@ function itemId(prefix = "user-item") {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function comparableItemName(name: string) {
+  return name.trim().replace(/[\s，,。.!！?？、·\-]/g, "").toLowerCase();
+}
+
+export function mergeChecklistQuantity(current?: string, added?: string) {
+  const left = current?.trim();
+  const right = added?.trim();
+
+  if (!right) return left;
+  if (!left) return right;
+  if (left === right) return left;
+
+  const leftExact = left.match(/^(\d+)\s*([^\d].*)$/);
+  const rightExact = right.match(/^(\d+)\s*([^\d].*)$/);
+
+  if (
+    leftExact &&
+    rightExact &&
+    leftExact[2].trim() === rightExact[2].trim()
+  ) {
+    return `${Number(leftExact[1]) + Number(rightExact[1])} ${leftExact[2].trim()}`;
+  }
+
+  return `${left}；另加 ${right}`;
+}
+
 export function createDefaultProfile(input: CreateProfileInput = {}): UserProfile {
   const timestamp = nowIso();
 
   return {
     babySex: "unknown",
-    regionId: "cn-bj-general",
+    regionId: "other",
     hospitalMode: "unknown",
     deliveryMode: "unknown",
     expectedStayDays: 3,
@@ -393,7 +427,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   hydrated: false,
   profile: undefined,
   checklist: [],
-  checklistMode: "lean",
+  checklistMode: "full",
   customItems: [],
   hiddenTemplateItemIds: [],
   hospitalOverrides: [],
@@ -409,6 +443,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   },
   hydrate: () => {
     const profile = loadUserProfile();
+    const generationProfile = profile ?? createDefaultProfile();
     const checklist = loadChecklist();
     const customItems = loadCustomItems();
     const hiddenTemplateItemIds = loadHiddenTemplateItemIds();
@@ -425,14 +460,12 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     const birthPlan = loadBirthPlan();
     const postpartumTasks = loadPostpartumTasks();
     const checklistMode = loadChecklistMode();
-    const hydratedChecklist = profile
-      ? generateChecklist(profile, {
-          currentItems: checklist,
-          customItems,
-          hiddenTemplateItemIds,
-          hospitalOverrides,
-        })
-      : checklist;
+    const hydratedChecklist = generateChecklist(generationProfile, {
+      currentItems: checklist,
+      customItems,
+      hiddenTemplateItemIds,
+      hospitalOverrides,
+    });
 
     set({
       hydrated: true,
@@ -449,9 +482,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       postpartumTasks,
     });
 
-    if (profile) {
-      saveChecklist(hydratedChecklist);
-    }
+    saveChecklist(hydratedChecklist);
 
     if (storedHospitalAnswers.some((answer) => !answer.hospitalId)) {
       saveHospitalAnswers(allHospitalAnswers);
@@ -464,7 +495,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     const state = get();
     const checklist = buildChecklist(profile, {
       ...state,
-      checklist: [],
+      checklist: state.checklist,
       customItems: state.customItems,
       hiddenTemplateItemIds: state.hiddenTemplateItemIds,
       hospitalOverrides: state.hospitalOverrides,
@@ -571,25 +602,18 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   },
   regenerateChecklist: () => {
     const state = get();
-
-    if (!state.profile) {
-      return;
-    }
-
-    const checklist = buildChecklist(state.profile, state);
+    const profile = state.profile ?? createDefaultProfile();
+    const checklist = buildChecklist(profile, state);
     set({ checklist });
     saveChecklist(checklist);
   },
   resetChecklist: () => {
     const state = get();
-
-    if (!state.profile) {
-      return;
-    }
+    const profile = state.profile ?? createDefaultProfile();
 
     snapshotBeforeChange("重置清单前");
 
-    const checklist = generateChecklist(state.profile, {
+    const checklist = generateChecklist(profile, {
       customItems: [],
       hiddenTemplateItemIds: [],
       hospitalOverrides: state.hospitalOverrides,
@@ -628,41 +652,95 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
 
     get().updateItem(id, { status: nextStatus });
   },
+  advanceItem: (id) => {
+    const item = get().checklist.find((candidate) => candidate.id === id);
+
+    if (!item) {
+      return;
+    }
+
+    const nextStatus =
+      item.status === "packed" ||
+      item.status === "hospital_provided" ||
+      item.status === "not_needed"
+        ? "todo"
+        : item.status === "bought" || item.status === "washed"
+          ? "packed"
+          : "bought";
+
+    get().updateItem(id, { status: nextStatus });
+  },
+  toggleItemSkipped: (id) => {
+    const item = get().checklist.find((candidate) => candidate.id === id);
+
+    if (!item) {
+      return;
+    }
+
+    get().updateItem(id, {
+      status: item.status === "not_needed" ? "todo" : "not_needed",
+    });
+  },
   addCustomItem: (item) => {
     const state = get();
+    const normalizedName = comparableItemName(item.name);
+    const existing = state.checklist.find(
+      (candidate) =>
+        candidate.itemKind !== "question" &&
+        comparableItemName(candidate.name) === normalizedName,
+    );
+    const existingOverlay = existing
+      ? state.customItems.find(
+          (candidate) =>
+            candidate.category === existing.category &&
+            comparableItemName(candidate.name) === normalizedName,
+        )
+      : undefined;
     const customItem: ChecklistItem = normalizeChecklistItem({
-      id: item.id ?? itemId(),
-      name: item.name.trim(),
-      category: item.category,
+      id: existingOverlay?.id ?? item.id ?? itemId(),
+      name: existing?.name ?? item.name.trim(),
+      category: existing?.category ?? item.category,
       priority: item.priority,
-      quantity: item.quantity,
-      note: item.note,
-      status: item.status ?? "todo",
+      quantity: existing
+        ? mergeChecklistQuantity(existing.quantity, item.quantity)
+        : item.quantity,
+      note: item.note?.trim() || existingOverlay?.note,
+      status: existing?.status ?? item.status ?? "todo",
       source: "user",
       sourceLabel: "用户自定义",
       editable: true,
       removable: true,
       packTier: item.packTier ?? "core",
       itemKind: item.itemKind ?? "item",
-      preparationKind: item.preparationKind,
-      bag: item.bag,
-      bulk: item.bulk,
-      timing: item.timing ?? "pack_now",
+      preparationKind: existing?.preparationKind ?? item.preparationKind,
+      bag: existing?.bag ?? item.bag,
+      bulk: existing?.bulk ?? item.bulk,
+      timing: existing?.timing ?? item.timing ?? "pack_now",
     });
 
-    const customItems = [...state.customItems, customItem];
-    const checklist = state.profile
-      ? generateChecklist(state.profile, {
-          currentItems: state.checklist,
-          customItems,
-          hiddenTemplateItemIds: state.hiddenTemplateItemIds,
-          hospitalOverrides: state.hospitalOverrides,
-        })
-      : [...state.checklist, customItem];
+    const customItems = existingOverlay
+      ? state.customItems.map((candidate) =>
+          candidate.id === existingOverlay.id ? customItem : candidate,
+        )
+      : [...state.customItems, customItem];
+    const checklist = generateChecklist(
+      state.profile ?? createDefaultProfile(),
+      {
+        currentItems: state.checklist,
+        customItems,
+        hiddenTemplateItemIds: state.hiddenTemplateItemIds,
+        hospitalOverrides: state.hospitalOverrides,
+      },
+    );
 
     set({ customItems, checklist });
     saveCustomItems(customItems);
     saveChecklist(checklist);
+
+    return {
+      itemId: existing?.id ?? customItem.id,
+      merged: Boolean(existing),
+    };
   },
   removeItem: (id) => {
     const state = get();
@@ -682,6 +760,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
         : Array.from(new Set([...state.hiddenTemplateItemIds, id]));
     const checklist = state.checklist.filter((candidate) => candidate.id !== id);
 
+    void deleteItemPhoto(id).catch(() => undefined);
     set({ checklist, customItems, hiddenTemplateItemIds });
     saveChecklist(checklist);
     saveCustomItems(customItems);
@@ -930,9 +1009,13 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     snapshotBeforeChange("清空本地数据前");
 
     resetAllData();
+    void clearItemPhotos().catch(() => undefined);
+    const checklist = generateChecklist(createDefaultProfile());
+
+    saveChecklist(checklist);
     set({
       profile: undefined,
-      checklist: [],
+      checklist,
       customItems: [],
       hiddenTemplateItemIds: [],
       hospitalOverrides: [],
@@ -941,7 +1024,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       contractions: [],
       birthPlan: mergeBirthPlan(),
       postpartumTasks: mergePostpartumTasks(),
-      checklistMode: "lean",
+      checklistMode: "full",
       filters: {
         category: "all",
         status: "all",

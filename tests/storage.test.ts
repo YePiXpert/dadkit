@@ -117,7 +117,7 @@ describe("storage import/export", () => {
 
     const result = importData(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-09T00:00:00.000Z",
         checklistMode: "full",
       }),
@@ -139,18 +139,21 @@ describe("storage import/export", () => {
     expect(store.get(STORAGE_KEYS.checklist)).toBe(before);
   });
 
-  it("returns ok:false for unsupported versions", () => {
+  it("rejects V1 backups without modifying local data", () => {
     installLocalStorage();
+    saveChecklist([testItem("existing")]);
 
     const result = importData(
       JSON.stringify({
-        version: 2,
+        version: 1,
         exportedAt: "2026-06-09T00:00:00.000Z",
+        checklist: [testItem("from-v1")],
       }),
     );
 
     expect(result.ok).toBe(false);
     expect(result.message).toBe("不支持的备份版本，未修改本地数据。");
+    expect(loadChecklist()).toEqual([testItem("existing")]);
   });
 
   it("exports an absent profile explicitly and imports null by removing a profile", () => {
@@ -158,6 +161,7 @@ describe("storage import/export", () => {
 
     const exported = exportData();
 
+    expect(exported.version).toBe(2);
     expect(exported.userProfile).toBeNull();
     expect(JSON.parse(JSON.stringify(exported))).toHaveProperty(
       "userProfile",
@@ -168,7 +172,7 @@ describe("storage import/export", () => {
 
     const result = importData(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-09T00:00:00.000Z",
         userProfile: null,
       }),
@@ -178,7 +182,7 @@ describe("storage import/export", () => {
     expect(loadUserProfile()).toBeUndefined();
   });
 
-  it("keeps an existing profile when importing a legacy backup that omits it", () => {
+  it("keeps an existing profile when a partial V2 backup omits it", () => {
     installLocalStorage();
     const profile = testProfile();
 
@@ -186,7 +190,7 @@ describe("storage import/export", () => {
 
     const result = importData(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-09T00:00:00.000Z",
         checklistMode: "full",
       }),
@@ -204,7 +208,7 @@ describe("storage import/export", () => {
 
     const result = importData(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-09T00:00:00.000Z",
         userProfile: {
           ...testProfile("2026-08-01"),
@@ -235,7 +239,7 @@ describe("storage import/export", () => {
 
     const result = importData(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-09T00:00:00.000Z",
         [field]: value,
       }),
@@ -258,7 +262,7 @@ describe("storage import/export", () => {
 
     const result = importData(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-09T00:00:00.000Z",
         userProfile: testProfile("2026-08-01"),
         checklist: [testItem("after")],
@@ -283,7 +287,7 @@ describe("storage import/export", () => {
 
     const result = importData(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-09T00:00:00.000Z",
         checklistMode: "full",
       }),
@@ -308,7 +312,7 @@ describe("storage import/export", () => {
     ];
     const result = importData(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-09T00:00:00.000Z",
         hospitalAnswers: nextAnswers,
       }),
@@ -326,7 +330,7 @@ describe("storage import/export", () => {
 
     const result = importData(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-09T00:00:00.000Z",
         checklistMode: "full",
       }),
@@ -336,7 +340,7 @@ describe("storage import/export", () => {
     expect(loadHospitalAnswers()).toEqual(answers);
   });
 
-  it("saves, loads, exports, and imports v0.4 local data", () => {
+  it("saves, loads, exports, and imports optional tool data", () => {
     const store = installLocalStorage();
     const contractions = [
       {
@@ -379,7 +383,7 @@ describe("storage import/export", () => {
     ];
     const result = importData(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-10T00:00:00.000Z",
         contractions: nextContractions,
         birthPlan: { supportPerson: "爸爸" },
@@ -393,7 +397,7 @@ describe("storage import/export", () => {
     expect(loadPostpartumTasks()[0]).toMatchObject(postpartumTasks[0]);
   });
 
-  it("does not clear v0.4 local data when old JSON omits new fields", () => {
+  it("does not clear optional data when a partial V2 backup omits it", () => {
     installLocalStorage();
     const contractions = [
       {
@@ -418,7 +422,7 @@ describe("storage import/export", () => {
 
     const result = importData(
       JSON.stringify({
-        version: 1,
+        version: 2,
         exportedAt: "2026-06-10T00:00:00.000Z",
         checklistMode: "full",
       }),
@@ -449,6 +453,33 @@ describe("storage import/export", () => {
       "备份 4",
       "备份 3",
     ]);
+  });
+
+  it("ignores and refuses to restore V1 snapshots", () => {
+    const store = installLocalStorage();
+    saveChecklist([testItem("current")]);
+    store.set(
+      STORAGE_KEYS.snapshots,
+      JSON.stringify([
+        {
+          id: "v1-snapshot",
+          createdAt: "2026-06-09T00:00:00.000Z",
+          reason: "旧版备份",
+          data: {
+            version: 1,
+            exportedAt: "2026-06-09T00:00:00.000Z",
+            checklist: [testItem("from-v1-snapshot")],
+          },
+        },
+      ]),
+    );
+
+    expect(loadSnapshots()).toEqual([]);
+    expect(restoreSnapshot("v1-snapshot")).toEqual({
+      ok: false,
+      message: "未找到这份本地备份，未修改本地数据。",
+    });
+    expect(loadChecklist()).toEqual([testItem("current")]);
   });
 
   it("throws when a recovery snapshot cannot be persisted", () => {

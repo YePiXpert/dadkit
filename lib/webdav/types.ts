@@ -22,7 +22,7 @@ export type WebDavSyncState = {
 };
 
 export type DadKitWebDavBackup = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   app: "DadKit";
   deviceId: string;
   backupId: string;

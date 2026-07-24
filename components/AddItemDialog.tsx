@@ -47,13 +47,14 @@ export function AddItemDialog({ defaultCategory = "mom_labor" }: AddItemDialogPr
     useState<PreparationKind>("pack_existing");
   const [quantity, setQuantity] = useState("");
   const [note, setNote] = useState("");
+  const [feedback, setFeedback] = useState("");
 
   function submit() {
     if (!name.trim()) {
       return;
     }
 
-    addCustomItem({
+    const result = addCustomItem({
       name,
       category,
       priority,
@@ -65,11 +66,23 @@ export function AddItemDialog({ defaultCategory = "mom_labor" }: AddItemDialogPr
     setPreparationKind("pack_existing");
     setQuantity("");
     setNote("");
+    if (result.merged) {
+      setFeedback("已与清单里的同名物品合并，数量和备注已更新。");
+      return;
+    }
+
+    setFeedback("");
     setOpen(false);
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) setFeedback("");
+      }}
+    >
       <DialogTrigger asChild>
         <Button>
           <Plus className="size-4" />
@@ -81,6 +94,11 @@ export function AddItemDialog({ defaultCategory = "mom_labor" }: AddItemDialogPr
           <DialogTitle>新增自定义物品</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4">
+          {feedback ? (
+            <p className="rounded-xl bg-secondary px-3 py-2 text-sm font-medium text-primary">
+              {feedback}
+            </p>
+          ) : null}
           <Field label="名称">
             <Input value={name} onChange={(event) => setName(event.target.value)} />
           </Field>

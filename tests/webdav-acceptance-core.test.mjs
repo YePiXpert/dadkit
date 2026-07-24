@@ -35,6 +35,29 @@ describe("webdav acceptance core", () => {
     ]);
   });
 
+  it("builds schema V2 backups and rejects V1 envelopes or data", () => {
+    const backup = buildAcceptanceBackup("v2", "2026-06-30T00:00:00.000Z");
+
+    expect(backup.schemaVersion).toBe(2);
+    expect(backup.data.version).toBe(2);
+    expect(isDadKitAcceptanceBackup(backup)).toBe(true);
+    expect(
+      isDadKitAcceptanceBackup({
+        ...backup,
+        schemaVersion: 1,
+      }),
+    ).toBe(false);
+    expect(
+      isDadKitAcceptanceBackup({
+        ...backup,
+        data: {
+          ...backup.data,
+          version: 1,
+        },
+      }),
+    ).toBe(false);
+  });
+
   it("uploads, detects conflict, overwrites, and verifies the final backup", async () => {
     const client = createMemoryWebDavClient();
     const result = await runWebDavAcceptance({

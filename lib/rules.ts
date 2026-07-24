@@ -2,6 +2,7 @@ import {
   beijingGeneralHospitalTemplate,
   generalTemplate,
   hospitalTemplates,
+  otherRegionTemplate,
   regionTemplates,
 } from "@/lib/templates";
 import { inferPreparationKind } from "@/lib/preparation";
@@ -87,8 +88,15 @@ function normalizeName(name: string) {
   return name.replace(/\s+/g, "").replace(/[？?]/g, "").toLowerCase();
 }
 
-function itemKey(item: Pick<ChecklistItem, "name" | "category">) {
-  return `${item.category}:${normalizeName(item.name)}`;
+function itemKey(
+  item: Pick<ChecklistItem, "name" | "category" | "itemKind">,
+) {
+  const scope =
+    item.itemKind === "question" || item.category === "hospital_questions"
+      ? item.category
+      : "checklist";
+
+  return `${scope}:${normalizeName(item.name)}`;
 }
 
 function hasTaskKeyword(name: string) {
@@ -272,7 +280,7 @@ function createGeneratedItem(
 function getRegion(profile: UserProfile) {
   return (
     regionTemplates.find((region) => region.id === profile.regionId) ??
-    regionTemplates[0]
+    otherRegionTemplate
   );
 }
 
@@ -402,8 +410,12 @@ function mergeDuplicateItems(items: ChecklistItem[]) {
       ...existing,
       priority,
       packTier: choosePackTier(existing.packTier, item.packTier),
-      note: existing.note ?? item.note,
-      quantity: existing.quantity ?? item.quantity,
+      note:
+        item.source === "user" && item.note ? item.note : existing.note ?? item.note,
+      quantity:
+        item.source === "user" && item.quantity
+          ? item.quantity
+          : existing.quantity ?? item.quantity,
       editable: existing.editable || item.editable,
       removable: existing.removable && item.removable,
       sourceLabel: sourceLabel || existing.sourceLabel,

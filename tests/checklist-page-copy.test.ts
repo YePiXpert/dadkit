@@ -3,80 +3,75 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-const checklistPage = readFileSync(
-  join(process.cwd(), "app", "checklist", "page.tsx"),
-  "utf8",
-);
-const checklistItemRow = readFileSync(
-  join(process.cwd(), "components", "ChecklistItemRow.tsx"),
-  "utf8",
-);
-const checklistCategoryCard = readFileSync(
-  join(process.cwd(), "components", "ChecklistCategoryCard.tsx"),
-  "utf8",
-);
-const checklistGroupTabs = readFileSync(
-  join(process.cwd(), "components", "ChecklistGroupTabs.tsx"),
-  "utf8",
-);
+import { CHECKLIST_VIEWS } from "@/lib/checklist-v2";
 
-describe("checklist page copy", () => {
-  it("does not render the large unverified hospital warning", () => {
-    expect(checklistPage).not.toContain("该医院模板尚未核验");
-    expect(checklistPage).not.toContain("最近一次产检、入院须知或医院通知");
+function readSource(...segments: string[]) {
+  return readFileSync(join(process.cwd(), ...segments), "utf8");
+}
+
+const homePage = readSource("app", "page.tsx");
+const checklistWorkspace = readSource("components", "ChecklistWorkspace.tsx");
+const checklistItemRow = readSource("components", "ChecklistItemRow.tsx");
+const checklistCategoryCard = readSource(
+  "components",
+  "ChecklistCategoryCard.tsx",
+);
+const checklistGroupTabs = readSource("components", "ChecklistGroupTabs.tsx");
+
+describe("V2 checklist experience", () => {
+  it("uses the checklist workspace as the only home implementation", () => {
+    expect(homePage).toContain("<ChecklistWorkspace />");
+    expect(homePage).not.toContain("getBabySexLabel");
+    expect(homePage).not.toContain("ChecklistProgressCard");
   });
 
-  it("links confirmation rows to the hospital confirmation workflow", () => {
-    expect(checklistItemRow).toContain("isHospitalConfirmation");
-    expect(checklistItemRow).toContain('href="/hospital"');
-    expect(checklistItemRow).toContain("去确认");
-  });
-
-  it("keeps checklist controls in the normal page flow", () => {
-    expect(checklistPage).toContain("getBabySexLabel");
-    expect(checklistPage).not.toContain("CuteIllustration");
-    expect(checklistPage).not.toContain('variant="checklistBag"');
-    expect(checklistPage).toContain("为{getBabySexLabel(profile)}的待产包逐项打勾");
-    expect(checklistPage).toContain("清单操作");
-    expect(checklistPage).toContain(
-      "筛选和批量处理放在这里，医院规则确认统一放在医院页。",
-    );
-    expect(checklistPage).toContain("ChecklistProgressCard");
-    expect(checklistPage).toContain("打包分组");
-    expect(checklistPage).toContain("当前没有待购买物品");
-    expect(checklistPage).not.toContain("暂时没有待问事项");
-    expect(checklistPage).not.toContain("PageIntro");
-    expect(checklistPage).not.toContain("sticky top-0");
-    expect(checklistPage).not.toContain("z-30");
-    expect(checklistPage).not.toContain("backdrop-blur");
-  });
-
-  it("keeps checklist view choices visible without an embedded horizontal scroller", () => {
-    expect(checklistGroupTabs).toContain("grid grid-cols-2");
-    expect(checklistGroupTabs).toContain("min-h-[3.9rem]");
-    expect(checklistGroupTabs).toContain("size-6");
-    expect(checklistGroupTabs).toContain("ChecklistGroupIcon");
-    expect(checklistGroupTabs).toContain("<svg");
-    expect(checklistGroupTabs).toContain("未完成 {count.remaining} 项");
-    expect(checklistPage).toContain("groupCounts");
+  it("shows exactly the three V2 views in a fixed mobile grid", () => {
+    expect(CHECKLIST_VIEWS.map((view) => view.shortLabel)).toEqual([
+      "全部",
+      "待购买",
+      "待装包",
+    ]);
+    expect(checklistGroupTabs).toContain('aria-label="清单视图"');
+    expect(checklistGroupTabs).toContain("grid grid-cols-3");
+    expect(checklistGroupTabs).toContain("aria-pressed={active}");
+    expect(checklistGroupTabs).toContain("{counts[view.id]} 项");
     expect(checklistGroupTabs).not.toContain("overflow-x-auto");
     expect(checklistGroupTabs).not.toContain("min-w-max");
-    expect(checklistGroupTabs).not.toContain("min-h-[4.75rem]");
-    expect(checklistPage).not.toContain("SlidersHorizontal");
   });
 
-  it("memoizes checklist rows for item-level updates", () => {
+  it("derives visible rows, sections and counters from the same V2 selectors", () => {
+    expect(checklistWorkspace).toContain("getChecklistViewCounts(modeItems)");
+    expect(checklistWorkspace).toContain("getChecklistViewItems(modeItems, view)");
+    expect(checklistWorkspace).toContain("groupChecklistViewItems(visibleItems)");
+    expect(checklistWorkspace).toContain("待买 {counts.shopping}");
+    expect(checklistWorkspace).toContain("待装 {counts.packing}");
+    expect(checklistWorkspace).toContain("共 {counts.all} 项");
+  });
+
+  it("uses the four V2 states for direct, reversible item actions", () => {
+    expect(checklistItemRow).toContain('todo: "待处理"');
+    expect(checklistItemRow).toContain('ready: "已备好"');
+    expect(checklistItemRow).toContain('packed: "已装包"');
+    expect(checklistItemRow).toContain('not_needed: "不需要"');
+    expect(checklistItemRow).toContain("advanceItem(item.id)");
+    expect(checklistItemRow).toContain("toggleItemSkipped(item.id)");
+    expect(checklistItemRow).toContain("标记不需要");
+    expect(checklistItemRow).toContain("恢复物品");
     expect(checklistItemRow).toContain("memo(function ChecklistItemRow");
-    expect(checklistItemRow).toContain("ChecklistItemRow.displayName");
   });
 
-  it("uses app-like category cards and stable action rows", () => {
-    expect(checklistCategoryCard).toContain("card-surface");
-    expect(checklistCategoryCard).toContain("icon-tile");
-    expect(checklistCategoryCard).toContain("completion.percent");
-    expect(checklistCategoryCard).toContain("未完成");
-    expect(checklistItemRow).toContain("flex-wrap items-center justify-end");
-    expect(checklistItemRow).toContain("sm:flex-nowrap");
-    expect(checklistItemRow).toContain("shrink-0");
+  it("keeps tools and hospital questions out of the main checklist rows", () => {
+    expect(checklistItemRow).not.toContain('href="/hospital"');
+    expect(checklistItemRow).not.toContain("isHospitalConfirmation");
+    expect(checklistWorkspace).not.toContain("医院规则确认");
+    expect(checklistWorkspace).not.toContain("暂时没有待问事项");
+  });
+
+  it("uses collapsible, touch-friendly category cards", () => {
+    expect(checklistCategoryCard).toContain("aria-expanded={open}");
+    expect(checklistCategoryCard).toContain("min-w-0 flex-1");
+    expect(checklistCategoryCard).toContain("break-words");
+    expect(checklistCategoryCard).toContain("还剩 ${remaining} 项");
+    expect(checklistCategoryCard).toContain("这一包已完成");
   });
 });

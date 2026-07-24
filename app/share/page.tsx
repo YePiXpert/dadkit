@@ -274,7 +274,7 @@ function buildSharePosters(
 
   return [
     {
-      caption: `待产准备摘要：预产期 ${dueDate}，距离预产期 ${formatDaysMetric(daysLeft)}。包含医院确认、核心待产包、临出门沟通和产后提醒。`,
+      caption: `待产准备摘要：预产期 ${dueDate}，距离预产期 ${formatDaysMetric(daysLeft)}。包含清单进度和按需使用的辅助工具。`,
       detail: `预产期 ${dueDate}`,
       icon: Sparkles,
       metric: formatDaysMetric(daysLeft),

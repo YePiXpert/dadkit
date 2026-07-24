@@ -103,7 +103,7 @@ export function buildHomeReadinessMetrics(
       total: summary.corePacking.total,
       percent: summary.corePacking.percent,
       caption: "需要带到医院的核心物品",
-      href: "/checklist",
+      href: "/",
     },
     {
       id: "hospital",

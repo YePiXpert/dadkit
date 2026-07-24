@@ -1,9 +1,4 @@
-param(
-  [ValidateSet("host", "android")]
-  [string]$Mode = "host",
-
-  [switch]$AllowOverwrite
-)
+param([switch]$AllowOverwrite)
 
 function Restore-EnvValue([string]$Name, [AllowNull()][object]$Value) {
   if ($null -eq $Value) {
@@ -30,7 +25,7 @@ try {
     $env:DADKIT_WEBDAV_ALLOW_OVERWRITE = "1"
   }
 
-  node scripts/verify-webdav-acceptance.mjs $Mode
+  node scripts/verify-webdav-acceptance.mjs
   exit $LASTEXITCODE
 } finally {
   Restore-EnvValue "DADKIT_WEBDAV_USERNAME" $previousUsername

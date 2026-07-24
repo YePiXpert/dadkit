@@ -22,10 +22,10 @@ import {
   buildAuthHeader,
   buildDadKitWebDavBackup,
   calculateChecksum,
+  downloadWebDavBackup,
   importDadKitWebDavBackup,
   joinWebDavPath,
   normalizeWebDavEndpoint,
-  responseFromNativeWebDavResult,
   selectWebDavTransport,
   testWebDavConnection,
 } from "@/lib/webdav/client";
@@ -138,7 +138,8 @@ describe("webdav helpers", () => {
     const data = exportData();
     const backup = buildDadKitWebDavBackup(data, "device-1");
 
-    expect(backup.schemaVersion).toBe(1);
+    expect(backup.schemaVersion).toBe(2);
+    expect(backup.data.version).toBe(2);
     expect(backup.app).toBe("DadKit");
     expect(backup.deviceId).toBe("device-1");
     expect(backup.checksum).toBe(calculateChecksum(data));
@@ -150,6 +151,46 @@ describe("webdav helpers", () => {
       calculateChecksum({ a: 1, b: 2 }),
     );
     expect(calculateChecksum({ a: 1 })).not.toBe(calculateChecksum({ a: 2 }));
+  });
+
+  it("rejects V1 WebDAV backups", async () => {
+    installStorage();
+    const currentBackup = buildDadKitWebDavBackup(exportData(), "device-1");
+    const v1Backup = {
+      ...currentBackup,
+      schemaVersion: 1,
+      data: {
+        ...currentBackup.data,
+        version: 1,
+      },
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(JSON.stringify(v1Backup), {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "x-dadkit-webdav-proxy": "1",
+          },
+        }),
+      ),
+    );
+
+    const result = await downloadWebDavBackup(
+      {
+        ...DEFAULT_WEBDAV_CONFIG,
+        endpoint: "https://example.com/dav",
+        username: "dad",
+      },
+      "secret",
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      message: "远端文件不是 DadKit WebDAV 备份。",
+    });
   });
 
   it("does not include WebDAV secret in exported JSON", () => {
@@ -212,7 +253,7 @@ describe("webdav helpers", () => {
     expect(snapshots[0]?.data.checklist).toEqual([testItem("local-before-webdav")]);
   });
 
-  it("prefills the first native WebDAV target without storing secrets", () => {
+  it("prefills the default WebDAV target without storing secrets", () => {
     expect(DEFAULT_WEBDAV_CONFIG.endpoint).toBe("https://webdav.123pan.cn/webdav");
     expect(DEFAULT_WEBDAV_CONFIG.remoteDir).toBe("/DadKit");
     expect(DEFAULT_WEBDAV_CONFIG.filename).toBe("dadkit-backup.json");
@@ -255,33 +296,12 @@ describe("webdav helpers", () => {
     expect(payload.headers.depth).toBe("0");
   });
 
-  it("selects the native WebDAV transport before browser proxy fallback", () => {
-    expect(selectWebDavTransport({ isBrowser: true, isNative: true })).toBe(
-      "native-http",
-    );
-    expect(selectWebDavTransport({ isBrowser: true, isNative: false })).toBe(
-      "browser-proxy",
-    );
-    expect(selectWebDavTransport({ isBrowser: false, isNative: false })).toBe(
-      "direct-fetch",
-    );
+  it("selects only browser proxy or server-side direct fetch", () => {
+    expect(selectWebDavTransport({ isBrowser: true })).toBe("browser-proxy");
+    expect(selectWebDavTransport({ isBrowser: false })).toBe("direct-fetch");
   });
 
-  it("normalizes native WebDAV HTTP responses to Fetch responses", async () => {
-    const response = responseFromNativeWebDavResult({
-      data: { ok: true },
-      status: 207,
-      headers: {
-        "content-type": "application/json",
-      },
-    });
-
-    expect(response.status).toBe(207);
-    expect(response.headers.get("content-type")).toBe("application/json");
-    expect(await response.text()).toBe(JSON.stringify({ ok: true }));
-  });
-
-  it("uses direct fetch when not running in a browser or native app", async () => {
+  it("uses direct fetch when running outside the browser", async () => {
     const fetchMock = vi.fn<typeof fetch>(async () => {
       return new Response(null, { status: 207 });
     });

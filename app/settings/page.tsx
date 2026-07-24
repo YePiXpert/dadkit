@@ -5,10 +5,17 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
+  Baby,
+  CalendarClock,
+  CarFront,
   Copy,
   Download,
+  Hospital,
   Info,
+  NotebookPen,
   RotateCcw,
+  Share2,
+  Timer,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -102,7 +109,7 @@ export default function SettingsPage() {
   const [uploadConflict, setUploadConflict] = useState(false);
   const [releaseInfo, setReleaseInfo] = useState<ReleaseInfo>({
     ok: true,
-    version: "1.3.0",
+    version: "2.0.0",
     buildTime: "unknown",
   });
   const hasLocalData =
@@ -141,7 +148,7 @@ export default function SettingsPage() {
   }, []);
 
   function clearData() {
-    if (!window.confirm("确认清空本地数据？此操作只会影响当前浏览器。")) {
+    if (!window.confirm("恢复为通用清单？当前进度和可选资料会被清除。")) {
       return;
     }
 
@@ -160,7 +167,7 @@ export default function SettingsPage() {
 
     refreshSnapshots();
     refreshWebDavSettings();
-    setMessage("本地数据已清空。");
+    setMessage("已恢复为一份全新的通用清单。");
     setMessageOk(true);
   }
 
@@ -374,39 +381,84 @@ export default function SettingsPage() {
 
   return (
     <div className="page-shell">
-      <Card className="mobile-shell lg:max-w-none">
-        <CardContent className="flex items-center gap-3 p-4">
-          <div className="min-w-0 flex-1">
-            <p className="text-base font-semibold">
-              {profile ? formatBabyZodiacLine(profile) : "待产资料"}
-            </p>
-            <p className="mt-1 break-words text-xs leading-4 text-muted-foreground">
-              {profile ? "待产清单已生成" : "创建资料后生成清单"}
+      <section className="mobile-shell grid gap-3 lg:max-w-none">
+        <header className="flex items-end justify-between gap-3 pb-1">
+          <div>
+            <p className="section-kicker">DadKit</p>
+            <h1 className="text-2xl font-semibold leading-tight">我的</h1>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              清单开箱即用，资料和工具都按需使用。
             </p>
           </div>
           <span className="shrink-0 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-primary">
             v{releaseInfo.version}
           </span>
-        </CardContent>
-      </Card>
+        </header>
 
-      <section className="mobile-shell grid gap-3 lg:max-w-none">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>资料</CardTitle>
+            <CardTitle>我的资料</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 p-2 pt-0">
             <SettingsShortcutRow
-              caption="预产期、地区、医院和生产方式"
+              caption={
+                profile
+                  ? `${formatBabyZodiacLine(profile)} · 可随时修改，不会清空进度`
+                  : "预产期、地区、医院等均可选，不填也能正常使用"
+              }
               href="/setup"
               icon={<Info className="size-4" />}
-              title="编辑资料"
+              title={profile ? "编辑资料" : "添加可选资料"}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>常用工具</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 p-2 pt-0 sm:grid-cols-2">
+            <SettingsShortcutRow
+              caption="记录医院提供物品和待确认事项"
+              href="/hospital"
+              icon={<Hospital className="size-4" />}
+              title="医院确认"
             />
             <SettingsShortcutRow
-              caption="医院模板、地区医院和入院备注"
-              href="/hospital"
-              icon={<Info className="size-4" />}
-              title="修改地区医院"
+              caption="有预产期时查看阶段性提醒"
+              href="/timeline"
+              icon={<CalendarClock className="size-4" />}
+              title="准备时间线"
+            />
+            <SettingsShortcutRow
+              caption="记录持续时间和间隔"
+              href="/contractions"
+              icon={<Timer className="size-4" />}
+              title="宫缩计时"
+            />
+            <SettingsShortcutRow
+              caption="出发前快速核对关键物品"
+              href="/go"
+              icon={<CarFront className="size-4" />}
+              title="临出门检查"
+            />
+            <SettingsShortcutRow
+              caption="整理陪产与沟通偏好"
+              href="/birth-plan"
+              icon={<NotebookPen className="size-4" />}
+              title="分娩偏好"
+            />
+            <SettingsShortcutRow
+              caption="出生后办理与复查提醒"
+              href="/postpartum"
+              icon={<Baby className="size-4" />}
+              title="产后事项"
+            />
+            <SettingsShortcutRow
+              caption="导出清单或发给家人"
+              href="/share"
+              icon={<Share2 className="size-4" />}
+              title="导出分享"
             />
           </CardContent>
         </Card>
@@ -802,15 +854,15 @@ export default function SettingsPage() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>清空本地数据</CardTitle>
+            <CardTitle>恢复通用清单</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
             <p className="text-sm leading-6 text-muted-foreground">
-              会清空当前浏览器中的资料、清单、自定义项和 WebDAV 设置。清空前会自动保留一份本地快照。
+              清除当前进度、可选资料和备份设置，并立即重新生成一份开箱即用的通用清单。
             </p>
             <Button className="justify-self-start" variant="outline" onClick={clearData}>
               <RotateCcw className="size-4" />
-              清空本地数据
+              恢复为全新清单
             </Button>
             {message ? (
               <p

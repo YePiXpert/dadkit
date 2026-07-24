@@ -1,8 +1,7 @@
-const CACHE_NAME = "dadkit-v1.3.0-coral-v2";
+const CACHE_NAME = "dadkit-v2.0.0-pwa";
 const CORE_ROUTES = [
   "/",
   "/setup",
-  "/checklist",
   "/hospital",
   "/timeline",
   "/go",
@@ -69,7 +68,6 @@ self.addEventListener("fetch", (event) => {
 function shouldCacheAsset(url) {
   return (
     url.pathname.startsWith("/_next/static/") ||
-    url.pathname === "/_next/image" ||
     STATIC_ASSETS.has(url.pathname)
   );
 }
@@ -145,10 +143,7 @@ function extractBuildAssets(html) {
       const [rawUrl] = candidate.trim().split(/\s+/, 1);
       const url = rawUrl?.replaceAll("&amp;", "&");
 
-      if (
-        url?.startsWith("/_next/static/") ||
-        url?.startsWith("/_next/image?")
-      ) {
+      if (url?.startsWith("/_next/static/")) {
         assets.add(url);
       }
     }

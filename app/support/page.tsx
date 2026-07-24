@@ -7,12 +7,12 @@ import { getReviewPageHref, PUBLIC_PRIVACY_PATH } from "@/lib/app-routes";
 export const metadata: Metadata = {
   title: "支持与反馈 | DadKit",
   description:
-    "DadKit 的支持入口：反馈问题、TestFlight 测试说明、WebDAV 排查和非医疗使用边界。",
+    "DadKit 的支持入口：反馈问题、PWA 使用说明、WebDAV 排查和非医疗使用边界。",
 };
 
 const testChecklist = [
-  "首次打开后创建资料，并确认首页、清单、医院、时间线和我的页面可进入",
-  "修改一个清单状态，关闭再打开 App，确认本地数据仍在",
+  "首次打开后无需填写资料，确认首页直接显示清单，并能进入“我的”",
+  "修改一个清单状态，刷新或重新打开 PWA，确认本地数据仍在",
   "在“我的”页面复制 JSON 备份，并尝试导入一份非真实隐私数据",
   "如测试 WebDAV，请使用测试目录和应用密码，不要把真实家庭资料截图发到反馈里",
 ];
@@ -53,7 +53,7 @@ export default function SupportPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>TestFlight / APK 测试建议</CardTitle>
+            <CardTitle>PWA 使用检查</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2">
             {testChecklist.map((item) => (

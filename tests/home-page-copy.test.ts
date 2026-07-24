@@ -3,67 +3,47 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-const homePage = readFileSync(join(process.cwd(), "app", "page.tsx"), "utf8");
-const preparationSummary = readFileSync(
-  join(process.cwd(), "lib", "presentation", "preparation-summary.ts"),
-  "utf8",
-);
-const banned = (...parts: string[]) => parts.join("");
+function readSource(...segments: string[]) {
+  return readFileSync(join(process.cwd(), ...segments), "utf8");
+}
 
-describe("home page copy", () => {
-  it("does not show the old compact-mode badge or duplicate disclaimer", () => {
-    expect(homePage).not.toContain("精简模式");
-    expect(homePage).not.toContain("DisclaimerBox");
-    expect(homePage.match(/非医疗建议/g) ?? []).toHaveLength(1);
+const homePage = readSource("app", "page.tsx");
+const checklistWorkspace = readSource("components", "ChecklistWorkspace.tsx");
+
+describe("V2 home page", () => {
+  it("uses the checklist workspace at the root route", () => {
+    expect(homePage).toContain(
+      'import { ChecklistWorkspace } from "@/components/ChecklistWorkspace"',
+    );
+    expect(homePage).toContain("return <ChecklistWorkspace />");
   });
 
-  it("uses the focused home actions and low-anxiety metrics", () => {
-    expect(homePage).toContain("生成待产包清单");
-    expect(homePage).not.toContain("查看示例");
-    expect(homePage).not.toContain('href="/example"');
-    expect(homePage).toContain("formatBabyZodiacLine");
-    expect(homePage).not.toContain("dadkit-real-home-prep-photo.webp");
-    expect(homePage).not.toContain("journal-cover-photo");
-    expect(homePage).not.toContain("dadkit-home-journal-sticker-v2.png");
-    expect(homePage).not.toContain("journal-cover-card");
-    expect(homePage).not.toContain("journal-cover-kicker");
-    expect(homePage).toContain("预产期倒计时");
-    expect(homePage).not.toContain(banned("女宝", "倒计时"));
-    expect(homePage).toContain("buildPreparationSummary");
-    expect(homePage).not.toContain("HomePlanReadyPanel");
-    expect(homePage).toContain('href="/share"');
-    expect(homePage).toContain("导出与协作");
-    expect(preparationSummary).toContain("PREPARATION_MODULE_WEIGHTS");
-    expect(preparationSummary).toContain("contractionStatus");
-    expect(preparationSummary).toContain("产后提醒");
-    expect(homePage).toContain("今日重点");
-    expect(homePage).not.toContain(banned("姐妹", "今天先做"));
-    expect(homePage).toContain("当前优先");
-    expect(homePage).toContain("准备节奏");
-    expect(homePage).toContain("入院准备");
-    expect(homePage).not.toContain("dadkit-family-card-v2.png");
-    expect(homePage).not.toContain("dadkit-bear-transparent.png");
-    expect(homePage).toContain("HomeHeroCard");
-    expect(homePage).not.toContain("CuteIllustration");
-    expect(homePage).not.toContain("getBabyMascot");
-    expect(homePage).toContain("TodayFocusPanel");
-    expect(homePage).toContain("ReadinessMetricsPanel");
-    expect(homePage).not.toContain("HomeToolsPanel");
-    expect(homePage).toContain("HomeLaborModePanel");
-    expect(homePage).toContain('href="/go"');
-    expect(homePage).not.toContain("快捷操作");
-    expect(homePage).not.toContain("常用入口");
-    expect(homePage).not.toContain("全部工具");
-    expect(homePage).toContain("临出门检查");
-    expect(homePage).not.toContain("产后办理");
-    expect(homePage).not.toContain('href="/settings#more-tools"');
-    expect(homePage).not.toContain("HomeAppHeader");
-    expect(homePage).not.toContain("dadkit-dad-avatar.png");
-    expect(homePage).toContain("formatHomeDueDate");
-    expect(homePage).not.toContain(banned("建议", "今天完成"));
-    expect(homePage).not.toContain(banned("临产", "模式"));
-    expect(homePage).not.toContain("工具宫格");
-    expect(homePage).not.toContain("ToolGridLink");
-    expect(homePage).not.toContain("completed/");
+  it("opens directly into an actionable checklist without requiring profile data", () => {
+    expect(checklistWorkspace).toContain("待产包清单");
+    expect(checklistWorkspace).toContain("看一眼还差什么，准备好就打勾。");
+    expect(checklistWorkspace).toContain("getChecklistViewItems");
+    expect(checklistWorkspace).toContain("getChecklistViewCounts");
+    expect(checklistWorkspace).toContain(
+      "预产期可选：填写后开启孕周、时间线和证件提醒",
+    );
+    expect(checklistWorkspace).not.toMatch(/if\s*\(\s*!profile\s*\)/);
+  });
+
+  it("does not restore the dashboard or four-pillar readiness model", () => {
+    const homeSources = `${homePage}\n${checklistWorkspace}`;
+
+    expect(homeSources).not.toContain("buildPreparationSummary");
+    expect(homeSources).not.toContain("PREPARATION_MODULE_WEIGHTS");
+    expect(homeSources).not.toContain("HomeHeroCard");
+    expect(homeSources).not.toContain("TodayFocusPanel");
+    expect(homeSources).not.toContain("ReadinessMetricsPanel");
+    expect(homeSources).not.toContain("今日重点");
+    expect(homeSources).not.toContain("四根柱子");
+  });
+
+  it("keeps the safety boundary with the checklist instead of duplicating it", () => {
+    expect(
+      checklistWorkspace.match(/清单是准备参考，不替代医院通知或医疗建议。/g) ?? [],
+    ).toHaveLength(1);
   });
 });

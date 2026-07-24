@@ -23,24 +23,24 @@ import {
 } from "@/lib/webdav/types";
 
 export const STORAGE_KEYS = {
-  userProfile: "dadkit:user-profile",
-  checklist: "dadkit:checklist",
-  customItems: "dadkit:custom-items",
-  hiddenTemplateItems: "dadkit:hidden-template-items",
-  hospitalOverrides: "dadkit:hospital-overrides",
-  hospitalAnswers: "dadkit:hospital-answers",
-  timelineTaskStatuses: "dadkit:timeline-task-statuses",
-  contractions: "dadkit:contractions",
-  birthPlan: "dadkit:birth-plan",
-  postpartumTasks: "dadkit:postpartum-tasks",
-  checklistMode: "dadkit:checklist-mode",
-  snapshots: "dadkit:snapshots",
-  webDavConfig: "dadkit:webdav-config",
-  webDavSyncState: "dadkit:webdav-sync-state",
-  webDavSecret: "dadkit:webdav-secret",
+  userProfile: "dadkit:v2:user-profile",
+  checklist: "dadkit:v2:checklist",
+  customItems: "dadkit:v2:custom-items",
+  hiddenTemplateItems: "dadkit:v2:hidden-template-items",
+  hospitalOverrides: "dadkit:v2:hospital-overrides",
+  hospitalAnswers: "dadkit:v2:hospital-answers",
+  timelineTaskStatuses: "dadkit:v2:timeline-task-statuses",
+  contractions: "dadkit:v2:contractions",
+  birthPlan: "dadkit:v2:birth-plan",
+  postpartumTasks: "dadkit:v2:postpartum-tasks",
+  checklistMode: "dadkit:v2:checklist-mode",
+  snapshots: "dadkit:v2:snapshots",
+  webDavConfig: "dadkit:v2:webdav-config",
+  webDavSyncState: "dadkit:v2:webdav-sync-state",
+  webDavSecret: "dadkit:v2:webdav-secret",
 } as const;
 
-export const WEBDAV_SESSION_SECRET_KEY = "dadkit:webdav-session-secret";
+export const WEBDAV_SESSION_SECRET_KEY = "dadkit:v2:webdav-session-secret";
 
 const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.userProfile,
@@ -60,7 +60,7 @@ const DATA_STORAGE_KEYS = [
 ];
 
 export type DadKitExportData = {
-  version: 1;
+  version: 2;
   exportedAt: string;
   userProfile: UserProfile | null;
   checklistMode: ChecklistMode;
@@ -268,9 +268,9 @@ export function savePostpartumTasks(tasks: PostpartumTask[]) {
 }
 
 export function loadChecklistMode(): ChecklistMode {
-  const mode = readJson<ChecklistMode>(STORAGE_KEYS.checklistMode, "lean");
+  const mode = readJson<ChecklistMode>(STORAGE_KEYS.checklistMode, "full");
 
-  return mode === "full" ? "full" : "lean";
+  return mode === "lean" ? "lean" : "full";
 }
 
 export function saveChecklistMode(mode: ChecklistMode) {
@@ -413,7 +413,7 @@ export function resetAllData() {
 
 export function exportData(): DadKitExportData {
   return {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     userProfile: loadUserProfile() ?? null,
     checklistMode: loadChecklistMode(),
@@ -751,7 +751,7 @@ export function validateImportData(rawJson: string): ImportValidationResult {
 
   const data = parsed as DadKitImportData;
 
-  if (data.version !== 1) {
+  if (data.version !== 2) {
     return { ok: false, message: "不支持的备份版本，未修改本地数据。" };
   }
 
@@ -996,7 +996,7 @@ function isSnapshot(value: unknown): value is DadKitSnapshot {
     typeof value.createdAt === "string" &&
     typeof value.reason === "string" &&
     isRecord(value.data) &&
-    value.data.version === 1
+    value.data.version === 2
   );
 }
 

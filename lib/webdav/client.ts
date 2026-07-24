@@ -1,10 +1,4 @@
 import {
-  Capacitor,
-  CapacitorHttp,
-  type HttpResponse,
-} from "@capacitor/core";
-
-import {
   createSnapshot,
   importData,
   type DadKitExportData,
@@ -22,7 +16,7 @@ const WEB_DAV_PROXY_PATH = "/api/webdav";
 const PROXY_HEADER = "x-dadkit-webdav-proxy";
 const PROXY_ERROR_HEADER = "x-dadkit-webdav-proxy-error";
 
-export type WebDavTransport = "browser-proxy" | "native-http" | "direct-fetch";
+export type WebDavTransport = "browser-proxy" | "direct-fetch";
 
 type UploadOptions = {
   deviceId?: string;
@@ -75,7 +69,7 @@ export function buildDadKitWebDavBackup(
   const timestamp = new Date().toISOString();
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     app: "DadKit",
     deviceId,
     backupId: backupId(),
@@ -303,10 +297,6 @@ async function webDavFetch(
 ): Promise<Response> {
   const transport = getWebDavTransport();
 
-  if (transport === "native-http") {
-    return nativeWebDavFetch(input, init);
-  }
-
   if (transport === "browser-proxy") {
     return browserProxyWebDavFetch(input, init);
   }
@@ -326,74 +316,14 @@ async function webDavFetch(
   }
 }
 
-export function selectWebDavTransport({
-  isBrowser,
-  isNative,
-}: {
-  isBrowser: boolean;
-  isNative: boolean;
-}): WebDavTransport {
-  if (isNative) {
-    return "native-http";
-  }
-
+export function selectWebDavTransport({ isBrowser }: { isBrowser: boolean }): WebDavTransport {
   return isBrowser ? "browser-proxy" : "direct-fetch";
 }
 
 export function getWebDavTransport(): WebDavTransport {
   return selectWebDavTransport({
     isBrowser: typeof window !== "undefined",
-    isNative: isNativeCapacitorRuntime(),
   });
-}
-
-function isNativeCapacitorRuntime() {
-  try {
-    return Capacitor.isNativePlatform();
-  } catch {
-    return false;
-  }
-}
-
-async function nativeWebDavFetch(
-  input: string,
-  init: RequestInit,
-): Promise<Response> {
-  const response = await CapacitorHttp.request({
-    url: input,
-    method: init.method ?? "GET",
-    headers: headersToRecord(init.headers),
-    data: typeof init.body === "string" ? init.body : undefined,
-    responseType: "text",
-    disableRedirects: true,
-  });
-
-  return responseFromNativeWebDavResult(response);
-}
-
-export function responseFromNativeWebDavResult(
-  response: Pick<HttpResponse, "data" | "headers" | "status">,
-) {
-  const body = nativeResponseBody(response);
-
-  return new Response(body, {
-    status: response.status,
-    headers: response.headers,
-  });
-}
-
-function nativeResponseBody(response: Pick<HttpResponse, "data" | "status">) {
-  if ([204, 205, 304].includes(response.status)) {
-    return null;
-  }
-
-  if (response.data === undefined || response.data === null) {
-    return null;
-  }
-
-  return typeof response.data === "string"
-    ? response.data
-    : JSON.stringify(response.data);
 }
 
 async function browserProxyWebDavFetch(
@@ -481,7 +411,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isDadKitWebDavBackup(value: unknown): value is DadKitWebDavBackup {
   return (
     isRecord(value) &&
-    value.schemaVersion === 1 &&
+    value.schemaVersion === 2 &&
     value.app === "DadKit" &&
     typeof value.deviceId === "string" &&
     typeof value.backupId === "string" &&
@@ -489,7 +419,7 @@ function isDadKitWebDavBackup(value: unknown): value is DadKitWebDavBackup {
     typeof value.updatedAt === "string" &&
     typeof value.checksum === "string" &&
     isRecord(value.data) &&
-    value.data.version === 1
+    value.data.version === 2
   );
 }
 

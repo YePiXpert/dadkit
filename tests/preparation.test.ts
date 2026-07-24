@@ -6,10 +6,7 @@ import {
   getStatusOptionsForItem,
   inferPreparationKind,
 } from "@/lib/preparation";
-import {
-  filterItemsByVisualGroup,
-  getChecklistVisualGroupItems,
-} from "@/lib/presentation";
+import { getChecklistViewItems } from "@/lib/checklist-v2";
 import { generateChecklist } from "@/lib/rules";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem, UserProfile } from "@/lib/types";
@@ -206,7 +203,7 @@ describe("preparation semantics", () => {
       "general-partner-family-notice",
       "general-last-phone",
     ];
-    const shoppingIds = filterItemsByVisualGroup(
+    const shoppingIds = getChecklistViewItems(
       generateChecklist(makeProfile()),
       "shopping",
     ).map((item) => item.id);
@@ -218,23 +215,6 @@ describe("preparation semantics", () => {
     expect(shoppingIds).toContain("general-postpartum-underwear");
     expect(shoppingIds).toContain("general-postpartum-pads");
     expect(shoppingIds).toContain("general-baby-diapers");
-  });
-
-  it("uses one source for checklist group counts and visible items", () => {
-    const items = generateChecklist(makeProfile());
-    const dadItems = getChecklistVisualGroupItems(items, "dad");
-
-    expect(filterItemsByVisualGroup(items, "dad")).toEqual(dadItems);
-    expect(dadItems.map((item) => item.id)).toEqual([
-      "general-partner-id",
-      "general-partner-charger",
-      "general-partner-water-snacks",
-      "general-partner-clothes",
-      "general-partner-toiletries",
-      "general-partner-glasses",
-    ]);
-    expect(dadItems.every((item) => item.itemKind === "item")).toBe(true);
-    expect(dadItems.every((item) => item.bag === "dad_backpack")).toBe(true);
   });
 
   it("saves preparationKind when adding custom items", () => {
@@ -250,9 +230,12 @@ describe("preparation semantics", () => {
     expect(useDadKitStore.getState().customItems[0]?.preparationKind).toBe(
       "buy_and_pack",
     );
-    expect(useDadKitStore.getState().checklist[0]?.preparationKind).toBe(
-      "buy_and_pack",
-    );
+    expect(
+      useDadKitStore
+        .getState()
+        .checklist.find((item) => item.name === "自定义产褥垫")
+        ?.preparationKind,
+    ).toBe("buy_and_pack");
   });
 
   it("updates preparationKind when editing custom items", () => {

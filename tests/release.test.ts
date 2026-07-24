@@ -8,7 +8,7 @@ import { GET } from "@/app/healthz/route";
 import packageJson from "@/package.json";
 
 describe("release endpoints and pages", () => {
-  it("ships v1.3 release metadata", () => {
+  it("ships the fresh V2 PWA metadata", () => {
     const readme = readFileSync(join(process.cwd(), "README.md"), "utf8");
     const settingsPage = readFileSync(
       join(process.cwd(), "app", "settings", "page.tsx"),
@@ -21,17 +21,16 @@ describe("release endpoints and pages", () => {
       description: string;
     };
 
-    expect(packageJson.version).toBe("1.3.0");
-    expect(settingsPage).toContain('version: "1.3.0"');
-    expect(manifest.name).toBe("DadKit 待产准备");
-    expect(manifest.description).toContain("医院确认");
-    expect(manifest.description).toContain("临出门沟通卡");
-    expect(readme).toContain("# DadKit v1.3");
-    expect(readme).toContain("四根柱子");
-    expect(readme).toContain("医院确认、核心待产包、临出门沟通卡和产后提醒");
-    expect(readme).toContain("![DadKit README 展示横幅]");
-    expect(readme).toContain("![DadKit 使用流程图]");
-    expect(readme).not.toContain("分娩偏好卡");
+    expect(packageJson.version).toBe("2.0.0");
+    expect(settingsPage).toContain('version: "2.0.0"');
+    expect(manifest.name).toBe("DadKit 待产包清单");
+    expect(manifest.description).toContain("打开即用");
+    expect(manifest.description).toContain("待购买");
+    expect(readme).toContain("# DadKit v2.0");
+    expect(readme).toContain("零输入启动");
+    expect(readme).toContain("全部、待购买、待装包");
+    expect(readme).toContain("纯 PWA");
+    expect(readme).not.toContain("四根柱子");
   });
 
   it("returns health status with version and buildTime", async () => {
@@ -88,18 +87,18 @@ describe("release endpoints and pages", () => {
     expect(
       existsSync(join(process.cwd(), "public", "apple-touch-icon.png")),
     ).toBe(true);
+    expect(existsSync(join(process.cwd(), "public", "og.png"))).toBe(true);
   });
 
-  it("does not pre-cache app illustrations for installed PWA sessions", () => {
+  it("pre-caches the V2 web app shell without illustrations", () => {
     const sw = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.3.0-coral-v2"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.0.0-pwa"');
     expect(sw).toContain("const CORE_ROUTES = [");
-    expect(sw).toContain('"/checklist"');
     expect(sw).toContain('"/hospital"');
     expect(sw).toContain('"/timeline"');
     expect(sw).toContain("precacheAppShell");
-    expect(sw).toContain('url.pathname === "/_next/image"');
+    expect(sw).not.toContain('url.pathname === "/_next/image"');
     expect(sw).not.toContain("/illustrations/");
     expect(sw).not.toContain('url.pathname.startsWith("/illustrations/")');
   });
@@ -122,15 +121,10 @@ describe("release endpoints and pages", () => {
     ) => string[];
     const assets = extractBuildAssets(`
       <link href="/_next/static/css/app.css" rel="stylesheet">
-      <img srcset="/_next/image?url=%2Ficon.png&amp;w=256&amp;q=75 1x, /_next/image?url=%2Ficon.png&amp;w=512&amp;q=75 2x">
       <script>self.__next_f.push([1,"href=\\\"/_next/static/css/flight.css\\\""])</script>
     `);
 
-    expect(assets).toEqual([
-      "/_next/static/css/app.css",
-      "/_next/image?url=%2Ficon.png&w=256&q=75",
-      "/_next/image?url=%2Ficon.png&w=512&q=75",
-    ]);
+    expect(assets).toEqual(["/_next/static/css/app.css"]);
   });
 
   it("keeps optional route and media failures from aborting app-shell install", async () => {

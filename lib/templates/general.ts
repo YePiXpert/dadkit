@@ -38,7 +38,8 @@ function templateItem(
 
 export const generalTemplate: TemplateChecklistItem[] = [
   templateItem("general-doc-id", "身份证件", "documents", "must", "pack_now", {
-    note: "夫妻双方身份证原件 + 复印件，入院登记和办出生证明都要用。",
+    quantity: "父母双方原件各 1 份，复印件按医院要求",
+    note: "用于入院登记及后续材料核验；建议父母双方原件分别装袋，复印件数量先向医院确认。",
     removable: false,
     packTier: "core",
     itemKind: "item",
@@ -53,7 +54,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "pack_now",
     {
-      note: "确认卡状态正常，电子医保凭证截图备份一份。",
+      quantity: "实体卡 1 张 + 电子凭证 1 份",
+      note: "用于就诊与医保结算；建议携带本人实体卡，并提前登录或截图保存电子凭证。",
       removable: false,
       packTier: "core",
       itemKind: "item",
@@ -69,7 +71,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "pack_now",
     {
-      note: "产检本、B 超单、化验单按时间顺序装好，入院时医生要查看。",
+      quantity: "原件 1 套",
+      note: "用于医护人员了解孕期检查记录；建议把产检本、影像和化验单按日期整理成一套。",
       removable: false,
       packTier: "core",
       itemKind: "item",
@@ -79,7 +82,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     },
   ),
   templateItem("general-doc-admission", "入院资料", "documents", "must", "pack_now", {
-    note: "住院证、入院通知单等医院开具的材料，与产检资料放在一起。",
+    quantity: "医院已开具材料 1 套",
+    note: "用于办理住院手续；建议把住院证、入院通知单等已开具材料与产检资料放在同一文件袋。",
     removable: false,
     packTier: "core",
     itemKind: "item",
@@ -94,7 +98,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "recommended",
     "pack_now",
     {
-      note: "如已整理分娩偏好、用药过敏、陪产人和紧急联系人，可与产检资料放在一起。",
+      quantity: "打印 1-2 份",
+      note: "用于快速说明个人偏好、过敏信息和联系人；建议控制在一页并打印一至两份，内容以现场沟通为准。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "document",
@@ -109,7 +114,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "optional",
     "pack_now",
     {
-      note: "备 200-500 元零钱即可，大部分场景可以手机支付。",
+      quantity: "约 200-500 元零钱",
+      note: "用于手机支付不便或临时小额支出；建议只备少量零钱，具体金额按医院支付方式调整。",
       packTier: "optional",
       itemKind: "item",
       bag: "documents_folder",
@@ -117,7 +123,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     },
   ),
   templateItem("general-doc-marriage-cert", "结婚证", "documents", "recommended", "pack_now", {
-    note: "办理出生医学证明时多数医院需要，与户口本放在一起。",
+    quantity: "原件 1 本，复印件按当地要求",
+    note: "部分地区办理相关材料时可能核验；建议先确认当地要求，再与户口本一起放入证件袋。",
     packTier: "core",
     itemKind: "item",
     preparationKind: "document",
@@ -125,7 +132,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     bulk: "small",
   }),
   templateItem("general-doc-hukou", "户口本", "documents", "recommended", "pack_now", {
-    note: "办理出生医学证明时多数医院需要，与结婚证放在一起。",
+    quantity: "原件 1 本，复印件按当地要求",
+    note: "部分地区办理相关材料时可能核验；建议先确认当地要求，再与结婚证一起放入证件袋。",
     packTier: "core",
     itemKind: "item",
     preparationKind: "document",
@@ -139,7 +147,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "recommended",
     "pack_now",
     {
-      note: "各地名称不同，按本地区要求准备。",
+      quantity: "纸质或电子凭证 1 份",
+      note: "用于当地生育登记信息核验；各地名称和形式不同，建议保存一份可离线出示的凭证。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "document",
@@ -148,7 +157,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     },
   ),
   templateItem("general-doc-bank-card", "银行卡", "documents", "recommended", "pack_now", {
-    note: "住院押金、自费项目备用，顺便确认手机支付限额。",
+    quantity: "常用银行卡 1 张",
+    note: "用于押金或手机支付受限时备用；建议携带一张常用卡，并提前确认额度和密码。",
     packTier: "core",
     itemKind: "item",
     preparationKind: "document",
@@ -157,7 +167,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
   }),
 
   templateItem("general-labor-phone", "手机", "mom_labor", "must", "grab_before_leaving", {
-    note: "提前充好电，存好家人紧急联系人。",
+    quantity: "常用手机 1 部",
+    note: "用于联系医院、家人和查看资料；建议出发前充足电，并把紧急联系人置顶。",
     removable: false,
     packTier: "core",
     itemKind: "item",
@@ -172,7 +183,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "pack_now",
     {
-      note: "病床插座常离床头较远，建议 2 米以上。",
+      quantity: "长度约 2 米的线 1 条",
+      note: "用于病床附近充电；建议准备约两米、接口匹配且外皮完好的充电线一条。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "pack_existing",
@@ -187,7 +199,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "pack_now",
     {
-      note: "发圈/发夹可以放进洗漱包，按个人习惯准备即可。",
+      quantity: "旅行装 1 套",
+      note: "用于住院期间日常清洁；建议用一个小包分装牙刷、牙膏、洁面和发圈等个人用品。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "pack_existing",
@@ -196,7 +209,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     },
   ),
   templateItem("general-labor-lip-balm", "护唇膏", "mom_labor", "must", "pack_now", {
-    note: "产程张口呼吸、病房空调干燥，嘴唇容易干裂。",
+    quantity: "无香型小支装 1 支",
+    note: "用于空调环境或长时间说话时保持唇部舒适；建议带一支无香型小包装并单独收好。",
     packTier: "core",
     itemKind: "item",
     preparationKind: "pack_existing",
@@ -204,7 +218,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     bulk: "small",
   }),
   templateItem("general-labor-cup", "水杯 / 吸管杯", "mom_labor", "must", "pack_now", {
-    note: "躺卧姿势也能喝水，产程和产后都高频使用。",
+    quantity: "带盖杯 1 个，约 500-800 毫升",
+    note: "用于住院期间补充饮水；建议选带盖、可单手开启且约五百至八百毫升的杯子。",
     packTier: "core",
     itemKind: "item",
     preparationKind: "pack_existing",
@@ -212,7 +227,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     bulk: "medium",
   }),
   templateItem("general-labor-eye-mask", "眼罩", "mom_labor", "optional", "pack_now", {
-    note: "病房灯光较亮时可帮助休息。",
+    quantity: "遮光眼罩 1 个",
+    note: "用于病房灯光较亮时休息；建议选柔软、松紧可调且便于清洗的一只。",
     packTier: "optional",
     itemKind: "item",
     preparationKind: "pack_existing",
@@ -226,7 +242,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "optional",
     "pack_now",
     {
-      note: "如携带，建议使用明显不同于医院床品的枕套。",
+      quantity: "枕头 1 个，按个人需要",
+      note: "用于提高住院休息舒适度；如决定携带，建议套上易识别、可清洗的枕套。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "pack_existing",
@@ -241,7 +258,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "optional",
     "pack_now",
     {
-      note: "用于产程中降温，先确认医院是否允许携带。",
+      quantity: "小风扇或喷雾瓶 1 个",
+      note: "用于闷热环境下增加舒适感；建议选小型、低噪款，并先确认病区是否允许使用。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "pack_existing",
@@ -256,7 +274,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "optional",
     "grab_before_leaving",
     {
-      note: "音乐、播客或冥想音频按个人习惯准备。",
+      quantity: "耳机 1 副，音频提前离线",
+      note: "用于等待或休息时听熟悉的音频；建议准备一副已充电耳机，并提前下载离线内容。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "last_minute",
@@ -271,7 +290,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "optional",
     "pack_now",
     {
-      note: "仅在医生或助产士允许且自己已决定使用时携带，记得备用电池。",
+      quantity: "确认使用后带 1 套",
+      note: "用于已与医护人员沟通确认的个人舒缓方案；建议只在允许使用时携带完整一套及匹配电源。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "pack_existing",
@@ -286,7 +306,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "pack_now",
     {
-      note: "产后身体虚弱、卫生间地面湿滑，防滑优先。",
+      quantity: "防滑、易穿脱拖鞋 1 双",
+      note: "用于病房走动和洗漱；建议选鞋底防滑、脚面宽松且容易穿脱的一双。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "pack_existing",
@@ -301,7 +322,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "grab_before_leaving",
     {
-      note: "近视妈妈备一副框架眼镜，待产和产后不建议戴隐形眼镜。",
+      quantity: "框架眼镜 1 副 + 眼镜盒 1 个",
+      note: "用于住院期间清晰视物；建议以框架眼镜为主，并把隐形眼镜护理用品按个人需要另装。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "last_minute",
@@ -331,7 +353,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "optional",
     "pack_now",
     {
-      note: "待产和住院时间长，插座紧张时兜底。",
+      quantity: "充电宝 1 个，约 10000-20000 毫安时",
+      note: "用于插座不便时给手机补电；建议准备容量适中、状态正常且符合交通携带要求的一只。",
       packTier: "optional",
       itemKind: "item",
       bag: "mom_bag",
@@ -345,7 +368,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "optional",
     "pack_now",
     {
-      note: "先确认产房和病区是否允许携带。",
+      quantity: "允许携带后备 1-2 份小包装",
+      note: "用于等待时间较长时按需补充；建议先确认医院规定，再选便携、易开启的小包装。",
       packTier: "optional",
       itemKind: "item",
       bag: "mom_bag",
@@ -353,8 +377,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     },
   ),
   templateItem("general-labor-towels", "毛巾", "mom_labor", "optional", "wash_before_pack", {
-    quantity: "按个人习惯",
-    note: "擦汗、擦身分开用，建议 2 条以上。",
+    quantity: "小毛巾 2 条",
+    note: "用于擦脸、擦身时分开使用；建议准备两条颜色不同、易晾干的小毛巾。",
     packTier: "optional",
     itemKind: "item",
     bag: "mom_bag",
@@ -368,7 +392,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "wash_before_pack",
     {
       quantity: "2-3 套",
-      note: "前开扣方便哺乳和胎心监护。",
+      note: "用于住院期间换洗和护理操作；建议准备两至三套宽松、前开或易穿脱的衣物。",
       packTier: "optional",
       itemKind: "item",
       bag: "mom_bag",
@@ -377,7 +401,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
   ),
   templateItem("general-labor-socks", "袜子", "mom_labor", "optional", "wash_before_pack", {
     quantity: "1-2 双",
-    note: "产房和病房空调足，备宽松棉袜护住脚踝。",
+    note: "用于空调环境下保暖和换洗；建议准备一至两双袜口宽松、透气的袜子。",
     packTier: "optional",
     itemKind: "item",
     bag: "mom_bag",
@@ -391,7 +415,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "pack_now",
     {
       quantity: "各 1-2 包",
-      note: "选无香型，宝宝用的另备婴儿专用款。",
+      note: "用于日常清洁和擦拭；建议纸巾、无香湿巾各带一至两小包，宝宝用品分开放。",
       packTier: "optional",
       itemKind: "item",
       bag: "mom_bag",
@@ -406,7 +430,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "pack_now",
     {
       quantity: "2 条",
-      note: "部分医院要求自带，产检时先确认；常备两条装。",
+      note: "用于医院明确要求自带时配合胎心监护；建议产检时先确认规格，需要时准备两条。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -421,8 +445,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "recommended",
     "pack_now",
     {
-      quantity: "1 包（约 30 根）",
-      note: "躺着喝水、喝粥都靠它，选独立包装更卫生。",
+      quantity: "独立包装 5-10 根",
+      note: "用于不便起身时饮水；建议带五至十根独立包装、与杯口匹配的吸管。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -438,7 +462,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "pack_now",
     {
       quantity: "1 套",
-      note: "部分医院订餐不配餐具；带盖保温饭盒家属送饭也用得上。",
+      note: "用于医院不提供餐具或家属送餐时使用；建议准备一套带盖、易清洗的饭盒和筷勺。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "wash_then_pack",
@@ -453,8 +477,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "recommended",
     "pack_now",
     {
-      quantity: "牙刷 1 支 + 漱口水 1 小瓶",
-      note: "产后牙龈敏感，选软毛月子牙刷；不便刷牙时先用漱口水。",
+      quantity: "软毛牙刷 1 支 + 小瓶漱口水 1 瓶",
+      note: "用于住院期间保持口腔清洁；建议选软毛牙刷一支，漱口水按个人习惯带小瓶装。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -471,7 +495,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "pack_now",
     {
       quantity: "10-20 片",
-      note: "按医院要求准备，产房和产后恶露期都要用，已明确提供再标记为医院提供。",
+      note: "用于住院期间铺垫床面和按需更换；建议先备六十乘九十厘米产褥垫十至二十片，并向医院确认是否还需产后卫生巾。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -481,7 +505,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
   ),
   templateItem("general-postpartum-paper", "刀纸 / 产褥卫生纸", "mom_postpartum", "must", "pack_now", {
     quantity: "1-2 提",
-    note: "产房和产后恶露期高频消耗品，部分医院要求自带。",
+    note: "用于医院明确要求的产房或病房护理场景；建议先确认规格，再准备一至两提，医院提供则无需重复携带。",
     packTier: "core",
     itemKind: "item",
     preparationKind: "buy_and_pack",
@@ -495,7 +519,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "recommended",
     "pack_now",
     {
-      note: "产后 24 小时出血量观察用，按医院要求准备。",
+      quantity: "医院要求时 1 小包",
+      note: "用于医院有明确计量记录要求的场景；建议只在医护人员要求时购买一小包，并确认具体规格。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -510,8 +535,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "pack_now",
     {
-      quantity: "5-6 条或按预计住院天数准备",
-      note: "产后恶露期每天更换，免洗更卫生。",
+      quantity: "预计住院天数 + 2 条，通常 5-7 条",
+      note: "用于住院期间便捷换洗；建议按预计住院天数多备两条，并按孕晚期实际腰臀围选码，不照搬孕前尺码。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -526,8 +551,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "recommended",
     "pack_now",
     {
-      quantity: "10-20 片",
-      note: "病房公用马桶的卫生防护。",
+      quantity: "独立包装 10-20 片",
+      note: "用于使用病房公共马桶时按个人习惯铺垫；建议带十至二十片独立包装、大小合适的款式。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -542,7 +567,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "optional",
     "wash_before_pack",
     {
-      note: "按季节和个人习惯准备，非必需。",
+      quantity: "帽子或软底鞋各 1 件，按需",
+      note: "用于出院或病房内按个人习惯保暖；建议根据季节选轻便、透气的单件用品，不必成套购买。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "wash_then_pack",
@@ -558,7 +584,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "wash_before_pack",
     {
       quantity: "1 套",
-      note: "按出院季节备一套宽松外套，肚子还没恢复，别拿孕前尺码。",
+      note: "用于出院当天舒适穿着；建议准备一套适合季节、腹部宽松的衣物，并按孕晚期尺码试穿。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "wash_then_pack",
@@ -574,7 +600,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "pack_now",
     {
       quantity: "3-5 个",
-      note: "分装干净和脏衣物，备几个不同大小的密封袋。",
+      note: "用于分开放置干净用品、湿物和脏衣物；建议准备三至五个不同尺寸、可封口的收纳袋。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "pack_existing",
@@ -591,7 +617,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     {
       appliesTo: { breastfeeding: true },
       quantity: "2-3 件",
-      note: "前开扣款方便喂奶，按涨奶后的尺码选大一号。",
+      note: "用于计划哺乳时方便穿脱和换洗；建议准备两至三件可调节、无明显勒压感的款式，并按孕晚期实际胸围留余量。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "wash_then_pack",
@@ -607,7 +633,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "pack_now",
     {
       appliesTo: { breastfeeding: true },
-      note: "涨奶和漏奶时保持衣物干爽。",
+      quantity: "先备 1 小包，约 10-20 片",
+      note: "用于计划哺乳时按需保持衣物干爽；建议先备十至二十片小包装，使用量稳定后再补充。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -623,7 +650,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "pack_now",
     {
       appliesTo: { breastfeeding: true },
-      note: "哺乳初期乳头皲裂常见，提前备一支。",
+      quantity: "小支装 1 支，按需",
+      note: "用于计划哺乳时按个人需要进行皮肤护理；建议选成分简单的小支装，使用方式以产品说明和专业建议为准。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -639,7 +667,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "pack_now",
     {
       quantity: "1 包（5-8 片）",
-      note: "产后头两天恶露多，拉拉裤穿脱比普通卫生巾方便；医院提供则不重复带。",
+      note: "用于住院初期方便穿脱和更换；建议先备五至八片小包装，并按孕晚期实际腰臀围选择尺码。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -655,7 +683,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "pack_now",
     {
       quantity: "1 个",
-      note: "顺产撕裂或侧切后温水冲洗代替擦拭，选弯头款更顺手。",
+      note: "用于医院建议进行局部清洁时辅助冲洗；建议准备一个约三百至五百毫升、弯嘴且便于清洗的瓶子。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -671,7 +699,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "pack_now",
     {
       quantity: "1 条",
-      note: "剖腹产固定伤口、下床活动时用；顺产是否使用听医生建议。",
+      note: "用于医护人员建议使用时提供适度支撑；建议先确认是否需要，再按孕晚期围度选择一条可调节款。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -688,7 +716,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     {
       appliesTo: { breastfeeding: true },
       quantity: "1 套",
-      note: "涨奶或宝宝不在身边时使用；电动款提前充好电，配件清洗消毒后装袋。",
+      note: "用于计划哺乳且确有挤奶需要时备用；建议带一套已试装设备，电动款充好电，接触奶液的配件按说明清洁后装袋。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "wash_then_pack",
@@ -704,8 +732,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "pack_now",
     {
       appliesTo: { breastfeeding: true },
-      quantity: "1 盒（约 30 片）",
-      note: "多挤的初乳标注日期冷藏，先备一小盒即可。",
+      quantity: "先备 10-20 片",
+      note: "用于确有储存母乳需要时分装和标记；建议先备十至二十片小容量袋，储存方式按医院指导执行。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -716,7 +744,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
 
   templateItem("general-baby-home-clothes", "宝宝出院衣物", "baby", "must", "wash_before_pack", {
     quantity: "1 套 + 备用 1 套",
-    note: "52 码连体衣，按季节加减包被厚度。",
+    note: "用于宝宝出院当天穿着和临时替换；建议准备一主一备两套柔软连体衣，尺码按预估体重在五十二或五十九码中选择。",
     packTier: "core",
     itemKind: "item",
     preparationKind: "wash_then_pack",
@@ -724,7 +752,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     bulk: "medium",
   }),
   templateItem("general-baby-blanket", "包被 / 小毯子", "baby", "must", "wash_before_pack", {
-    note: "按季节准备，寒冷天气优先确认保暖。",
+    quantity: "1 条，寒冷季节可备 2 条",
+    note: "用于出院路上包裹和按需保暖；建议按季节准备一条透气、易清洗的款式，寒冷天气可加一条备用。",
     packTier: "core",
     itemKind: "item",
     preparationKind: "wash_then_pack",
@@ -732,8 +761,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     bulk: "large",
   }),
   templateItem("general-baby-diapers", "尿不湿", "baby", "must", "pack_now", {
-    quantity: "每天 8-10 片，按住院天数估算",
-    note: "按医院要求准备，新生儿选 NB 码，已明确提供再标记为医院提供。",
+    quantity: "NB 码先备 1 小包，约 24-36 片",
+    note: "用于住院期间按需更换；建议 NB 码先买一小包，出生后再按宝宝体重、腰围和贴合情况决定是否换码。",
     packTier: "core",
     itemKind: "item",
     preparationKind: "buy_and_pack",
@@ -741,8 +770,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     bulk: "medium",
   }),
   templateItem("general-baby-wipes", "湿巾 / 棉柔巾", "baby", "must", "pack_now", {
-    quantity: "1-2 包",
-    note: "按医院要求准备。",
+    quantity: "无香型湿巾或棉柔巾 1-2 小包",
+    note: "用于换洗时擦拭皮肤或清理台面；建议准备一至两小包无香型产品，并先确认医院是否提供。",
     packTier: "core",
     itemKind: "item",
     preparationKind: "buy_and_pack",
@@ -750,7 +779,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     bulk: "medium",
   }),
   templateItem("general-baby-hat", "宝宝帽子", "baby", "optional", "wash_before_pack", {
-    note: "出院路上防风保暖，按季节选择厚薄。",
+    quantity: "柔软帽子 1 顶，按季节",
+    note: "用于出院路上按天气挡风保暖；建议准备一顶无硬饰、松紧合适且与季节匹配的帽子。",
     packTier: "optional",
     itemKind: "item",
     preparationKind: "wash_then_pack",
@@ -758,7 +788,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     bulk: "small",
   }),
   templateItem("general-baby-socks", "宝宝袜子", "baby", "optional", "wash_before_pack", {
-    note: "按季节准备，出院时保暖。",
+    quantity: "袜口宽松的袜子 1-2 双",
+    note: "用于出院途中按季节保暖；建议准备一至两双袜口宽松、无线头明显残留的袜子。",
     packTier: "optional",
     itemKind: "item",
     preparationKind: "wash_then_pack",
@@ -773,7 +804,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "wash_before_pack",
     {
       quantity: "2-3 套",
-      note: "部分医院统一提供宝宝衣物，先确认再决定带几套。",
+      note: "用于医院要求自带时给宝宝住院换洗；建议先确认是否提供，再准备两至三套柔软、易穿脱的衣物。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "wash_then_pack",
@@ -783,7 +814,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
   ),
   templateItem("general-baby-towels", "纱布巾 / 小方巾", "baby", "optional", "wash_before_pack", {
     quantity: "3-5 条",
-    note: "拍嗝、擦口水、垫着喂奶都用得上，多备几条。",
+    note: "用于喂奶垫巾、拍嗝和日常擦拭；建议准备三至五条颜色或图案易区分、洗后易干的小方巾。",
     packTier: "optional",
     itemKind: "item",
     preparationKind: "wash_then_pack",
@@ -791,7 +822,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     bulk: "small",
   }),
   templateItem("general-baby-diaper-cream", "护臀膏", "baby", "optional", "pack_now", {
-    note: "红屁屁预防，每次换尿布后可薄涂。",
+    quantity: "小支装 1 支，按需",
+    note: "用于换洗后按个人护理方案隔离潮湿；建议只带一支成分简单的小包装，使用按说明或专业建议进行。",
     packTier: "optional",
     itemKind: "item",
     bag: "baby_bag",
@@ -799,7 +831,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
   }),
   templateItem("general-baby-changing-pads", "一次性隔尿垫", "baby", "optional", "pack_now", {
     quantity: "10-20 片",
-    note: "换尿布时垫在下面，脏了直接扔。",
+    note: "用于换尿布时保护床面或护理台；建议准备十至二十片约四十五乘六十厘米的小包装。",
     packTier: "optional",
     itemKind: "item",
     preparationKind: "buy_and_pack",
@@ -813,7 +845,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "optional",
     "confirm_with_hospital",
     {
-      note: "母乳不足时的备用方案；爱婴医院常禁止自带奶粉奶瓶，先问清政策再决定。",
+      quantity: "确认需要后，小包装 1 份 + 喂养工具 1 套",
+      note: "用于医院明确允许且家庭决定准备备用喂养用品的场景；建议先确认医院政策，再准备最小包装和一套易清洗工具。",
       packTier: "confirm",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -823,7 +856,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
   ),
   templateItem("general-baby-nail-clipper", "宝宝指甲剪", "baby", "optional", "pack_now", {
     quantity: "1 个",
-    note: "新生儿指甲软但长得快，选圆头婴儿专用剪。",
+    note: "用于确有修剪需要时整理指甲边缘；建议准备一个圆头、握持稳定且带保护盖的小剪具。",
     packTier: "hidden",
     itemKind: "item",
     bag: "baby_bag",
@@ -836,8 +869,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "recommended",
     "pack_now",
     {
-      quantity: "各 1 盒",
-      note: "脐带脱落前保持干燥，洗澡贴护脐贴；消毒遵医嘱用碘伏棉签。",
+      quantity: "医院明确要求时各 1 小份",
+      note: "用于医院明确要求的脐部护理用品准备；建议先询问是否需要及具体规格，不自行增加处理步骤。",
       packTier: "core",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -853,7 +886,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "pack_now",
     {
       quantity: "1 盒",
-      note: "清理鼻腔、耳廓外侧用，选婴儿专用细轴款，不要伸进深处。",
+      note: "用于皮肤表面或耳廓外侧的轻柔清洁；建议选细轴纸杆小包装，并避免伸入鼻腔或耳道。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -868,8 +901,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "optional",
     "pack_now",
     {
-      quantity: "1 小瓶",
-      note: "秋冬干燥或洗澡后做抚触用，选无香型、成分简单款。",
+      quantity: "无香型 30-50 毫升小瓶 1 个",
+      note: "用于干燥季节按需进行皮肤保湿；建议先备三十至五十毫升无香型小瓶，使用前按说明少量尝试。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -884,8 +917,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "optional",
     "pack_now",
     {
-      quantity: "各 1",
-      note: "备用奶瓶每次用完及时刷洗晾干，清洗剂选婴幼儿专用。",
+      quantity: "确认使用奶瓶后，各 1 个小规格",
+      note: "用于确实使用奶瓶时清洁接触奶液的配件；建议准备一把尺寸匹配的刷具和一小瓶清洗剂，用后按说明清洗晾干。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "buy_and_pack",
@@ -934,7 +967,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "pack_now",
     {
       appliesTo: { partnerPresent: true },
-      note: "孕 37 周前反向安装到后排，提前练一次拆装。",
+      note: "用于提前熟悉宝宝返家乘车安排；建议按座椅说明书和车辆条件完成后向安装，并练习一次固定与卡扣操作。",
       packTier: "core",
       itemKind: "task",
       preparationKind: "install_or_place",
@@ -966,7 +999,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "grab_before_leaving",
     {
       appliesTo: { partnerPresent: true },
-      note: "原件随身带，部分医院陪产登记要核对。",
+      quantity: "原件 1 份",
+      note: "用于陪产登记或身份核验；建议把原件一份放入陪产人随身包，并先确认医院要求。",
       packTier: "core",
       itemKind: "item",
       bag: "dad_backpack",
@@ -982,7 +1016,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     {
       appliesTo: { partnerPresent: true },
       quantity: "1 套",
-      note: "带 2 米长线，病房插座常离床头远。",
+      note: "用于陪产期间给常用设备充电；建议准备一套接口匹配的充电器和约两米长线。",
       packTier: "core",
       itemKind: "item",
       bag: "dad_backpack",
@@ -991,7 +1025,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
   ),
   templateItem("general-partner-water-snacks", "水和零食", "partner", "recommended", "pack_now", {
     appliesTo: { partnerPresent: true },
-    note: "陪产是体力活，备点巧克力和电解质水。",
+    quantity: "饮水 1-2 瓶 + 小包装零食 1-2 份",
+    note: "用于陪产人等待或无法及时用餐时补充；建议准备一至两瓶饮水和一至两份易开启的小包装零食。",
     packTier: "core",
     itemKind: "item",
     bag: "dad_backpack",
@@ -1005,7 +1040,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "wash_before_pack",
     {
       appliesTo: { partnerPresent: true },
-      note: "陪产过夜用，选方便穿脱的。",
+      quantity: "换洗衣物 1 套",
+      note: "用于陪产人需要过夜时换洗；建议准备一套轻便、易穿脱且适合病房温度的衣物。",
       packTier: "core",
       itemKind: "item",
       bag: "dad_backpack",
@@ -1020,7 +1056,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "pack_now",
     {
       appliesTo: { partnerPresent: true },
-      note: "旅行装牙刷牙膏毛巾各一，按是否过夜增减。",
+      quantity: "旅行装 1 套",
+      note: "用于陪产人过夜时日常清洁；建议用一个小包分装牙刷、牙膏和小毛巾各一件。",
       packTier: "core",
       itemKind: "item",
       bag: "dad_backpack",
@@ -1035,7 +1072,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "grab_before_leaving",
     {
       appliesTo: { partnerPresent: true },
-      note: "熬夜陪产建议戴框架眼镜。",
+      quantity: "框架眼镜 1 副 + 眼镜盒 1 个",
+      note: "用于陪产期间清晰视物和轮换佩戴；建议带一副框架眼镜及保护盒，其他护理用品按个人需要准备。",
       packTier: "optional",
       itemKind: "item",
       bag: "dad_backpack",
@@ -1066,7 +1104,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     {
       appliesTo: { partnerPresent: true },
       quantity: "1 套",
-      note: "多数医院不提供陪护被褥，先确认病房是否允许放折叠床。",
+      note: "用于医院允许且确需过夜陪护时休息；建议先确认病区提供情况和尺寸限制，再决定是否带一套轻便用品。",
       packTier: "optional",
       itemKind: "item",
       preparationKind: "pack_existing",
@@ -1082,7 +1120,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "wash_before_pack",
     {
-      note: "按出院季节准备，腹部宽松不压迫。",
+      quantity: "宽松衣物 1 套",
+      note: "用于妈妈出院当天舒适穿着；建议准备一套适合天气、腹部宽松并按孕晚期尺码试穿的衣物。",
       packTier: "core",
       itemKind: "item",
       bag: "mom_bag",
@@ -1096,7 +1135,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "wash_before_pack",
     {
-      note: "出院当天穿，提前从宝宝包里拿出来备好。",
+      quantity: "当日 1 套 + 备用 1 套",
+      note: "用于宝宝出院当天穿着和临时替换；建议一主一备两套，并按预估体重和天气选择尺码厚度。",
       packTier: "core",
       itemKind: "item",
       bag: "baby_bag",
@@ -1104,7 +1144,8 @@ export const generalTemplate: TemplateChecklistItem[] = [
     },
   ),
   templateItem("general-going-home-blanket", "包被 / 小毯子", "going_home", "must", "wash_before_pack", {
-    note: "出院路上裹宝宝用，按天气选厚度。",
+    quantity: "1 条",
+    note: "用于宝宝出院途中按需包裹；建议准备一条与天气匹配、透气且不影响安全座椅约束带贴合的款式。",
     packTier: "core",
     itemKind: "item",
     bag: "baby_bag",
@@ -1132,7 +1173,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "pack_now",
     {
-      note: "宝宝第一次坐车就必须用，反向安装，出院前再检查一次卡扣。",
+      note: "用于宝宝出院返程时提供合适约束；建议按座椅说明书后向安装，并在出院前复核固定状态和卡扣路径。",
       packTier: "core",
       itemKind: "task",
       preparationKind: "install_or_place",
@@ -1339,6 +1380,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
   ),
 
   templateItem("general-last-id", "身份证件", "last_minute", "must", "grab_before_leaving", {
+    note: "出门前把需要携带的身份证原件放入证件包，并由陪产人按医院要求复核一次。",
     removable: false,
     packTier: "core",
     itemKind: "task",
@@ -1353,6 +1395,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "grab_before_leaving",
     {
+      note: "出门前把本人医保卡或社保卡放入证件包，并确认电子凭证能够正常打开。",
       removable: false,
       packTier: "core",
       itemKind: "task",
@@ -1363,11 +1406,12 @@ export const generalTemplate: TemplateChecklistItem[] = [
   ),
   templateItem(
     "general-last-maternal-book",
-    "北京市母子健康手册或本地区孕产资料",
+    "本地区孕产资料 / 母子健康手册",
     "last_minute",
     "must",
     "grab_before_leaving",
     {
+      note: "出门前把本地区要求的孕产资料或母子健康手册放入证件包，并确认纸质或电子版本可出示。",
       removable: false,
       packTier: "core",
       itemKind: "task",
@@ -1383,6 +1427,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "grab_before_leaving",
     {
+      note: "出门前把按日期整理好的产检本、影像和化验资料整套放入证件包。",
       removable: false,
       packTier: "core",
       itemKind: "task",
@@ -1392,6 +1437,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     },
   ),
   templateItem("general-last-phone", "手机", "last_minute", "must", "grab_before_leaving", {
+    note: "出门前拿上常用手机，确认电量充足，并把医院和紧急联系人置顶。",
     removable: false,
     packTier: "core",
     itemKind: "task",
@@ -1400,6 +1446,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     bulk: "small",
   }),
   templateItem("general-last-charger", "充电器", "last_minute", "must", "grab_before_leaving", {
+    note: "出门前把与手机接口匹配的充电头和充电线装入随身包。",
     removable: false,
     packTier: "core",
     itemKind: "task",
@@ -1414,6 +1461,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "grab_before_leaving",
     {
+      note: "出门前从固定位置拿上妈妈包，拉好拉链并按清单快速复核证件和常用物品。",
       removable: false,
       packTier: "core",
       itemKind: "task",
@@ -1429,6 +1477,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "grab_before_leaving",
     {
+      note: "出门前从固定位置拿上宝宝包，确认出院衣物、尿不湿和包被已经装好。",
       removable: false,
       packTier: "core",
       itemKind: "task",
@@ -1444,7 +1493,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "grab_before_leaving",
     {
-      note: "如有长期用药，请提前向医生或护士确认携带和使用方式。",
+      note: "出门前带上已整理的常用药清单；如有长期用药，携带和使用方式提前向医生或护士确认。",
       removable: false,
       packTier: "core",
       itemKind: "task",
@@ -1460,6 +1509,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "grab_before_leaving",
     {
+      note: "出门前拿上框架眼镜和眼镜盒；隐形眼镜及护理用品按个人需要一并带走。",
       removable: false,
       packTier: "core",
       itemKind: "task",
@@ -1475,6 +1525,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "grab_before_leaving",
     {
+      note: "出门前确认可用的支付方式、额度和押金信息，需要实体银行卡或现金时放入证件包。",
       removable: false,
       packTier: "core",
       itemKind: "task",
@@ -1490,6 +1541,7 @@ export const generalTemplate: TemplateChecklistItem[] = [
     "must",
     "grab_before_leaving",
     {
+      note: "出门前按安全座椅说明书检查安装方向、固定状态和卡扣路径，发现松动先重新调整。",
       removable: false,
       packTier: "core",
       itemKind: "task",
