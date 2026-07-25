@@ -86,23 +86,23 @@ export function ChecklistCategoryCard({
   }
 
   return (
-    <section className="overflow-hidden rounded-3xl bg-card shadow-sm">
+    <section className="grid gap-3">
       <button
         aria-expanded={open}
-        className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-muted/45"
+        className="flex min-h-[5.25rem] w-full items-center gap-3 rounded-[1.75rem] border border-border/80 bg-card px-4 py-3.5 text-left transition-colors hover:bg-muted/35"
         type="button"
         onClick={() => setOpen((value) => !value)}
       >
         <span
           className={cn(
-            "flex size-11 shrink-0 items-center justify-center rounded-2xl",
+            "flex size-12 shrink-0 items-center justify-center rounded-[1.15rem]",
             meta.className,
           )}
         >
-          <Icon className="size-5" />
+          <Icon className="size-5" strokeWidth={1.8} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block break-words text-sm font-semibold leading-5">
+          <span className="block break-words text-sm font-semibold leading-5 sm:text-base">
             {title}
           </span>
           <span className="mt-0.5 block text-xs leading-4 text-muted-foreground">
@@ -110,7 +110,7 @@ export function ChecklistCategoryCard({
             {remaining > 0 ? `还剩 ${remaining} 项` : "这一包已完成"}
           </span>
         </span>
-        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+        <span className="shrink-0 whitespace-nowrap rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
           {resolved}/{items.length}
         </span>
         <ChevronDown
@@ -122,7 +122,7 @@ export function ChecklistCategoryCard({
       </button>
 
       {open ? (
-        <div className="grid gap-2 px-2 pb-2">
+        <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
           {items.map((item) => (
             <ChecklistItemRow item={item} key={item.id} />
           ))}

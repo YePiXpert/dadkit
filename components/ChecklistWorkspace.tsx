@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import {
+  ChevronDown,
   ListRestart,
   Plus,
   Settings2,
-  Sparkles,
 } from "lucide-react";
 
 import { AddItemDialog } from "@/components/AddItemDialog";
@@ -14,7 +14,6 @@ import { ChecklistGroupTabs } from "@/components/ChecklistGroupTabs";
 import { EmptyState } from "@/components/EmptyState";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import {
   CHECKLIST_VIEWS,
   getChecklistViewCounts,
@@ -81,63 +80,75 @@ export function ChecklistWorkspace() {
 
   return (
     <div className="page-shell">
-      <section className="mobile-shell grid gap-3 lg:max-w-2xl">
-        <div className="py-2 text-center">
-          <h1 className="text-base font-semibold tracking-tight">待产包清单</h1>
-          <p className="mt-1 text-sm leading-5 text-muted-foreground">
+      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+        <header className="pb-1 pt-2 text-center sm:pt-4">
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+            待产包清单
+          </h1>
+          <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
             看一眼还差什么，准备好就打勾。
           </p>
-        </div>
+        </header>
 
-        <section className="overflow-hidden rounded-3xl bg-card shadow-sm">
-          <div className="p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold text-primary">准备进度</p>
-                <div className="mt-1 flex items-end gap-2">
-                  <span className="text-4xl font-semibold leading-none tracking-tight">
-                    {packing.percent}%
-                  </span>
-                  <span className="pb-0.5 text-sm text-muted-foreground">
-                    {packing.completed}/{packing.total} 已装包
-                  </span>
-                </div>
+        <section className="overflow-hidden rounded-[2rem] border border-primary/10 bg-[linear-gradient(135deg,hsl(var(--secondary))_0%,hsl(var(--card))_72%)] p-5 shadow-[0_12px_36px_rgba(92,70,54,0.05)] sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-primary">准备进度</p>
+              <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-1">
+                <span className="text-5xl font-bold leading-none tracking-[-0.06em] text-foreground">
+                  {packing.percent}
+                  <span className="ml-1 text-2xl tracking-normal">%</span>
+                </span>
+                <span className="pb-1 text-sm text-muted-foreground">
+                  {packing.completed}/{packing.total} 已装包
+                </span>
               </div>
-              <span className="flex size-11 items-center justify-center rounded-2xl bg-secondary text-primary">
-                <Sparkles className="size-5" />
-              </span>
             </div>
-            <Progress className="mt-4 h-2" value={packing.percent} />
-            <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
-              <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
-                待买 {counts.shopping}
-              </span>
-              <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
-                待装 {counts.packing}
-              </span>
-              <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
-                共 {counts.all} 项
-              </span>
-            </div>
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-card text-2xl shadow-sm" aria-hidden="true">
+              🎒
+            </span>
           </div>
 
+          <div
+            aria-label={`清单完成 ${packing.percent}%`}
+            aria-valuemax={100}
+            aria-valuemin={0}
+            aria-valuenow={packing.percent}
+            className="mt-5 h-2 overflow-hidden rounded-full bg-card/80"
+            role="progressbar"
+          >
+            <span
+              className="block h-full rounded-full bg-primary transition-[width] duration-500"
+              style={{ width: `${packing.percent}%` }}
+            />
+          </div>
+
+          <div className="mt-4 grid grid-cols-3 divide-x divide-primary/10 rounded-2xl bg-card/70 py-3 text-center">
+            <ProgressStat label="待买" value={counts.shopping} />
+            <ProgressStat label="待装" value={counts.packing} />
+            <ProgressStat label="全部" value={counts.all} />
+          </div>
+          <span className="sr-only">
+            待买 {counts.shopping}，待装 {counts.packing}，共 {counts.all} 项
+          </span>
         </section>
 
         <ChecklistGroupTabs counts={counts} value={view} onChange={setView} />
 
-        <div className="flex items-center justify-between gap-3 px-1">
+        <div className="flex items-center justify-between gap-3 px-1 pt-1">
           <div>
-            <h2 className="text-sm font-semibold">{activeView?.label}</h2>
+            <h2 className="text-base font-semibold">{activeView?.label}</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {getViewCaption(view, visibleItems.length)}
             </p>
           </div>
           <details className="relative">
-            <summary className="flex size-9 cursor-pointer list-none items-center justify-center rounded-xl border border-border bg-card text-muted-foreground shadow-sm [&::-webkit-details-marker]:hidden">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
               <Settings2 className="size-4" />
-              <span className="sr-only">清单设置</span>
+              <span>清单设置</span>
+              <ChevronDown className="size-3.5" />
             </summary>
-            <div className="absolute right-0 top-11 z-20 grid w-64 gap-2 rounded-2xl border border-border bg-card p-3 shadow-lg">
+            <div className="absolute right-0 top-12 z-20 grid w-64 gap-2 rounded-3xl border border-border bg-card p-3 shadow-lg">
               <p className="text-xs font-semibold text-foreground">清单设置</p>
               <Button
                 className="justify-start"
@@ -172,7 +183,7 @@ export function ChecklistWorkspace() {
             }
           />
         ) : (
-          <div className="grid gap-3">
+          <div className="grid gap-4">
             {sections.map((section) => (
               <ChecklistCategoryCard
                 caption={section.caption}
@@ -201,14 +212,27 @@ export function ChecklistWorkspace() {
         trigger={
           <button
             aria-label="新增物品"
-            className="fixed bottom-24 right-4 z-40 flex size-14 items-center justify-center rounded-full bg-foreground text-background shadow-lg transition-transform active:scale-95 sm:right-[max(1rem,calc(50%-195px-4.5rem))]"
+            className="safe-bottom-fab fixed right-4 z-40 flex size-16 items-center justify-center rounded-full bg-foreground text-background shadow-[0_10px_30px_rgba(42,35,30,0.24)] transition-transform active:scale-95 sm:right-[max(1rem,calc(50%_-_21rem_-_5rem))]"
             type="button"
           >
-            <Plus className="size-6" />
+            <Plus className="size-7" strokeWidth={2.2} />
           </button>
         }
       />
     </div>
+  );
+}
+
+function ProgressStat({ label, value }: { label: string; value: number }) {
+  return (
+    <span className="grid gap-0.5 px-1">
+      <strong className="text-lg font-bold leading-none text-foreground">
+        {value}
+      </strong>
+      <span className="text-[11px] font-medium text-muted-foreground">
+        {label}
+      </span>
+    </span>
   );
 }
 
@@ -228,10 +252,10 @@ function ChecklistWorkspaceSkeleton() {
   return (
     <div className="page-shell" aria-label="正在准备清单">
       <section className="mobile-shell grid animate-pulse gap-3 lg:max-w-2xl">
-        <div className="h-16 rounded-2xl bg-muted" />
-        <div className="h-44 rounded-3xl bg-muted" />
-        <div className="h-16 rounded-2xl bg-muted" />
-        <div className="h-28 rounded-3xl bg-muted" />
+        <div className="h-16 rounded-[1.75rem] bg-muted" />
+        <div className="h-52 rounded-[2rem] bg-muted" />
+        <div className="h-16 rounded-[1.75rem] bg-muted" />
+        <div className="h-32 rounded-[1.75rem] bg-muted" />
       </section>
     </div>
   );

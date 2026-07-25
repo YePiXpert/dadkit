@@ -2,20 +2,17 @@
 
 import { memo } from "react";
 import {
+  Ban,
   Check,
-  ChevronDown,
+  Circle,
+  MoreHorizontal,
   PackageCheck,
   RotateCcw,
-  Trash2,
 } from "lucide-react";
 
-import { EditItemDialog } from "@/components/EditItemDialog";
-import { ChecklistItemGlyph } from "@/components/ChecklistItemGlyph";
-import {
-  ItemPhotoField,
-  useItemPhoto,
-} from "@/components/ItemPhotoField";
-import { Button } from "@/components/ui/button";
+import { ChecklistItemDetailsDialog } from "@/components/ChecklistItemDetailsDialog";
+import { ChecklistItemIllustration } from "@/components/ChecklistItemIllustration";
+import { useItemPhoto } from "@/components/ItemPhotoField";
 import {
   getChecklistItemState,
   type ChecklistItemState,
@@ -31,6 +28,13 @@ const STATE_LABELS: Record<ChecklistItemState, string> = {
   not_needed: "不需要",
 };
 
+const STATE_ICONS = {
+  todo: Circle,
+  ready: PackageCheck,
+  packed: Check,
+  not_needed: Ban,
+} satisfies Record<ChecklistItemState, typeof Circle>;
+
 type ChecklistItemRowProps = {
   item: ChecklistItem;
 };
@@ -39,136 +43,108 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   item,
 }: ChecklistItemRowProps) {
   const advanceItem = useDadKitStore((state) => state.advanceItem);
-  const toggleItemSkipped = useDadKitStore(
-    (state) => state.toggleItemSkipped,
-  );
-  const removeItem = useDadKitStore((state) => state.removeItem);
   const itemState = getChecklistItemState(item);
   const actionLabel = getActionLabel(itemState);
   const itemPhoto = useItemPhoto(item.id);
+  const StateIcon = STATE_ICONS[itemState];
 
   return (
     <article
       className={cn(
-        "rounded-2xl bg-background px-3 py-3 transition-colors",
-        itemState === "packed" && "bg-muted/60",
-        itemState === "not_needed" && "opacity-60",
+        "flex min-w-0 flex-col overflow-hidden rounded-[1.75rem] border border-border/90 bg-card p-2.5 transition-colors",
+        itemState === "ready" && "border-primary/30 bg-secondary/35",
+        itemState === "packed" && "border-primary/35 bg-secondary/55",
+        itemState === "not_needed" && "border-border/60 bg-muted/50",
       )}
     >
-      <div className="flex items-start gap-3">
-        <button
-          aria-label={`${actionLabel}：${item.name}`}
-          className={cn(
-            "mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-border bg-card text-muted-foreground transition-colors active:scale-95",
-            itemState === "ready" &&
-              "border-primary/30 bg-secondary text-primary",
-            itemState === "packed" &&
-              "border-primary bg-primary text-primary-foreground",
-          )}
-          title={actionLabel}
-          type="button"
-          onClick={() => advanceItem(item.id)}
-        >
-          {itemState === "packed" ? (
-            <Check className="size-5" strokeWidth={2.8} />
-          ) : itemState === "ready" ? (
-            <PackageCheck className="size-5" />
-          ) : itemState === "not_needed" ? (
-            <RotateCcw className="size-4" />
-          ) : (
-            <span aria-hidden="true" className="size-4 rounded-full border-2" />
-          )}
-        </button>
+      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[1.35rem] bg-muted/75">
+        {itemPhoto.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt={`${item.name}的物品照片`}
+            className="size-full object-cover"
+            src={itemPhoto.photoUrl}
+          />
+        ) : (
+          <ChecklistItemIllustration
+            className="h-[68%] w-[68%] max-h-28 max-w-28"
+            item={item}
+          />
+        )}
 
         <span
-          aria-hidden="true"
-          className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-foreground/70"
+          className={cn(
+            "absolute right-2 top-2 inline-flex min-h-7 items-center gap-1 rounded-full border border-border/70 bg-card/95 px-2 text-[10px] font-semibold text-muted-foreground shadow-sm backdrop-blur",
+            itemState === "ready" && "border-primary/20 text-primary",
+            itemState === "packed" &&
+              "border-primary bg-primary text-primary-foreground",
+            itemState === "not_needed" && "text-foreground/65",
+          )}
         >
-          <ChecklistItemGlyph item={item} />
+          <StateIcon className="size-3" strokeWidth={2.2} />
+          {STATE_LABELS[itemState]}
         </span>
+      </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <h3
-              className={cn(
-                "min-w-0 flex-1 break-words text-sm font-semibold leading-5",
-                itemState === "packed" && "text-muted-foreground line-through",
-              )}
-            >
-              {item.name}
-            </h3>
-            <span
-              className={cn(
-                "shrink-0 whitespace-nowrap rounded-full bg-card px-2 py-1 text-[10px] font-semibold text-muted-foreground",
-                itemState === "ready" && "bg-secondary text-primary",
-                itemState === "packed" && "bg-primary/10 text-primary",
-              )}
-            >
-              {STATE_LABELS[itemState]}
-            </span>
-          </div>
-          {item.quantity ? (
-            <p className="mt-1.5">
-              <span className="inline-flex max-w-full break-words rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium leading-4 text-muted-foreground">
-                建议 {item.quantity}
-              </span>
-            </p>
-          ) : null}
-          {item.note ? (
-            <p className="mt-2 line-clamp-2 break-words rounded-xl bg-muted/70 px-2.5 py-1.5 text-xs leading-5 text-muted-foreground">
-              {item.note}
-            </p>
-          ) : null}
+      <div className="flex min-h-0 flex-1 flex-col px-1.5 pb-1 pt-3">
+        <h3
+          className={cn(
+            "break-words text-sm font-semibold leading-5 sm:text-[15px]",
+            itemState === "packed" && "text-muted-foreground line-through",
+            itemState === "not_needed" && "text-muted-foreground",
+          )}
+        >
+          {item.name}
+        </h3>
 
-          <details className="group mt-2">
-            <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-primary [&::-webkit-details-marker]:hidden">
-              说明与设置
-              <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
-            </summary>
-            <div className="mt-3 grid gap-3 border-t border-border/70 pt-3">
-              <p className="text-xs leading-5 text-muted-foreground">
-                {item.note || "这件物品暂时没有补充说明，可以按家里实际情况调整。"}
-              </p>
-              <ItemPhotoField controller={itemPhoto} itemName={item.name} />
-              <div className="flex flex-wrap items-center gap-2">
-                <Button size="sm" variant="outline" onClick={() => advanceItem(item.id)}>
-                  {actionLabel}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => toggleItemSkipped(item.id)}
-                >
-                  {itemState === "not_needed" ? "恢复物品" : "标记不需要"}
-                </Button>
-                <EditItemDialog item={item} />
-                {item.removable ? (
-                  <Button
-                    className="size-8"
-                    size="icon"
-                    title="删除物品"
-                    variant="ghost"
-                    onClick={() => removeItem(item.id)}
-                  >
-                    <Trash2 className="size-4" />
-                    <span className="sr-only">删除物品</span>
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          </details>
+        <p className="mt-1 text-[11px] font-medium leading-4 text-muted-foreground">
+          建议 {item.quantity || "1 件"}
+        </p>
+
+        <p className="mt-2 line-clamp-2 min-h-10 break-words rounded-xl bg-background/75 px-2 py-1.5 text-[11px] leading-[1.1rem] text-muted-foreground">
+          {item.note || "按家庭和医院实际需要准备"}
+        </p>
+
+        <div className="mt-2.5 flex min-h-11 items-center justify-between gap-2 border-t border-border/65 pt-2">
+          <ChecklistItemDetailsDialog
+            item={item}
+            photoController={itemPhoto}
+            trigger={
+              <button
+                className="inline-flex min-h-11 min-w-0 items-center gap-1 rounded-full px-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                type="button"
+              >
+                <MoreHorizontal className="size-4 shrink-0" />
+                <span className="truncate">详情</span>
+              </button>
+            }
+          />
+
+          <button
+            aria-label={`${actionLabel}：${item.name}`}
+            className={cn(
+              "flex size-11 shrink-0 items-center justify-center rounded-full border-2 border-border bg-card text-muted-foreground transition-all active:scale-95",
+              itemState === "ready" &&
+                "border-primary/30 bg-secondary text-primary",
+              itemState === "packed" &&
+                "border-primary bg-primary text-primary-foreground",
+              itemState === "not_needed" && "border-border bg-muted",
+            )}
+            title={actionLabel}
+            type="button"
+            onClick={() => advanceItem(item.id)}
+          >
+            {itemState === "packed" ? (
+              <Check className="size-5" strokeWidth={2.8} />
+            ) : itemState === "ready" ? (
+              <PackageCheck className="size-5" />
+            ) : itemState === "not_needed" ? (
+              <RotateCcw className="size-4" />
+            ) : (
+              <Circle className="size-5" />
+            )}
+          </button>
         </div>
-
-        {itemPhoto.photoUrl ? (
-          <span className="mt-0.5 size-9 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt={`${item.name}的物品照片缩略图`}
-              className="size-full object-cover"
-              src={itemPhoto.photoUrl}
-            />
-          </span>
-        ) : null}
       </div>
     </article>
   );

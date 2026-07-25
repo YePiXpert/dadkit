@@ -15,9 +15,9 @@ export function MobileNav() {
   return (
     <nav
       aria-label="主导航"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card pb-[max(env(safe-area-inset-bottom),0.55rem)] pt-1.5 sm:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-border/70 bg-card/95 pb-[max(env(safe-area-inset-bottom),0.65rem)] pt-2 shadow-[0_-10px_30px_rgba(76,55,40,0.04)] backdrop-blur-xl sm:hidden"
     >
-      <div className="mobile-shell grid grid-cols-2 gap-1 px-2">
+      <div className="mobile-shell grid grid-cols-2 gap-4 px-8">
         {PRIMARY_NAVIGATION_ITEMS.map((item) => {
           const active = isPrimaryNavigationItemActive(pathname, item);
           const Icon = item.icon;
@@ -26,13 +26,13 @@ export function MobileNav() {
             <Link
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex h-[3.25rem] min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-medium text-muted-foreground transition-colors",
-                active && "font-semibold text-foreground",
+                "relative flex h-[3.6rem] min-h-12 flex-col items-center justify-center gap-1 rounded-2xl text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary/50 hover:text-foreground",
+                active && "font-semibold text-primary",
               )}
               href={item.href}
               key={item.href}
             >
-              <Icon className="size-5" strokeWidth={active ? 2.4 : 2} />
+              <Icon className="size-6" strokeWidth={active ? 2.35 : 1.8} />
               <span>{item.label}</span>
             </Link>
           );

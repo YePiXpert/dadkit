@@ -44,13 +44,13 @@ export function QuantityStepper({
   return (
     <div
       className={cn(
-        "flex h-11 items-center justify-between gap-3 rounded-full border border-input bg-card px-2",
+        "flex h-12 items-center justify-between gap-3 rounded-full border border-input bg-card px-1.5",
         disabled && "opacity-50",
       )}
     >
       <button
         aria-label="减少数量"
-        className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:pointer-events-none"
+        className="flex size-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:pointer-events-none"
         disabled={disabled || count <= 1}
         type="button"
         onClick={() => step(-1)}
@@ -63,7 +63,7 @@ export function QuantityStepper({
       </span>
       <button
         aria-label="增加数量"
-        className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:pointer-events-none"
+        className="flex size-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted disabled:pointer-events-none"
         disabled={disabled}
         type="button"
         onClick={() => step(1)}

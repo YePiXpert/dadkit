@@ -13,11 +13,11 @@ export function AppHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="hidden border-b border-border bg-card/90 backdrop-blur sm:sticky sm:top-0 sm:z-40 sm:block">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+    <header className="hidden border-b border-border/70 bg-card/90 backdrop-blur-xl sm:sticky sm:top-0 sm:z-40 sm:block sm:pt-[env(safe-area-inset-top)]">
+      <div className="mx-auto flex h-[4.5rem] max-w-[42rem] items-center justify-between gap-4 px-6">
         <Link className="flex min-w-0 items-center gap-2" href="/">
           <span className="min-w-0">
-            <span className="block truncate text-base font-semibold leading-tight">
+            <span className="block truncate text-base font-bold leading-tight tracking-tight">
               DadKit
             </span>
             <span className="hidden text-xs text-muted-foreground sm:block">
@@ -34,8 +34,8 @@ export function AppHeader() {
               <Link
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-9 items-center gap-2 rounded-lg px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-secondary-foreground",
-                  active && "bg-secondary text-primary hover:bg-secondary hover:text-primary",
+                  "inline-flex h-11 items-center gap-2 rounded-full px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-secondary-foreground",
+                  active && "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground",
                 )}
                 href={item.href}
                 key={item.href}

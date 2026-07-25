@@ -37,18 +37,19 @@ const packageJson = JSON.parse(readSource("package.json")) as {
 
 describe("V2 PWA visual and navigation contract", () => {
   it("keeps the warm, compact mobile design tokens", () => {
-    expect(globals).toContain("--background: 33 43% 96%");
-    expect(globals).toContain("--foreground: 20 14% 16%");
-    expect(globals).toContain("--primary: 14 56% 50%");
-    expect(globals).toContain("--secondary: 22 55% 92%");
-    expect(globals).toContain("--muted: 36 30% 93%");
-    expect(globals).toContain("--border: 30 24% 90%");
-    expect(globals).toContain("--radius: 1rem");
-    expect(globals).toContain("max-w-[390px]");
-    expect(globals).toContain("max-width: min(100%, 390px)");
+    expect(globals).toContain("--background: 40 43% 97%");
+    expect(globals).toContain("--foreground: 28 16% 14%");
+    expect(globals).toContain("--primary: 6 43% 51%");
+    expect(globals).toContain("--secondary: 11 71% 93%");
+    expect(globals).toContain("--muted: 35 38% 92%");
+    expect(globals).toContain("--border: 36 32% 86%");
+    expect(globals).toContain("--radius: 1.75rem");
+    expect(globals).toContain("max-width: min(100%, 430px)");
+    expect(globals).toContain("@media (min-width: 360px)");
+    expect(globals).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
     expect(globals).toContain("overflow-x: hidden");
     expect(globals).toContain("touch-action: pan-x pan-y");
-    expect(layout).toContain('themeColor: "#C75938"');
+    expect(layout).toContain('themeColor: "#FBF8F2"');
     expect(layout).toContain(
       '{ url: "/maskable-icon-512.png", sizes: "512x512", type: "image/png" }',
     );
@@ -114,13 +115,16 @@ describe("V2 PWA visual and navigation contract", () => {
   });
 
   it("keeps checklist controls touch-friendly and narrow-screen text readable", () => {
-    expect(checklistGroupTabs).toContain("min-h-11");
-    expect(checklistItemRow).toContain("size-10");
+    expect(checklistGroupTabs).toContain("min-h-14");
+    expect(checklistItemRow).toContain("size-11");
     expect(checklistItemRow).toContain("break-words text-sm font-semibold leading-5");
     expect(checklistCategoryCard).toContain("break-words text-sm font-semibold leading-5");
     expect(checklistCategoryCard).toContain("aria-expanded={open}");
+    expect(checklistCategoryCard).toContain("min-[360px]:grid-cols-2");
+    expect(checklistItemRow).toContain("ChecklistItemIllustration");
     expect(button).toContain("rounded-full");
-    expect(card).toContain("rounded-3xl");
+    expect(card).toContain("rounded-[1.75rem]");
+    expect(card).toContain("border border-border");
     expect(card).toContain("bg-card");
   });
 

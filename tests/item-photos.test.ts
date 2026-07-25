@@ -89,6 +89,10 @@ describe("item photo integration contract", () => {
     join(process.cwd(), "components", "ChecklistItemRow.tsx"),
     "utf8",
   );
+  const itemDetails = readFileSync(
+    join(process.cwd(), "components", "ChecklistItemDetailsDialog.tsx"),
+    "utf8",
+  );
   const store = readFileSync(join(process.cwd(), "lib", "store.ts"), "utf8");
   const storage = readFileSync(
     join(process.cwd(), "lib", "storage.ts"),
@@ -117,11 +121,11 @@ describe("item photo integration contract", () => {
     expect(photoField).toContain("URL.revokeObjectURL");
   });
 
-  it("shows a 36px row thumbnail without replacing the item icon tile", () => {
+  it("shows the local photo in the card media slot with an illustration fallback", () => {
     expect(itemRow).toContain("useItemPhoto(item.id)");
-    expect(itemRow).toContain('className="mt-0.5 size-9 shrink-0');
-    expect(itemRow).toContain("ChecklistItemGlyph");
-    expect(itemRow).toContain("ItemPhotoField");
+    expect(itemRow).toContain('className="size-full object-cover"');
+    expect(itemRow).toContain("ChecklistItemIllustration");
+    expect(itemDetails).toContain("ItemPhotoField");
   });
 
   it("keeps photos out of JSON and WebDAV data paths", () => {

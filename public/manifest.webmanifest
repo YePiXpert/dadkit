@@ -5,8 +5,8 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#F9F5F0",
-  "theme_color": "#C75938",
+  "background_color": "#FBF8F2",
+  "theme_color": "#FBF8F2",
   "lang": "zh-CN",
   "categories": ["lifestyle", "productivity"],
   "shortcuts": [

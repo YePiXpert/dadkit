@@ -12,6 +12,10 @@ function readSource(...segments: string[]) {
 const homePage = readSource("app", "page.tsx");
 const checklistWorkspace = readSource("components", "ChecklistWorkspace.tsx");
 const checklistItemRow = readSource("components", "ChecklistItemRow.tsx");
+const checklistItemDetailsDialog = readSource(
+  "components",
+  "ChecklistItemDetailsDialog.tsx",
+);
 const checklistCategoryCard = readSource(
   "components",
   "ChecklistCategoryCard.tsx",
@@ -49,14 +53,16 @@ describe("V2 checklist experience", () => {
   });
 
   it("uses the four V2 states for direct, reversible item actions", () => {
+    const itemInteractionSources = `${checklistItemRow}\n${checklistItemDetailsDialog}`;
+
     expect(checklistItemRow).toContain('todo: "待处理"');
     expect(checklistItemRow).toContain('ready: "已备好"');
     expect(checklistItemRow).toContain('packed: "已装包"');
     expect(checklistItemRow).toContain('not_needed: "不需要"');
     expect(checklistItemRow).toContain("advanceItem(item.id)");
-    expect(checklistItemRow).toContain("toggleItemSkipped(item.id)");
-    expect(checklistItemRow).toContain("标记不需要");
-    expect(checklistItemRow).toContain("恢复物品");
+    expect(itemInteractionSources).toContain("toggleItemSkipped(item.id)");
+    expect(itemInteractionSources).toContain("标记不需要");
+    expect(itemInteractionSources).toContain("恢复物品");
     expect(checklistItemRow).toContain("memo(function ChecklistItemRow");
   });
 
@@ -96,8 +102,10 @@ describe("V2 checklist experience", () => {
     expect(checklistCategoryCard).toContain("aria-expanded={open}");
   });
 
-  it("keeps item rows free of hard-coded offsets and wrapping pills", () => {
+  it("keeps item cards responsive without hard-coded offsets", () => {
     expect(checklistItemRow).not.toContain("ml-[6.5rem]");
-    expect(checklistItemRow).toContain("whitespace-nowrap");
+    expect(checklistItemRow).toContain("min-w-0");
+    expect(checklistItemRow).toContain("line-clamp-2");
+    expect(checklistItemRow).toContain("size-11");
   });
 });

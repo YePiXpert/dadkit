@@ -88,11 +88,11 @@ export function InstallPrompt() {
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
             {showIosGuide && !deferredPrompt
               ? "用 Safari 打开，点底部分享按钮，选择“添加到主屏幕”，离线也能用。"
-              : "安装后离线也能打开清单、宫缩计时和临出门检查。"}
+              : "安装后可直接从桌面打开，离线也能查看和更新待产清单。"}
           </p>
           {deferredPrompt ? (
             <button
-              className="mt-2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm"
+              className="mt-2 min-h-11 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm"
               onClick={handleInstall}
               type="button"
             >
@@ -102,7 +102,7 @@ export function InstallPrompt() {
         </div>
         <button
           aria-label="暂不安装"
-          className="rounded-lg p-1 text-muted-foreground hover:bg-secondary"
+          className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary"
           onClick={handleDismiss}
           type="button"
         >

@@ -5,10 +5,12 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {
   Cloud,
+  ChevronDown,
   Copy,
   Database,
   Download,
   RotateCcw,
+  ShieldCheck,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -368,45 +370,62 @@ export default function SettingsPage() {
 
   return (
     <div className="page-shell">
-      <section className="mobile-shell grid gap-3 lg:max-w-2xl">
+      <section className="mobile-shell grid gap-5 sm:max-w-[42rem]">
         <header className="px-1 pb-1 text-center">
-          <h1 className="py-2 text-base font-semibold leading-tight">数据与备份</h1>
-          <p className="text-sm leading-6 text-muted-foreground">
-            清单默认只保存在这个浏览器。换设备前，请复制 JSON 或上传到 WebDAV。
-          </p>
-          <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs font-medium text-muted-foreground">
-            <span className="rounded-full bg-muted px-2.5 py-1">
-              本机恢复点 {snapshots.length} 份
-            </span>
-            <span className="rounded-full bg-muted px-2.5 py-1">
-              WebDAV {webDavConfigured ? "已配置" : "未配置"}
-            </span>
-          </div>
+          <h1 className="py-2 text-xl font-bold leading-tight tracking-tight sm:text-2xl">数据与备份</h1>
         </header>
 
-        <Card>
-          <CardHeader className="pb-2">
+        <section className="overflow-hidden rounded-[2rem] border border-[#eadfce] bg-gradient-to-br from-[#fbe3de] via-[#f8ece5] to-[#f2eee3] p-5 sm:p-6">
+          <div className="flex items-center gap-4">
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-full border border-white/80 bg-white text-primary shadow-sm">
+              <ShieldCheck className="size-6" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-bold tracking-tight">本机保存，无需登录</h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                清单默认只保存在这个浏览器，换设备前请主动备份。
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-white/70 bg-white/75 px-4 py-3">
+              <p className="text-xs text-muted-foreground">本机恢复点</p>
+              <p className="mt-1 text-lg font-bold tabular-nums">{snapshots.length} 份</p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/75 px-4 py-3">
+              <p className="text-xs text-muted-foreground">WebDAV</p>
+              <p className="mt-1 text-lg font-bold">
+                {webDavConfigured ? "已配置" : "未配置"}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <Card className="overflow-hidden border-[#eadfce]">
+          <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
-              <Copy className="size-4 text-primary" />
-              手动备份
+              <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
+                <Copy className="size-4" />
+              </span>
+              <span className="text-base">手动备份</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3">
+          <CardContent className="grid gap-4">
             <p className="text-sm leading-6 text-muted-foreground">
-              复制一份可迁移的清单 JSON，保存到你信任的位置；导入时会先创建本机恢复点。照片和 WebDAV 配置不会写入备份。
+              复制一份可迁移的清单 JSON，保存到你信任的位置；导入时会先创建本机恢复点。照片、WebDAV 连接配置和凭据都不会写入备份。
             </p>
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={copyBackup}>
+            <div className="grid grid-cols-2 gap-2">
+              <Button className="w-full" onClick={copyBackup}>
                 <Copy />
                 复制 JSON
               </Button>
-              <Button variant="outline" onClick={() => setShowImport((value) => !value)}>
+              <Button className="w-full" variant="outline" onClick={() => setShowImport((value) => !value)}>
                 <Upload />
                 {showImport ? "收起导入" : "导入 JSON"}
               </Button>
             </div>
             {showImport ? (
-              <div className="grid gap-3 rounded-xl border border-border bg-muted/40 p-3">
+              <div className="grid gap-3 rounded-2xl border border-border bg-muted/40 p-3">
                 <Textarea
                   className="max-h-[45dvh] min-h-40 overflow-y-auto font-mono text-sm"
                   placeholder="粘贴 DadKit JSON 备份"
@@ -422,11 +441,13 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
+        <Card className="overflow-hidden border-[#eadfce]">
+          <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
-              <Database className="size-4 text-primary" />
-              本机恢复点
+              <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
+                <Database className="size-4" />
+              </span>
+              <span className="text-base">本机恢复点</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
@@ -434,7 +455,7 @@ export default function SettingsPage() {
               导入、清空或重置前自动保存清单，最多保留 5 份。恢复点只在当前浏览器中，不含照片和 WebDAV 配置。
             </p>
             {recentSnapshots.length === 0 ? (
-              <p className="rounded-xl bg-muted px-3 py-3 text-sm text-muted-foreground">
+              <p className="rounded-2xl bg-muted px-4 py-4 text-sm text-muted-foreground">
                 暂无恢复点。
               </p>
             ) : (
@@ -449,8 +470,8 @@ export default function SettingsPage() {
               </div>
             )}
             {snapshots.length > 2 ? (
-              <details className="rounded-xl border border-border bg-muted/40 p-3">
-                <summary className="cursor-pointer text-sm font-semibold">
+              <details className="rounded-2xl border border-border bg-muted/40 p-3">
+                <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold">
                   查看全部 {snapshots.length} 份恢复点
                 </summary>
                 <div className="mt-3 grid gap-2">
@@ -474,9 +495,9 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <details className="rounded-3xl bg-card shadow-sm">
-          <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
-            <span className="icon-tile size-9">
+        <details className="group overflow-hidden rounded-[1.75rem] border border-[#eadfce] bg-card">
+          <summary className="flex min-h-20 cursor-pointer list-none items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary">
               <Cloud className="size-4" />
             </span>
             <span className="min-w-0 flex-1">
@@ -490,8 +511,9 @@ export default function SettingsPage() {
             <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">
               {webDavConfigured ? "已配置" : "未配置"}
             </span>
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </summary>
-          <div className="grid gap-4 border-t border-border/70 p-4">
+          <div className="grid gap-4 border-t border-border/70 p-5">
             <p className="text-sm leading-6 text-muted-foreground">
               只在你主动操作时上传或下载清单 JSON，不会自动同步，也不上传照片或 WebDAV 凭据。地址必须使用 HTTPS。
             </p>
@@ -510,7 +532,12 @@ export default function SettingsPage() {
               </Button>
             </div>
 
-            <div className="grid gap-3 rounded-xl border border-border bg-muted/35 p-3 sm:grid-cols-2">
+            <form
+              aria-label="WebDAV 配置"
+              autoComplete="off"
+              className="grid gap-3 rounded-2xl border border-border bg-muted/35 p-3 sm:grid-cols-2"
+              onSubmit={(event) => event.preventDefault()}
+            >
               <Field label="WebDAV 地址" htmlFor="webdav-endpoint">
                 <Input
                   id="webdav-endpoint"
@@ -577,7 +604,7 @@ export default function SettingsPage() {
                   onCheckedChange={(checked) => updateWebDavConfig({ rememberSecret: checked })}
                 />
               </div>
-            </div>
+            </form>
 
             {uploadConflict ? (
               <div className="grid gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
@@ -621,9 +648,9 @@ export default function SettingsPage() {
           </div>
         </details>
 
-        <Card className="border-destructive/25">
-          <CardHeader className="pb-2">
-            <CardTitle>清空并重新开始</CardTitle>
+        <Card className="border-destructive/25 bg-destructive/[0.025]">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">清空并重新开始</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
             <p className="text-sm leading-6 text-muted-foreground">
@@ -637,14 +664,14 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <footer className="grid gap-2 px-3 pb-2 text-center text-xs leading-5 text-muted-foreground">
+        <footer className="grid gap-2 px-3 pb-4 pt-1 text-center text-xs leading-5 text-muted-foreground">
           <p>数据默认保存在当前浏览器。</p>
           <p className="flex items-center justify-center gap-3">
-            <Link className="text-primary hover:underline" href={getReviewPageHref(PUBLIC_PRIVACY_PATH)}>
+            <Link className="inline-flex min-h-11 items-center px-1 text-primary hover:underline" href={getReviewPageHref(PUBLIC_PRIVACY_PATH)}>
               隐私说明
             </Link>
             <span aria-hidden="true">·</span>
-            <Link className="text-primary hover:underline" href={getReviewPageHref(PUBLIC_SUPPORT_PATH)}>
+            <Link className="inline-flex min-h-11 items-center px-1 text-primary hover:underline" href={getReviewPageHref(PUBLIC_SUPPORT_PATH)}>
               支持与反馈
             </Link>
           </p>
