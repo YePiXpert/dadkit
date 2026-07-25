@@ -22,6 +22,7 @@ const backupSettingsPage = readSource(
   "backup",
   "page.tsx",
 );
+const sharedFeedback = readSource("components", "ui", "feedback.tsx");
 
 describe("settings information architecture", () => {
   it("uses 清单 / 我的 as the two primary destinations", () => {
@@ -101,8 +102,10 @@ describe("settings information architecture", () => {
     expect(backupSettingsPage).toContain("PUBLIC_SUPPORT_PATH");
     expect(backupSettingsPage).toContain("隐私说明");
     expect(backupSettingsPage).toContain("支持与反馈");
-    expect(backupSettingsPage).toContain('aria-live="polite"');
-    expect(backupSettingsPage).toContain(
+    expect(backupSettingsPage).toContain("@/components/ui/feedback");
+    expect(checklistSettingsPage).toContain("@/components/ui/feedback");
+    expect(sharedFeedback).toContain('aria-live="polite"');
+    expect(sharedFeedback).toContain(
       'role={ok === false ? "alert" : "status"}',
     );
   });

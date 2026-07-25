@@ -3,6 +3,8 @@
 import { FileText, ListRestart, ListTodo } from "lucide-react";
 import { useState } from "react";
 
+import { PageHeader } from "@/components/PageHeader";
+import { SettingToggleRow } from "@/components/SettingToggleRow";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -14,9 +16,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Feedback } from "@/components/ui/feedback";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { useDadKitStore } from "@/lib/store";
 import { useChecklistDescriptionPreference } from "@/lib/use-checklist-description-preference";
 import { cn } from "@/lib/utils";
@@ -93,16 +95,14 @@ export default function ChecklistSettingsPage() {
   return (
     <div className="page-shell">
       <section className="mobile-shell grid gap-5 sm:max-w-[42rem]">
-        <header className="px-1 pb-1 text-center">
-          <h1 className="py-2 text-xl font-bold leading-tight tracking-tight sm:text-2xl">
-            清单设置
-          </h1>
-          <p className="text-sm leading-6 text-muted-foreground">
-            只调整当前设备上的清单显示与通用物品。
-          </p>
-        </header>
+        <PageHeader
+          backHref="/settings"
+          backLabel="返回我的"
+          subtitle="只调整当前设备上的清单显示与通用物品。"
+          title="清单设置"
+        />
 
-        <Card className="border-[#eadfce]">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
@@ -112,23 +112,17 @@ export default function ChecklistSettingsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between gap-4 rounded-2xl bg-muted/40 p-4">
-              <div className="min-w-0">
-                <Label htmlFor="show-full-descriptions">显示物品说明</Label>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  开启后完整显示补充说明；关闭后卡片只保留名称和数量。
-                </p>
-              </div>
-              <Switch
-                checked={showFullDescriptions}
-                id="show-full-descriptions"
-                onCheckedChange={setShowFullDescriptions}
-              />
-            </div>
+            <SettingToggleRow
+              checked={showFullDescriptions}
+              description="开启后完整显示补充说明；关闭后卡片只保留名称和数量。"
+              id="show-full-descriptions"
+              onCheckedChange={setShowFullDescriptions}
+              title="显示物品说明"
+            />
           </CardContent>
         </Card>
 
-        <Card className="border-[#eadfce]">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
@@ -249,24 +243,5 @@ export default function ChecklistSettingsPage() {
         </Dialog>
       </section>
     </div>
-  );
-}
-
-function Feedback({ message, ok }: { message: string; ok?: boolean }) {
-  if (!message) return null;
-
-  return (
-    <p
-      aria-live="polite"
-      className={cn(
-        "rounded-xl px-3 py-2 text-sm",
-        ok === false
-          ? "bg-destructive/10 text-destructive"
-          : "bg-secondary text-primary",
-      )}
-      role={ok === false ? "alert" : "status"}
-    >
-      {message}
-    </p>
   );
 }

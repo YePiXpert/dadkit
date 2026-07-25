@@ -86,7 +86,7 @@ export function ChecklistItemDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <section className="rounded-[1.5rem] border border-border/80 bg-card p-4">
+        <section className="rounded-[1.5rem] border border-border/70 bg-card p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold">当前状态</p>
@@ -117,7 +117,7 @@ export function ChecklistItemDetailsDialog({
           </Button>
         </section>
 
-        <section className="rounded-[1.5rem] border border-border/80 bg-card p-4">
+        <section className="rounded-[1.5rem] border border-border/70 bg-card p-4">
           <p className="text-sm font-semibold">物品说明</p>
           <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
             {displayNote}
@@ -126,7 +126,7 @@ export function ChecklistItemDetailsDialog({
 
         <ItemPhotoField controller={photoController} itemName={displayName} />
 
-        <section className="grid gap-2 rounded-[1.5rem] border border-border/80 bg-card p-3">
+        <section className="grid gap-2 rounded-[1.5rem] border border-border/70 bg-card p-3">
           <div className="flex min-h-11 items-center justify-between gap-3 px-1">
             <div>
               <p className="text-sm font-semibold">编辑物品</p>

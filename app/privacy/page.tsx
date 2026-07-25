@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getReviewPageHref, PUBLIC_SUPPORT_PATH } from "@/lib/app-routes";
 
@@ -28,16 +29,21 @@ const userControls = [
 
 export default function PrivacyPage() {
   return (
-    <div className="page-shell">
-      <section className="mobile-shell grid gap-3 lg:max-w-3xl">
+    <div className="page-shell page-shell-with-nav">
+      <section className="mobile-shell grid gap-5 sm:max-w-[42rem]">
+        <PageHeader
+          kicker="DadKit"
+          subtitle="生效日期：2026-07-25"
+          title="隐私政策"
+        />
+
         <Card>
           <CardHeader>
-            <p className="section-kicker">DadKit</p>
-            <CardTitle className="text-xl font-semibold leading-tight sm:text-2xl">隐私政策</CardTitle>
+            <CardTitle>隐私政策</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm leading-6 text-muted-foreground">
             <p>
-              生效日期：2026-07-25。DadKit 是本地优先的待产清单工具，不要求注册账号，也不默认把清单上传到 DadKit 服务器。
+              DadKit 是本地优先的待产清单工具，不要求注册账号，也不默认把清单上传到 DadKit 服务器。
             </p>
           </CardContent>
         </Card>

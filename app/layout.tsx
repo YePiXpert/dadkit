@@ -57,11 +57,16 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FBF8F2",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FBF8F2" },
+    { media: "(prefers-color-scheme: dark)", color: "#1A1714" },
+  ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
 };
+
+const themeInitScript = `(function(){try{var p=window.localStorage.getItem("dadkit-theme");if(p!=="light"&&p!=="dark"){p=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.classList.toggle("dark",p==="dark");}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -69,8 +74,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" suppressHydrationWarning>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <StoreHydrator />
         <PwaRegister />
         <AppHeader />

@@ -14,6 +14,7 @@ import {
   saveChecklist,
   saveChecklistMode,
   saveChecklistState,
+  saveChecklistStateSoon,
   SnapshotPersistenceError,
 } from "@/lib/storage";
 import type {
@@ -189,7 +190,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       item.id === id ? patchChecklistItem(item, patch) : item,
     );
 
-    saveChecklistState({
+    saveChecklistStateSoon({
       checklist,
       customItems,
       hiddenTemplateItemIds: state.hiddenTemplateItemIds,

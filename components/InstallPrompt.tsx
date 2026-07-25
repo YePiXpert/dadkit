@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Download, X } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+
 const DISMISS_KEY = "dadkit-install-prompt-dismissed";
 
 type BeforeInstallPromptEvent = Event & {
@@ -91,13 +93,9 @@ export function InstallPrompt() {
               : "安装后可直接从桌面打开，离线也能查看和更新待产清单。"}
           </p>
           {deferredPrompt ? (
-            <button
-              className="mt-2 min-h-11 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm"
-              onClick={handleInstall}
-              type="button"
-            >
+            <Button className="mt-2" onClick={handleInstall} size="sm">
               立即安装
-            </button>
+            </Button>
           ) : null}
         </div>
         <button

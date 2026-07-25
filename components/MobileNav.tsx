@@ -23,7 +23,7 @@ export function MobileNav() {
   return (
     <nav
       aria-label="主导航"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-border/70 bg-card/95 pb-[max(env(safe-area-inset-bottom),0.65rem)] pt-2 shadow-[0_-10px_30px_rgba(76,55,40,0.04)] backdrop-blur-xl sm:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-border/70 bg-card/95 pb-[max(env(safe-area-inset-bottom),0.65rem)] pt-2 shadow-nav backdrop-blur sm:hidden"
     >
       <div className="mobile-shell grid grid-cols-2 gap-4 px-8">
         {PRIMARY_NAVIGATION_ITEMS.map((item) => {

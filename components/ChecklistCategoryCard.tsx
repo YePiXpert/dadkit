@@ -84,7 +84,7 @@ export function ChecklistCategoryCard({
   return (
     <section>
       <Link
-        className="flex min-h-[5.25rem] w-full items-center gap-3 rounded-[1.75rem] border border-border/80 bg-card px-4 py-3.5 text-left transition-colors hover:bg-muted/35"
+        className="flex min-h-[5.25rem] w-full items-center gap-3 rounded-[1.75rem] border border-border/70 bg-card px-4 py-3.5 text-left transition-colors hover:bg-muted/35"
         href={href}
       >
         <span

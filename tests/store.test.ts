@@ -172,6 +172,56 @@ describe("v3 checklist store", () => {
     expect(loadChecklist()).toEqual(before);
   });
 
+  it("debounces checklist persistence after quick item updates", () => {
+    vi.useFakeTimers();
+
+    try {
+      installBrowserStorage();
+      useDadKitStore.getState().hydrate();
+
+      const first = useDadKitStore.getState().checklist[0];
+      useDadKitStore.getState().updateItem(first.id, { status: "packed" });
+
+      // 防抖窗口内尚未落盘，内存状态已更新
+      expect(
+        useDadKitStore.getState().checklist.find((item) => item.id === first.id)
+          ?.status,
+      ).toBe("packed");
+      expect(
+        loadChecklist().find((item) => item.id === first.id)?.status,
+      ).not.toBe("packed");
+
+      vi.advanceTimersByTime(300);
+
+      expect(
+        loadChecklist().find((item) => item.id === first.id)?.status,
+      ).toBe("packed");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not clobber a structural save with a pending debounced write", () => {
+    vi.useFakeTimers();
+
+    try {
+      installBrowserStorage();
+      useDadKitStore.getState().hydrate();
+
+      const [keep, drop] = useDadKitStore.getState().checklist;
+      useDadKitStore.getState().updateItem(keep.id, { status: "packed" });
+      useDadKitStore.getState().removeItem(drop.id);
+
+      vi.advanceTimersByTime(1000);
+
+      const stored = loadChecklist();
+      expect(stored.find((item) => item.id === keep.id)?.status).toBe("packed");
+      expect(stored.find((item) => item.id === drop.id)).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("clears checklist data only after saving a recovery snapshot", async () => {
     installBrowserStorage();
     const custom = testItem("custom", { status: "packed" });

@@ -66,7 +66,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   return (
     <article
       className={cn(
-        "flex min-w-0 flex-col overflow-hidden rounded-[1.75rem] border border-border/90 bg-card p-2.5 transition-colors",
+        "flex min-w-0 flex-col overflow-hidden rounded-[1.75rem] border border-border/70 bg-card p-2.5 transition-colors",
         itemState === "ready" && "border-primary/30 bg-secondary/35",
         itemState === "packed" && "border-primary/35 bg-secondary/55",
         itemState === "not_needed" && "border-border/60 bg-muted/50",
@@ -89,7 +89,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
 
         <span
           className={cn(
-            "absolute right-2 top-2 inline-flex min-h-7 items-center gap-1 rounded-full border border-border/70 bg-card/95 px-2 text-[10px] font-semibold text-muted-foreground shadow-sm backdrop-blur",
+            "absolute right-2 top-2 inline-flex min-h-7 items-center gap-1 rounded-full border border-border/70 bg-card/95 px-2 text-[10px] font-semibold text-muted-foreground shadow-sm",
             itemState === "ready" && "border-primary/20 text-primary",
             itemState === "packed" &&
               "border-primary bg-primary text-primary-foreground",
@@ -122,7 +122,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
           </p>
         ) : null}
 
-        <div className="mt-2.5 flex min-h-11 items-center justify-between gap-2 border-t border-border/65 pt-2">
+        <div className="mt-2.5 flex min-h-11 items-center justify-between gap-2 border-t border-border/70 pt-2">
           <ChecklistItemDetailsDialog
             item={item}
             photoController={itemPhoto}

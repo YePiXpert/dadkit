@@ -9,6 +9,7 @@ import { ChecklistCategoryCard } from "@/components/ChecklistCategoryCard";
 import { ChecklistGroupTabs } from "@/components/ChecklistGroupTabs";
 import { EmptyState } from "@/components/EmptyState";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { PageHeader } from "@/components/PageHeader";
 import {
   CHECKLIST_VIEWS,
   getChecklistViewCounts,
@@ -55,18 +56,14 @@ export function ChecklistWorkspace() {
   }
 
   return (
-    <div className="page-shell">
+    <div className="page-shell page-shell-with-nav">
       <section className="mobile-shell grid gap-4 lg:max-w-2xl">
-        <header className="pb-1 pt-2 text-center sm:pt-4">
-          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-            待产包清单
-          </h1>
-          <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
-            看一眼还差什么，准备好就打勾。
-          </p>
-        </header>
+        <PageHeader
+          title="待产包清单"
+          subtitle="看一眼还差什么，准备好就打勾。"
+        />
 
-        <section className="overflow-hidden rounded-[2rem] border border-primary/10 bg-[linear-gradient(135deg,hsl(var(--secondary))_0%,hsl(var(--card))_72%)] p-5 shadow-[0_12px_36px_rgba(92,70,54,0.05)] sm:p-6">
+        <section className="hero-card p-5 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="text-sm font-semibold text-primary">准备进度</p>
@@ -161,7 +158,7 @@ export function ChecklistWorkspace() {
         trigger={
           <button
             aria-label="新增物品"
-            className="safe-bottom-fab fixed right-4 z-40 flex size-16 items-center justify-center rounded-full bg-foreground text-background shadow-[0_10px_30px_rgba(42,35,30,0.24)] transition-transform active:scale-95 sm:right-[max(1rem,calc(50%_-_21rem_-_5rem))]"
+            className="safe-bottom-fab fixed right-4 z-40 flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform active:scale-95 sm:right-[max(1rem,calc(50%_-_21rem_-_5rem))]"
             type="button"
           >
             <Plus className="size-7" strokeWidth={2.2} />
@@ -199,7 +196,7 @@ function getViewCaption(view: ChecklistView, count: number) {
 
 export function ChecklistWorkspaceSkeleton() {
   return (
-    <div className="page-shell" aria-label="正在准备清单">
+    <div className="page-shell page-shell-with-nav" aria-label="正在准备清单">
       <section className="mobile-shell grid animate-pulse gap-3 lg:max-w-2xl">
         <div className="h-16 rounded-[1.75rem] bg-muted" />
         <div className="h-52 rounded-[2rem] bg-muted" />

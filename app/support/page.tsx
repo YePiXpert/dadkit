@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getReviewPageHref, PUBLIC_PRIVACY_PATH } from "@/lib/app-routes";
 
@@ -25,12 +26,17 @@ const feedbackItems = [
 
 export default function SupportPage() {
   return (
-    <div className="page-shell">
-      <section className="mobile-shell grid gap-3 lg:max-w-3xl">
+    <div className="page-shell page-shell-with-nav">
+      <section className="mobile-shell grid gap-5 sm:max-w-[42rem]">
+        <PageHeader
+          kicker="DadKit"
+          subtitle="反馈问题、PWA 清单使用说明和 WebDAV 排查。"
+          title="支持与反馈"
+        />
+
         <Card>
           <CardHeader>
-            <p className="section-kicker">DadKit</p>
-            <CardTitle className="text-xl font-semibold leading-tight sm:text-2xl">支持与反馈</CardTitle>
+            <CardTitle>支持</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm leading-6 text-muted-foreground">
             <p>

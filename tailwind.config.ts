@@ -46,6 +46,10 @@ const config: Config = {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
@@ -58,6 +62,9 @@ const config: Config = {
       },
       boxShadow: {
         sm: "0 1px 2px rgb(64 45 31 / 0.05), 0 8px 24px rgb(64 45 31 / 0.07)",
+        md: "0 10px 30px rgb(64 45 31 / 0.18)",
+        nav: "0 -10px 30px rgb(64 45 31 / 0.05)",
+        glow: "0 5px 15px hsl(var(--primary) / 0.18)",
       },
     },
   },

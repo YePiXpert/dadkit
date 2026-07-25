@@ -20,6 +20,8 @@
     --accent-foreground: 6 43% 39%;
     --destructive: 3 62% 45%;
     --destructive-foreground: 0 0% 100%;
+    --warning: 35 85% 92%;
+    --warning-foreground: 28 70% 32%;
     --border: 36 32% 86%;
     --input: 36 28% 82%;
     --ring: 6 43% 51%;
@@ -28,6 +30,9 @@
     --coral-strong: 6 43% 51%;
     --coral-soft: 10 72% 95%;
     --surface-warm: 38 45% 93%;
+    --hero-from: 11 71% 93%;
+    --hero-via: 10 72% 95%;
+    --hero-to: 38 45% 93%;
     --tile-mom-bg: 348 85% 93%;
     --tile-mom-fg: 348 62% 48%;
     --tile-baby-bg: 32 90% 91%;
@@ -40,6 +45,51 @@
     --tile-car-fg: 268 32% 46%;
     --tile-lastminute-bg: 335 72% 92%;
     --tile-lastminute-fg: 335 60% 46%;
+    color-scheme: light;
+  }
+
+  .dark {
+    --background: 28 14% 9%;
+    --foreground: 35 25% 92%;
+    --card: 28 13% 13%;
+    --card-foreground: 35 25% 92%;
+    --popover: 28 13% 13%;
+    --popover-foreground: 35 25% 92%;
+    --primary: 8 52% 60%;
+    --primary-foreground: 20 30% 10%;
+    --secondary: 24 16% 20%;
+    --secondary-foreground: 8 45% 72%;
+    --muted: 28 10% 18%;
+    --muted-foreground: 32 10% 62%;
+    --accent: 24 16% 20%;
+    --accent-foreground: 8 45% 72%;
+    --destructive: 3 55% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --warning: 32 30% 18%;
+    --warning-foreground: 35 60% 68%;
+    --border: 30 11% 22%;
+    --input: 30 10% 28%;
+    --ring: 8 52% 60%;
+    --coral: 8 45% 65%;
+    --coral-strong: 8 52% 60%;
+    --coral-soft: 18 22% 18%;
+    --surface-warm: 30 14% 15%;
+    --hero-from: 18 22% 18%;
+    --hero-via: 24 16% 15%;
+    --hero-to: 30 14% 14%;
+    --tile-mom-bg: 348 30% 20%;
+    --tile-mom-fg: 348 55% 72%;
+    --tile-baby-bg: 30 35% 19%;
+    --tile-baby-fg: 32 65% 68%;
+    --tile-docs-bg: 215 25% 20%;
+    --tile-docs-fg: 215 45% 72%;
+    --tile-dad-bg: 150 12% 19%;
+    --tile-dad-fg: 150 25% 66%;
+    --tile-car-bg: 270 14% 21%;
+    --tile-car-fg: 268 35% 74%;
+    --tile-lastminute-bg: 335 28% 20%;
+    --tile-lastminute-fg: 335 50% 72%;
+    color-scheme: dark;
   }
 
   * {
@@ -85,6 +135,10 @@
   .page-shell {
     @apply mx-auto flex w-full max-w-6xl flex-col gap-5 overflow-x-hidden px-4 sm:gap-6 sm:px-6 lg:px-8;
     padding-top: calc(1rem + env(safe-area-inset-top));
+    padding-bottom: calc(3rem + env(safe-area-inset-bottom));
+  }
+
+  .page-shell-with-nav {
     padding-bottom: calc(7rem + env(safe-area-inset-bottom));
   }
 
@@ -98,8 +152,14 @@
     @apply grid grid-cols-1 gap-3;
   }
 
-  .warm-outline-card {
-    @apply border border-border bg-card shadow-none;
+  .hero-card {
+    @apply overflow-hidden rounded-[2rem] border border-primary/10 shadow-sm;
+    background-image: linear-gradient(
+      135deg,
+      hsl(var(--hero-from)) 0%,
+      hsl(var(--hero-via)) 55%,
+      hsl(var(--hero-to)) 100%
+    );
   }
 
   .safe-bottom-fab {
@@ -110,20 +170,8 @@
     bottom: calc(5.5rem + env(safe-area-inset-bottom));
   }
 
-  .safe-bottom-sheet {
-    padding-bottom: max(1rem, env(safe-area-inset-bottom));
-  }
-
-  .field-grid {
-    @apply grid gap-4 sm:grid-cols-2;
-  }
-
   .card-surface {
     @apply rounded-[1.75rem] border border-border bg-card shadow-none;
-  }
-
-  .list-row {
-    @apply flex min-h-14 items-center gap-3 rounded-2xl border border-border bg-card px-3 py-3 shadow-none;
   }
 
   .icon-tile {
@@ -144,6 +192,9 @@
 @media (min-width: 640px) {
   .page-shell {
     padding-top: calc(1.5rem + env(safe-area-inset-top));
+  }
+
+  .page-shell-with-nav {
     padding-bottom: calc(3rem + env(safe-area-inset-bottom));
   }
 
@@ -163,6 +214,7 @@
 @media print {
   body {
     background: white;
+    color: black;
   }
 
   header,

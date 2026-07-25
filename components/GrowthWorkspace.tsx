@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, type ReactNode } from "react";
 import {
-  ArrowLeft,
   CalendarDays,
   Check,
   ChevronLeft,
@@ -18,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { GrowthAnalogyIllustration } from "@/components/GrowthAnalogyIllustration";
+import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -90,22 +89,14 @@ export function GrowthWorkspace() {
   return (
     <div className="page-shell">
       <section className="mobile-shell grid gap-5 sm:max-w-[42rem]">
-        <header className="flex items-center gap-3 px-1 pb-1">
-          <Button aria-label="返回我的" asChild size="icon" variant="ghost">
-            <Link href="/settings">
-              <ArrowLeft />
-            </Link>
-          </Button>
-          <div className="min-w-0 flex-1 text-center">
-            <p className="text-xs font-semibold text-primary">孕 8–40 周</p>
-            <h1 className="text-xl font-bold leading-tight tracking-tight sm:text-2xl">
-              宝宝成长记
-            </h1>
-          </div>
-          <span aria-hidden="true" className="size-11" />
-        </header>
+        <PageHeader
+          backHref="/settings"
+          backLabel="返回我的"
+          kicker="孕 8–40 周"
+          title="宝宝成长记"
+        />
 
-        <details className="group rounded-[1.75rem] border border-[#eadfce] bg-card">
+        <details className="group rounded-[1.75rem] border bg-card">
           <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary">
               <UserRound className="size-4" />
@@ -149,14 +140,14 @@ export function GrowthWorkspace() {
 
         <section
           aria-labelledby="growth-week-heading"
-          className="scroll-mt-6 overflow-hidden rounded-[2rem] border border-[#eadfce] bg-gradient-to-br from-[#fbe3de] via-[#f8ece5] to-[#f2eee3]"
+          className="scroll-mt-6 hero-card"
           id="growth-week-detail"
         >
           <div className="grid gap-5 p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="flex flex-wrap items-center gap-2 text-xs font-semibold text-primary">
-                  <span className="rounded-full bg-white/75 px-2.5 py-1">
+                  <span className="rounded-full bg-card/75 px-2.5 py-1">
                     {current.trimester}
                   </span>
                   <span>{current.stage}</span>
@@ -172,7 +163,7 @@ export function GrowthWorkspace() {
                 </p>
               </div>
               {projectedDate ? (
-                <div className="rounded-2xl border border-white/80 bg-white/75 px-3 py-2 text-right">
+                <div className="rounded-2xl border border-card/80 bg-card/75 px-3 py-2 text-right">
                   <p className="text-[11px] text-muted-foreground">按预产期推算</p>
                   <p className="mt-0.5 text-sm font-semibold">
                     约 {formatFullDate(projectedDate)}
@@ -181,7 +172,7 @@ export function GrowthWorkspace() {
               ) : null}
             </div>
 
-            <div className="rounded-[1.75rem] border border-white/80 bg-white/70 p-3">
+            <div className="rounded-[1.75rem] border border-card/80 bg-card/70 p-3">
               <GrowthAnalogyIllustration
                 analogy={current.analogy}
                 kind={current.illustration}
@@ -229,7 +220,7 @@ export function GrowthWorkspace() {
               </p>
             ) : null}
 
-            <div className="rounded-2xl border border-white/75 bg-white/70 p-4">
+            <div className="rounded-2xl border border-card/75 bg-card/70 p-4">
               <h3 className="text-sm font-semibold">这周可能在发生</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 {current.summary}
@@ -237,9 +228,9 @@ export function GrowthWorkspace() {
             </div>
           </div>
 
-          <div className="border-t border-white/70 bg-white/55 p-5 sm:p-6">
+          <div className="border-t border-card/70 bg-card/55 p-5 sm:p-6">
             <div className="flex items-start gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-white text-primary">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-card text-primary">
                 <ClipboardCheck className="size-4" />
               </span>
               <div className="min-w-0 flex-1">
@@ -261,7 +252,7 @@ export function GrowthWorkspace() {
           </div>
         </section>
 
-        <section aria-label="切换孕周" className="rounded-[1.75rem] border border-[#eadfce] bg-card p-4 sm:p-5">
+        <section aria-label="切换孕周" className="rounded-[1.75rem] border bg-card p-4 sm:p-5">
           <p aria-live="polite" className="sr-only">
             正在查看孕 {current.week} 周
           </p>
@@ -305,7 +296,7 @@ export function GrowthWorkspace() {
           </label>
           <input
             aria-valuetext={`孕 ${current.week} 周`}
-            className="mt-4 h-8 w-full cursor-pointer accent-[#b65f52]"
+            className="mt-4 h-8 w-full cursor-pointer accent-primary"
             id="growth-week-range"
             max={MAX_GROWTH_WEEK}
             min={MIN_GROWTH_WEEK}
@@ -335,7 +326,7 @@ export function GrowthWorkspace() {
           {TIMELINE_GROUPS.map((trimester) => (
             <section
               aria-labelledby={`growth-${trimester}`}
-              className="overflow-hidden rounded-[1.75rem] border border-[#eadfce] bg-card"
+              className="overflow-hidden rounded-[1.75rem] border bg-card"
               key={trimester}
             >
               <h3
@@ -418,7 +409,7 @@ export function GrowthWorkspace() {
           ))}
         </section>
 
-        <aside className="rounded-[1.75rem] border border-[#eadfce] bg-card p-5" role="note">
+        <aside className="rounded-[1.75rem] border bg-card p-5" role="note">
           <div className="flex items-start gap-3">
             <Info className="mt-0.5 size-5 shrink-0 text-primary" />
             <p className="text-sm leading-6 text-muted-foreground">
@@ -427,7 +418,7 @@ export function GrowthWorkspace() {
           </div>
         </aside>
 
-        <section className="rounded-[1.75rem] border border-[#eadfce] bg-card p-5">
+        <section className="rounded-[1.75rem] border bg-card p-5">
           <div className="flex items-center gap-2">
             <CalendarDays className="size-4 text-primary" />
             <h2 className="text-sm font-semibold">内容依据</h2>
@@ -468,7 +459,7 @@ function Metric({
   value: string;
 }) {
   return (
-    <div className={cn("rounded-2xl border border-white/75 bg-white/75 p-3", className)}>
+    <div className={cn("rounded-2xl border border-card/75 bg-card/75 p-3", className)}>
       <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground [&_svg]:size-3.5">
         {icon}
         {label}

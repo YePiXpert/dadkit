@@ -65,11 +65,37 @@ describe("V2 PWA visual and navigation contract", () => {
     expect(globals).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
     expect(globals).toContain("overflow-x: hidden");
     expect(globals).toContain("touch-action: pan-x pan-y");
-    expect(layout).toContain('themeColor: "#FBF8F2"');
+    expect(layout).toContain(
+      '{ media: "(prefers-color-scheme: light)", color: "#FBF8F2" }',
+    );
+    expect(layout).toContain(
+      '{ media: "(prefers-color-scheme: dark)", color: "#1A1714" }',
+    );
     expect(layout).toContain(
       '{ url: "/maskable-icon-512.png", sizes: "512x512", type: "image/png" }',
     );
     expect(layout).toContain('viewportFit: "cover"');
+  });
+
+  it("ships a dark palette and keeps colors on design tokens", () => {
+    expect(globals).toContain(".dark {");
+    expect(globals).toContain("--hero-from:");
+    expect(globals).toContain("--warning:");
+    expect(layout).toContain("suppressHydrationWarning");
+    expect(layout).toContain("themeInitScript");
+
+    for (const source of [
+      settingsPage,
+      checklistSettingsPage,
+      backupSettingsPage,
+      checklistWorkspace,
+      checklistSectionWorkspace,
+    ]) {
+      expect(source).not.toContain("#eadfce");
+      expect(source).not.toContain("#fbe3de");
+      expect(source).not.toContain("amber-");
+      expect(source).not.toContain("bg-white");
+    }
   });
 
   it("ships as a standalone web PWA without a native build surface", () => {

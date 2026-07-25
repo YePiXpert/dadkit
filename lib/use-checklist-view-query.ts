@@ -1,14 +1,13 @@
 "use client";
 
 import { useCallback } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { isChecklistView, type ChecklistView } from "@/lib/checklist-v2";
 import { setChecklistViewInQuery } from "@/lib/checklist-display";
 
 export function useChecklistViewQuery() {
   const pathname = usePathname();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.toString();
   const candidate = searchParams.get("view");
@@ -17,11 +16,16 @@ export function useChecklistViewQuery() {
   const setView = useCallback(
     (nextView: ChecklistView) => {
       const nextQuery = setChecklistViewInQuery(query, nextView);
-      router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {
-        scroll: false,
-      });
+
+      // 原生 replaceState：Next 会同步 useSearchParams，但不触发 RSC 往返，
+      // 切换视图时不会整页重新取数。
+      window.history.replaceState(
+        null,
+        "",
+        nextQuery ? `${pathname}?${nextQuery}` : pathname,
+      );
     },
-    [pathname, query, router],
+    [pathname, query],
   );
 
   return { query, setView, view };

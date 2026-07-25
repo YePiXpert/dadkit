@@ -406,19 +406,17 @@ export function saveHiddenTemplateItemIds(ids: string[]) {
   writeJson(STORAGE_KEYS.hiddenTemplateItems, Array.from(new Set(ids)));
 }
 
-export function saveChecklistState({
-  checklist,
-  customItems,
-  hiddenTemplateItemIds,
-}: {
+type ChecklistStatePayload = {
   checklist: ChecklistItem[];
   customItems: ChecklistItem[];
   hiddenTemplateItemIds: string[];
-}) {
-  if (!canUseLocalStorage()) {
-    return;
-  }
+};
 
+function writeChecklistStateNow({
+  checklist,
+  customItems,
+  hiddenTemplateItemIds,
+}: ChecklistStatePayload) {
   applyStorageMutations([
     { key: STORAGE_KEYS.checklist, value: JSON.stringify(checklist) },
     { key: STORAGE_KEYS.customItems, value: JSON.stringify(customItems) },
@@ -427,6 +425,95 @@ export function saveChecklistState({
       value: JSON.stringify(Array.from(new Set(hiddenTemplateItemIds))),
     },
   ]);
+}
+
+export function saveChecklistState(payload: ChecklistStatePayload) {
+  cancelPendingChecklistStateSave();
+
+  if (!canUseLocalStorage()) {
+    return;
+  }
+
+  writeChecklistStateNow(payload);
+}
+
+const CHECKLIST_STATE_SAVE_DELAY_MS = 250;
+
+let pendingChecklistStateSave: ChecklistStatePayload | undefined;
+let pendingChecklistStateTimer: ReturnType<typeof setTimeout> | undefined;
+let checklistStateSaveListenersInstalled = false;
+
+function installChecklistStateSaveListeners() {
+  if (checklistStateSaveListenersInstalled) return;
+  checklistStateSaveListenersInstalled = true;
+
+  if (
+    typeof window === "undefined" ||
+    typeof window.addEventListener !== "function"
+  ) {
+    return;
+  }
+
+  window.addEventListener("pagehide", flushPendingChecklistStateSave);
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        flushPendingChecklistStateSave();
+      }
+    });
+  }
+}
+
+export function flushPendingChecklistStateSave() {
+  if (pendingChecklistStateTimer !== undefined) {
+    clearTimeout(pendingChecklistStateTimer);
+    pendingChecklistStateTimer = undefined;
+  }
+
+  if (!pendingChecklistStateSave || !canUseLocalStorage()) {
+    pendingChecklistStateSave = undefined;
+    return;
+  }
+
+  const payload = pendingChecklistStateSave;
+  pendingChecklistStateSave = undefined;
+
+  try {
+    writeChecklistStateNow(payload);
+  } catch {
+    // 写入失败（如存储已满）时保留内存状态，下一次变更会再次尝试持久化。
+  }
+}
+
+function cancelPendingChecklistStateSave() {
+  if (pendingChecklistStateTimer !== undefined) {
+    clearTimeout(pendingChecklistStateTimer);
+    pendingChecklistStateTimer = undefined;
+  }
+
+  pendingChecklistStateSave = undefined;
+}
+
+// 高频点按路径使用：把整包 localStorage 序列化写入从每次点按
+// 合并为至多每 250ms 一次，避免主线程被同步 I/O 卡住。
+export function saveChecklistStateSoon(payload: ChecklistStatePayload) {
+  if (!canUseLocalStorage()) {
+    return;
+  }
+
+  pendingChecklistStateSave = payload;
+  installChecklistStateSaveListeners();
+
+  if (pendingChecklistStateTimer !== undefined) {
+    return;
+  }
+
+  pendingChecklistStateTimer = setTimeout(
+    flushPendingChecklistStateSave,
+    CHECKLIST_STATE_SAVE_DELAY_MS,
+  );
+  (pendingChecklistStateTimer as { unref?: () => void }).unref?.();
 }
 
 export function loadChecklistMode(): ChecklistMode {
@@ -575,6 +662,8 @@ export function clearWebDavSettings() {
 }
 
 export function resetAllData(initialChecklist?: ChecklistItem[]) {
+  cancelPendingChecklistStateSave();
+
   if (canUseLocalStorage()) {
     applyStorageMutations(
       DATA_STORAGE_KEYS.map((key) => {
@@ -677,6 +766,8 @@ export function applyImportData(data: DadKitImportData): ImportResult {
   if (!canUseLocalStorage()) {
     return { ok: false, message: "当前环境无法访问本地存储，未修改本地数据。" };
   }
+
+  cancelPendingChecklistStateSave();
 
   const mutations: StorageMutation[] = [
     { key: STORAGE_KEYS.checklist, value: JSON.stringify(data.checklist) },

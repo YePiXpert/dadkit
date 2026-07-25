@@ -14,6 +14,7 @@ import {
   Upload,
 } from "lucide-react";
 
+import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -25,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Feedback } from "@/components/ui/feedback";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -329,15 +331,15 @@ export default function BackupSettingsPage() {
   return (
     <div className="page-shell">
       <section className="mobile-shell grid gap-5 sm:max-w-[42rem]">
-        <header className="px-1 pb-1 text-center">
-          <h1 className="py-2 text-xl font-bold leading-tight tracking-tight sm:text-2xl">
-            备份与恢复
-          </h1>
-        </header>
+        <PageHeader
+          backHref="/settings"
+          backLabel="返回我的"
+          title="备份与恢复"
+        />
 
-        <section className="overflow-hidden rounded-[2rem] border border-[#eadfce] bg-gradient-to-br from-[#fbe3de] via-[#f8ece5] to-[#f2eee3] p-5 sm:p-6">
+        <section className="hero-card p-5 sm:p-6">
           <div className="flex items-center gap-4">
-            <span className="flex size-14 shrink-0 items-center justify-center rounded-full border border-white/80 bg-white text-primary shadow-sm">
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-full border border-card/80 bg-card text-primary shadow-sm">
               <ShieldCheck className="size-6" />
             </span>
             <div className="min-w-0 flex-1">
@@ -348,11 +350,11 @@ export default function BackupSettingsPage() {
             </div>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-white/70 bg-white/75 px-4 py-3">
+            <div className="rounded-2xl border border-card/70 bg-card/75 px-4 py-3">
               <p className="text-xs text-muted-foreground">本机恢复点</p>
               <p className="mt-1 text-lg font-bold tabular-nums">{snapshots.length} 份</p>
             </div>
-            <div className="rounded-2xl border border-white/70 bg-white/75 px-4 py-3">
+            <div className="rounded-2xl border border-card/70 bg-card/75 px-4 py-3">
               <p className="text-xs text-muted-foreground">WebDAV</p>
               <p className="mt-1 text-lg font-bold">
                 {webDavConfigured ? "已配置" : "未配置"}
@@ -361,7 +363,7 @@ export default function BackupSettingsPage() {
           </div>
         </section>
 
-        <Card className="overflow-hidden border-[#eadfce]">
+        <Card className="overflow-hidden">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
@@ -415,7 +417,7 @@ export default function BackupSettingsPage() {
           </CardContent>
         </Card>
 
-        <details className="group overflow-hidden rounded-[1.75rem] border border-[#eadfce] bg-card">
+        <details className="group overflow-hidden rounded-[1.75rem] border border-border bg-card">
           <summary className="flex min-h-20 cursor-pointer list-none items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary">
               <Cloud className="size-4" />
@@ -529,7 +531,7 @@ export default function BackupSettingsPage() {
             </form>
 
             {uploadConflict ? (
-              <div className="grid gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              <div className="grid gap-2 rounded-xl border border-warning-foreground/25 bg-warning p-3 text-sm text-warning-foreground">
                 <p>远端备份与当前本地数据不同。确认后可用本地数据覆盖远端。</p>
                 <div className="flex flex-wrap gap-2">
                   <Button size="sm" onClick={() => uploadCurrentBackup(true)}>
@@ -651,26 +653,6 @@ export default function BackupSettingsPage() {
         </footer>
       </section>
     </div>
-  );
-}
-
-function Feedback({ message, ok }: { message: string; ok?: boolean }) {
-  if (!message) {
-    return null;
-  }
-
-  return (
-    <p
-      aria-live="polite"
-      className={`rounded-lg px-3 py-2 text-sm ${
-        ok === false
-          ? "bg-destructive/10 text-destructive"
-          : "bg-secondary text-primary"
-      }`}
-      role={ok === false ? "alert" : "status"}
-    >
-      {message}
-    </p>
   );
 }
 

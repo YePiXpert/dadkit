@@ -28,7 +28,7 @@ export function ChecklistGroupTabs({
   return (
     <div
       aria-label="清单视图"
-      className="grid grid-cols-3 gap-1 rounded-[1.75rem] border border-border/80 bg-card/80 p-1.5"
+      className="grid grid-cols-3 gap-1 rounded-[1.75rem] border border-border/70 bg-card/80 p-1.5"
       role="group"
     >
       {CHECKLIST_VIEWS.map((view) => {
@@ -41,7 +41,7 @@ export function ChecklistGroupTabs({
             className={cn(
               "flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-[1.35rem] px-1 text-xs font-semibold text-muted-foreground transition-all sm:flex-row sm:gap-1.5 sm:px-3 sm:text-sm",
               active &&
-                "bg-primary text-primary-foreground shadow-[0_5px_15px_hsl(var(--primary)/0.18)]",
+                "bg-primary text-primary-foreground shadow-glow",
             )}
             key={view.id}
             type="button"
