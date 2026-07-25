@@ -32,11 +32,10 @@ describe("custom item same-name merge", () => {
     installBrowserStorage();
     useDadKitStore.setState({
       hydrated: false,
-      profile: undefined,
       checklist: [],
+      checklistMode: "lean",
       customItems: [],
       hiddenTemplateItemIds: [],
-      hospitalOverrides: [],
     });
     useDadKitStore.getState().hydrate();
   });

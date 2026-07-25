@@ -4,23 +4,15 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {
-  ArrowRight,
-  Baby,
-  CalendarClock,
-  CarFront,
+  Cloud,
   Copy,
+  Database,
   Download,
-  Hospital,
-  Info,
-  NotebookPen,
   RotateCcw,
-  Share2,
-  Timer,
   Trash2,
   Upload,
 } from "lucide-react";
 
-import { DisclaimerBox } from "@/components/DisclaimerBox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,18 +27,10 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  DEFAULT_BIRTH_PLAN,
-  DEFAULT_POSTPARTUM_TASKS,
-  type BirthPlan,
-  type PostpartumTask,
-} from "@/lib/rc";
-import { formatBabyZodiacLine } from "@/lib/baby-profile";
-import {
   getReviewPageHref,
   PUBLIC_PRIVACY_PATH,
   PUBLIC_SUPPORT_PATH,
 } from "@/lib/app-routes";
-import { useDadKitStore } from "@/lib/store";
 import {
   clearSnapshots,
   clearWebDavSettings,
@@ -61,6 +45,7 @@ import {
   saveWebDavSyncState,
   type DadKitSnapshot,
 } from "@/lib/storage";
+import { useDadKitStore } from "@/lib/store";
 import {
   downloadWebDavBackup,
   importDadKitWebDavBackup,
@@ -74,26 +59,21 @@ import {
   type WebDavSyncState,
 } from "@/lib/webdav/types";
 
-type ReleaseInfo = {
-  ok: boolean;
-  version: string;
-  buildTime: string;
-};
-
 export default function SettingsPage() {
   const clearAll = useDadKitStore((state) => state.clearAll);
   const exportJson = useDadKitStore((state) => state.exportJson);
   const hydrate = useDadKitStore((state) => state.hydrate);
   const importJson = useDadKitStore((state) => state.importJson);
-  const profile = useDadKitStore((state) => state.profile);
   const checklist = useDadKitStore((state) => state.checklist);
   const customItems = useDadKitStore((state) => state.customItems);
-  const contractions = useDadKitStore((state) => state.contractions);
-  const birthPlan = useDadKitStore((state) => state.birthPlan);
-  const postpartumTasks = useDadKitStore((state) => state.postpartumTasks);
+  const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState("");
-  const [message, setMessage] = useState("");
-  const [messageOk, setMessageOk] = useState<boolean | undefined>();
+  const [manualMessage, setManualMessage] = useState("");
+  const [manualMessageOk, setManualMessageOk] = useState<boolean>();
+  const [snapshotMessage, setSnapshotMessage] = useState("");
+  const [snapshotMessageOk, setSnapshotMessageOk] = useState<boolean>();
+  const [clearMessage, setClearMessage] = useState("");
+  const [clearMessageOk, setClearMessageOk] = useState<boolean>();
   const [snapshots, setSnapshots] = useState<DadKitSnapshot[]>([]);
   const [webDavConfig, setWebDavConfig] =
     useState<WebDavConfig>(DEFAULT_WEBDAV_CONFIG);
@@ -102,24 +82,16 @@ export default function SettingsPage() {
     deviceId: "",
   });
   const [webDavMessage, setWebDavMessage] = useState("");
-  const [webDavMessageOk, setWebDavMessageOk] = useState<boolean | undefined>();
+  const [webDavMessageOk, setWebDavMessageOk] = useState<boolean>();
   const [webDavBusy, setWebDavBusy] = useState(false);
   const [pendingRemoteBackup, setPendingRemoteBackup] =
     useState<DadKitWebDavBackup>();
   const [uploadConflict, setUploadConflict] = useState(false);
-  const [releaseInfo, setReleaseInfo] = useState<ReleaseInfo>({
-    ok: true,
-    version: "2.0.0",
-    buildTime: "unknown",
-  });
-  const hasLocalData =
-    Boolean(profile) ||
-    checklist.length > 0 ||
-    customItems.length > 0 ||
-    contractions.length > 0 ||
-    hasBirthPlanData(birthPlan) ||
-    hasPostpartumData(postpartumTasks);
   const recentSnapshots = snapshots.slice(0, 2);
+  const hasLocalData = checklist.length > 0 || customItems.length > 0;
+  const webDavConfigured = Boolean(
+    webDavConfig.endpoint.trim() && webDavConfig.username.trim(),
+  );
 
   function refreshSnapshots() {
     setSnapshots(loadSnapshots());
@@ -138,66 +110,53 @@ export default function SettingsPage() {
   useEffect(() => {
     refreshSnapshots();
     refreshWebDavSettings();
-
-    void fetch("/healthz", { cache: "no-store" })
-      .then((response) => response.json() as Promise<ReleaseInfo>)
-      .then((data) => setReleaseInfo(data))
-      .catch(() => {
-        setReleaseInfo((current) => ({ ...current, ok: false }));
-      });
   }, []);
 
-  function clearData() {
-    if (!window.confirm("恢复为通用清单？当前进度和可选资料会被清除。")) {
-      return;
-    }
-
+  async function copyBackup() {
     try {
-      clearAll();
-    } catch (error) {
-      refreshSnapshots();
-      setMessage(
-        error instanceof Error && error.message
-          ? error.message
-          : "无法创建恢复快照，本地数据未清空。",
-      );
-      setMessageOk(false);
-      return;
-    }
+      if (!navigator.clipboard) {
+        throw new Error("clipboard unavailable");
+      }
 
-    refreshSnapshots();
-    refreshWebDavSettings();
-    setMessage("已恢复为一份全新的通用清单。");
-    setMessageOk(true);
+      await navigator.clipboard.writeText(exportJson());
+      setManualMessage("JSON 备份已复制，请保存到你信任的位置。");
+      setManualMessageOk(true);
+    } catch {
+      setManualMessage("复制失败，请展开导入区后手动复制 JSON。");
+      setManualMessageOk(false);
+      setShowImport(true);
+      setImportText(exportJson());
+    }
   }
 
-  function importData() {
+  function importBackup() {
     let result: ReturnType<typeof importJson>;
 
     try {
       result = importJson(importText);
     } catch (error) {
       refreshSnapshots();
-      setMessage(
+      setManualMessage(
         error instanceof Error && error.message
           ? error.message
-          : "无法创建恢复快照，导入已中止。",
+          : "无法创建恢复点，导入已中止。",
       );
-      setMessageOk(false);
+      setManualMessageOk(false);
       return;
     }
 
     refreshSnapshots();
-    setMessage(result.message);
-    setMessageOk(result.ok);
+    setManualMessage(result.message);
+    setManualMessageOk(result.ok);
 
     if (result.ok) {
       setImportText("");
+      setShowImport(false);
     }
   }
 
   function restoreLocalSnapshot(id: string) {
-    if (!window.confirm("恢复此备份会替换当前资料和清单。是否继续？")) {
+    if (!window.confirm("恢复此恢复点会替换当前清单。是否继续？")) {
       return;
     }
 
@@ -208,19 +167,47 @@ export default function SettingsPage() {
     }
 
     refreshSnapshots();
-    setMessage(result.message);
-    setMessageOk(result.ok);
+    setSnapshotMessage(result.message);
+    setSnapshotMessageOk(result.ok);
   }
 
   function deleteAllSnapshots() {
-    if (!window.confirm("确认删除全部本地备份？")) {
+    if (!window.confirm("确认删除全部本机恢复点？")) {
       return;
     }
 
     clearSnapshots();
     refreshSnapshots();
-    setMessage("本地备份已删除。");
-    setMessageOk(true);
+    setSnapshotMessage("本机恢复点已删除。");
+    setSnapshotMessageOk(true);
+  }
+
+  function clearData() {
+    if (
+      !window.confirm(
+        "清空并重新开始？当前清单、WebDAV 设置和本机物品照片会被清除，操作前会先创建恢复点。",
+      )
+    ) {
+      return;
+    }
+
+    try {
+      clearAll();
+    } catch (error) {
+      refreshSnapshots();
+      setClearMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "无法创建恢复点，本地数据未清空。",
+      );
+      setClearMessageOk(false);
+      return;
+    }
+
+    refreshSnapshots();
+    refreshWebDavSettings();
+    setClearMessage("已生成一份全新的通用清单。");
+    setClearMessageOk(true);
   }
 
   function updateWebDavConfig(patch: Partial<WebDavConfig>) {
@@ -244,7 +231,7 @@ export default function SettingsPage() {
   }
 
   function prepareWebDavOperation() {
-    const config = normalizeWebDavConfig(webDavConfig);
+    const config = normalizeWebDavConfig({ ...webDavConfig, enabled: true });
 
     setWebDavConfig(config);
     saveWebDavConfig(config);
@@ -313,7 +300,7 @@ export default function SettingsPage() {
     if (
       hasLocalData &&
       !window.confirm(
-        "下载远端备份会替换当前资料和清单。DadKit 会先保存一份本地快照。是否继续？",
+        "检查远端备份后可以选择是否恢复。恢复前会先保存本机恢复点。是否继续？",
       )
     ) {
       return;
@@ -381,496 +368,329 @@ export default function SettingsPage() {
 
   return (
     <div className="page-shell">
-      <section className="mobile-shell grid gap-3 lg:max-w-none">
-        <header className="flex items-end justify-between gap-3 pb-1">
-          <div>
-            <p className="section-kicker">DadKit</p>
-            <h1 className="text-2xl font-semibold leading-tight">我的</h1>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              清单开箱即用，资料和工具都按需使用。
-            </p>
+      <section className="mobile-shell grid gap-3 lg:max-w-2xl">
+        <header className="px-1 pb-1 text-center">
+          <h1 className="py-2 text-base font-semibold leading-tight">数据与备份</h1>
+          <p className="text-sm leading-6 text-muted-foreground">
+            清单默认只保存在这个浏览器。换设备前，请复制 JSON 或上传到 WebDAV。
+          </p>
+          <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs font-medium text-muted-foreground">
+            <span className="rounded-full bg-muted px-2.5 py-1">
+              本机恢复点 {snapshots.length} 份
+            </span>
+            <span className="rounded-full bg-muted px-2.5 py-1">
+              WebDAV {webDavConfigured ? "已配置" : "未配置"}
+            </span>
           </div>
-          <span className="shrink-0 rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-primary">
-            v{releaseInfo.version}
-          </span>
         </header>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>我的资料</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-2 p-2 pt-0">
-            <SettingsShortcutRow
-              caption={
-                profile
-                  ? `${formatBabyZodiacLine(profile)} · 可随时修改，不会清空进度`
-                  : "预产期、地区、医院等均可选，不填也能正常使用"
-              }
-              href="/setup"
-              icon={<Info className="size-4" />}
-              title={profile ? "编辑资料" : "添加可选资料"}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>常用工具</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-2 p-2 pt-0 sm:grid-cols-2">
-            <SettingsShortcutRow
-              caption="记录医院提供物品和待确认事项"
-              href="/hospital"
-              icon={<Hospital className="size-4" />}
-              title="医院确认"
-            />
-            <SettingsShortcutRow
-              caption="有预产期时查看阶段性提醒"
-              href="/timeline"
-              icon={<CalendarClock className="size-4" />}
-              title="准备时间线"
-            />
-            <SettingsShortcutRow
-              caption="记录持续时间和间隔"
-              href="/contractions"
-              icon={<Timer className="size-4" />}
-              title="宫缩计时"
-            />
-            <SettingsShortcutRow
-              caption="出发前快速核对关键物品"
-              href="/go"
-              icon={<CarFront className="size-4" />}
-              title="临出门检查"
-            />
-            <SettingsShortcutRow
-              caption="整理陪产与沟通偏好"
-              href="/birth-plan"
-              icon={<NotebookPen className="size-4" />}
-              title="分娩偏好"
-            />
-            <SettingsShortcutRow
-              caption="出生后办理与复查提醒"
-              href="/postpartum"
-              icon={<Baby className="size-4" />}
-              title="产后事项"
-            />
-            <SettingsShortcutRow
-              caption="导出清单或发给家人"
-              href="/share"
-              icon={<Share2 className="size-4" />}
-              title="导出分享"
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>备份与恢复</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Copy className="size-4 text-primary" />
+              手动备份
+            </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <div className="grid gap-2">
-              <p className="text-sm font-semibold">最近备份</p>
-              {snapshots.length === 0 ? (
-                <p className="text-sm leading-6 text-muted-foreground">
-                  暂无本地备份。DadKit 会在导入、重置、清空或创建新清单前自动保存最近备份。
-                </p>
-              ) : (
-                <>
-                  <div className="grid gap-2">
-                    {recentSnapshots.map((snapshot) => (
-                      <div
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/50 p-3"
-                        key={snapshot.id}
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold">
-                            {formatSnapshotTime(snapshot.createdAt)}
-                          </p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {snapshot.reason}
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => restoreLocalSnapshot(snapshot.id)}
-                        >
-                          恢复
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <details className="rounded-lg border border-border bg-muted/50 p-3">
-                    <summary className="cursor-pointer text-sm font-semibold">
-                      查看全部备份
-                    </summary>
-                    <div className="mt-3 grid gap-2">
-                      {snapshots.map((snapshot) => (
-                        <div
-                          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 shadow-sm"
-                          key={snapshot.id}
-                        >
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold">
-                              {formatSnapshotTime(snapshot.createdAt)}
-                            </p>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              {snapshot.reason}
-                            </p>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => restoreLocalSnapshot(snapshot.id)}
-                          >
-                            恢复
-                          </Button>
-                        </div>
-                      ))}
-                      <Button
-                        className="justify-self-start"
-                        variant="outline"
-                        onClick={deleteAllSnapshots}
-                      >
-                        <Trash2 className="size-4" />
-                        删除全部快照
-                      </Button>
-                    </div>
-                  </details>
-                </>
-              )}
+            <p className="text-sm leading-6 text-muted-foreground">
+              复制一份可迁移的清单 JSON，保存到你信任的位置；导入时会先创建本机恢复点。照片和 WebDAV 配置不会写入备份。
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={copyBackup}>
+                <Copy />
+                复制 JSON
+              </Button>
+              <Button variant="outline" onClick={() => setShowImport((value) => !value)}>
+                <Upload />
+                {showImport ? "收起导入" : "导入 JSON"}
+              </Button>
             </div>
-
-            <details className="rounded-lg border border-border bg-muted/50 p-3">
-              <summary className="cursor-pointer text-sm font-semibold">
-                导入 / 复制 JSON
-              </summary>
-              <div className="mt-3 grid gap-3">
+            {showImport ? (
+              <div className="grid gap-3 rounded-xl border border-border bg-muted/40 p-3">
                 <Textarea
                   className="max-h-[45dvh] min-h-40 overflow-y-auto font-mono text-sm"
                   placeholder="粘贴 DadKit JSON 备份"
                   value={importText}
                   onChange={(event) => setImportText(event.target.value)}
                 />
-                <div className="flex flex-wrap gap-2">
-                  <Button onClick={importData}>
-                    <Upload className="size-4" />
-                    校验并导入
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => navigator.clipboard.writeText(exportJson())}
-                  >
-                    <Copy className="size-4" />
-                    复制当前 JSON
-                  </Button>
-                </div>
+                <Button className="justify-self-start" onClick={importBackup}>
+                  校验并导入
+                </Button>
               </div>
-            </details>
-
-            <div className="grid gap-2 rounded-lg border border-border bg-muted/50 p-3">
-              <p className="text-sm font-semibold">恢复通用清单</p>
-              <p className="text-sm leading-6 text-muted-foreground">
-                清除当前 V2 进度、可选资料、WebDAV 设置和本机物品照片，并立即重新生成一份通用清单。操作前会保留一份本地恢复快照。
-              </p>
-              <Button className="justify-self-start" variant="outline" onClick={clearData}>
-                <RotateCcw className="size-4" />
-                恢复为全新清单
-              </Button>
-            </div>
-
-            {message ? (
-              <p
-                className={`rounded-lg px-3 py-2 text-sm ${
-                  messageOk === false
-                    ? "bg-destructive/10 text-destructive"
-                    : "bg-secondary text-primary"
-                }`}
-              >
-                {message}
-              </p>
             ) : null}
-
-            <details className="rounded-lg border border-border bg-muted/50 p-3">
-              <summary className="cursor-pointer text-sm font-semibold">
-                WebDAV 备份
-              </summary>
-              <div className="mt-3 grid gap-4">
-                <p className="text-sm leading-6 text-muted-foreground">
-                  手动上传或下载 JSON 备份，不会自动同步。浏览器请求会经 DadKit 同源代理转发。
-                </p>
-
-                <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 shadow-sm">
-                  <div>
-                    <Label htmlFor="webdav-enabled">启用 WebDAV 备份</Label>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      关闭后会保留配置，但不会阻止你手动测试或上传。
-                    </p>
-                  </div>
-                  <Switch
-                    id="webdav-enabled"
-                    checked={webDavConfig.enabled}
-                    onCheckedChange={(checked) =>
-                      updateWebDavConfig({ enabled: checked })
-                    }
-                  />
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button disabled={webDavBusy} variant="outline" onClick={testWebDav}>
-                    测试连接
-                  </Button>
-                  <Button disabled={webDavBusy} onClick={() => uploadCurrentBackup()}>
-                    <Upload className="size-4" />
-                    上传当前备份
-                  </Button>
-                  <Button
-                    disabled={webDavBusy}
-                    variant="outline"
-                    onClick={downloadRemoteBackup}
-                  >
-                    <Download className="size-4" />
-                    下载远端备份
-                  </Button>
-                  <Button disabled={webDavBusy} variant="outline" onClick={clearWebDav}>
-                    清除 WebDAV 配置
-                  </Button>
-                </div>
-
-                <details className="rounded-lg border border-border bg-card p-3 shadow-sm">
-                  <summary className="cursor-pointer text-sm font-semibold">
-                    连接设置
-                  </summary>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <Field label="WebDAV 地址" htmlFor="webdav-endpoint">
-                      <Input
-                        id="webdav-endpoint"
-                        placeholder="https://webdav.123pan.cn/webdav"
-                        type="url"
-                        value={webDavConfig.endpoint}
-                        onChange={(event) =>
-                          updateWebDavConfig({ endpoint: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <Field label="用户名" htmlFor="webdav-username">
-                      <Input
-                        id="webdav-username"
-                        value={webDavConfig.username}
-                        onChange={(event) =>
-                          updateWebDavConfig({ username: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <Field label="应用密码 / 密码" htmlFor="webdav-secret">
-                      <Input
-                        id="webdav-secret"
-                        type="password"
-                        value={webDavSecret}
-                        onChange={(event) => updateWebDavSecret(event.target.value)}
-                      />
-                    </Field>
-                    <Field label="凭据类型" htmlFor="webdav-auth-mode">
-                      <Select
-                        value={webDavConfig.authMode}
-                        onValueChange={(value) =>
-                          updateWebDavConfig({
-                            authMode: value as WebDavConfig["authMode"],
-                          })
-                        }
-                      >
-                        <SelectTrigger id="webdav-auth-mode">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="app_password">应用密码</SelectItem>
-                          <SelectItem value="basic">普通密码</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                    <Field label="远端目录" htmlFor="webdav-remote-dir">
-                      <Input
-                        id="webdav-remote-dir"
-                        value={webDavConfig.remoteDir}
-                        onChange={(event) =>
-                          updateWebDavConfig({ remoteDir: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <Field label="文件名" htmlFor="webdav-filename">
-                      <Input
-                        id="webdav-filename"
-                        value={webDavConfig.filename}
-                        onChange={(event) =>
-                          updateWebDavConfig({ filename: event.target.value })
-                        }
-                      />
-                    </Field>
-                    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/50 p-3">
-                      <div>
-                        <Label htmlFor="webdav-remember-secret">
-                          记住密码在本设备
-                        </Label>
-                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                          默认只保存到当前浏览器会话。
-                        </p>
-                      </div>
-                      <Switch
-                        id="webdav-remember-secret"
-                        checked={webDavConfig.rememberSecret}
-                        onCheckedChange={(checked) =>
-                          updateWebDavConfig({ rememberSecret: checked })
-                        }
-                      />
-                    </div>
-                  </div>
-                </details>
-
-                {uploadConflict ? (
-                  <div className="grid gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                    <p>远端备份与当前本地数据不同。你可以用本地覆盖远端，或取消。</p>
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" onClick={() => uploadCurrentBackup(true)}>
-                        用本地覆盖远端
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setUploadConflict(false)}
-                      >
-                        取消
-                      </Button>
-                    </div>
-                  </div>
-                ) : null}
-
-                {pendingRemoteBackup ? (
-                  <div className="grid gap-3 rounded-lg border border-border bg-card p-3 text-sm shadow-sm">
-                    <div className="grid gap-2 sm:grid-cols-4">
-                      <StatusTile
-                        label="更新时间"
-                        value={formatSnapshotTime(pendingRemoteBackup.updatedAt)}
-                      />
-                      <StatusTile
-                        label="deviceId"
-                        value={pendingRemoteBackup.deviceId}
-                      />
-                      <StatusTile
-                        label="清单项目"
-                        value={`${pendingRemoteBackup.data.checklist.length} 项`}
-                      />
-                      <StatusTile
-                        label="个人资料"
-                        value={pendingRemoteBackup.data.userProfile ? "包含" : "不包含"}
-                      />
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button onClick={restoreRemoteBackup}>恢复这个远端备份</Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setPendingRemoteBackup(undefined)}
-                      >
-                        取消
-                      </Button>
-                    </div>
-                  </div>
-                ) : null}
-
-                {webDavMessage ? (
-                  <p
-                    className={`rounded-lg px-3 py-2 text-sm ${
-                      webDavMessageOk === false
-                        ? "bg-destructive/10 text-destructive"
-                        : "bg-secondary text-primary"
-                    }`}
-                  >
-                    {webDavMessage}
-                  </p>
-                ) : null}
-
-                <div className="grid gap-1 text-xs leading-5 text-muted-foreground sm:grid-cols-2">
-                  <span>设备 ID：{webDavSyncState.deviceId || "未初始化"}</span>
-                  <span>
-                    上次同步：
-                    {webDavSyncState.lastSyncAt
-                      ? formatSnapshotTime(webDavSyncState.lastSyncAt)
-                      : "暂无"}
-                  </span>
-                  <span>
-                    上次上传：
-                    {webDavSyncState.lastUploadAt
-                      ? formatSnapshotTime(webDavSyncState.lastUploadAt)
-                      : "暂无"}
-                  </span>
-                  <span>
-                    上次下载：
-                    {webDavSyncState.lastDownloadAt
-                      ? formatSnapshotTime(webDavSyncState.lastDownloadAt)
-                      : "暂无"}
-                  </span>
-                </div>
-
-                <p className="text-xs leading-5 text-muted-foreground">
-                  WebDAV 地址、用户名和备份路径保存在当前浏览器；应用密码默认只保存在当前会话。只有开启“记住密码在本设备”时，应用密码才会留在当前浏览器本地存储中。
-                </p>
-              </div>
-            </details>
+            <Feedback message={manualMessage} ok={manualMessageOk} />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle>关于 DadKit</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="size-4 text-primary" />
+              本机恢复点
+            </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
             <p className="text-sm leading-6 text-muted-foreground">
-              开源待产清单工具，无需登录，数据保存在本地浏览器。医院模板仅用于整理待确认事项，以医院实际要求为准。
+              导入、清空或重置前自动保存清单，最多保留 5 份。恢复点只在当前浏览器中，不含照片和 WebDAV 配置。
             </p>
-            <div className="grid gap-2">
-              <SettingsShortcutRow
-                caption="本地数据、WebDAV 和第三方服务说明"
-                href={getReviewPageHref(PUBLIC_PRIVACY_PATH)}
-                icon={<Info className="size-4" />}
-                title="隐私政策"
-              />
-              <SettingsShortcutRow
-                caption="问题反馈、测试说明和支持渠道"
-                href={getReviewPageHref(PUBLIC_SUPPORT_PATH)}
-                icon={<ArrowRight className="size-4" />}
-                title="支持与反馈"
-              />
-            </div>
-            <DisclaimerBox />
+            {recentSnapshots.length === 0 ? (
+              <p className="rounded-xl bg-muted px-3 py-3 text-sm text-muted-foreground">
+                暂无恢复点。
+              </p>
+            ) : (
+              <div className="grid gap-2">
+                {recentSnapshots.map((snapshot) => (
+                  <SnapshotRow
+                    key={snapshot.id}
+                    snapshot={snapshot}
+                    onRestore={restoreLocalSnapshot}
+                  />
+                ))}
+              </div>
+            )}
+            {snapshots.length > 2 ? (
+              <details className="rounded-xl border border-border bg-muted/40 p-3">
+                <summary className="cursor-pointer text-sm font-semibold">
+                  查看全部 {snapshots.length} 份恢复点
+                </summary>
+                <div className="mt-3 grid gap-2">
+                  {snapshots.slice(2).map((snapshot) => (
+                    <SnapshotRow
+                      key={snapshot.id}
+                      snapshot={snapshot}
+                      onRestore={restoreLocalSnapshot}
+                    />
+                  ))}
+                </div>
+              </details>
+            ) : null}
+            {snapshots.length > 0 ? (
+              <Button className="justify-self-start" size="sm" variant="ghost" onClick={deleteAllSnapshots}>
+                <Trash2 />
+                删除全部恢复点
+              </Button>
+            ) : null}
+            <Feedback message={snapshotMessage} ok={snapshotMessageOk} />
           </CardContent>
         </Card>
+
+        <details className="rounded-3xl bg-card shadow-sm">
+          <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+            <span className="icon-tile size-9">
+              <Cloud className="size-4" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold">WebDAV 备份</span>
+              <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
+                {webDavConfigured
+                  ? `已配置 · 上次上传 ${formatOptionalTime(webDavSyncState.lastUploadAt)}`
+                  : "高级功能：跨设备手动上传或恢复备份"}
+              </span>
+            </span>
+            <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+              {webDavConfigured ? "已配置" : "未配置"}
+            </span>
+          </summary>
+          <div className="grid gap-4 border-t border-border/70 p-4">
+            <p className="text-sm leading-6 text-muted-foreground">
+              只在你主动操作时上传或下载清单 JSON，不会自动同步，也不上传照片或 WebDAV 凭据。地址必须使用 HTTPS。
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={webDavBusy} onClick={() => uploadCurrentBackup()}>
+                <Upload />
+                上传当前备份
+              </Button>
+              <Button disabled={webDavBusy} variant="outline" onClick={downloadRemoteBackup}>
+                <Download />
+                检查远端备份
+              </Button>
+              <Button disabled={webDavBusy} variant="outline" onClick={testWebDav}>
+                测试连接
+              </Button>
+            </div>
+
+            <div className="grid gap-3 rounded-xl border border-border bg-muted/35 p-3 sm:grid-cols-2">
+              <Field label="WebDAV 地址" htmlFor="webdav-endpoint">
+                <Input
+                  id="webdav-endpoint"
+                  type="url"
+                  value={webDavConfig.endpoint}
+                  onChange={(event) => updateWebDavConfig({ endpoint: event.target.value })}
+                />
+              </Field>
+              <Field label="用户名" htmlFor="webdav-username">
+                <Input
+                  id="webdav-username"
+                  value={webDavConfig.username}
+                  onChange={(event) => updateWebDavConfig({ username: event.target.value })}
+                />
+              </Field>
+              <Field label="应用密码 / 密码" htmlFor="webdav-secret">
+                <Input
+                  id="webdav-secret"
+                  type="password"
+                  value={webDavSecret}
+                  onChange={(event) => updateWebDavSecret(event.target.value)}
+                />
+              </Field>
+              <Field label="凭据类型" htmlFor="webdav-auth-mode">
+                <Select
+                  value={webDavConfig.authMode}
+                  onValueChange={(value) =>
+                    updateWebDavConfig({ authMode: value as WebDavConfig["authMode"] })
+                  }
+                >
+                  <SelectTrigger id="webdav-auth-mode">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="app_password">应用密码</SelectItem>
+                    <SelectItem value="basic">普通密码</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="远端目录" htmlFor="webdav-remote-dir">
+                <Input
+                  id="webdav-remote-dir"
+                  value={webDavConfig.remoteDir}
+                  onChange={(event) => updateWebDavConfig({ remoteDir: event.target.value })}
+                />
+              </Field>
+              <Field label="文件名" htmlFor="webdav-filename">
+                <Input
+                  id="webdav-filename"
+                  value={webDavConfig.filename}
+                  onChange={(event) => updateWebDavConfig({ filename: event.target.value })}
+                />
+              </Field>
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 sm:col-span-2">
+                <div>
+                  <Label htmlFor="webdav-remember-secret">记住密码在本设备</Label>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    默认只保留到当前浏览器会话结束。
+                  </p>
+                </div>
+                <Switch
+                  id="webdav-remember-secret"
+                  checked={webDavConfig.rememberSecret}
+                  onCheckedChange={(checked) => updateWebDavConfig({ rememberSecret: checked })}
+                />
+              </div>
+            </div>
+
+            {uploadConflict ? (
+              <div className="grid gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                <p>远端备份与当前本地数据不同。确认后可用本地数据覆盖远端。</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => uploadCurrentBackup(true)}>
+                    用本地覆盖远端
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setUploadConflict(false)}>
+                    取消
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            {pendingRemoteBackup ? (
+              <div className="grid gap-3 rounded-xl border border-border bg-muted/35 p-3 text-sm">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <StatusTile label="远端更新时间" value={formatSnapshotTime(pendingRemoteBackup.updatedAt)} />
+                  <StatusTile label="清单项目" value={`${pendingRemoteBackup.data.checklist.length} 项`} />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={restoreRemoteBackup}>恢复这个远端备份</Button>
+                  <Button variant="outline" onClick={() => setPendingRemoteBackup(undefined)}>
+                    取消
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            <Feedback message={webDavMessage} ok={webDavMessageOk} />
+
+            <div className="grid gap-1 text-xs leading-5 text-muted-foreground sm:grid-cols-2">
+              <span>上次上传：{formatOptionalTime(webDavSyncState.lastUploadAt)}</span>
+              <span>上次下载：{formatOptionalTime(webDavSyncState.lastDownloadAt)}</span>
+            </div>
+
+            <Button className="justify-self-start" size="sm" variant="ghost" onClick={clearWebDav}>
+              清除 WebDAV 配置
+            </Button>
+          </div>
+        </details>
+
+        <Card className="border-destructive/25">
+          <CardHeader className="pb-2">
+            <CardTitle>清空并重新开始</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            <p className="text-sm leading-6 text-muted-foreground">
+              先创建一份仅含清单的本机恢复点，再清除当前清单、WebDAV 设置和本机物品照片。照片和 WebDAV 设置无法从恢复点找回。
+            </p>
+            <Button className="justify-self-start" variant="destructive" onClick={clearData}>
+              <RotateCcw />
+              清空并生成新清单
+            </Button>
+            <Feedback message={clearMessage} ok={clearMessageOk} />
+          </CardContent>
+        </Card>
+
+        <footer className="grid gap-2 px-3 pb-2 text-center text-xs leading-5 text-muted-foreground">
+          <p>数据默认保存在当前浏览器。</p>
+          <p className="flex items-center justify-center gap-3">
+            <Link className="text-primary hover:underline" href={getReviewPageHref(PUBLIC_PRIVACY_PATH)}>
+              隐私说明
+            </Link>
+            <span aria-hidden="true">·</span>
+            <Link className="text-primary hover:underline" href={getReviewPageHref(PUBLIC_SUPPORT_PATH)}>
+              支持与反馈
+            </Link>
+          </p>
+        </footer>
       </section>
     </div>
   );
 }
 
-function SettingsShortcutRow({
-  caption,
-  href,
-  icon,
-  title,
+function Feedback({ message, ok }: { message: string; ok?: boolean }) {
+  if (!message) {
+    return null;
+  }
+
+  return (
+    <p
+      aria-live="polite"
+      className={`rounded-lg px-3 py-2 text-sm ${
+        ok === false
+          ? "bg-destructive/10 text-destructive"
+          : "bg-secondary text-primary"
+      }`}
+      role={ok === false ? "alert" : "status"}
+    >
+      {message}
+    </p>
+  );
+}
+
+function SnapshotRow({
+  snapshot,
+  onRestore,
 }: {
-  caption: string;
-  href: string;
-  icon: ReactNode;
-  title: string;
+  snapshot: DadKitSnapshot;
+  onRestore: (id: string) => void;
 }) {
   return (
-    <Link className="list-row" href={href}>
-      <span className="icon-tile size-9">{icon}</span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold leading-5">{title}</span>
-        <span className="mt-0.5 block break-words text-xs leading-4 text-muted-foreground">
-          {caption}
-        </span>
-      </span>
-      <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
-    </Link>
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 p-3">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold">{formatSnapshotTime(snapshot.createdAt)}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{snapshot.reason}</p>
+      </div>
+      <Button size="sm" variant="outline" onClick={() => onRestore(snapshot.id)}>
+        恢复
+      </Button>
+    </div>
   );
 }
 
@@ -894,6 +714,10 @@ function formatSnapshotTime(value: string) {
   return date.toLocaleString("zh-CN", { hour12: false });
 }
 
+function formatOptionalTime(value?: string) {
+  return value ? formatSnapshotTime(value) : "暂无";
+}
+
 function Field({
   children,
   htmlFor,
@@ -913,29 +737,9 @@ function Field({
 
 function StatusTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-muted px-3 py-2">
+    <div className="rounded-lg bg-card px-3 py-2">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 break-words font-semibold">{value}</p>
     </div>
   );
-}
-
-function hasBirthPlanData(plan: BirthPlan) {
-  return Object.entries(DEFAULT_BIRTH_PLAN).some(
-    ([key, value]) => plan[key as keyof BirthPlan] !== value,
-  );
-}
-
-function hasPostpartumData(tasks: PostpartumTask[]) {
-  const defaultsById = new Map(DEFAULT_POSTPARTUM_TASKS.map((task) => [task.id, task]));
-
-  return tasks.some((task) => {
-    const defaultTask = defaultsById.get(task.id);
-
-    if (!defaultTask) {
-      return true;
-    }
-
-    return task.status !== defaultTask.status || (task.note ?? "") !== (defaultTask.note ?? "");
-  });
 }

@@ -10,7 +10,7 @@ function readSource(...segments: string[]) {
 const homePage = readSource("app", "page.tsx");
 const checklistWorkspace = readSource("components", "ChecklistWorkspace.tsx");
 
-describe("V2 home page", () => {
+describe("checklist home page", () => {
   it("uses the checklist workspace at the root route", () => {
     expect(homePage).toContain(
       'import { ChecklistWorkspace } from "@/components/ChecklistWorkspace"',
@@ -18,18 +18,23 @@ describe("V2 home page", () => {
     expect(homePage).toContain("return <ChecklistWorkspace />");
   });
 
-  it("opens directly into an actionable checklist without requiring profile data", () => {
+  it("opens directly into an actionable checklist", () => {
     expect(checklistWorkspace).toContain("待产包清单");
     expect(checklistWorkspace).toContain("看一眼还差什么，准备好就打勾。");
     expect(checklistWorkspace).toContain("getChecklistViewItems");
     expect(checklistWorkspace).toContain("getChecklistViewCounts");
-    expect(checklistWorkspace).toContain(
-      "预产期可选：填写后开启孕周、时间线和证件提醒",
-    );
-    expect(checklistWorkspace).not.toMatch(/if\s*\(\s*!profile\s*\)/);
   });
 
-  it("does not restore the dashboard or four-pillar readiness model", () => {
+  it("does not depend on optional profile or removed tools", () => {
+    expect(checklistWorkspace).not.toContain("state.profile");
+    expect(checklistWorkspace).not.toContain("profile?.");
+    expect(checklistWorkspace).not.toContain('href="/setup"');
+    expect(checklistWorkspace).not.toContain('href="/hospital"');
+    expect(checklistWorkspace).not.toContain("getPregnancyProgress");
+    expect(checklistWorkspace).not.toContain("getCountdownLabel");
+  });
+
+  it("does not restore the former dashboard model", () => {
     const homeSources = `${homePage}\n${checklistWorkspace}`;
 
     expect(homeSources).not.toContain("buildPreparationSummary");
@@ -37,11 +42,9 @@ describe("V2 home page", () => {
     expect(homeSources).not.toContain("HomeHeroCard");
     expect(homeSources).not.toContain("TodayFocusPanel");
     expect(homeSources).not.toContain("ReadinessMetricsPanel");
-    expect(homeSources).not.toContain("今日重点");
-    expect(homeSources).not.toContain("四根柱子");
   });
 
-  it("keeps the safety boundary with the checklist instead of duplicating it", () => {
+  it("keeps the safety boundary once", () => {
     expect(
       checklistWorkspace.match(/清单是准备参考，不替代医院通知或医疗建议。/g) ?? [],
     ).toHaveLength(1);

@@ -56,9 +56,6 @@ describe("V2 checklist views", () => {
       "packed",
     );
     expect(
-      getChecklistItemState(checklistItem("provided", "hospital_provided")),
-    ).toBe("packed");
-    expect(
       getChecklistItemState(checklistItem("skipped", "not_needed")),
     ).toBe("not_needed");
   });

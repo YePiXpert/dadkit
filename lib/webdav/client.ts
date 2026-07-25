@@ -69,7 +69,7 @@ export function buildDadKitWebDavBackup(
   const timestamp = new Date().toISOString();
 
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     app: "DadKit",
     deviceId,
     backupId: backupId(),
@@ -411,7 +411,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function isDadKitWebDavBackup(value: unknown): value is DadKitWebDavBackup {
   return (
     isRecord(value) &&
-    value.schemaVersion === 2 &&
+    value.schemaVersion === 3 &&
     value.app === "DadKit" &&
     typeof value.deviceId === "string" &&
     typeof value.backupId === "string" &&
@@ -419,7 +419,7 @@ function isDadKitWebDavBackup(value: unknown): value is DadKitWebDavBackup {
     typeof value.updatedAt === "string" &&
     typeof value.checksum === "string" &&
     isRecord(value.data) &&
-    value.data.version === 2
+    value.data.version === 3
   );
 }
 

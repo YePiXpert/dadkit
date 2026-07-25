@@ -82,7 +82,7 @@ export function ChecklistCategoryCard({
   }
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-border/80 bg-card shadow-sm">
+    <section className="overflow-hidden rounded-3xl bg-card shadow-sm">
       <button
         aria-expanded={open}
         className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-muted/45"
@@ -118,7 +118,7 @@ export function ChecklistCategoryCard({
       </button>
 
       {open ? (
-        <div className="grid gap-2 border-t border-border/70 bg-background/55 p-2">
+        <div className="grid gap-2 px-2 pb-2">
           {items.map((item) => (
             <ChecklistItemRow item={item} key={item.id} />
           ))}

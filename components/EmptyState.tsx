@@ -17,8 +17,8 @@ export function EmptyState({
   actionLabel,
 }: EmptyStateProps) {
   return (
-    <div className="card-surface flex min-h-[220px] flex-col items-center justify-center border-dashed p-8 text-center">
-      <span className="icon-tile mb-4 size-16 shrink-0">
+    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-3xl bg-card p-8 text-center shadow-sm">
+      <span className="mb-4 flex size-16 shrink-0 items-center justify-center rounded-3xl bg-secondary text-primary">
         <PackageOpen className="size-7" />
       </span>
       <h2 className="text-base font-semibold">{title}</h2>

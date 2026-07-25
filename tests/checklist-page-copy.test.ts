@@ -60,8 +60,22 @@ describe("V2 checklist experience", () => {
     expect(checklistItemRow).toContain("memo(function ChecklistItemRow");
   });
 
-  it("keeps tools and hospital questions out of the main checklist rows", () => {
-    expect(checklistItemRow).not.toContain('href="/hospital"');
+  it("keeps every removed product route out of the checklist UI", () => {
+    const checklistSources = `${checklistWorkspace}\n${checklistItemRow}`;
+
+    for (const route of [
+      "/setup",
+      "/hospital",
+      "/timeline",
+      "/contractions",
+      "/go",
+      "/birth-plan",
+      "/postpartum",
+      "/share",
+    ]) {
+      expect(checklistSources).not.toContain(`href="${route}"`);
+    }
+
     expect(checklistItemRow).not.toContain("isHospitalConfirmation");
     expect(checklistWorkspace).not.toContain("医院规则确认");
     expect(checklistWorkspace).not.toContain("暂时没有待问事项");

@@ -22,7 +22,7 @@ export type WebDavSyncState = {
 };
 
 export type DadKitWebDavBackup = {
-  schemaVersion: 2;
+  schemaVersion: 3;
   app: "DadKit";
   deviceId: string;
   backupId: string;
@@ -48,7 +48,7 @@ export const DEFAULT_WEBDAV_CONFIG: WebDavConfig = {
   endpoint: "https://webdav.123pan.cn/webdav",
   username: "",
   remoteDir: "/DadKit",
-  filename: "dadkit-backup.json",
+  filename: "dadkit-backup-v3.json",
   authMode: "app_password",
   rememberSecret: false,
 };

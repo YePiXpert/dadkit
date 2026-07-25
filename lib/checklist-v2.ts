@@ -48,7 +48,7 @@ export function isChecklistItemSkipped(item: ChecklistItem) {
 export function getChecklistItemState(
   item: ChecklistItem,
 ): ChecklistItemState {
-  if (item.status === "packed" || item.status === "hospital_provided") {
+  if (item.status === "packed") {
     return "packed";
   }
 
@@ -63,21 +63,11 @@ export function getChecklistItemState(
   return "todo";
 }
 
-export function isV2ChecklistItem(item: ChecklistItem) {
-  const normalized = normalizeChecklistItem(item);
-
-  return (
-    normalized.itemKind !== "question" &&
-    normalized.category !== "hospital_questions"
-  );
-}
-
 export function isShoppingQueueItem(item: ChecklistItem) {
   const normalized = normalizeChecklistItem(item);
 
   if (
     normalized.itemKind !== "item" ||
-    !isV2ChecklistItem(normalized) ||
     getChecklistItemState(normalized) !== "todo"
   ) {
     return false;
@@ -92,7 +82,6 @@ export function isPackingQueueItem(item: ChecklistItem) {
 
   if (
     normalized.itemKind !== "item" ||
-    !isV2ChecklistItem(normalized) ||
     state === "packed" ||
     state === "not_needed"
   ) {
@@ -121,7 +110,7 @@ export function getChecklistViewItems(
     return normalizedItems.filter(isPackingQueueItem);
   }
 
-  return normalizedItems.filter(isV2ChecklistItem);
+  return normalizedItems;
 }
 
 export function getChecklistSection(item: ChecklistItem): ChecklistSectionId {

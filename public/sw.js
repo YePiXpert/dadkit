@@ -1,18 +1,12 @@
-const CACHE_NAME = "dadkit-v2.0.0-pwa-r2";
+const CACHE_NAME = "dadkit-v2.0.0-pwa-r4";
 const CORE_ROUTES = [
   "/",
-  "/setup",
-  "/hospital",
-  "/timeline",
-  "/go",
-  "/contractions",
-  "/birth-plan",
-  "/postpartum",
-  "/share",
   "/settings",
   "/privacy",
   "/support",
 ];
+const REQUIRED_ROUTES = CORE_ROUTES.slice(0, 2);
+const OPTIONAL_ROUTES = CORE_ROUTES.slice(2);
 const PWA_ICON_ASSETS = [
   "/manifest.webmanifest",
   "/icon.svg",
@@ -31,11 +25,17 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))),
-    ),
+    (async () => {
+      const keys = await caches.keys();
+
+      await Promise.all(
+        keys
+          .filter((key) => key.startsWith("dadkit-") && key !== CACHE_NAME)
+          .map((key) => caches.delete(key)),
+      );
+      await self.clients.claim();
+    })(),
   );
-  self.clients.claim();
 });
 
 self.addEventListener("message", (event) => {
@@ -74,9 +74,11 @@ function shouldCacheAsset(url) {
 
 async function precacheAppShell() {
   const cache = await caches.open(CACHE_NAME);
-  const homeHtml = await fetchAndCacheRoute(cache, CORE_ROUTES[0]);
+  const requiredRouteHtml = await Promise.all(
+    REQUIRED_ROUTES.map((route) => fetchAndCacheRoute(cache, route)),
+  );
   const optionalRouteHtml = await Promise.all(
-    CORE_ROUTES.slice(1).map(async (route) => {
+    OPTIONAL_ROUTES.map(async (route) => {
       try {
         return await fetchAndCacheRoute(cache, route);
       } catch {
@@ -84,7 +86,9 @@ async function precacheAppShell() {
       }
     }),
   );
-  const requiredBuildAssets = new Set(extractBuildAssets(homeHtml));
+  const requiredBuildAssets = new Set(
+    requiredRouteHtml.flatMap((html) => extractBuildAssets(html)),
+  );
 
   await Promise.all(
     Array.from(requiredBuildAssets, (asset) => fetchAndCacheAsset(cache, asset)),

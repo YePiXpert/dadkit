@@ -1,7 +1,7 @@
 export const WEBDAV_ACCEPTANCE_DEFAULTS = {
   endpoint: "https://webdav.123pan.cn/webdav",
   remoteDir: "/DadKit",
-  filename: "dadkit-backup.json",
+  filename: "dadkit-backup-v3.json",
 };
 
 export function readWebDavAcceptanceEnv(env = process.env) {
@@ -124,7 +124,7 @@ export function buildAcceptanceBackup(marker, timestamp) {
   const data = buildAcceptanceData(marker, timestamp);
 
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     app: "DadKit",
     deviceId: "dadkit-acceptance-pwa",
     backupId: `webdav-acceptance-${marker}-${timestamp}`,
@@ -273,18 +273,12 @@ function assertBackupMatches(actual, expected) {
 
 function buildAcceptanceData(marker, timestamp) {
   return {
-    version: 2,
+    version: 3,
     exportedAt: timestamp,
     checklistMode: "lean",
     checklist: [acceptanceChecklistItem(marker, timestamp)],
     customItems: [],
     hiddenTemplateItemIds: [],
-    hospitalOverrides: [],
-    hospitalAnswers: [],
-    timelineTaskStatuses: [],
-    contractions: [],
-    birthPlan: {},
-    postpartumTasks: [],
   };
 }
 
@@ -365,7 +359,7 @@ function webDavStatusError(action, status) {
 function isDadKitBackup(value) {
   return (
     isRecord(value) &&
-    value.schemaVersion === 2 &&
+    value.schemaVersion === 3 &&
     value.app === "DadKit" &&
     typeof value.deviceId === "string" &&
     typeof value.backupId === "string" &&
@@ -373,7 +367,7 @@ function isDadKitBackup(value) {
     typeof value.updatedAt === "string" &&
     typeof value.checksum === "string" &&
     isRecord(value.data) &&
-    value.data.version === 2
+    value.data.version === 3
   );
 }
 

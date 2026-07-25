@@ -37,18 +37,18 @@ const packageJson = JSON.parse(readSource("package.json")) as {
 
 describe("V2 PWA visual and navigation contract", () => {
   it("keeps the warm, compact mobile design tokens", () => {
-    expect(globals).toContain("--background: 36 55% 96%");
-    expect(globals).toContain("--foreground: 345 15% 20%");
-    expect(globals).toContain("--primary: 348 72% 48%");
-    expect(globals).toContain("--secondary: 350 70% 96%");
-    expect(globals).toContain("--muted: 36 32% 93%");
-    expect(globals).toContain("--border: 33 30% 89%");
+    expect(globals).toContain("--background: 33 43% 96%");
+    expect(globals).toContain("--foreground: 20 14% 16%");
+    expect(globals).toContain("--primary: 14 56% 50%");
+    expect(globals).toContain("--secondary: 22 55% 92%");
+    expect(globals).toContain("--muted: 36 30% 93%");
+    expect(globals).toContain("--border: 30 24% 90%");
     expect(globals).toContain("--radius: 1rem");
     expect(globals).toContain("max-w-[390px]");
     expect(globals).toContain("max-width: min(100%, 390px)");
     expect(globals).toContain("overflow-x: hidden");
     expect(globals).toContain("touch-action: pan-x pan-y");
-    expect(layout).toContain('themeColor: "#D32246"');
+    expect(layout).toContain('themeColor: "#C75938"');
     expect(layout).toContain(
       '{ url: "/maskable-icon-512.png", sizes: "512x512", type: "image/png" }',
     );
@@ -73,22 +73,24 @@ describe("V2 PWA visual and navigation contract", () => {
     expect(pwaRegister).not.toContain("preventDoubleTapZoom");
   });
 
-  it("uses one two-item navigation model on mobile and desktop", () => {
+  it("uses one checklist-and-data navigation model on mobile and desktop", () => {
     expect(
       PRIMARY_NAVIGATION_ITEMS.map(({ href, id, label }) => ({ href, id, label })),
     ).toEqual([
       { href: "/", id: "checklist", label: "清单" },
-      { href: "/settings", id: "me", label: "我的" },
+      { href: "/settings", id: "data", label: "数据" },
     ]);
 
     const checklistNav = PRIMARY_NAVIGATION_ITEMS[0];
-    const myNav = PRIMARY_NAVIGATION_ITEMS[1];
+    const dataNav = PRIMARY_NAVIGATION_ITEMS[1];
 
     expect(isPrimaryNavigationItemActive("/", checklistNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/settings", checklistNav)).toBe(false);
-    expect(isPrimaryNavigationItemActive("/settings", myNav)).toBe(true);
-    expect(isPrimaryNavigationItemActive("/timeline/today", myNav)).toBe(true);
-    expect(isPrimaryNavigationItemActive("/", myNav)).toBe(false);
+    expect(isPrimaryNavigationItemActive("/settings", dataNav)).toBe(true);
+    expect(isPrimaryNavigationItemActive("/privacy", dataNav)).toBe(true);
+    expect(isPrimaryNavigationItemActive("/support", dataNav)).toBe(true);
+    expect(isPrimaryNavigationItemActive("/timeline/today", dataNav)).toBe(false);
+    expect(isPrimaryNavigationItemActive("/", dataNav)).toBe(false);
 
     for (const source of [mobileNav, appHeader]) {
       expect(source).toContain("PRIMARY_NAVIGATION_ITEMS.map");
@@ -112,29 +114,37 @@ describe("V2 PWA visual and navigation contract", () => {
   });
 
   it("keeps checklist controls touch-friendly and narrow-screen text readable", () => {
-    expect(checklistGroupTabs).toContain("min-h-14");
+    expect(checklistGroupTabs).toContain("min-h-11");
     expect(checklistItemRow).toContain("size-10");
     expect(checklistItemRow).toContain("break-words text-sm font-semibold leading-5");
     expect(checklistCategoryCard).toContain("break-words text-sm font-semibold leading-5");
     expect(checklistCategoryCard).toContain("aria-expanded={open}");
-    expect(button).toContain("rounded-lg");
-    expect(card).toContain("rounded-xl");
-    expect(card).toContain("border-border");
+    expect(button).toContain("rounded-full");
+    expect(card).toContain("rounded-3xl");
     expect(card).toContain("bg-card");
   });
 
-  it("keeps optional profile and tools inside My rather than the primary nav", () => {
-    expect(settingsPage).toContain(">我的</h1>");
-    expect(settingsPage).toContain("添加可选资料");
-    expect(settingsPage).toContain("不填也能正常使用");
-    expect(settingsPage).toContain("常用工具");
-    expect(settingsPage).toContain('href="/hospital"');
-    expect(settingsPage).toContain('href="/timeline"');
-    expect(settingsPage).toContain('href="/contractions"');
-    expect(settingsPage).toContain('href="/go"');
-    expect(settingsPage).toContain('href="/birth-plan"');
-    expect(settingsPage).toContain('href="/postpartum"');
-    expect(settingsPage).toContain('href="/share"');
+  it("keeps only data-management controls in the second surface", () => {
+    expect(settingsPage).toContain(">数据与备份</h1>");
+    expect(settingsPage).toContain("复制 JSON");
+    expect(settingsPage).toContain("本机恢复点");
+    expect(settingsPage).toContain("WebDAV 备份");
+    expect(settingsPage).toContain("清空并重新开始");
+    expect(settingsPage).not.toContain("添加可选资料");
+    expect(settingsPage).not.toContain("常用工具");
+
+    for (const route of [
+      "/setup",
+      "/hospital",
+      "/timeline",
+      "/contractions",
+      "/go",
+      "/birth-plan",
+      "/postpartum",
+      "/share",
+    ]) {
+      expect(settingsPage).not.toContain(`href="${route}"`);
+    }
   });
 
   it("does not reintroduce illustration-driven or dashboard styling", () => {

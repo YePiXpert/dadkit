@@ -19,12 +19,16 @@ const supportPage = readFileSync(
 );
 
 describe("public PWA support pages", () => {
-  it("ships a privacy policy for local-first PWA data", () => {
+  it("describes only checklist and backup data", () => {
     expect(privacyPage).toContain("不要求注册账号");
-    expect(privacyPage).toContain("不默认把个人资料上传");
+    expect(privacyPage).toContain("待产清单");
+    expect(privacyPage).toContain("本地快照");
     expect(privacyPage).toContain("当前不使用广告 SDK");
     expect(privacyPage).toContain("WebDAV 是用户手动配置的第三方备份位置");
     expect(privacyPage).toContain("getReviewPageHref(PUBLIC_SUPPORT_PATH)");
+    expect(privacyPage).not.toContain("预产期、地区、医院、生产方式");
+    expect(privacyPage).not.toContain("宫缩记录");
+    expect(privacyPage).not.toContain("产后提醒");
     expect(privacyPage).not.toContain("TestFlight");
     expect(privacyPage).not.toContain("App Store Connect");
   });
@@ -35,7 +39,8 @@ describe("public PWA support pages", () => {
     expect(supportPage).toContain("https://github.com/YePiXpert/dadkit/issues");
     expect(supportPage).toContain("不要发送账号或密码");
     expect(supportPage).toContain("PWA 使用检查");
-    expect(supportPage).toContain("无需填写资料");
+    expect(supportPage).toContain("数据");
+    expect(supportPage).not.toContain("进入“我的”");
     expect(supportPage).not.toContain("TestFlight");
     expect(supportPage).not.toContain("APK");
   });

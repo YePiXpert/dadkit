@@ -5,13 +5,12 @@ import {
   loadSnapshots,
   loadWebDavSecret,
   saveChecklist,
-  saveUserProfile,
   saveWebDavConfig,
   saveWebDavSecret,
   STORAGE_KEYS,
   WEBDAV_SESSION_SECRET_KEY,
 } from "@/lib/storage";
-import type { ChecklistItem, UserProfile } from "@/lib/types";
+import type { ChecklistItem } from "@/lib/types";
 import {
   isBlockedHostname,
   isPrivateIpAddress,
@@ -71,22 +70,6 @@ function testItem(id = "item-1"): ChecklistItem {
   };
 }
 
-function testProfile(dueDate = "2026-07-21"): UserProfile {
-  return {
-    dueDate,
-    regionId: "cn-bj-general",
-    hospitalMode: "unknown",
-    deliveryMode: "unknown",
-    expectedStayDays: 3,
-    breastfeeding: true,
-    partnerPresent: true,
-    coldWeather: false,
-    hospitalProvidedItemIds: [],
-    createdAt: "2026-06-09T00:00:00.000Z",
-    updatedAt: "2026-06-09T00:00:00.000Z",
-  };
-}
-
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -120,8 +103,12 @@ describe("webdav helpers", () => {
 
   it("joins webdav paths without duplicate slashes", () => {
     expect(
-      joinWebDavPath("https://example.com/dav/", "/DadKit/", "dadkit-backup.json"),
-    ).toBe("https://example.com/dav/DadKit/dadkit-backup.json");
+      joinWebDavPath(
+        "https://example.com/dav/",
+        "/DadKit/",
+        "dadkit-backup-v3.json",
+      ),
+    ).toBe("https://example.com/dav/DadKit/dadkit-backup-v3.json");
   });
 
   it("builds a Basic auth header", () => {
@@ -132,14 +119,13 @@ describe("webdav helpers", () => {
 
   it("builds a DadKit WebDAV backup envelope", () => {
     installStorage();
-    saveUserProfile(testProfile());
     saveChecklist([testItem()]);
 
     const data = exportData();
     const backup = buildDadKitWebDavBackup(data, "device-1");
 
-    expect(backup.schemaVersion).toBe(2);
-    expect(backup.data.version).toBe(2);
+    expect(backup.schemaVersion).toBe(3);
+    expect(backup.data.version).toBe(3);
     expect(backup.app).toBe("DadKit");
     expect(backup.deviceId).toBe("device-1");
     expect(backup.checksum).toBe(calculateChecksum(data));
@@ -153,22 +139,22 @@ describe("webdav helpers", () => {
     expect(calculateChecksum({ a: 1 })).not.toBe(calculateChecksum({ a: 2 }));
   });
 
-  it("rejects V1 WebDAV backups", async () => {
+  it("rejects old WebDAV backups", async () => {
     installStorage();
     const currentBackup = buildDadKitWebDavBackup(exportData(), "device-1");
-    const v1Backup = {
+    const oldBackup = {
       ...currentBackup,
-      schemaVersion: 1,
+      schemaVersion: 2,
       data: {
         ...currentBackup.data,
-        version: 1,
+        version: 2,
       },
     };
 
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>
-        new Response(JSON.stringify(v1Backup), {
+        new Response(JSON.stringify(oldBackup), {
           status: 200,
           headers: {
             "content-type": "application/json",
@@ -230,19 +216,15 @@ describe("webdav helpers", () => {
   it("creates a snapshot before importing a WebDAV backup", () => {
     installStorage();
 
-    saveUserProfile(testProfile("2026-07-21"));
     saveChecklist([testItem("local-before-webdav")]);
 
     const remoteData = {
       ...exportData(),
       exportedAt: "2026-06-09T00:00:00.000Z",
-      userProfile: testProfile("2026-08-01"),
       checklistMode: "full" as const,
       checklist: [testItem("remote")],
       customItems: [],
       hiddenTemplateItemIds: [],
-      hospitalAnswers: [],
-      hospitalOverrides: [],
     };
     const backup = buildDadKitWebDavBackup(remoteData, "remote-device");
     const result = importDadKitWebDavBackup(backup);
@@ -256,7 +238,7 @@ describe("webdav helpers", () => {
   it("prefills the default WebDAV target without storing secrets", () => {
     expect(DEFAULT_WEBDAV_CONFIG.endpoint).toBe("https://webdav.123pan.cn/webdav");
     expect(DEFAULT_WEBDAV_CONFIG.remoteDir).toBe("/DadKit");
-    expect(DEFAULT_WEBDAV_CONFIG.filename).toBe("dadkit-backup.json");
+    expect(DEFAULT_WEBDAV_CONFIG.filename).toBe("dadkit-backup-v3.json");
     expect(DEFAULT_WEBDAV_CONFIG.username).toBe("");
     expect(DEFAULT_WEBDAV_CONFIG.rememberSecret).toBe(false);
   });

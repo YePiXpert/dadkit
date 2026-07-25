@@ -4,39 +4,49 @@ import {
   createSnapshot,
   exportData,
   importData,
-  loadBirthPlan,
   loadChecklist,
   loadChecklistMode,
-  loadContractions,
-  loadHospitalAnswers,
-  loadPostpartumTasks,
+  loadCustomItems,
+  loadHiddenTemplateItemIds,
   loadSnapshots,
-  loadUserProfile,
+  resetAllData,
   restoreSnapshot,
-  saveBirthPlan,
   saveChecklist,
   saveChecklistMode,
-  saveContractions,
-  saveHospitalAnswers,
-  savePostpartumTasks,
-  saveUserProfile,
+  saveCustomItems,
+  saveHiddenTemplateItemIds,
   STORAGE_KEYS,
+  type DadKitExportData,
 } from "@/lib/storage";
-import { DEFAULT_POSTPARTUM_TASKS, mergeBirthPlan } from "@/lib/rc";
-import type { ChecklistItem, HospitalAnswer, UserProfile } from "@/lib/types";
+import type { ChecklistItem } from "@/lib/types";
 
-function installLocalStorage(initial: Record<string, string> = {}) {
-  const store = new Map(Object.entries(initial));
-  const localStorage = {
-    getItem: (key: string) => store.get(key) ?? null,
-    setItem: (key: string, value: string) => store.set(key, value),
-    removeItem: (key: string) => store.delete(key),
-    clear: () => store.clear(),
-  };
+type StorageHarness = {
+  localValues: Map<string, string>;
+  sessionValues: Map<string, string>;
+};
 
-  vi.stubGlobal("window", { localStorage });
+function installBrowserStorage(
+  initial: Record<string, string> = {},
+): StorageHarness {
+  const localValues = new Map(Object.entries(initial));
+  const sessionValues = new Map<string, string>();
 
-  return store;
+  vi.stubGlobal("window", {
+    localStorage: {
+      getItem: (key: string) => localValues.get(key) ?? null,
+      setItem: (key: string, value: string) => localValues.set(key, value),
+      removeItem: (key: string) => localValues.delete(key),
+      clear: () => localValues.clear(),
+    },
+    sessionStorage: {
+      getItem: (key: string) => sessionValues.get(key) ?? null,
+      setItem: (key: string, value: string) => sessionValues.set(key, value),
+      removeItem: (key: string) => sessionValues.delete(key),
+      clear: () => sessionValues.clear(),
+    },
+  });
+
+  return { localValues, sessionValues };
 }
 
 function failNextStorageWrite(key: string) {
@@ -55,586 +65,294 @@ function failNextStorageWrite(key: string) {
   );
 }
 
-function testItem(id = "item-1"): ChecklistItem {
+function testItem(id = "item-1", patch: Partial<ChecklistItem> = {}): ChecklistItem {
   return {
     id,
-    name: "测试物品",
+    name: `测试物品 ${id}`,
     category: "mom_labor",
     priority: "must",
     status: "todo",
     source: "user",
-    sourceLabel: "测试",
     editable: true,
     removable: true,
     packTier: "core",
     itemKind: "item",
+    preparationKind: "pack_existing",
     bag: "mom_bag",
     bulk: "small",
     timing: "pack_now",
+    ...patch,
   };
 }
 
-function testProfile(dueDate = "2026-07-21"): UserProfile {
+function backupData(
+  patch: Partial<DadKitExportData> = {},
+): DadKitExportData {
   return {
-    dueDate,
-    regionId: "cn-bj-general",
-    hospitalMode: "unknown",
-    deliveryMode: "unknown",
-    expectedStayDays: 3,
-    breastfeeding: true,
-    partnerPresent: true,
-    coldWeather: false,
-    hospitalProvidedItemIds: [],
-    createdAt: "2026-06-09T00:00:00.000Z",
-    updatedAt: "2026-06-09T00:00:00.000Z",
+    version: 3,
+    exportedAt: "2026-07-25T00:00:00.000Z",
+    checklistMode: "full",
+    checklist: [testItem("backup-item")],
+    customItems: [],
+    hiddenTemplateItemIds: [],
+    ...patch,
   };
 }
 
-function testHospitalAnswer(itemId = "question-1"): HospitalAnswer {
+function currentDataSnapshot() {
   return {
-    itemId,
-    name: "医院是否提供产褥垫？",
-    status: "provided",
-    note: "产检电话确认",
-    updatedAt: "2026-06-09T00:00:00.000Z",
+    checklist: loadChecklist(),
+    checklistMode: loadChecklistMode(),
+    customItems: loadCustomItems(),
+    hiddenTemplateItemIds: loadHiddenTemplateItemIds(),
   };
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
-describe("storage import/export", () => {
-  it("saves, loads, exports, and imports checklistMode", () => {
-    installLocalStorage();
-
-    saveChecklistMode("full");
-
-    expect(loadChecklistMode()).toBe("full");
-    expect(exportData().checklistMode).toBe("full");
-
-    saveChecklistMode("lean");
-
-    const result = importData(
-      JSON.stringify({
-        version: 2,
-        exportedAt: "2026-06-09T00:00:00.000Z",
-        checklistMode: "full",
-      }),
-    );
-
-    expect(result).toEqual({ ok: true, message: "导入成功" });
-    expect(loadChecklistMode()).toBe("full");
+describe("v3 storage namespace and export schema", () => {
+  it("owns only dadkit:v3 storage keys", () => {
+    expect(Object.values(STORAGE_KEYS).length).toBeGreaterThan(0);
+    expect(
+      Object.values(STORAGE_KEYS).every((key) => key.startsWith("dadkit:v3:")),
+    ).toBe(true);
   });
 
-  it("returns ok:false for invalid JSON without modifying localStorage", () => {
-    const store = installLocalStorage();
+  it("exports exactly the six portable checklist fields", () => {
+    installBrowserStorage();
+    const checklist = [testItem("saved")];
+    const customItems = [testItem("custom")];
 
-    saveChecklist([testItem()]);
-    const before = store.get(STORAGE_KEYS.checklist);
-    const result = importData("{bad json");
-
-    expect(result.ok).toBe(false);
-    expect(result.message).toBe("JSON 格式不正确，未修改本地数据。");
-    expect(store.get(STORAGE_KEYS.checklist)).toBe(before);
-  });
-
-  it("rejects V1 backups without modifying local data", () => {
-    installLocalStorage();
-    saveChecklist([testItem("existing")]);
-
-    const result = importData(
-      JSON.stringify({
-        version: 1,
-        exportedAt: "2026-06-09T00:00:00.000Z",
-        checklist: [testItem("from-v1")],
-      }),
-    );
-
-    expect(result.ok).toBe(false);
-    expect(result.message).toBe("不支持的备份版本，未修改本地数据。");
-    expect(loadChecklist()).toEqual([testItem("existing")]);
-  });
-
-  it("exports an absent profile explicitly and imports null by removing a profile", () => {
-    installLocalStorage();
-
-    const exported = exportData();
-
-    expect(exported.version).toBe(2);
-    expect(exported.userProfile).toBeNull();
-    expect(JSON.parse(JSON.stringify(exported))).toHaveProperty(
-      "userProfile",
-      null,
-    );
-
-    saveUserProfile(testProfile());
-
-    const result = importData(
-      JSON.stringify({
-        version: 2,
-        exportedAt: "2026-06-09T00:00:00.000Z",
-        userProfile: null,
-      }),
-    );
-
-    expect(result).toEqual({ ok: true, message: "导入成功" });
-    expect(loadUserProfile()).toBeUndefined();
-  });
-
-  it("keeps an existing profile when a partial V2 backup omits it", () => {
-    installLocalStorage();
-    const profile = testProfile();
-
-    saveUserProfile(profile);
-
-    const result = importData(
-      JSON.stringify({
-        version: 2,
-        exportedAt: "2026-06-09T00:00:00.000Z",
-        checklistMode: "full",
-      }),
-    );
-
-    expect(result.ok).toBe(true);
-    expect(loadUserProfile()).toEqual(profile);
-  });
-
-  it("rejects malformed user profiles including nested fields", () => {
-    installLocalStorage();
-    const profile = testProfile();
-
-    saveUserProfile(profile);
-
-    const result = importData(
-      JSON.stringify({
-        version: 2,
-        exportedAt: "2026-06-09T00:00:00.000Z",
-        userProfile: {
-          ...testProfile("2026-08-01"),
-          hospitalProvidedItemIds: [123],
-        },
-      }),
-    );
-
-    expect(result.ok).toBe(false);
-    expect(result.message).toContain("userProfile 内容无效");
-    expect(loadUserProfile()).toEqual(profile);
-  });
-
-  it.each([
-    ["checklist", [{ ...testItem(), status: "invalid" }]],
-    ["customItems", [{ ...testItem(), appliesTo: { deliveryMode: ["invalid"] } }]],
-    ["hiddenTemplateItemIds", [123]],
-    ["hospitalOverrides", [{}]],
-    ["hospitalAnswers", [{ ...testHospitalAnswer(), hospitalId: 123 }]],
-    ["timelineTaskStatuses", [{}]],
-    ["contractions", [{}]],
-    ["postpartumTasks", [{}]],
-  ])("rejects invalid members in %s", (field, value) => {
-    installLocalStorage();
-    const existingChecklist = [testItem("existing")];
-
-    saveChecklist(existingChecklist);
-
-    const result = importData(
-      JSON.stringify({
-        version: 2,
-        exportedAt: "2026-06-09T00:00:00.000Z",
-        [field]: value,
-      }),
-    );
-
-    expect(result.ok).toBe(false);
-    expect(result.message).toContain(`${field} 包含无效数据`);
-    expect(loadChecklist()).toEqual(existingChecklist);
-  });
-
-  it("rolls back every field when an import write fails", () => {
-    installLocalStorage();
-    const profile = testProfile();
-    const checklist = [testItem("before")];
-
-    saveUserProfile(profile);
     saveChecklist(checklist);
     saveChecklistMode("lean");
-    failNextStorageWrite(STORAGE_KEYS.checklist);
-
-    const result = importData(
-      JSON.stringify({
-        version: 2,
-        exportedAt: "2026-06-09T00:00:00.000Z",
-        userProfile: testProfile("2026-08-01"),
-        checklist: [testItem("after")],
-        checklistMode: "full",
-      }),
-    );
-
-    expect(result).toEqual({
-      ok: false,
-      message: "导入失败，未修改本地数据。",
-    });
-    expect(loadUserProfile()).toEqual(profile);
-    expect(loadChecklist()).toEqual(checklist);
-    expect(loadChecklistMode()).toBe("lean");
-  });
-
-  it("does not clear existing arrays when import omits array fields", () => {
-    installLocalStorage();
-    const existingChecklist = [testItem()];
-
-    saveChecklist(existingChecklist);
-
-    const result = importData(
-      JSON.stringify({
-        version: 2,
-        exportedAt: "2026-06-09T00:00:00.000Z",
-        checklistMode: "full",
-      }),
-    );
-
-    expect(result.ok).toBe(true);
-    expect(loadChecklist()).toEqual(existingChecklist);
-    expect(loadChecklistMode()).toBe("full");
-  });
-
-  it("saves, loads, exports, and imports hospitalAnswers", () => {
-    installLocalStorage();
-    const answers = [testHospitalAnswer()];
-
-    saveHospitalAnswers(answers);
-
-    expect(loadHospitalAnswers()).toEqual(answers);
-    expect(exportData().hospitalAnswers).toEqual(answers);
-
-    const nextAnswers = [
-      { ...testHospitalAnswer("question-2"), status: "not_provided" as const },
-    ];
-    const result = importData(
-      JSON.stringify({
-        version: 2,
-        exportedAt: "2026-06-09T00:00:00.000Z",
-        hospitalAnswers: nextAnswers,
-      }),
-    );
-
-    expect(result).toEqual({ ok: true, message: "导入成功" });
-    expect(loadHospitalAnswers()).toEqual(nextAnswers);
-  });
-
-  it("does not clear hospitalAnswers when import omits hospitalAnswers", () => {
-    installLocalStorage();
-    const answers = [testHospitalAnswer()];
-
-    saveHospitalAnswers(answers);
-
-    const result = importData(
-      JSON.stringify({
-        version: 2,
-        exportedAt: "2026-06-09T00:00:00.000Z",
-        checklistMode: "full",
-      }),
-    );
-
-    expect(result.ok).toBe(true);
-    expect(loadHospitalAnswers()).toEqual(answers);
-  });
-
-  it("saves, loads, exports, and imports optional tool data", () => {
-    const store = installLocalStorage();
-    const contractions = [
-      {
-        id: "contraction-1",
-        startedAt: "2026-06-10T11:00:00.000Z",
-        endedAt: "2026-06-10T11:01:00.000Z",
-        durationSeconds: 60,
-      },
-    ];
-    const birthPlan = mergeBirthPlan({
-      emergencyContact: "爸爸 13800000000",
-    });
-    const postpartumTasks = [
-      {
-        ...DEFAULT_POSTPARTUM_TASKS[0],
-        status: "done" as const,
-        note: "电话确认",
-      },
-    ];
-
-    saveContractions(contractions);
-    saveBirthPlan(birthPlan);
-    savePostpartumTasks(postpartumTasks);
-    store.set(STORAGE_KEYS.webDavSecret, "should-not-export");
+    saveCustomItems(customItems);
+    saveHiddenTemplateItemIds(["hidden-template"]);
 
     const exported = exportData();
 
-    expect(exported.contractions).toEqual(contractions);
-    expect(exported.birthPlan).toEqual(birthPlan);
-    expect(exported.postpartumTasks[0]).toMatchObject(postpartumTasks[0]);
-    expect(JSON.stringify(exported)).not.toContain("should-not-export");
-
-    const nextContractions = [
-      {
-        id: "contraction-2",
-        startedAt: "2026-06-10T12:00:00.000Z",
-        endedAt: "2026-06-10T12:02:00.000Z",
-        durationSeconds: 120,
-      },
-    ];
-    const result = importData(
-      JSON.stringify({
-        version: 2,
-        exportedAt: "2026-06-10T00:00:00.000Z",
-        contractions: nextContractions,
-        birthPlan: { supportPerson: "爸爸" },
-        postpartumTasks,
-      }),
+    expect(Object.keys(exported).sort()).toEqual(
+      [
+        "version",
+        "exportedAt",
+        "checklistMode",
+        "checklist",
+        "customItems",
+        "hiddenTemplateItemIds",
+      ].sort(),
     );
-
-    expect(result).toEqual({ ok: true, message: "导入成功" });
-    expect(loadContractions()).toEqual(nextContractions);
-    expect(loadBirthPlan().supportPerson).toBe("爸爸");
-    expect(loadPostpartumTasks()[0]).toMatchObject(postpartumTasks[0]);
+    expect(exported).toMatchObject({
+      version: 3,
+      checklistMode: "lean",
+      checklist,
+      customItems,
+      hiddenTemplateItemIds: ["hidden-template"],
+    });
+    expect(Number.isNaN(Date.parse(exported.exportedAt))).toBe(false);
   });
 
-  it("does not clear optional data when a partial V2 backup omits it", () => {
-    installLocalStorage();
-    const contractions = [
-      {
-        id: "contraction-1",
-        startedAt: "2026-06-10T11:00:00.000Z",
-        endedAt: "2026-06-10T11:01:00.000Z",
-        durationSeconds: 60,
-      },
-    ];
-    const birthPlan = mergeBirthPlan({ emergencyContact: "爸爸" });
-    const postpartumTasks = [
-      {
-        ...DEFAULT_POSTPARTUM_TASKS[0],
-        status: "done" as const,
-        note: "已问",
-      },
-    ];
+  it("round-trips a complete v3 backup", () => {
+    installBrowserStorage();
+    const payload = backupData({
+      checklistMode: "lean",
+      checklist: [testItem("restored")],
+      customItems: [testItem("restored-custom")],
+      hiddenTemplateItemIds: ["hidden-template"],
+    });
 
-    saveContractions(contractions);
-    saveBirthPlan(birthPlan);
-    savePostpartumTasks(postpartumTasks);
-
-    const result = importData(
-      JSON.stringify({
-        version: 2,
-        exportedAt: "2026-06-10T00:00:00.000Z",
-        checklistMode: "full",
-      }),
-    );
+    const result = importData(JSON.stringify(payload));
 
     expect(result.ok).toBe(true);
-    expect(loadContractions()).toEqual(contractions);
-    expect(loadBirthPlan()).toEqual(birthPlan);
-    expect(loadPostpartumTasks()[0]).toMatchObject(postpartumTasks[0]);
+    expect(currentDataSnapshot()).toEqual({
+      checklist: payload.checklist,
+      checklistMode: "lean",
+      customItems: payload.customItems,
+      hiddenTemplateItemIds: ["hidden-template"],
+    });
+  });
+});
+
+describe("strict v3 import boundary", () => {
+  it.each([
+    ["invalid JSON", "{bad json"],
+    ["old version", JSON.stringify({ ...backupData(), version: 2 })],
+    [
+      "missing field",
+      JSON.stringify(
+        Object.fromEntries(
+          Object.entries(backupData()).filter(
+            ([key]) => key !== "hiddenTemplateItemIds",
+          ),
+        ),
+      ),
+    ],
+    [
+      "extra field",
+      JSON.stringify({ ...backupData(), userProfile: null }),
+    ],
+    [
+      "invalid exportedAt",
+      JSON.stringify({ ...backupData(), exportedAt: "not-a-date" }),
+    ],
+    [
+      "invalid checklist",
+      JSON.stringify({ ...backupData(), checklist: [{}] }),
+    ],
+    [
+      "invalid customItems",
+      JSON.stringify({ ...backupData(), customItems: {} }),
+    ],
+    [
+      "invalid hidden ids",
+      JSON.stringify({ ...backupData(), hiddenTemplateItemIds: [123] }),
+    ],
+    [
+      "invalid mode",
+      JSON.stringify({ ...backupData(), checklistMode: "compact" }),
+    ],
+  ])("rejects %s without modifying current data", (_label, raw) => {
+    installBrowserStorage();
+    const current = [testItem("current", { status: "packed" })];
+
+    saveChecklist(current);
+    saveChecklistMode("lean");
+    saveCustomItems([testItem("current-custom")]);
+    saveHiddenTemplateItemIds(["current-hidden"]);
+    const before = currentDataSnapshot();
+
+    const result = importData(raw);
+
+    expect(result.ok).toBe(false);
+    expect(currentDataSnapshot()).toEqual(before);
   });
 
-  it("keeps only the latest 5 snapshots", () => {
-    installLocalStorage();
+  it("rolls back every checklist field when a write fails", () => {
+    installBrowserStorage();
+    const original = backupData({
+      checklist: [testItem("original")],
+      customItems: [testItem("original-custom")],
+      hiddenTemplateItemIds: ["original-hidden"],
+    });
 
+    expect(importData(JSON.stringify(original)).ok).toBe(true);
+    const before = currentDataSnapshot();
+    failNextStorageWrite(STORAGE_KEYS.customItems);
+
+    const result = importData(
+      JSON.stringify(
+        backupData({
+          checklist: [testItem("replacement")],
+          customItems: [testItem("replacement-custom")],
+          hiddenTemplateItemIds: ["replacement-hidden"],
+        }),
+      ),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(currentDataSnapshot()).toEqual(before);
+  });
+});
+
+describe("local recovery snapshots", () => {
+  it("keeps only the latest five snapshots", () => {
+    installBrowserStorage();
     saveChecklist([testItem("existing")]);
 
     for (let index = 1; index <= 7; index += 1) {
-      createSnapshot(`备份 ${index}`);
+      createSnapshot(`恢复点 ${index}`);
     }
 
-    const snapshots = loadSnapshots();
-
-    expect(snapshots).toHaveLength(5);
-    expect(snapshots.map((snapshot) => snapshot.reason)).toEqual([
-      "备份 7",
-      "备份 6",
-      "备份 5",
-      "备份 4",
-      "备份 3",
+    expect(loadSnapshots().map((snapshot) => snapshot.reason)).toEqual([
+      "恢复点 7",
+      "恢复点 6",
+      "恢复点 5",
+      "恢复点 4",
+      "恢复点 3",
     ]);
   });
 
-  it("ignores and refuses to restore V1 snapshots", () => {
-    const store = installLocalStorage();
-    saveChecklist([testItem("current")]);
-    store.set(
-      STORAGE_KEYS.snapshots,
-      JSON.stringify([
-        {
-          id: "v1-snapshot",
-          createdAt: "2026-06-09T00:00:00.000Z",
-          reason: "旧版备份",
-          data: {
-            version: 1,
-            exportedAt: "2026-06-09T00:00:00.000Z",
-            checklist: [testItem("from-v1-snapshot")],
-          },
-        },
-      ]),
-    );
+  it("stores only the exact v3 portable payload", () => {
+    installBrowserStorage();
+    saveChecklist([testItem("snapshot")]);
 
-    expect(loadSnapshots()).toEqual([]);
-    expect(restoreSnapshot("v1-snapshot")).toEqual({
-      ok: false,
-      message: "未找到这份本地备份，未修改本地数据。",
-    });
+    const snapshot = createSnapshot("精简快照");
+
+    expect(snapshot).toBeDefined();
+    expect(Object.keys(snapshot!.data).sort()).toEqual(
+      [
+        "version",
+        "exportedAt",
+        "checklistMode",
+        "checklist",
+        "customItems",
+        "hiddenTemplateItemIds",
+      ].sort(),
+    );
+  });
+
+  it("creates a rescue snapshot before restoring another snapshot", () => {
+    installBrowserStorage();
+    saveChecklist([testItem("target")]);
+    const target = createSnapshot("目标恢复点");
+
+    saveChecklist([testItem("current")]);
+    const result = restoreSnapshot(target?.id ?? "");
+
+    expect(result.ok).toBe(true);
+    expect(loadChecklist()).toEqual([testItem("target")]);
+    expect(loadSnapshots()[0]?.reason).toBe("恢复本地备份前");
+    expect(loadSnapshots()[0]?.data.checklist).toEqual([testItem("current")]);
+  });
+
+  it("does not restore if the rescue snapshot cannot be saved", () => {
+    installBrowserStorage();
+    saveChecklist([testItem("target")]);
+    const target = createSnapshot("目标恢复点");
+
+    saveChecklist([testItem("current")]);
+    failNextStorageWrite(STORAGE_KEYS.snapshots);
+
+    const result = restoreSnapshot(target?.id ?? "");
+
+    expect(result.ok).toBe(false);
     expect(loadChecklist()).toEqual([testItem("current")]);
   });
 
-  it("throws when a recovery snapshot cannot be persisted", () => {
-    installLocalStorage();
-
-    saveChecklist([testItem("existing")]);
+  it("throws when a required recovery snapshot cannot be persisted", () => {
+    installBrowserStorage();
+    saveChecklist([testItem("current")]);
     failNextStorageWrite(STORAGE_KEYS.snapshots);
 
-    expect(() => createSnapshot("必须成功的备份")).toThrow(
+    expect(() => createSnapshot("必须成功")).toThrow(
       "无法保存本地恢复快照，操作已中止。",
     );
     expect(loadSnapshots()).toEqual([]);
   });
+});
 
-  it("restores userProfile, checklist, and checklistMode from a snapshot", () => {
-    installLocalStorage();
-    const profile = testProfile();
-    const checklist = [testItem("before")];
+describe("destructive storage scope", () => {
+  it("clears owned v3 data but preserves snapshots, v2 data and unrelated keys", () => {
+    const v2Sentinel = "dadkit:v2:checklist";
+    const unrelated = "another-app:data";
+    const { localValues, sessionValues } = installBrowserStorage({
+      [v2Sentinel]: "v2-sentinel",
+      [unrelated]: "unrelated-sentinel",
+    });
 
-    saveUserProfile(profile);
-    saveChecklist(checklist);
-    saveChecklistMode("full");
-
-    const snapshot = createSnapshot("恢复测试");
-
-    saveUserProfile(testProfile("2026-08-01"));
-    saveChecklist([testItem("after")]);
-    saveChecklistMode("lean");
-
-    const result = restoreSnapshot(snapshot?.id ?? "");
-
-    expect(result).toEqual({ ok: true, message: "导入成功" });
-    expect(loadUserProfile()).toEqual(profile);
-    expect(loadChecklist()).toEqual(checklist);
-    expect(loadChecklistMode()).toBe("full");
-  });
-
-  it("creates a snapshot before restoring a snapshot", () => {
-    installLocalStorage();
-
-    saveUserProfile(testProfile("2026-07-21"));
-    saveChecklist([testItem("original")]);
-    const snapshot = createSnapshot("要恢复的备份");
-
-    saveUserProfile(testProfile("2026-08-01"));
     saveChecklist([testItem("current")]);
+    createSnapshot("保留恢复点");
+    localValues.set(STORAGE_KEYS.webDavSecret, "secret");
+    sessionValues.set("dadkit:v3:webdav-session-secret", "session-secret");
 
-    const result = restoreSnapshot(snapshot?.id ?? "");
-    const snapshots = loadSnapshots();
+    resetAllData();
 
-    expect(result.ok).toBe(true);
-    expect(snapshots[0]?.reason).toBe("恢复本地备份前");
-    expect(snapshots[0]?.data.checklist).toEqual([testItem("current")]);
-  });
-
-  it("keeps the recovery snapshot when restoring fails but the import rolls back", () => {
-    installLocalStorage();
-
-    saveUserProfile(testProfile("2026-07-21"));
-    saveChecklist([testItem("snapshot")]);
-    const snapshot = createSnapshot("目标备份");
-
-    const currentProfile = testProfile("2026-08-01");
-    const currentChecklist = [testItem("current")];
-    saveUserProfile(currentProfile);
-    saveChecklist(currentChecklist);
-    failNextStorageWrite(STORAGE_KEYS.checklist);
-
-    const result = restoreSnapshot(snapshot?.id ?? "");
-    const recoverySnapshot = loadSnapshots()[0];
-
-    expect(result).toEqual({
-      ok: false,
-      message: "导入失败，未修改本地数据。",
-    });
-    expect(loadUserProfile()).toEqual(currentProfile);
-    expect(loadChecklist()).toEqual(currentChecklist);
-    expect(recoverySnapshot?.reason).toBe("恢复本地备份前");
-    expect(recoverySnapshot?.data.userProfile).toEqual(currentProfile);
-    expect(recoverySnapshot?.data.checklist).toEqual(currentChecklist);
-  });
-
-  it("keeps the recovery snapshot when the failed import cannot fully roll back", () => {
-    installLocalStorage();
-
-    saveUserProfile(testProfile("2026-07-21"));
-    saveChecklist([testItem("snapshot")]);
-    const snapshot = createSnapshot("目标备份");
-
-    const currentProfile = testProfile("2026-08-01");
-    const currentChecklist = [testItem("current")];
-    saveUserProfile(currentProfile);
-    saveChecklist(currentChecklist);
-
-    const setItem = window.localStorage.setItem.bind(window.localStorage);
-    let profileWrites = 0;
-    let checklistWrites = 0;
-
-    vi.spyOn(window.localStorage, "setItem").mockImplementation(
-      (candidateKey, value) => {
-        if (candidateKey === STORAGE_KEYS.userProfile) {
-          profileWrites += 1;
-
-          if (profileWrites === 2) {
-            throw new Error("simulated rollback failure");
-          }
-        }
-
-        if (candidateKey === STORAGE_KEYS.checklist) {
-          checklistWrites += 1;
-
-          if (checklistWrites === 1) {
-            throw new Error("simulated import failure");
-          }
-        }
-
-        setItem(candidateKey, value);
-      },
-    );
-
-    const result = restoreSnapshot(snapshot?.id ?? "");
-    const recoverySnapshot = loadSnapshots()[0];
-
-    expect(result).toEqual({
-      ok: false,
-      message: "导入失败，且本地数据无法完整回滚，请从备份恢复。",
-    });
-    expect(recoverySnapshot?.reason).toBe("恢复本地备份前");
-    expect(recoverySnapshot?.data.userProfile).toEqual(currentProfile);
-    expect(recoverySnapshot?.data.checklist).toEqual(currentChecklist);
-  });
-
-  it("does not restore when the pre-restore recovery snapshot cannot be saved", () => {
-    installLocalStorage();
-
-    saveUserProfile(testProfile("2026-07-21"));
-    saveChecklist([testItem("snapshot")]);
-    const snapshot = createSnapshot("目标备份");
-
-    const currentProfile = testProfile("2026-08-01");
-    const currentChecklist = [testItem("current")];
-    saveUserProfile(currentProfile);
-    saveChecklist(currentChecklist);
-    failNextStorageWrite(STORAGE_KEYS.snapshots);
-
-    const result = restoreSnapshot(snapshot?.id ?? "");
-
-    expect(result).toEqual({
-      ok: false,
-      message: "恢复失败，未修改本地数据。",
-    });
-    expect(loadUserProfile()).toEqual(currentProfile);
-    expect(loadChecklist()).toEqual(currentChecklist);
-    expect(loadSnapshots().map((candidate) => candidate.reason)).toEqual([
-      "目标备份",
-    ]);
+    expect(loadChecklist()).toEqual([]);
+    expect(loadSnapshots()).toHaveLength(1);
+    expect(localValues.get(v2Sentinel)).toBe("v2-sentinel");
+    expect(localValues.get(unrelated)).toBe("unrelated-sentinel");
+    expect(localValues.has(STORAGE_KEYS.webDavSecret)).toBe(false);
+    expect(sessionValues.has("dadkit:v3:webdav-session-secret")).toBe(false);
   });
 });

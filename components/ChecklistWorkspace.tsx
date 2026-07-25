@@ -1,12 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
-import { differenceInCalendarDays, parseISO } from "date-fns";
 import {
-  CalendarDays,
-  ChevronRight,
   ListRestart,
+  Plus,
   Settings2,
   Sparkles,
 } from "lucide-react";
@@ -26,17 +23,12 @@ import {
   type ChecklistView,
 } from "@/lib/checklist-v2";
 import { filterItemsForChecklistMode, calculatePackingCompletion } from "@/lib/rules";
-import {
-  getCountdownLabel,
-  getPregnancyProgress,
-} from "@/lib/presentation/home-dashboard";
 import { useDadKitStore } from "@/lib/store";
 
 export function ChecklistWorkspace() {
   const [view, setView] = useState<ChecklistView>("all");
   const [message, setMessage] = useState("");
   const hydrated = useDadKitStore((state) => state.hydrated);
-  const profile = useDadKitStore((state) => state.profile);
   const checklist = useDadKitStore((state) => state.checklist);
   const checklistMode = useDadKitStore((state) => state.checklistMode);
   const setChecklistMode = useDadKitStore((state) => state.setChecklistMode);
@@ -64,10 +56,6 @@ export function ChecklistWorkspace() {
     [visibleItems],
   );
   const activeView = CHECKLIST_VIEWS.find((candidate) => candidate.id === view);
-  const daysLeft = profile?.dueDate
-    ? differenceInCalendarDays(parseISO(profile.dueDate), new Date())
-    : undefined;
-  const pregnancy = getPregnancyProgress(daysLeft);
 
   function resetToTemplate() {
     if (!window.confirm("确认恢复通用清单？当前勾选进度和自定义物品会被清空。")) {
@@ -94,21 +82,15 @@ export function ChecklistWorkspace() {
   return (
     <div className="page-shell">
       <section className="mobile-shell grid gap-3 lg:max-w-2xl">
-        <div className="flex items-start justify-between gap-3 px-1">
-          <div className="min-w-0">
-            <p className="section-kicker">DadKit · 待产准备</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-              待产包清单
-            </h1>
-            <p className="mt-1 text-sm leading-5 text-muted-foreground">
-              看一眼还差什么，准备好就打勾。
-            </p>
-          </div>
-          <AddItemDialog />
+        <div className="py-2 text-center">
+          <h1 className="text-base font-semibold tracking-tight">待产包清单</h1>
+          <p className="mt-1 text-sm leading-5 text-muted-foreground">
+            看一眼还差什么，准备好就打勾。
+          </p>
         </div>
 
-        <section className="overflow-hidden rounded-3xl border border-primary/10 bg-card shadow-sm">
-          <div className="bg-[linear-gradient(135deg,hsl(var(--secondary)),hsl(var(--card))_70%)] p-4">
+        <section className="overflow-hidden rounded-3xl bg-card shadow-sm">
+          <div className="p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-primary">准备进度</p>
@@ -121,54 +103,27 @@ export function ChecklistWorkspace() {
                   </span>
                 </div>
               </div>
-              <span className="flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+              <span className="flex size-11 items-center justify-center rounded-2xl bg-secondary text-primary">
                 <Sparkles className="size-5" />
               </span>
             </div>
             <Progress className="mt-4 h-2" value={packing.percent} />
             <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
-              <span className="rounded-full bg-background/80 px-2.5 py-1 text-muted-foreground">
+              <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
                 待买 {counts.shopping}
               </span>
-              <span className="rounded-full bg-background/80 px-2.5 py-1 text-muted-foreground">
+              <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
                 待装 {counts.packing}
               </span>
-              <span className="rounded-full bg-background/80 px-2.5 py-1 text-muted-foreground">
+              <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
                 共 {counts.all} 项
               </span>
             </div>
           </div>
 
-          <Link
-            className="flex min-h-12 items-center gap-3 border-t border-border/70 px-4 py-3 text-sm transition-colors hover:bg-muted/50"
-            href="/setup"
-          >
-            <CalendarDays className="size-4 shrink-0 text-primary" />
-            <span className="min-w-0 flex-1">
-              {profile?.dueDate
-                ? `${pregnancy.label} · ${getCountdownLabel(daysLeft)}`
-                : "预产期可选：填写后开启孕周、时间线和证件提醒"}
-            </span>
-            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-          </Link>
         </section>
 
         <ChecklistGroupTabs counts={counts} value={view} onChange={setView} />
-
-        {view === "all" && (pregnancy.week ?? 0) >= 36 ? (
-          <Link
-            className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900"
-            href="/hospital"
-          >
-            <CalendarDays className="mt-0.5 size-4 shrink-0" />
-            <span>
-              <strong className="block font-semibold">证件提前放到固定位置</strong>
-              <span className="mt-0.5 block text-xs leading-5 text-amber-800">
-                孕 36 周后建议把证件袋和入院资料放在家人都知道的位置，并向医院确认最新要求。
-              </span>
-            </span>
-          </Link>
-        ) : null}
 
         <div className="flex items-center justify-between gap-3 px-1">
           <div>
@@ -242,6 +197,18 @@ export function ChecklistWorkspace() {
           清单是准备参考，不替代医院通知或医疗建议。
         </p>
       </section>
+
+      <AddItemDialog
+        trigger={
+          <button
+            aria-label="新增物品"
+            className="fixed bottom-24 right-4 z-40 flex size-14 items-center justify-center rounded-full bg-foreground text-background shadow-lg transition-transform active:scale-95 sm:right-[max(1rem,calc(50%-195px-4.5rem))]"
+            type="button"
+          >
+            <Plus className="size-6" />
+          </button>
+        }
+      />
     </div>
   );
 }

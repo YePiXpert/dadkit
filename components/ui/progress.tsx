@@ -11,7 +11,7 @@ export function Progress({ className, value, ...props }: ProgressProps) {
 
   return (
     <div
-      className={cn("h-2 w-full overflow-hidden rounded-full bg-secondary", className)}
+      className={cn("h-2 w-full overflow-hidden rounded-full bg-muted", className)}
       role="progressbar"
       aria-valuenow={safeValue}
       aria-valuemin={0}

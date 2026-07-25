@@ -3,17 +3,18 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 
+import { QuantityStepper } from "@/components/QuantityStepper";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -22,27 +23,40 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { PREPARATION_KIND_LABELS } from "@/lib/preparation";
 import {
   CATEGORY_LABELS,
-  CATEGORY_ORDER,
-  PRIORITY_LABELS,
   type ChecklistCategory,
   type PreparationKind,
-  type Priority,
 } from "@/lib/types";
 import { useDadKitStore } from "@/lib/store";
 
 type AddItemDialogProps = {
   defaultCategory?: ChecklistCategory;
+  trigger?: React.ReactNode;
 };
 
-export function AddItemDialog({ defaultCategory = "mom_labor" }: AddItemDialogProps) {
+const CUSTOM_CATEGORIES: ChecklistCategory[] = [
+  "documents",
+  "mom_labor",
+  "baby",
+  "partner",
+  "going_home",
+  "last_minute",
+];
+
+const CUSTOM_PREPARATION_OPTIONS: Array<{
+  label: string;
+  value: PreparationKind;
+}> = [
+  { label: "家里已有", value: "pack_existing" },
+  { label: "需要购买", value: "buy_and_pack" },
+];
+
+export function AddItemDialog({ defaultCategory = "mom_labor", trigger }: AddItemDialogProps) {
   const addCustomItem = useDadKitStore((state) => state.addCustomItem);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [category, setCategory] = useState<ChecklistCategory>(defaultCategory);
-  const [priority, setPriority] = useState<Priority>("recommended");
   const [preparationKind, setPreparationKind] =
     useState<PreparationKind>("pack_existing");
   const [quantity, setQuantity] = useState("");
@@ -57,7 +71,7 @@ export function AddItemDialog({ defaultCategory = "mom_labor" }: AddItemDialogPr
     const result = addCustomItem({
       name,
       category,
-      priority,
+      priority: "recommended",
       preparationKind,
       quantity: quantity || undefined,
       note: note || undefined,
@@ -84,111 +98,125 @@ export function AddItemDialog({ defaultCategory = "mom_labor" }: AddItemDialogPr
       }}
     >
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="size-4" />
-          新增物品
-        </Button>
+        {trigger ?? (
+          <Button>
+            <Plus className="size-4" />
+            新增物品
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>新增自定义物品</DialogTitle>
+          <DialogTitle>自定义添加</DialogTitle>
+          <DialogDescription>
+            填写名称即可保存，归类和当前情况已有默认值。
+          </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4">
+        <div className="grid gap-3">
           {feedback ? (
             <p className="rounded-xl bg-secondary px-3 py-2 text-sm font-medium text-primary">
               {feedback}
             </p>
           ) : null}
-          <Field label="名称">
-            <Input value={name} onChange={(event) => setName(event.target.value)} />
-          </Field>
-          <div className="field-grid">
-            <Field label="分类">
+          <div className="grid divide-y divide-border rounded-2xl bg-card px-4">
+            <FormRow label="物品名称" hint="必填">
+              <Input
+                className="border-0 bg-transparent px-0 text-right focus-visible:ring-0"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
+            </FormRow>
+            <FormRow label="分类">
               <Select
                 value={category}
                 onValueChange={(value) => setCategory(value as ChecklistCategory)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-auto border-0 bg-transparent px-0 focus:ring-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORY_ORDER.map((item) => (
+                  {CUSTOM_CATEGORIES.map((item) => (
                     <SelectItem key={item} value={item}>
                       {CATEGORY_LABELS[item]}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </Field>
-            <Field label="优先级">
+            </FormRow>
+            <FormRow label="当前情况">
               <Select
-                value={priority}
-                onValueChange={(value) => setPriority(value as Priority)}
+                value={preparationKind}
+                onValueChange={(value) =>
+                  setPreparationKind(value as PreparationKind)
+                }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-auto border-0 bg-transparent px-0 focus:ring-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
+                  {CUSTOM_PREPARATION_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </Field>
+            </FormRow>
           </div>
-          <Field label="动作类型">
-            <Select
-              value={preparationKind}
-              onValueChange={(value) =>
-                setPreparationKind(value as PreparationKind)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(PREPARATION_KIND_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field label="数量">
-            <Input
-              value={quantity}
-              onChange={(event) => setQuantity(event.target.value)}
-              placeholder="例如：2 条"
+          <div className="grid gap-3 rounded-2xl bg-card p-4">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-medium">预计数量</span>
+              <span className="w-36">
+                <QuantityStepper
+                  value={quantity}
+                  onChange={setQuantity}
+                />
+              </span>
+            </div>
+            <Textarea
+              className="border-0 bg-muted/60 px-3 focus-visible:ring-0"
+              placeholder="可以添加规格、颜色…"
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
             />
-          </Field>
-          <Field label="备注">
-            <Textarea value={note} onChange={(event) => setNote(event.target.value)} />
-          </Field>
+          </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+        <DialogFooter className="grid gap-2 sm:grid">
+          <Button className="w-full" size="lg" onClick={submit}>
+            加入清单
+          </Button>
+          <Button
+            className="w-full"
+            variant="ghost"
+            onClick={() => setOpen(false)}
+          >
             取消
           </Button>
-          <Button onClick={submit}>保存</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function Field({
+function FormRow({
   children,
+  hint,
   label,
 }: {
   children: React.ReactNode;
+  hint?: string;
   label: string;
 }) {
   return (
-    <div className="grid gap-2">
-      <Label>{label}</Label>
+    <div className="flex min-h-14 items-center justify-between gap-3 py-1.5">
+      <span className="shrink-0 text-sm font-medium">
+        {label}
+        {hint ? (
+          <span className="ml-2 text-xs font-normal text-muted-foreground">
+            {hint}
+          </span>
+        ) : null}
+      </span>
       {children}
     </div>
   );

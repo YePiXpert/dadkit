@@ -1,21 +1,17 @@
 import type {
-  HospitalAnswer,
-  ChecklistMode,
   ChecklistItem,
-  HospitalProfile,
-  UserHospitalOverride,
-  UserProfile,
+  ChecklistMode,
+  ChecklistCategory,
+  ChecklistTiming,
+  ChecklistBag,
+  ItemBulk,
+  ItemKind,
+  ItemSource,
+  PackStatus,
+  PackTier,
+  PreparationKind,
+  Priority,
 } from "@/lib/types";
-import {
-  DEFAULT_BIRTH_PLAN,
-  DEFAULT_POSTPARTUM_TASKS,
-  mergeBirthPlan,
-  mergePostpartumTasks,
-  type BirthPlan,
-  type ContractionRecord,
-  type PostpartumTask,
-} from "@/lib/rc";
-import type { TimelineTaskStatus } from "@/lib/timeline";
 import {
   DEFAULT_WEBDAV_CONFIG,
   type WebDavConfig,
@@ -23,60 +19,47 @@ import {
 } from "@/lib/webdav/types";
 
 export const STORAGE_KEYS = {
-  userProfile: "dadkit:v2:user-profile",
-  checklist: "dadkit:v2:checklist",
-  customItems: "dadkit:v2:custom-items",
-  hiddenTemplateItems: "dadkit:v2:hidden-template-items",
-  hospitalOverrides: "dadkit:v2:hospital-overrides",
-  hospitalAnswers: "dadkit:v2:hospital-answers",
-  timelineTaskStatuses: "dadkit:v2:timeline-task-statuses",
-  contractions: "dadkit:v2:contractions",
-  birthPlan: "dadkit:v2:birth-plan",
-  postpartumTasks: "dadkit:v2:postpartum-tasks",
-  checklistMode: "dadkit:v2:checklist-mode",
-  snapshots: "dadkit:v2:snapshots",
-  webDavConfig: "dadkit:v2:webdav-config",
-  webDavSyncState: "dadkit:v2:webdav-sync-state",
-  webDavSecret: "dadkit:v2:webdav-secret",
+  checklist: "dadkit:v3:checklist",
+  customItems: "dadkit:v3:custom-items",
+  hiddenTemplateItems: "dadkit:v3:hidden-template-items",
+  checklistMode: "dadkit:v3:checklist-mode",
+  snapshots: "dadkit:v3:snapshots",
+  webDavConfig: "dadkit:v3:webdav-config",
+  webDavSyncState: "dadkit:v3:webdav-sync-state",
+  webDavSecret: "dadkit:v3:webdav-secret",
 } as const;
 
-export const WEBDAV_SESSION_SECRET_KEY = "dadkit:v2:webdav-session-secret";
+export const WEBDAV_SESSION_SECRET_KEY = "dadkit:v3:webdav-session-secret";
 
 const DATA_STORAGE_KEYS = [
-  STORAGE_KEYS.userProfile,
   STORAGE_KEYS.checklist,
   STORAGE_KEYS.customItems,
   STORAGE_KEYS.hiddenTemplateItems,
-  STORAGE_KEYS.hospitalOverrides,
-  STORAGE_KEYS.hospitalAnswers,
-  STORAGE_KEYS.timelineTaskStatuses,
-  STORAGE_KEYS.contractions,
-  STORAGE_KEYS.birthPlan,
-  STORAGE_KEYS.postpartumTasks,
   STORAGE_KEYS.checklistMode,
   STORAGE_KEYS.webDavConfig,
   STORAGE_KEYS.webDavSyncState,
   STORAGE_KEYS.webDavSecret,
-];
+] as const;
+
+const EXPORT_KEYS = [
+  "version",
+  "exportedAt",
+  "checklistMode",
+  "checklist",
+  "customItems",
+  "hiddenTemplateItemIds",
+] as const;
 
 export type DadKitExportData = {
-  version: 2;
+  version: 3;
   exportedAt: string;
-  userProfile: UserProfile | null;
   checklistMode: ChecklistMode;
   checklist: ChecklistItem[];
   customItems: ChecklistItem[];
   hiddenTemplateItemIds: string[];
-  hospitalOverrides: UserHospitalOverride[];
-  hospitalAnswers: HospitalAnswer[];
-  timelineTaskStatuses: TimelineTaskStatus[];
-  contractions: ContractionRecord[];
-  birthPlan: BirthPlan;
-  postpartumTasks: PostpartumTask[];
 };
 
-export type DadKitImportData = Partial<DadKitExportData> &
-  Record<string, unknown>;
+export type DadKitImportData = DadKitExportData;
 
 export type ImportResult = {
   ok: boolean;
@@ -101,13 +84,28 @@ export class SnapshotPersistenceError extends Error {
   }
 }
 
+type StorageMutation = {
+  key: string;
+  value: string | null;
+};
+
+class StorageTransactionError extends Error {
+  constructor(readonly rollbackSucceeded: boolean) {
+    super("本地存储事务失败");
+    this.name = "StorageTransactionError";
+  }
+}
+
 function canUseLocalStorage() {
-  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+  return (
+    typeof window !== "undefined" && typeof window.localStorage !== "undefined"
+  );
 }
 
 function canUseSessionStorage() {
   return (
-    typeof window !== "undefined" && typeof window.sessionStorage !== "undefined"
+    typeof window !== "undefined" &&
+    typeof window.sessionStorage !== "undefined"
   );
 }
 
@@ -116,14 +114,9 @@ function readJson<T>(key: string, fallback: T): T {
     return fallback;
   }
 
-  const raw = window.localStorage.getItem(key);
-
-  if (!raw) {
-    return fallback;
-  }
-
   try {
-    return JSON.parse(raw) as T;
+    const raw = window.localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
     return fallback;
   }
@@ -145,25 +138,189 @@ function deviceId() {
   return `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export function loadUserProfile() {
-  return readJson<UserProfile | undefined>(STORAGE_KEYS.userProfile, undefined);
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function saveUserProfile(profile?: UserProfile) {
-  if (!canUseLocalStorage()) {
-    return;
+function hasExactKeys(
+  value: Record<string, unknown>,
+  expected: readonly string[],
+) {
+  const actual = Object.keys(value).sort();
+  const wanted = [...expected].sort();
+
+  return (
+    actual.length === wanted.length &&
+    actual.every((key, index) => key === wanted[index])
+  );
+}
+
+function isOneOf<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+): value is T {
+  return typeof value === "string" && allowed.includes(value as T);
+}
+
+function hasOptionalString(value: Record<string, unknown>, key: string) {
+  return !(key in value) || typeof value[key] === "string";
+}
+
+const CHECKLIST_ITEM_KEYS = [
+  "id",
+  "name",
+  "category",
+  "priority",
+  "quantity",
+  "note",
+  "status",
+  "source",
+  "sourceLabel",
+  "editable",
+  "removable",
+  "packTier",
+  "itemKind",
+  "preparationKind",
+  "bag",
+  "bulk",
+  "timing",
+] as const;
+
+const REQUIRED_CHECKLIST_ITEM_KEYS = [
+  "id",
+  "name",
+  "category",
+  "priority",
+  "status",
+  "source",
+  "editable",
+  "removable",
+  "timing",
+] as const;
+
+function hasOnlyKnownKeys(
+  value: Record<string, unknown>,
+  allowed: readonly string[],
+) {
+  const allowedKeys = new Set(allowed);
+  return Object.keys(value).every((key) => allowedKeys.has(key));
+}
+
+function isChecklistItem(value: unknown): value is ChecklistItem {
+  if (!isRecord(value)) {
+    return false;
   }
 
-  if (!profile) {
-    window.localStorage.removeItem(STORAGE_KEYS.userProfile);
-    return;
+  if (
+    !hasOnlyKnownKeys(value, CHECKLIST_ITEM_KEYS) ||
+    !REQUIRED_CHECKLIST_ITEM_KEYS.every((key) => key in value)
+  ) {
+    return false;
   }
 
-  writeJson(STORAGE_KEYS.userProfile, profile);
+  return (
+    typeof value.id === "string" &&
+    value.id.trim().length > 0 &&
+    typeof value.name === "string" &&
+    value.name.trim().length > 0 &&
+    isOneOf<ChecklistCategory>(value.category, [
+      "documents",
+      "mom_labor",
+      "mom_postpartum",
+      "baby",
+      "partner",
+      "going_home",
+      "last_minute",
+    ]) &&
+    isOneOf<Priority>(value.priority, ["must", "recommended", "optional"]) &&
+    isOneOf<PackStatus>(value.status, [
+      "todo",
+      "bought",
+      "washed",
+      "packed",
+      "last_minute",
+      "not_needed",
+    ]) &&
+    isOneOf<ItemSource>(value.source, ["general", "user"]) &&
+    typeof value.editable === "boolean" &&
+    typeof value.removable === "boolean" &&
+    isOneOf<ChecklistTiming>(value.timing, [
+      "prepare_now",
+      "wash_before_pack",
+      "pack_now",
+      "grab_before_leaving",
+      "confirm_beforehand",
+    ]) &&
+    ["quantity", "note", "sourceLabel"].every((key) =>
+      hasOptionalString(value, key),
+    ) &&
+    (!("packTier" in value) ||
+      isOneOf<PackTier>(value.packTier, [
+        "core",
+        "confirm",
+        "optional",
+        "hidden",
+      ])) &&
+    (!("itemKind" in value) ||
+      isOneOf<ItemKind>(value.itemKind, ["item", "task"])) &&
+    (!("preparationKind" in value) ||
+      isOneOf<PreparationKind>(value.preparationKind, [
+        "buy_and_pack",
+        "pack_existing",
+        "wash_then_pack",
+        "document",
+        "last_minute",
+        "task",
+        "install_or_place",
+      ])) &&
+    (!("bag" in value) ||
+      isOneOf<ChecklistBag>(value.bag, [
+        "documents_folder",
+        "mom_bag",
+        "baby_bag",
+        "dad_backpack",
+        "car",
+        "last_minute",
+        "none",
+      ])) &&
+    (!("bulk" in value) ||
+      isOneOf<ItemBulk>(value.bulk, ["small", "medium", "large"]))
+  );
+}
+
+function isValidDateString(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.trim().length > 0 &&
+    !Number.isNaN(Date.parse(value))
+  );
+}
+
+function isDadKitExportData(value: unknown): value is DadKitExportData {
+  if (!isRecord(value) || !hasExactKeys(value, EXPORT_KEYS)) {
+    return false;
+  }
+
+  return (
+    value.version === 3 &&
+    isValidDateString(value.exportedAt) &&
+    isOneOf<ChecklistMode>(value.checklistMode, ["lean", "full"]) &&
+    Array.isArray(value.checklist) &&
+    value.checklist.every(isChecklistItem) &&
+    Array.isArray(value.customItems) &&
+    value.customItems.every(
+      (item) => isChecklistItem(item) && item.source === "user",
+    ) &&
+    Array.isArray(value.hiddenTemplateItemIds) &&
+    value.hiddenTemplateItemIds.every(
+      (id) => typeof id === "string" && id.trim().length > 0,
+    )
+  );
 }
 
 export function loadChecklist() {
-  return readJson<ChecklistItem[]>(STORAGE_KEYS.checklist, []);
+  const value = readJson<unknown>(STORAGE_KEYS.checklist, []);
+  return Array.isArray(value) ? value.filter(isChecklistItem) : [];
 }
 
 export function saveChecklist(items: ChecklistItem[]) {
@@ -171,7 +328,13 @@ export function saveChecklist(items: ChecklistItem[]) {
 }
 
 export function loadCustomItems() {
-  return readJson<ChecklistItem[]>(STORAGE_KEYS.customItems, []);
+  const value = readJson<unknown>(STORAGE_KEYS.customItems, []);
+  return Array.isArray(value)
+    ? value.filter(
+        (item): item is ChecklistItem =>
+          isChecklistItem(item) && item.source === "user",
+      )
+    : [];
 }
 
 export function saveCustomItems(items: ChecklistItem[]) {
@@ -179,98 +342,27 @@ export function saveCustomItems(items: ChecklistItem[]) {
 }
 
 export function loadHiddenTemplateItemIds() {
-  return readJson<string[]>(STORAGE_KEYS.hiddenTemplateItems, []);
+  const value = readJson<unknown>(STORAGE_KEYS.hiddenTemplateItems, []);
+
+  return Array.isArray(value)
+    ? Array.from(
+        new Set(
+          value.filter(
+            (id): id is string =>
+              typeof id === "string" && id.trim().length > 0,
+          ),
+        ),
+      )
+    : [];
 }
 
 export function saveHiddenTemplateItemIds(ids: string[]) {
-  writeJson(STORAGE_KEYS.hiddenTemplateItems, ids);
-}
-
-export function loadHospitalOverrides() {
-  return readJson<UserHospitalOverride[]>(STORAGE_KEYS.hospitalOverrides, []);
-}
-
-export function saveHospitalOverrides(overrides: UserHospitalOverride[]) {
-  writeJson(STORAGE_KEYS.hospitalOverrides, overrides);
-}
-
-export function loadHospitalAnswers() {
-  return readJson<HospitalAnswer[]>(STORAGE_KEYS.hospitalAnswers, []);
-}
-
-export function saveHospitalAnswers(answers: HospitalAnswer[]) {
-  writeJson(STORAGE_KEYS.hospitalAnswers, answers);
-}
-
-export function loadTimelineTaskStatuses() {
-  const statuses = readJson<TimelineTaskStatus[]>(
-    STORAGE_KEYS.timelineTaskStatuses,
-    [],
-  );
-
-  return Array.isArray(statuses) ? statuses : [];
-}
-
-export function saveTimelineTaskStatuses(statuses: TimelineTaskStatus[]) {
-  writeJson(STORAGE_KEYS.timelineTaskStatuses, statuses);
-}
-
-export function updateTimelineTaskStatus(
-  taskId: string,
-  status: TimelineTaskStatus["status"],
-) {
-  const nextStatus: TimelineTaskStatus = {
-    taskId,
-    status,
-    updatedAt: new Date().toISOString(),
-  };
-  const statuses = [
-    ...loadTimelineTaskStatuses().filter((candidate) => candidate.taskId !== taskId),
-    nextStatus,
-  ];
-
-  saveTimelineTaskStatuses(statuses);
-
-  return statuses;
-}
-
-export function loadContractions() {
-  const records = readJson<ContractionRecord[]>(STORAGE_KEYS.contractions, []);
-
-  return Array.isArray(records) ? records : [];
-}
-
-export function saveContractions(records: ContractionRecord[]) {
-  writeJson(STORAGE_KEYS.contractions, records);
-}
-
-export function loadBirthPlan() {
-  const saved = readJson<Partial<BirthPlan> | undefined>(
-    STORAGE_KEYS.birthPlan,
-    undefined,
-  );
-
-  return mergeBirthPlan(saved);
-}
-
-export function saveBirthPlan(plan: BirthPlan) {
-  writeJson(STORAGE_KEYS.birthPlan, mergeBirthPlan(plan));
-}
-
-export function loadPostpartumTasks() {
-  const tasks = readJson<PostpartumTask[]>(STORAGE_KEYS.postpartumTasks, []);
-
-  return mergePostpartumTasks(Array.isArray(tasks) ? tasks : []);
-}
-
-export function savePostpartumTasks(tasks: PostpartumTask[]) {
-  writeJson(STORAGE_KEYS.postpartumTasks, mergePostpartumTasks(tasks));
+  writeJson(STORAGE_KEYS.hiddenTemplateItems, Array.from(new Set(ids)));
 }
 
 export function loadChecklistMode(): ChecklistMode {
-  const mode = readJson<ChecklistMode>(STORAGE_KEYS.checklistMode, "full");
-
-  return mode === "lean" ? "lean" : "full";
+  const mode = readJson<unknown>(STORAGE_KEYS.checklistMode, "lean");
+  return mode === "full" ? "full" : "lean";
 }
 
 export function saveChecklistMode(mode: ChecklistMode) {
@@ -355,12 +447,18 @@ export function saveWebDavSyncState(state: WebDavSyncState) {
   writeJson(STORAGE_KEYS.webDavSyncState, state);
 }
 
-export function loadWebDavSecret(rememberSecret = loadWebDavConfig().rememberSecret) {
+export function loadWebDavSecret(
+  rememberSecret = loadWebDavConfig().rememberSecret,
+) {
   if (canUseSessionStorage()) {
-    const sessionSecret = window.sessionStorage.getItem(WEBDAV_SESSION_SECRET_KEY);
+    try {
+      const sessionSecret = window.sessionStorage.getItem(
+        WEBDAV_SESSION_SECRET_KEY,
+      );
 
-    if (sessionSecret) {
-      return sessionSecret;
+      if (sessionSecret) return sessionSecret;
+    } catch {
+      // Fall through to the optional local copy.
     }
   }
 
@@ -368,7 +466,11 @@ export function loadWebDavSecret(rememberSecret = loadWebDavConfig().rememberSec
     return "";
   }
 
-  return window.localStorage.getItem(STORAGE_KEYS.webDavSecret) ?? "";
+  try {
+    return window.localStorage.getItem(STORAGE_KEYS.webDavSecret) ?? "";
+  } catch {
+    return "";
+  }
 }
 
 export function saveWebDavSecret(secret: string, rememberSecret: boolean) {
@@ -391,9 +493,11 @@ export function saveWebDavSecret(secret: string, rememberSecret: boolean) {
 
 export function clearWebDavSettings() {
   if (canUseLocalStorage()) {
-    window.localStorage.removeItem(STORAGE_KEYS.webDavConfig);
-    window.localStorage.removeItem(STORAGE_KEYS.webDavSyncState);
-    window.localStorage.removeItem(STORAGE_KEYS.webDavSecret);
+    applyStorageMutations([
+      { key: STORAGE_KEYS.webDavConfig, value: null },
+      { key: STORAGE_KEYS.webDavSyncState, value: null },
+      { key: STORAGE_KEYS.webDavSecret, value: null },
+    ]);
   }
 
   if (canUseSessionStorage()) {
@@ -403,7 +507,9 @@ export function clearWebDavSettings() {
 
 export function resetAllData() {
   if (canUseLocalStorage()) {
-    DATA_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
+    applyStorageMutations(
+      DATA_STORAGE_KEYS.map((key) => ({ key, value: null })),
+    );
   }
 
   if (canUseSessionStorage()) {
@@ -413,327 +519,13 @@ export function resetAllData() {
 
 export function exportData(): DadKitExportData {
   return {
-    version: 2,
+    version: 3,
     exportedAt: new Date().toISOString(),
-    userProfile: loadUserProfile() ?? null,
     checklistMode: loadChecklistMode(),
     checklist: loadChecklist(),
     customItems: loadCustomItems(),
     hiddenTemplateItemIds: loadHiddenTemplateItemIds(),
-    hospitalOverrides: loadHospitalOverrides(),
-    hospitalAnswers: loadHospitalAnswers(),
-    timelineTaskStatuses: loadTimelineTaskStatuses(),
-    contractions: loadContractions(),
-    birthPlan: loadBirthPlan(),
-    postpartumTasks: loadPostpartumTasks(),
   };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string");
-}
-
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value);
-}
-
-function isOneOf<T extends string>(
-  value: unknown,
-  allowed: readonly T[],
-): value is T {
-  return typeof value === "string" && allowed.includes(value as T);
-}
-
-function hasOptionalString(value: Record<string, unknown>, key: string) {
-  return !(key in value) || value[key] === undefined || typeof value[key] === "string";
-}
-
-function hasOptionalBoolean(value: Record<string, unknown>, key: string) {
-  return !(key in value) || value[key] === undefined || typeof value[key] === "boolean";
-}
-
-function isHospitalProfile(value: unknown): value is HospitalProfile {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return (
-    isOneOf(value.mode, ["preset", "custom", "unknown"]) &&
-    typeof value.country === "string" &&
-    isOneOf(value.verificationStatus, [
-      "official",
-      "user_entered",
-      "community",
-      "unverified",
-    ]) &&
-    isStringArray(value.requiredDocuments) &&
-    isStringArray(value.hospitalProvidedItems) &&
-    isStringArray(value.recommendedItems) &&
-    isStringArray(value.notAllowedItems) &&
-    (!("aliases" in value) ||
-      value.aliases === undefined ||
-      isStringArray(value.aliases)) &&
-    (!("sourceNotes" in value) ||
-      value.sourceNotes === undefined ||
-      isStringArray(value.sourceNotes)) &&
-    [
-      "hospitalId",
-      "name",
-      "province",
-      "city",
-      "district",
-      "lastVerifiedAt",
-      "admissionNotes",
-      "partnerPolicyNotes",
-      "wardNotes",
-      "paymentNotes",
-    ].every((key) => hasOptionalString(value, key))
-  );
-}
-
-function isUserProfile(value: unknown): value is UserProfile {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return (
-    typeof value.regionId === "string" &&
-    isOneOf(value.hospitalMode, ["preset", "custom", "unknown"]) &&
-    isOneOf(value.deliveryMode, ["vaginal", "c_section", "unknown"]) &&
-    isFiniteNumber(value.expectedStayDays) &&
-    typeof value.breastfeeding === "boolean" &&
-    typeof value.partnerPresent === "boolean" &&
-    typeof value.coldWeather === "boolean" &&
-    isStringArray(value.hospitalProvidedItemIds) &&
-    typeof value.createdAt === "string" &&
-    typeof value.updatedAt === "string" &&
-    hasOptionalString(value, "dueDate") &&
-    hasOptionalString(value, "hospitalId") &&
-    hasOptionalString(value, "hospitalNotes") &&
-    (!("babySex" in value) ||
-      value.babySex === undefined ||
-      isOneOf(value.babySex, ["girl", "boy", "unknown"])) &&
-    (!("customHospital" in value) ||
-      value.customHospital === undefined ||
-      isHospitalProfile(value.customHospital))
-  );
-}
-
-function isChecklistItem(value: unknown): value is ChecklistItem {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  const appliesTo = value.appliesTo;
-  const validAppliesTo =
-    appliesTo === undefined ||
-    (isRecord(appliesTo) &&
-      (!("deliveryMode" in appliesTo) ||
-        appliesTo.deliveryMode === undefined ||
-        (Array.isArray(appliesTo.deliveryMode) &&
-          appliesTo.deliveryMode.every((mode) =>
-            isOneOf(mode, ["vaginal", "c_section", "unknown"]),
-          ))) &&
-      ["breastfeeding", "partnerPresent", "coldWeather"].every((key) =>
-        hasOptionalBoolean(appliesTo, key),
-      ));
-
-  return (
-    typeof value.id === "string" &&
-    typeof value.name === "string" &&
-    isOneOf(value.category, [
-      "documents",
-      "mom_labor",
-      "mom_postpartum",
-      "baby",
-      "partner",
-      "going_home",
-      "hospital_questions",
-      "last_minute",
-    ]) &&
-    isOneOf(value.priority, ["must", "recommended", "optional"]) &&
-    isOneOf(value.status, [
-      "todo",
-      "bought",
-      "washed",
-      "packed",
-      "last_minute",
-      "hospital_provided",
-      "not_needed",
-    ]) &&
-    isOneOf(value.source, ["general", "region", "hospital", "user"]) &&
-    typeof value.editable === "boolean" &&
-    typeof value.removable === "boolean" &&
-    hasOptionalBoolean(value, "hospitalProvidedByRule") &&
-    isOneOf(value.timing, [
-      "prepare_now",
-      "wash_before_pack",
-      "pack_now",
-      "grab_before_leaving",
-      "confirm_with_hospital",
-    ]) &&
-    ["quantity", "note", "sourceLabel"].every((key) =>
-      hasOptionalString(value, key),
-    ) &&
-    (!("packTier" in value) ||
-      value.packTier === undefined ||
-      isOneOf(value.packTier, ["core", "confirm", "optional", "hidden"])) &&
-    (!("itemKind" in value) ||
-      value.itemKind === undefined ||
-      isOneOf(value.itemKind, ["item", "task", "question"])) &&
-    (!("preparationKind" in value) ||
-      value.preparationKind === undefined ||
-      isOneOf(value.preparationKind, [
-        "buy_and_pack",
-        "pack_existing",
-        "wash_then_pack",
-        "document",
-        "last_minute",
-        "question",
-        "task",
-        "install_or_place",
-      ])) &&
-    (!("bag" in value) ||
-      value.bag === undefined ||
-      isOneOf(value.bag, [
-        "documents_folder",
-        "mom_bag",
-        "baby_bag",
-        "dad_backpack",
-        "car",
-        "last_minute",
-        "none",
-      ])) &&
-    (!("bulk" in value) ||
-      value.bulk === undefined ||
-      isOneOf(value.bulk, ["small", "medium", "large"])) &&
-    validAppliesTo
-  );
-}
-
-function isHospitalOverride(value: unknown): value is UserHospitalOverride {
-  return (
-    isRecord(value) &&
-    typeof value.updatedAt === "string" &&
-    hasOptionalString(value, "hospitalId") &&
-    hasOptionalString(value, "notesOverride") &&
-    (!("providedItemsOverride" in value) ||
-      value.providedItemsOverride === undefined ||
-      isStringArray(value.providedItemsOverride)) &&
-    (!("selectedProvidedItemIds" in value) ||
-      value.selectedProvidedItemIds === undefined ||
-      isStringArray(value.selectedProvidedItemIds)) &&
-    (!("requiredDocumentsOverride" in value) ||
-      value.requiredDocumentsOverride === undefined ||
-      isStringArray(value.requiredDocumentsOverride))
-  );
-}
-
-function isHospitalAnswer(value: unknown): value is HospitalAnswer {
-  return (
-    isRecord(value) &&
-    hasOptionalString(value, "hospitalId") &&
-    typeof value.itemId === "string" &&
-    typeof value.name === "string" &&
-    isOneOf(value.status, [
-      "todo",
-      "confirmed",
-      "provided",
-      "not_provided",
-      "partial",
-      "not_needed",
-    ]) &&
-    hasOptionalString(value, "note") &&
-    typeof value.updatedAt === "string"
-  );
-}
-
-function isTimelineTaskStatus(value: unknown): value is TimelineTaskStatus {
-  return (
-    isRecord(value) &&
-    typeof value.taskId === "string" &&
-    isOneOf(value.status, ["todo", "done", "not_needed"]) &&
-    typeof value.updatedAt === "string"
-  );
-}
-
-function isContractionRecord(value: unknown): value is ContractionRecord {
-  return (
-    isRecord(value) &&
-    typeof value.id === "string" &&
-    typeof value.startedAt === "string" &&
-    typeof value.endedAt === "string" &&
-    isFiniteNumber(value.durationSeconds) &&
-    (!("intervalSeconds" in value) ||
-      value.intervalSeconds === undefined ||
-      isFiniteNumber(value.intervalSeconds)) &&
-    hasOptionalString(value, "note")
-  );
-}
-
-function isPostpartumTask(value: unknown): value is PostpartumTask {
-  return (
-    isRecord(value) &&
-    typeof value.id === "string" &&
-    isOneOf(value.group, [
-      "birth_certificate",
-      "discharge_billing",
-      "insurance",
-      "household",
-      "postpartum_check",
-      "newborn_check",
-    ]) &&
-    typeof value.title === "string" &&
-    isOneOf(value.status, ["todo", "done", "not_needed"]) &&
-    hasOptionalString(value, "note")
-  );
-}
-
-function isBirthPlanPatch(value: unknown): value is Partial<BirthPlan> {
-  return (
-    isRecord(value) &&
-    Object.keys(DEFAULT_BIRTH_PLAN).every(
-      (key) => !(key in value) || typeof value[key] === "string",
-    )
-  );
-}
-
-type ArrayImportField =
-  | "checklist"
-  | "customItems"
-  | "hiddenTemplateItemIds"
-  | "hospitalOverrides"
-  | "hospitalAnswers"
-  | "timelineTaskStatuses"
-  | "contractions"
-  | "postpartumTasks";
-
-const ARRAY_FIELD_VALIDATORS: Array<[
-  ArrayImportField,
-  (value: unknown) => boolean,
-]> = [
-  ["checklist", isChecklistItem],
-  ["customItems", isChecklistItem],
-  ["hiddenTemplateItemIds", (value) => typeof value === "string"],
-  ["hospitalOverrides", isHospitalOverride],
-  ["hospitalAnswers", isHospitalAnswer],
-  ["timelineTaskStatuses", isTimelineTaskStatus],
-  ["contractions", isContractionRecord],
-  ["postpartumTasks", isPostpartumTask],
-];
-
-export function importData(rawJson: string): ImportResult {
-  const validation = validateImportData(rawJson);
-
-  if (!validation.ok || !validation.data) {
-    return { ok: validation.ok, message: validation.message };
-  }
-
-  return applyImportData(validation.data);
 }
 
 export function validateImportData(rawJson: string): ImportValidationResult {
@@ -749,119 +541,91 @@ export function validateImportData(rawJson: string): ImportValidationResult {
     return { ok: false, message: "JSON 内容不是 DadKit 备份，未修改本地数据。" };
   }
 
-  const data = parsed as DadKitImportData;
-
-  if (data.version !== 2) {
+  if (parsed.version !== 3) {
     return { ok: false, message: "不支持的备份版本，未修改本地数据。" };
   }
 
-  if (
-    "exportedAt" in data &&
-    data.exportedAt !== undefined &&
-    typeof data.exportedAt !== "string"
-  ) {
-    return { ok: false, message: "exportedAt 必须是字符串，未修改本地数据。" };
-  }
-
-  if (
-    "userProfile" in data &&
-    data.userProfile !== undefined &&
-    data.userProfile !== null &&
-    !isUserProfile(data.userProfile)
-  ) {
-    return { ok: false, message: "userProfile 内容无效，未修改本地数据。" };
-  }
-
-  for (const [field, isValidMember] of ARRAY_FIELD_VALIDATORS) {
-    const value = data[field];
-
-    if (
-      field in data &&
-      value !== undefined &&
-      (!Array.isArray(value) || !value.every(isValidMember))
-    ) {
-      return {
-        ok: false,
-        message: `${field} 包含无效数据，未修改本地数据。`,
-      };
-    }
-  }
-
-  if (
-    "birthPlan" in data &&
-    data.birthPlan !== undefined &&
-    !isBirthPlanPatch(data.birthPlan)
-  ) {
+  if (!hasExactKeys(parsed, EXPORT_KEYS)) {
     return {
       ok: false,
-      message: "birthPlan 内容无效，未修改本地数据。",
+      message: "备份字段不完整或包含未知字段，未修改本地数据。",
     };
   }
 
-  if (
-    "checklistMode" in data &&
-    data.checklistMode !== undefined &&
-    data.checklistMode !== "lean" &&
-    data.checklistMode !== "full"
-  ) {
+  if (!isValidDateString(parsed.exportedAt)) {
+    return { ok: false, message: "exportedAt 不是有效日期，未修改本地数据。" };
+  }
+
+  if (!isOneOf<ChecklistMode>(parsed.checklistMode, ["lean", "full"])) {
     return {
       ok: false,
       message: "checklistMode 只能是 lean 或 full，未修改本地数据。",
     };
   }
 
-  return { ok: true, message: "校验通过", data };
+  if (!Array.isArray(parsed.checklist) || !parsed.checklist.every(isChecklistItem)) {
+    return { ok: false, message: "checklist 包含无效数据，未修改本地数据。" };
+  }
+
+  if (
+    !Array.isArray(parsed.customItems) ||
+    !parsed.customItems.every(
+      (item) => isChecklistItem(item) && item.source === "user",
+    )
+  ) {
+    return { ok: false, message: "customItems 包含无效数据，未修改本地数据。" };
+  }
+
+  if (
+    !Array.isArray(parsed.hiddenTemplateItemIds) ||
+    !parsed.hiddenTemplateItemIds.every(
+      (id) => typeof id === "string" && id.trim().length > 0,
+    )
+  ) {
+    return {
+      ok: false,
+      message: "hiddenTemplateItemIds 包含无效数据，未修改本地数据。",
+    };
+  }
+
+  return {
+    ok: true,
+    message: "校验通过",
+    data: parsed as DadKitImportData,
+  };
 }
 
-export function applyImportData(
-  data: DadKitImportData,
-): ImportResult {
+export function importData(rawJson: string): ImportResult {
+  const validation = validateImportData(rawJson);
+
+  if (!validation.ok || !validation.data) {
+    return { ok: false, message: validation.message };
+  }
+
+  return applyImportData(validation.data);
+}
+
+export function applyImportData(data: DadKitImportData): ImportResult {
+  if (!isDadKitExportData(data)) {
+    return { ok: false, message: "备份内容无效，未修改本地数据。" };
+  }
+
   if (!canUseLocalStorage()) {
     return { ok: false, message: "当前环境无法访问本地存储，未修改本地数据。" };
   }
 
-  const mutations: StorageMutation[] = [];
-
-  if ("userProfile" in data && data.userProfile !== undefined) {
-    mutations.push({
-      key: STORAGE_KEYS.userProfile,
-      value: data.userProfile === null ? null : JSON.stringify(data.userProfile),
-    });
-  }
-
-  addJsonMutation(mutations, STORAGE_KEYS.checklist, data.checklist);
-  addJsonMutation(mutations, STORAGE_KEYS.customItems, data.customItems);
-  addJsonMutation(
-    mutations,
-    STORAGE_KEYS.hiddenTemplateItems,
-    data.hiddenTemplateItemIds,
-  );
-  addJsonMutation(mutations, STORAGE_KEYS.hospitalOverrides, data.hospitalOverrides);
-  addJsonMutation(mutations, STORAGE_KEYS.hospitalAnswers, data.hospitalAnswers);
-  addJsonMutation(
-    mutations,
-    STORAGE_KEYS.timelineTaskStatuses,
-    data.timelineTaskStatuses,
-  );
-  addJsonMutation(mutations, STORAGE_KEYS.contractions, data.contractions);
-
-  if (data.birthPlan !== undefined) {
-    addJsonMutation(
-      mutations,
-      STORAGE_KEYS.birthPlan,
-      mergeBirthPlan(data.birthPlan),
-    );
-  }
-
-  if (data.postpartumTasks !== undefined) {
-    addJsonMutation(
-      mutations,
-      STORAGE_KEYS.postpartumTasks,
-      mergePostpartumTasks(data.postpartumTasks),
-    );
-  }
-
-  addJsonMutation(mutations, STORAGE_KEYS.checklistMode, data.checklistMode);
+  const mutations: StorageMutation[] = [
+    { key: STORAGE_KEYS.checklist, value: JSON.stringify(data.checklist) },
+    { key: STORAGE_KEYS.customItems, value: JSON.stringify(data.customItems) },
+    {
+      key: STORAGE_KEYS.hiddenTemplateItems,
+      value: JSON.stringify(data.hiddenTemplateItemIds),
+    },
+    {
+      key: STORAGE_KEYS.checklistMode,
+      value: JSON.stringify(data.checklistMode),
+    },
+  ];
 
   try {
     applyStorageMutations(mutations);
@@ -875,28 +639,6 @@ export function applyImportData(
     }
 
     return { ok: false, message: "导入失败，未修改本地数据。" };
-  }
-}
-
-type StorageMutation = {
-  key: string;
-  value: string | null;
-};
-
-class StorageTransactionError extends Error {
-  constructor(readonly rollbackSucceeded: boolean) {
-    super("本地存储事务失败");
-    this.name = "StorageTransactionError";
-  }
-}
-
-function addJsonMutation(
-  mutations: StorageMutation[],
-  key: string,
-  value: unknown,
-) {
-  if (value !== undefined) {
-    mutations.push({ key, value: JSON.stringify(value) });
   }
 }
 
@@ -952,38 +694,12 @@ function snapshotId() {
 }
 
 function hasSnapshotData(data: DadKitExportData) {
-  return Boolean(
-    data.userProfile ||
-      data.checklist.length > 0 ||
-      data.customItems.length > 0 ||
-      data.hiddenTemplateItemIds.length > 0 ||
-      data.hospitalOverrides.length > 0 ||
-      data.hospitalAnswers.length > 0 ||
-      data.timelineTaskStatuses.length > 0 ||
-      data.contractions.length > 0 ||
-      hasBirthPlanData(data.birthPlan) ||
-      hasPostpartumData(data.postpartumTasks),
+  return (
+    data.checklistMode !== "lean" ||
+    data.checklist.length > 0 ||
+    data.customItems.length > 0 ||
+    data.hiddenTemplateItemIds.length > 0
   );
-}
-
-function hasBirthPlanData(plan: BirthPlan) {
-  return Object.entries(DEFAULT_BIRTH_PLAN).some(
-    ([key, value]) => plan[key as keyof BirthPlan] !== value,
-  );
-}
-
-function hasPostpartumData(tasks: PostpartumTask[]) {
-  const defaultsById = new Map(DEFAULT_POSTPARTUM_TASKS.map((task) => [task.id, task]));
-
-  return tasks.some((task) => {
-    const defaultTask = defaultsById.get(task.id);
-
-    if (!defaultTask) {
-      return true;
-    }
-
-    return task.status !== defaultTask.status || (task.note ?? "") !== (defaultTask.note ?? "");
-  });
 }
 
 function isSnapshot(value: unknown): value is DadKitSnapshot {
@@ -992,26 +708,19 @@ function isSnapshot(value: unknown): value is DadKitSnapshot {
   }
 
   return (
+    hasExactKeys(value, ["id", "createdAt", "reason", "data"]) &&
     typeof value.id === "string" &&
-    typeof value.createdAt === "string" &&
+    value.id.length > 0 &&
+    isValidDateString(value.createdAt) &&
     typeof value.reason === "string" &&
-    isRecord(value.data) &&
-    value.data.version === 2
+    value.reason.length > 0 &&
+    isDadKitExportData(value.data)
   );
 }
 
 export function loadSnapshots(): DadKitSnapshot[] {
-  try {
-    const snapshots = readJson<DadKitSnapshot[]>(STORAGE_KEYS.snapshots, []);
-
-    if (!Array.isArray(snapshots)) {
-      return [];
-    }
-
-    return snapshots.filter(isSnapshot).slice(0, 5);
-  } catch {
-    return [];
-  }
+  const snapshots = readJson<unknown>(STORAGE_KEYS.snapshots, []);
+  return Array.isArray(snapshots) ? snapshots.filter(isSnapshot).slice(0, 5) : [];
 }
 
 export function saveSnapshots(snapshots: DadKitSnapshot[]) {
@@ -1021,7 +730,6 @@ export function saveSnapshots(snapshots: DadKitSnapshot[]) {
     }
 
     const serialized = JSON.stringify(snapshots.filter(isSnapshot).slice(0, 5));
-
     window.localStorage.setItem(STORAGE_KEYS.snapshots, serialized);
 
     return window.localStorage.getItem(STORAGE_KEYS.snapshots) === serialized;
@@ -1067,32 +775,29 @@ export function restoreSnapshot(
   id: string,
   options: { snapshotBeforeRestore?: boolean } = {},
 ): ImportResult {
-  const snapshotBeforeRestore = options.snapshotBeforeRestore ?? true;
-  const snapshotsBeforeRestore = loadSnapshots();
-  const snapshot = snapshotsBeforeRestore.find((candidate) => candidate.id === id);
+  const snapshot = loadSnapshots().find((candidate) => candidate.id === id);
 
   if (!snapshot) {
     return { ok: false, message: "未找到这份本地备份，未修改本地数据。" };
   }
 
   try {
-    if (snapshotBeforeRestore) {
-      // Keep this rescue point even when the import or its rollback fails.
+    if (options.snapshotBeforeRestore ?? true) {
       createSnapshot("恢复本地备份前");
     }
 
-    return importData(JSON.stringify(snapshot.data));
+    return applyImportData(snapshot.data);
   } catch {
     return { ok: false, message: "恢复失败，未修改本地数据。" };
   }
 }
 
 export function clearSnapshots() {
-  try {
-    if (!canUseLocalStorage()) {
-      return;
-    }
+  if (!canUseLocalStorage()) {
+    return;
+  }
 
+  try {
     window.localStorage.removeItem(STORAGE_KEYS.snapshots);
   } catch {
     return;

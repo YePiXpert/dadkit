@@ -20,10 +20,6 @@ import {
   getChecklistItemState,
   type ChecklistItemState,
 } from "@/lib/checklist-v2";
-import {
-  getItemTileTone,
-  ITEM_TILE_TONE_STYLES,
-} from "@/lib/presentation/item-icons";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -48,15 +44,14 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   );
   const removeItem = useDadKitStore((state) => state.removeItem);
   const itemState = getChecklistItemState(item);
-  const toneStyle = ITEM_TILE_TONE_STYLES[getItemTileTone(item)];
   const actionLabel = getActionLabel(itemState);
   const itemPhoto = useItemPhoto(item.id);
 
   return (
     <article
       className={cn(
-        "rounded-2xl border border-border/80 bg-card px-3 py-3 transition-colors",
-        itemState === "packed" && "bg-muted/45",
+        "rounded-2xl bg-background px-3 py-3 transition-colors",
+        itemState === "packed" && "bg-muted/60",
         itemState === "not_needed" && "opacity-60",
       )}
     >
@@ -64,7 +59,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
         <button
           aria-label={`${actionLabel}：${item.name}`}
           className={cn(
-            "mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-border bg-background text-muted-foreground transition-colors active:scale-95",
+            "mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-border bg-card text-muted-foreground transition-colors active:scale-95",
             itemState === "ready" &&
               "border-primary/30 bg-secondary text-primary",
             itemState === "packed" &&
@@ -87,8 +82,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
 
         <span
           aria-hidden="true"
-          className="flex size-10 shrink-0 items-center justify-center rounded-xl"
-          style={toneStyle}
+          className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-foreground/70"
         >
           <ChecklistItemGlyph item={item} />
         </span>
@@ -105,7 +99,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             </h3>
             <span
               className={cn(
-                "shrink-0 rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground",
+                "shrink-0 rounded-full bg-card px-2 py-1 text-[10px] font-semibold text-muted-foreground",
                 itemState === "ready" && "bg-secondary text-primary",
                 itemState === "packed" && "bg-primary/10 text-primary",
               )}
@@ -114,12 +108,12 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             </span>
           </div>
           {item.quantity ? (
-            <p className="mt-1 text-xs font-medium text-foreground/70">
+            <p className="mt-1 text-xs font-medium text-muted-foreground">
               建议 {item.quantity}
             </p>
           ) : null}
           {item.note ? (
-            <p className="mt-1.5 line-clamp-2 break-words rounded-lg bg-muted px-2.5 py-1.5 text-xs leading-5 text-muted-foreground">
+            <p className="mt-1.5 line-clamp-2 break-words rounded-lg bg-card px-2.5 py-1.5 text-xs leading-5 text-muted-foreground">
               {item.note}
             </p>
           ) : null}

@@ -7,14 +7,14 @@ import { getReviewPageHref, PUBLIC_PRIVACY_PATH } from "@/lib/app-routes";
 export const metadata: Metadata = {
   title: "支持与反馈 | DadKit",
   description:
-    "DadKit 的支持入口：反馈问题、PWA 使用说明、WebDAV 排查和非医疗使用边界。",
+    "DadKit 的支持入口：反馈问题、PWA 清单使用说明和 WebDAV 排查。",
 };
 
 const testChecklist = [
-  "首次打开后无需填写资料，确认首页直接显示清单，并能进入“我的”",
+  "首次打开后确认首页直接显示清单，并能进入“数据”",
   "修改一个清单状态，刷新或重新打开 PWA，确认本地数据仍在",
-  "在“我的”页面复制 JSON 备份，并尝试导入一份非真实隐私数据",
-  "如测试 WebDAV，请使用测试目录和应用密码，不要把真实家庭资料截图发到反馈里",
+  "在“数据”页面复制 JSON 备份，并尝试导入一份不含真实隐私的测试清单",
+  "如测试 WebDAV，请使用测试目录和应用密码，不要把真实清单截图发到反馈里",
 ];
 
 const feedbackItems = [
@@ -34,7 +34,7 @@ export default function SupportPage() {
           </CardHeader>
           <CardContent className="grid gap-3 text-sm leading-6 text-muted-foreground">
             <p>
-              DadKit 是本地优先的待产准备工具。反馈问题时，请不要发送手机号、WebDAV 应用密码、医院住院号、身份证件或包含真实家庭资料的截图。
+              DadKit 是本地优先的待产清单工具。反馈问题时，请不要发送手机号、WebDAV 应用密码、身份证件或包含真实清单内容的截图。
             </p>
             <p>
               当前公开支持渠道是 GitHub Issues：
@@ -96,11 +96,11 @@ export default function SupportPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>医疗边界</CardTitle>
+            <CardTitle>数据与隐私</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 text-sm leading-6 text-muted-foreground">
             <p>
-              DadKit 只整理准备事项、记录和沟通信息，不判断是否临产，不替代医生、助产士、护士、医院通知或当地政策。
+              JSON、本地恢复快照和 WebDAV 只备份清单数据，不包含物品照片、WebDAV 连接配置或凭据。
             </p>
             <p>
               隐私说明见{" "}

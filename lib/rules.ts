@@ -1,27 +1,18 @@
-import {
-  beijingGeneralHospitalTemplate,
-  generalTemplate,
-  hospitalTemplates,
-  otherRegionTemplate,
-  regionTemplates,
-} from "@/lib/templates";
 import { inferPreparationKind } from "@/lib/preparation";
-import type {
-  ChecklistBag,
-  ChecklistCategory,
-  ChecklistItem,
-  ChecklistMode,
-  ChecklistPersistence,
-  HospitalProfile,
-  ItemBulk,
-  ItemKind,
-  PackTier,
-  Priority,
-  TemplateChecklistItem,
-  UserHospitalOverride,
-  UserProfile,
+import { generalTemplate } from "@/lib/templates/general";
+import {
+  CATEGORY_ORDER,
+  type ChecklistBag,
+  type ChecklistItem,
+  type ChecklistMode,
+  type ChecklistPersistence,
+  type ItemKind,
+  type ItemBulk,
+  type PackTier,
+  type PreparationKind,
+  type Priority,
+  type TemplateChecklistItem,
 } from "@/lib/types";
-import { CATEGORY_ORDER } from "@/lib/types";
 
 const PRIORITY_WEIGHT: Record<Priority, number> = {
   must: 3,
@@ -35,27 +26,6 @@ const PACK_TIER_WEIGHT: Record<PackTier, number> = {
   optional: 2,
   hidden: 1,
 };
-
-const PROVIDED_ITEM_MATCHERS: Record<string, string[]> = {
-  "postpartum-pads": ["产褥垫", "产后卫生巾"],
-  "baby-diapers": ["尿不湿", "宝宝尿不湿"],
-  "baby-clothes": ["宝宝衣物", "宝宝出院衣物", "宝宝住院衣物"],
-  blanket: ["包被", "小毯子"],
-  "mom-care-kit": ["妈妈护理包", "产后护理", "一次性内裤"],
-};
-
-const PROVIDED_ITEM_LABELS: Record<string, string> = {
-  "postpartum-pads": "产褥垫",
-  "baby-diapers": "宝宝尿不湿",
-  "baby-clothes": "宝宝衣物",
-  blanket: "包被",
-  "mom-care-kit": "妈妈护理包",
-  other: "其他",
-  unknown: "不确定",
-};
-
-const HOSPITAL_PROVIDED_RULE_NOTE =
-  "用户标记为已向医院确认提供，仍建议确认具体规格、数量和是否需要少量备用。";
 
 const TASK_KEYWORDS = [
   "确认",
@@ -73,114 +43,71 @@ const TASK_KEYWORDS = [
   "安排",
 ];
 
-const QUESTION_KEYWORDS = ["是否", "待确认", "需要哪些", "医院是否"];
-
-function stableId(source: string, category: ChecklistCategory, name: string) {
-  const compact = encodeURIComponent(name)
-    .replace(/%/g, "")
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 64);
-  return `${source}-${category}-${compact || "item"}`.toLowerCase();
-}
-
 function normalizeName(name: string) {
   return name.replace(/\s+/g, "").replace(/[？?]/g, "").toLowerCase();
 }
 
-function itemKey(
-  item: Pick<ChecklistItem, "name" | "category" | "itemKind">,
-) {
-  const scope =
-    item.itemKind === "question" || item.category === "hospital_questions"
-      ? item.category
-      : "checklist";
-
-  return `${scope}:${normalizeName(item.name)}`;
-}
-
-function hasTaskKeyword(name: string) {
-  return TASK_KEYWORDS.some((keyword) => name.includes(keyword));
-}
-
-function hasQuestionKeyword(name: string) {
-  return QUESTION_KEYWORDS.some((keyword) => name.includes(keyword));
+function itemKey(item: Pick<ChecklistItem, "name">) {
+  return normalizeName(item.name);
 }
 
 function inferItemKind(item: ChecklistItem): ItemKind {
-  if (item.itemKind) {
-    return item.itemKind;
-  }
-
-  if (item.category === "hospital_questions") {
-    return "question";
-  }
-
-  if (hasQuestionKeyword(item.name)) {
-    return "question";
-  }
-
-  if (item.category === "last_minute") {
+  if (item.itemKind === "task") {
     return "task";
   }
 
-  if (item.category !== "documents" && hasTaskKeyword(item.name)) {
+  if (item.itemKind === "item") {
+    return "item";
+  }
+
+  if (
+    item.category === "last_minute" ||
+    (item.category !== "documents" &&
+      TASK_KEYWORDS.some((keyword) => item.name.includes(keyword)))
+  ) {
     return "task";
   }
 
   return "item";
 }
 
-function inferPackTier(item: ChecklistItem, itemKind: ItemKind): PackTier {
+function inferPackTier(
+  item: ChecklistItem,
+  itemKind: ItemKind,
+): PackTier {
   if (item.packTier) {
     return item.packTier;
   }
 
-  if (item.category === "hospital_questions" || itemKind === "question") {
-    return "confirm";
-  }
-
-  if (item.category === "last_minute") {
+  if (item.category === "last_minute" || item.priority === "must") {
     return "core";
   }
 
-  if (item.priority === "must") {
-    return "core";
-  }
-
-  return "optional";
+  return itemKind === "task" ? "confirm" : "optional";
 }
 
-function inferBag(item: ChecklistItem, itemKind: ItemKind): ChecklistBag {
+function inferBag(
+  item: ChecklistItem,
+  itemKind: ItemKind,
+): ChecklistBag {
   if (item.bag) {
     return item.bag;
   }
 
-  if (item.category === "documents") {
-    return "documents_folder";
-  }
-
+  if (item.category === "documents") return "documents_folder";
   if (item.category === "mom_labor" || item.category === "mom_postpartum") {
     return item.timing === "grab_before_leaving" ? "last_minute" : "mom_bag";
   }
-
-  if (item.category === "baby") {
-    return "baby_bag";
-  }
-
+  if (item.category === "baby") return "baby_bag";
   if (item.category === "partner") {
     return itemKind === "task" ? "none" : "dad_backpack";
   }
-
   if (item.category === "going_home") {
     return item.name.includes("安全座椅") || item.name.includes("交通")
       ? "car"
       : "mom_bag";
   }
-
-  if (item.category === "last_minute") {
-    return "last_minute";
-  }
+  if (item.category === "last_minute") return "last_minute";
 
   return "none";
 }
@@ -211,174 +138,50 @@ function inferBulk(item: ChecklistItem): ItemBulk {
   return "small";
 }
 
+function persistedPreparationKind(
+  item: ChecklistItem,
+): PreparationKind {
+  return inferPreparationKind(item);
+}
+
 export function normalizeChecklistItem(item: ChecklistItem): ChecklistItem {
   const itemKind = inferItemKind(item);
-  const packTier = inferPackTier(item, itemKind);
-  const bag = inferBag(item, itemKind);
-  const bulk = inferBulk(item);
-  const baseItem = {
+  const baseItem: ChecklistItem = {
     ...item,
+    id: item.id.trim(),
+    name: item.name.trim(),
     itemKind,
-    packTier,
-    bag,
-    bulk,
+    packTier: inferPackTier(item, itemKind),
+    bag: inferBag(item, itemKind),
+    bulk: inferBulk(item),
   };
 
   return {
     ...baseItem,
-    itemKind,
-    packTier,
-    bag,
-    bulk,
-    hospitalProvidedByRule:
-      item.status === "hospital_provided"
-        ? item.hospitalProvidedByRule
-        : item.hospitalProvidedByRule === false
-          ? false
-          : undefined,
-    preparationKind: inferPreparationKind(baseItem),
+    preparationKind: persistedPreparationKind(baseItem),
   };
+}
+
+function isSupportedTemplateItem(item: TemplateChecklistItem) {
+  return (
+    CATEGORY_ORDER.includes(item.category) &&
+    item.source === "general"
+  );
 }
 
 function createTemplateItem(item: TemplateChecklistItem): ChecklistItem {
   return normalizeChecklistItem({
-    status: item.status ?? "todo",
     ...item,
+    status: item.status ?? "todo",
   });
-}
-
-function createGeneratedItem(
-  source: ChecklistItem["source"],
-  sourceLabel: string,
-  category: ChecklistCategory,
-  name: string,
-  priority: Priority,
-  note?: string,
-  options: Partial<ChecklistItem> = {},
-): ChecklistItem {
-  return normalizeChecklistItem({
-    id: stableId(source, category, name),
-    name,
-    category,
-    priority,
-    note,
-    status: "todo",
-    source,
-    sourceLabel,
-    editable: true,
-    removable: source === "user",
-    timing:
-      category === "hospital_questions"
-        ? "confirm_with_hospital"
-        : category === "last_minute"
-          ? "grab_before_leaving"
-          : "pack_now",
-    ...options,
-  });
-}
-
-function getRegion(profile: UserProfile) {
-  return (
-    regionTemplates.find((region) => region.id === profile.regionId) ??
-    otherRegionTemplate
-  );
-}
-
-export function getHospitalForProfile(
-  profile: UserProfile,
-): HospitalProfile | undefined {
-  if (profile.hospitalMode === "custom") {
-    return profile.customHospital;
-  }
-
-  if (profile.hospitalMode === "unknown") {
-    return undefined;
-  }
-
-  return (
-    hospitalTemplates.find((hospital) => hospital.hospitalId === profile.hospitalId) ??
-    beijingGeneralHospitalTemplate
-  );
-}
-
-export function getHospitalIdForProfile(profile: UserProfile) {
-  if (profile.hospitalMode === "custom") {
-    return profile.customHospital?.hospitalId;
-  }
-
-  if (profile.hospitalMode === "preset") {
-    return profile.hospitalId;
-  }
-
-  return undefined;
-}
-
-export function getHospitalAnswerScopeId(profile?: UserProfile) {
-  return profile ? getHospitalIdForProfile(profile) ?? "hospital:unknown" : "hospital:unknown";
-}
-
-function getHospitalOverride(
-  profile: UserProfile,
-  overrides?: UserHospitalOverride[],
-) {
-  const id = getHospitalIdForProfile(profile);
-
-  if (!id) {
-    return undefined;
-  }
-
-  return overrides?.find((override) => override.hospitalId === id);
-}
-
-function appliesToProfile(item: ChecklistItem, profile: UserProfile) {
-  const appliesTo = item.appliesTo;
-
-  if (!appliesTo) {
-    return true;
-  }
-
-  if (
-    appliesTo.deliveryMode &&
-    !appliesTo.deliveryMode.includes(profile.deliveryMode)
-  ) {
-    return false;
-  }
-
-  if (
-    typeof appliesTo.breastfeeding === "boolean" &&
-    appliesTo.breastfeeding !== profile.breastfeeding
-  ) {
-    return false;
-  }
-
-  if (
-    typeof appliesTo.partnerPresent === "boolean" &&
-    appliesTo.partnerPresent !== profile.partnerPresent
-  ) {
-    return false;
-  }
-
-  if (
-    typeof appliesTo.coldWeather === "boolean" &&
-    appliesTo.coldWeather !== profile.coldWeather
-  ) {
-    return false;
-  }
-
-  return true;
 }
 
 function choosePackTier(
   current?: PackTier,
   incoming?: PackTier,
 ): PackTier | undefined {
-  if (!current) {
-    return incoming;
-  }
-
-  if (!incoming) {
-    return current;
-  }
+  if (!current) return incoming;
+  if (!incoming) return current;
 
   return PACK_TIER_WEIGHT[incoming] > PACK_TIER_WEIGHT[current]
     ? incoming
@@ -405,578 +208,24 @@ function mergeDuplicateItems(items: ChecklistItem[]) {
     const sourceLabel = Array.from(
       new Set([existing.sourceLabel, item.sourceLabel].filter(Boolean)),
     ).join(" + ");
+    const userItem = item.source === "user" ? item : undefined;
 
-    merged.set(key, {
-      ...existing,
-      priority,
-      packTier: choosePackTier(existing.packTier, item.packTier),
-      note:
-        item.source === "user" && item.note ? item.note : existing.note ?? item.note,
-      quantity:
-        item.source === "user" && item.quantity
-          ? item.quantity
-          : existing.quantity ?? item.quantity,
-      editable: existing.editable || item.editable,
-      removable: existing.removable && item.removable,
-      sourceLabel: sourceLabel || existing.sourceLabel,
-    });
-  }
-
-  return Array.from(merged.values()).map(normalizeChecklistItem);
-}
-
-function buildRegionItems(profile: UserProfile) {
-  const region = getRegion(profile);
-  const items: ChecklistItem[] = [];
-
-  for (const documentName of region.requiredDocuments) {
-    items.push(
-      createGeneratedItem(
-        "region",
-        region.name,
-        "documents",
-        documentName,
-        "must",
-        undefined,
-        {
-          packTier: "core",
-          itemKind: "item",
-          bag: "documents_folder",
-        },
-      ),
+    merged.set(
+      key,
+      normalizeChecklistItem({
+        ...existing,
+        priority,
+        packTier: choosePackTier(existing.packTier, item.packTier),
+        note: userItem?.note ?? existing.note ?? item.note,
+        quantity: userItem?.quantity ?? existing.quantity ?? item.quantity,
+        editable: existing.editable || item.editable,
+        removable: existing.removable && item.removable,
+        sourceLabel: sourceLabel || existing.sourceLabel,
+      }),
     );
   }
 
-  for (const recommendedItem of region.recommendedItems) {
-    items.push(
-      createGeneratedItem(
-        "region",
-        region.name,
-        "hospital_questions",
-        recommendedItem,
-        "recommended",
-        undefined,
-        {
-          packTier: "confirm",
-          itemKind: "question",
-          bag: "none",
-        },
-      ),
-    );
-  }
-
-  for (const note of region.notes) {
-    items.push(
-      createGeneratedItem(
-        "region",
-        region.name,
-        "hospital_questions",
-        note,
-        "recommended",
-        undefined,
-        {
-          packTier: "confirm",
-          itemKind: "question",
-          bag: "none",
-        },
-      ),
-    );
-  }
-
-  return items;
-}
-
-function buildHospitalItems(
-  profile: UserProfile,
-  overrides?: UserHospitalOverride[],
-) {
-  const hospital = getHospitalForProfile(profile);
-  const override = getHospitalOverride(profile, overrides);
-  const items: ChecklistItem[] = [];
-
-  if (!hospital) {
-    items.push(
-      createGeneratedItem(
-        "hospital",
-        "医院待确认",
-        "hospital_questions",
-        "生产医院暂未确定，请在确定医院后确认入院资料、提供物品、陪产规则和入院动线。",
-        "must",
-        undefined,
-        {
-          packTier: "confirm",
-          itemKind: "question",
-          bag: "none",
-        },
-      ),
-    );
-    return items;
-  }
-
-  const sourceLabel = hospital.name ?? "医院模板";
-  const requiredDocuments =
-    override?.requiredDocumentsOverride?.length
-      ? override.requiredDocumentsOverride
-      : hospital.requiredDocuments;
-
-  for (const documentName of requiredDocuments) {
-    items.push(
-      createGeneratedItem(
-        "hospital",
-        sourceLabel,
-        "documents",
-        documentName,
-        "must",
-        undefined,
-        {
-          packTier: "core",
-          itemKind: "item",
-          bag: "documents_folder",
-        },
-      ),
-    );
-  }
-
-  for (const recommendedItem of hospital.recommendedItems) {
-    items.push(
-      createGeneratedItem(
-        "hospital",
-        sourceLabel,
-        "hospital_questions",
-        recommendedItem,
-        "recommended",
-        undefined,
-        {
-          packTier: "confirm",
-          itemKind: "question",
-          bag: "none",
-        },
-      ),
-    );
-  }
-
-  for (const notAllowedItem of hospital.notAllowedItems) {
-    items.push(
-      createGeneratedItem(
-        "hospital",
-        sourceLabel,
-        "hospital_questions",
-        `请确认医院是否不建议携带：${notAllowedItem}`,
-        notAllowedItem === "待确认" ? "recommended" : "must",
-        undefined,
-        {
-          packTier: "confirm",
-          itemKind: "question",
-          bag: "none",
-        },
-      ),
-    );
-  }
-
-  const hospitalNotes = [
-    hospital.admissionNotes,
-    hospital.partnerPolicyNotes,
-    hospital.wardNotes,
-    hospital.paymentNotes,
-    ...(hospital.sourceNotes ?? []),
-    profile.hospitalNotes,
-    override?.notesOverride,
-  ].filter(Boolean) as string[];
-
-  for (const note of hospitalNotes) {
-    items.push(
-      createGeneratedItem(
-        "hospital",
-        sourceLabel,
-        "hospital_questions",
-        note,
-        "recommended",
-        undefined,
-        {
-          packTier: "confirm",
-          itemKind: "question",
-          bag: "none",
-        },
-      ),
-    );
-  }
-
-  return items;
-}
-
-function buildDeliveryModeItems(profile: UserProfile) {
-  const items: ChecklistItem[] = [];
-
-  if (profile.deliveryMode === "c_section") {
-    items.push(
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "mom_postpartum",
-        "收腹带",
-        "recommended",
-        "剖腹产后按医生建议使用，自然产不需要。",
-        {
-          packTier: "core",
-          itemKind: "item",
-          bag: "mom_bag",
-        },
-      ),
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "mom_postpartum",
-        "高腰一次性内裤",
-        "recommended",
-        undefined,
-        {
-          packTier: "core",
-          itemKind: "item",
-          bag: "mom_bag",
-        },
-      ),
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "mom_postpartum",
-        "宽松高腰出院裤",
-        "recommended",
-        undefined,
-        {
-          packTier: "core",
-          itemKind: "item",
-          bag: "mom_bag",
-        },
-      ),
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "mom_postpartum",
-        "腹部不压迫的衣物",
-        "recommended",
-        undefined,
-        {
-          packTier: "core",
-          itemKind: "item",
-          bag: "mom_bag",
-        },
-      ),
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "hospital_questions",
-        "剖腹产术后护理问题待确认",
-        "must",
-        undefined,
-        {
-          packTier: "confirm",
-          itemKind: "question",
-          bag: "none",
-        },
-      ),
-    );
-  }
-
-  if (profile.deliveryMode === "vaginal") {
-    items.push(
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "mom_postpartum",
-        "会阴清洁用品",
-        "optional",
-        "自然产时按医院建议确认是否需要。",
-        {
-          packTier: "optional",
-          itemKind: "item",
-          bag: "mom_bag",
-        },
-      ),
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "mom_labor",
-        "分娩舒缓用品",
-        "optional",
-        undefined,
-        {
-          packTier: "optional",
-          itemKind: "item",
-          bag: "mom_bag",
-        },
-      ),
-    );
-  }
-
-  if (profile.deliveryMode === "unknown") {
-    items.push(
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "hospital_questions",
-        "自然产相关待产用品是否需要准备？",
-        "recommended",
-        undefined,
-        {
-          packTier: "confirm",
-          itemKind: "question",
-          bag: "none",
-        },
-      ),
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "hospital_questions",
-        "剖腹产术后护理问题待确认",
-        "recommended",
-        undefined,
-        {
-          packTier: "confirm",
-          itemKind: "question",
-          bag: "none",
-        },
-      ),
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "mom_postpartum",
-        "高腰一次性内裤",
-        "optional",
-        undefined,
-        {
-          packTier: "optional",
-          itemKind: "item",
-          bag: "mom_bag",
-        },
-      ),
-    );
-  }
-
-  return items;
-}
-
-function buildConditionItems(profile: UserProfile) {
-  const items: ChecklistItem[] = [];
-
-  if (profile.breastfeeding) {
-    items.push(
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "mom_postpartum",
-        "哺乳巾",
-        "optional",
-        undefined,
-        {
-          packTier: "optional",
-          itemKind: "item",
-          bag: "mom_bag",
-        },
-      ),
-    );
-  }
-
-  if (!profile.partnerPresent) {
-    items.push(
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "going_home",
-        "紧急联系人/接送人确认",
-        "must",
-        undefined,
-        {
-          packTier: "core",
-          itemKind: "task",
-          bag: "none",
-        },
-      ),
-    );
-  }
-
-  if (profile.coldWeather) {
-    items.push(
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "mom_labor",
-        "妈妈保暖外套",
-        "recommended",
-        undefined,
-        {
-          packTier: "core",
-          itemKind: "item",
-          bag: "mom_bag",
-        },
-      ),
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "mom_labor",
-        "袜子",
-        "recommended",
-        undefined,
-        {
-          packTier: "core",
-          itemKind: "item",
-          bag: "mom_bag",
-        },
-      ),
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "baby",
-        "宝宝厚包被",
-        "recommended",
-        undefined,
-        {
-          packTier: "core",
-          itemKind: "item",
-          bag: "baby_bag",
-        },
-      ),
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "baby",
-        "宝宝帽子",
-        "recommended",
-        undefined,
-        {
-          packTier: "core",
-          itemKind: "item",
-          bag: "baby_bag",
-        },
-      ),
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "baby",
-        "宝宝袜子",
-        "recommended",
-        undefined,
-        {
-          packTier: "core",
-          itemKind: "item",
-          bag: "baby_bag",
-        },
-      ),
-      createGeneratedItem(
-        "general",
-        "用户条件",
-        "going_home",
-        "返家保暖衣物",
-        "recommended",
-        undefined,
-        {
-          packTier: "core",
-          itemKind: "item",
-          bag: "mom_bag",
-        },
-      ),
-    );
-  }
-
-  return items;
-}
-
-function applyStayDayQuantities(item: ChecklistItem, profile: UserProfile) {
-  if (item.name === "一次性内裤") {
-    return {
-      ...item,
-      quantity: `${Math.max(5, profile.expectedStayDays)}-${Math.max(6, profile.expectedStayDays + 1)} 条或按预计住院天数准备`,
-    };
-  }
-
-  return item;
-}
-
-function shouldMarkHospitalProvided(
-  item: ChecklistItem,
-  providedIds: string[],
-) {
-  if (providedIds.includes("unknown") || item.itemKind !== "item") {
-    return false;
-  }
-
-  const normalizedItemName = normalizeName(item.name);
-
-  return providedIds.some((providedId) => {
-    if (providedId === "other") {
-      return false;
-    }
-
-    const matcherWords =
-      PROVIDED_ITEM_MATCHERS[providedId] ?? [PROVIDED_ITEM_LABELS[providedId], providedId];
-
-    return matcherWords
-      .filter(Boolean)
-      .some((word) => normalizedItemName.includes(normalizeName(word)));
-  });
-}
-
-function buildHospitalProvidedTips(providedIds: string[]) {
-  return providedIds
-    .filter((providedId) => providedId !== "unknown")
-    .map((providedId) => {
-      const label = PROVIDED_ITEM_LABELS[providedId] ?? providedId;
-      return createGeneratedItem(
-        "hospital",
-        "用户填写的医院提供物品",
-        "hospital_questions",
-        `已向医院确认提供：${label}。建议再确认具体规格、数量和是否仍需少量备用。`,
-        providedId === "other" ? "optional" : "recommended",
-        undefined,
-        {
-          packTier: "confirm",
-          itemKind: "question",
-          bag: "none",
-        },
-      );
-    });
-}
-
-export function getHospitalProvidedIdsForProfile(
-  profile: UserProfile,
-  overrides?: UserHospitalOverride[],
-) {
-  const override = getHospitalOverride(profile, overrides);
-  return Array.from(
-    new Set([
-      ...profile.hospitalProvidedItemIds,
-      ...(override?.providedItemsOverride ?? []),
-    ]),
-  );
-}
-
-function applyHospitalProvided(
-  items: ChecklistItem[],
-  profile: UserProfile,
-  overrides?: UserHospitalOverride[],
-) {
-  const providedIds = getHospitalProvidedIdsForProfile(profile, overrides);
-
-  if (providedIds.length === 0 || providedIds.includes("unknown")) {
-    return items;
-  }
-
-  return [
-    ...items.map((rawItem) => {
-      const item = normalizeChecklistItem(rawItem);
-
-      if (!shouldMarkHospitalProvided(item, providedIds)) {
-        return item;
-      }
-
-      return {
-        ...item,
-        status: "hospital_provided" as const,
-        hospitalProvidedByRule: true,
-        note: item.note ?? HOSPITAL_PROVIDED_RULE_NOTE,
-      };
-    }),
-    ...buildHospitalProvidedTips(providedIds),
-  ];
+  return Array.from(merged.values());
 }
 
 function preserveCurrentItemState(
@@ -988,121 +237,62 @@ function preserveCurrentItemState(
   }
 
   const previousById = new Map(previousItems.map((item) => [item.id, item]));
-  const previousByKey = new Map(previousItems.map((item) => [itemKey(item), item]));
+  const previousByKey = new Map(
+    previousItems.map((item) => [itemKey(item), item]),
+  );
 
   return generatedItems.map((item) => {
-    const previous = previousById.get(item.id) ?? previousByKey.get(itemKey(item));
+    const previous =
+      previousById.get(item.id) ?? previousByKey.get(itemKey(item));
 
     if (!previous) {
       return item;
     }
 
-    const userControlled = previous.hospitalProvidedByRule === false;
-    const status = userControlled
-      ? previous.status
-      : previous.status === "todo" && item.status !== "todo"
-        ? item.status
-        : previous.status;
-    const hospitalProvidedByRule =
-      status !== "hospital_provided"
-        ? previous.hospitalProvidedByRule === false
-          ? false
-          : undefined
-        : previous.status === "hospital_provided"
-          ? previous.hospitalProvidedByRule === true &&
-            item.hospitalProvidedByRule === true
-            ? true
-            : previous.hospitalProvidedByRule
-          : item.hospitalProvidedByRule;
-
     return normalizeChecklistItem({
       ...item,
-      status,
-      hospitalProvidedByRule,
+      status: previous.status,
       quantity: previous.quantity ?? item.quantity,
       note: previous.note ?? item.note,
     });
   });
 }
 
-function resetRemovedHospitalProvidedStatuses(
-  items: ChecklistItem[] | undefined,
-  currentProvidedIds: string[],
-) {
-  return items?.map((item) =>
-    item.status === "hospital_provided" &&
-    item.hospitalProvidedByRule === true &&
-    !shouldMarkHospitalProvided(item, currentProvidedIds)
-      ? {
-          ...item,
-          status: "todo" as const,
-          hospitalProvidedByRule: undefined,
-          note:
-            item.note === HOSPITAL_PROVIDED_RULE_NOTE ? undefined : item.note,
-        }
-      : item,
-  );
-}
-
 function sortItems(items: ChecklistItem[]) {
-  return [...items].sort((a, b) => {
+  return [...items].sort((left, right) => {
     const categoryDiff =
-      CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category);
+      CATEGORY_ORDER.indexOf(left.category) -
+      CATEGORY_ORDER.indexOf(right.category);
 
-    if (categoryDiff !== 0) {
-      return categoryDiff;
-    }
+    if (categoryDiff !== 0) return categoryDiff;
 
     const tierDiff =
-      PACK_TIER_WEIGHT[b.packTier ?? "optional"] -
-      PACK_TIER_WEIGHT[a.packTier ?? "optional"];
+      PACK_TIER_WEIGHT[right.packTier ?? "optional"] -
+      PACK_TIER_WEIGHT[left.packTier ?? "optional"];
 
-    if (tierDiff !== 0) {
-      return tierDiff;
-    }
+    if (tierDiff !== 0) return tierDiff;
 
-    return PRIORITY_WEIGHT[b.priority] - PRIORITY_WEIGHT[a.priority];
+    return PRIORITY_WEIGHT[right.priority] - PRIORITY_WEIGHT[left.priority];
   });
 }
 
 export function generateChecklist(
-  profile: UserProfile,
   persistence: ChecklistPersistence = {},
 ): ChecklistItem[] {
   const hiddenTemplateItemIds = new Set(persistence.hiddenTemplateItemIds ?? []);
-  const baseItems = generalTemplate
+  const generatedItems = generalTemplate
+    .filter(isSupportedTemplateItem)
     .map(createTemplateItem)
-    .filter((item) => appliesToProfile(item, profile));
-
-  const generatedItems = [
-    ...baseItems,
-    ...buildRegionItems(profile),
-    ...buildHospitalItems(profile, persistence.hospitalOverrides),
-    ...buildDeliveryModeItems(profile),
-    ...buildConditionItems(profile),
-  ].map((item) => applyStayDayQuantities(item, profile));
-
-  const withProvidedStatuses = applyHospitalProvided(
-    generatedItems,
-    profile,
-    persistence.hospitalOverrides,
-  );
-
-  const visibleGeneratedItems = withProvidedStatuses.filter(
-    (item) => !hiddenTemplateItemIds.has(item.id),
-  );
-
-  const withCustomItems = [
-    ...visibleGeneratedItems,
-    ...(persistence.customItems ?? []),
-  ].map(normalizeChecklistItem);
-
-  const deduped = mergeDuplicateItems(withCustomItems);
-  const currentItems = resetRemovedHospitalProvidedStatuses(
-    persistence.currentItems,
-    getHospitalProvidedIdsForProfile(profile, persistence.hospitalOverrides),
-  );
-  const preserved = preserveCurrentItemState(deduped, currentItems);
+    .filter((item) => !hiddenTemplateItemIds.has(item.id));
+  const customItems = (persistence.customItems ?? [])
+    .filter(
+      (item) =>
+        item.source === "user" &&
+        CATEGORY_ORDER.includes(item.category),
+    )
+    .map(normalizeChecklistItem);
+  const deduped = mergeDuplicateItems([...generatedItems, ...customItems]);
+  const preserved = preserveCurrentItemState(deduped, persistence.currentItems);
 
   return sortItems(preserved.map(normalizeChecklistItem));
 }
@@ -1141,12 +331,11 @@ function completionResult(total: number, completed: number) {
 }
 
 export function calculateCompletion(items: ChecklistItem[]) {
-  const total = items.length;
   const completed = items.filter((item) =>
-    ["packed", "hospital_provided", "not_needed"].includes(item.status),
+    ["packed", "not_needed"].includes(item.status),
   ).length;
 
-  return completionResult(total, completed);
+  return completionResult(items.length, completed);
 }
 
 export function isPackingProgressItem(item: ChecklistItem) {
@@ -1154,7 +343,6 @@ export function isPackingProgressItem(item: ChecklistItem) {
 
   return (
     normalized.itemKind === "item" &&
-    normalized.category !== "hospital_questions" &&
     normalized.category !== "last_minute" &&
     normalized.bag !== "none" &&
     normalized.bag !== "car" &&
@@ -1165,42 +353,22 @@ export function isPackingProgressItem(item: ChecklistItem) {
 export function calculatePackingCompletion(items: ChecklistItem[]) {
   const packableItems = items.filter(isPackingProgressItem);
   const completed = packableItems.filter((item) =>
-    ["packed", "hospital_provided"].includes(item.status),
+    item.status === "packed",
   ).length;
 
   return completionResult(packableItems.length, completed);
 }
 
-export function calculateConfirmationCompletion(items: ChecklistItem[]) {
-  const questionItems = items
-    .map(normalizeChecklistItem)
-    .filter(
-      (item) => item.itemKind === "question" || item.category === "hospital_questions",
-    );
-  const completed = questionItems.filter((item) =>
-    ["packed", "hospital_provided", "not_needed"].includes(item.status),
-  ).length;
-
-  return completionResult(questionItems.length, completed);
-}
-
 export function calculateLastMinuteCompletion(items: ChecklistItem[]) {
-  const lastMinuteItems = items
-    .map(normalizeChecklistItem)
-    .filter((item) => {
-      if (item.category === "last_minute") {
-        return true;
-      }
+  const lastMinuteItems = items.map(normalizeChecklistItem).filter((item) => {
+    if (item.category === "last_minute") return true;
+    if (item.bag === "car") return false;
 
-      if (item.bag === "car") {
-        return false;
-      }
-
-      return (
-        item.bag === "last_minute" ||
-        (item.timing === "grab_before_leaving" && item.itemKind === "task")
-      );
-    });
+    return (
+      item.bag === "last_minute" ||
+      (item.timing === "grab_before_leaving" && item.itemKind === "task")
+    );
+  });
   const completed = lastMinuteItems.filter((item) =>
     ["packed", "not_needed"].includes(item.status),
   ).length;
@@ -1211,9 +379,7 @@ export function calculateLastMinuteCompletion(items: ChecklistItem[]) {
 export function calculateCategoryCompletion(items: ChecklistItem[]) {
   return CATEGORY_ORDER.map((category) => {
     const categoryItems = items.filter((item) => item.category === category);
-    return {
-      category,
-      ...calculateCompletion(categoryItems),
-    };
+
+    return { category, ...calculateCompletion(categoryItems) };
   });
 }

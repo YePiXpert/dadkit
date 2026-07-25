@@ -3,17 +3,18 @@
 import { useEffect, useState } from "react";
 import { Pencil } from "lucide-react";
 
+import { QuantityStepper } from "@/components/QuantityStepper";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -22,18 +23,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  PREPARATION_KIND_LABELS,
-  inferPreparationKind,
-} from "@/lib/preparation";
+import { inferPreparationKind } from "@/lib/preparation";
 import {
   CATEGORY_LABELS,
-  CATEGORY_ORDER,
-  PRIORITY_LABELS,
   type ChecklistCategory,
   type ChecklistItem,
   type PreparationKind,
-  type Priority,
 } from "@/lib/types";
 import { useDadKitStore } from "@/lib/store";
 
@@ -41,12 +36,29 @@ type EditItemDialogProps = {
   item: ChecklistItem;
 };
 
+const CUSTOM_CATEGORIES: ChecklistCategory[] = [
+  "documents",
+  "mom_labor",
+  "baby",
+  "partner",
+  "going_home",
+  "last_minute",
+];
+
+const CUSTOM_PREPARATION_OPTIONS: Array<{
+  label: string;
+  value: PreparationKind;
+}> = [
+  { label: "家里已有", value: "pack_existing" },
+  { label: "需要购买", value: "buy_and_pack" },
+  { label: "需要清洗", value: "wash_then_pack" },
+];
+
 export function EditItemDialog({ item }: EditItemDialogProps) {
   const updateItem = useDadKitStore((state) => state.updateItem);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(item.name);
   const [category, setCategory] = useState<ChecklistCategory>(item.category);
-  const [priority, setPriority] = useState<Priority>(item.priority);
   const [preparationKind, setPreparationKind] = useState<PreparationKind>(
     inferPreparationKind(item),
   );
@@ -61,7 +73,6 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
 
     setName(item.name);
     setCategory(item.category);
-    setPriority(item.priority);
     setPreparationKind(inferPreparationKind(item));
     setQuantity(item.quantity ?? "");
     setNote(item.note ?? "");
@@ -75,7 +86,6 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
     updateItem(item.id, {
       name,
       category,
-      priority,
       ...(canEditPreparationKind ? { preparationKind } : {}),
       quantity: quantity || undefined,
       note: note || undefined,
@@ -94,95 +104,93 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>编辑物品</DialogTitle>
+          <DialogDescription>
+            调整这项清单的归类、数量或备注。
+          </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4">
-          <Field label="名称">
-            <Input
-              disabled={!item.editable}
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-            />
-          </Field>
-          <div className="field-grid">
-            <Field label="分类">
+        <div className="grid gap-3">
+          <div className="grid divide-y divide-border rounded-2xl bg-card px-4">
+            <FormRow label="物品名称">
+              <Input
+                className="border-0 bg-transparent px-0 text-right focus-visible:ring-0"
+                disabled={!item.editable}
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
+            </FormRow>
+            <FormRow label="分类">
               <Select
                 disabled={!item.editable}
                 value={category}
                 onValueChange={(value) => setCategory(value as ChecklistCategory)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-auto border-0 bg-transparent px-0 focus:ring-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORY_ORDER.map((candidate) => (
+                  {CUSTOM_CATEGORIES.map((candidate) => (
                     <SelectItem key={candidate} value={candidate}>
                       {CATEGORY_LABELS[candidate]}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </Field>
-            <Field label="优先级">
-              <Select
-                value={priority}
-                onValueChange={(value) => setPriority(value as Priority)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+            </FormRow>
+            {canEditPreparationKind ? (
+              <FormRow label="当前情况">
+                <Select
+                  value={preparationKind}
+                  onValueChange={(value) =>
+                    setPreparationKind(value as PreparationKind)
+                  }
+                >
+                  <SelectTrigger className="w-auto border-0 bg-transparent px-0 focus:ring-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CUSTOM_PREPARATION_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormRow>
+            ) : null}
           </div>
-          {canEditPreparationKind ? (
-            <Field label="动作类型">
-              <Select
-                value={preparationKind}
-                onValueChange={(value) =>
-                  setPreparationKind(value as PreparationKind)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(PREPARATION_KIND_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          ) : null}
-          <Field label="数量">
-            <Input
-              value={quantity}
-              onChange={(event) => setQuantity(event.target.value)}
+          <div className="grid gap-3 rounded-2xl bg-card p-4">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-medium">预计数量</span>
+              <span className="w-36">
+                <QuantityStepper value={quantity} onChange={setQuantity} />
+              </span>
+            </div>
+            <Textarea
+              className="border-0 bg-muted/60 px-3 focus-visible:ring-0"
+              placeholder="可以添加规格、颜色…"
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
             />
-          </Field>
-          <Field label="备注">
-            <Textarea value={note} onChange={(event) => setNote(event.target.value)} />
-          </Field>
+          </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+        <DialogFooter className="grid gap-2 sm:grid">
+          <Button className="w-full" size="lg" onClick={submit}>
+            保存
+          </Button>
+          <Button
+            className="w-full"
+            variant="ghost"
+            onClick={() => setOpen(false)}
+          >
             取消
           </Button>
-          <Button onClick={submit}>保存</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function Field({
+function FormRow({
   children,
   label,
 }: {
@@ -190,8 +198,8 @@ function Field({
   label: string;
 }) {
   return (
-    <div className="grid gap-2">
-      <Label>{label}</Label>
+    <div className="flex min-h-14 items-center justify-between gap-3 py-1.5">
+      <span className="shrink-0 text-sm font-medium">{label}</span>
       {children}
     </div>
   );

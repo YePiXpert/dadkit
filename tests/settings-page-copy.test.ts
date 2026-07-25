@@ -8,62 +8,58 @@ const settingsPage = readFileSync(
   "utf8",
 );
 
-describe("V2 my page", () => {
-  it("presents settings as My and explains the zero-input model", () => {
-    expect(settingsPage).toContain(">我的</h1>");
-    expect(settingsPage).toContain("清单开箱即用，资料和工具都按需使用。");
-    expect(settingsPage).not.toContain("待产清单已生成");
-    expect(settingsPage).not.toContain("PageIntro");
+const REMOVED_PRODUCT_ROUTES = [
+  "/setup",
+  "/hospital",
+  "/timeline",
+  "/contractions",
+  "/go",
+  "/birth-plan",
+  "/postpartum",
+  "/share",
+] as const;
+
+describe("data and backup page", () => {
+  it("presents the second product surface as data and backup", () => {
+    expect(settingsPage).toContain(">数据与备份</h1>");
+    expect(settingsPage).toContain("清单默认只保存在这个浏览器");
+    expect(settingsPage).toContain("JSON");
+    expect(settingsPage).toContain("WebDAV");
+    expect(settingsPage).not.toContain(">我的</h1>");
   });
 
-  it("keeps profile explicitly optional without clearing checklist progress", () => {
-    expect(settingsPage).toContain("我的资料");
-    expect(settingsPage).toContain('title={profile ? "编辑资料" : "添加可选资料"}');
-    expect(settingsPage).toContain("预产期、地区、医院等均可选，不填也能正常使用");
-    expect(settingsPage).toContain("可随时修改，不会清空进度");
-    expect(settingsPage).toContain('href="/setup"');
-    expect(settingsPage).not.toMatch(/if\s*\(\s*!profile\s*\)/);
+  it("contains only the four data-management capabilities", () => {
+    expect(settingsPage).toContain("手动备份");
+    expect(settingsPage).toContain("复制 JSON");
+    expect(settingsPage).toContain("导入 JSON");
+    expect(settingsPage).toContain("本机恢复点");
+    expect(settingsPage).toContain("最多保留 5 份");
+    expect(settingsPage).toContain("WebDAV 备份");
+    expect(settingsPage).toContain("清空并重新开始");
   });
 
-  it("is the complete directory for optional tools", () => {
-    expect(settingsPage).toContain("常用工具");
-
-    for (const [href, title] of [
-      ["/hospital", "医院确认"],
-      ["/timeline", "准备时间线"],
-      ["/contractions", "宫缩计时"],
-      ["/go", "临出门检查"],
-      ["/birth-plan", "分娩偏好"],
-      ["/postpartum", "产后事项"],
-      ["/share", "导出分享"],
-    ]) {
-      expect(settingsPage).toContain(`href="${href}"`);
-      expect(settingsPage).toContain(`title="${title}"`);
+  it("has no profile or removed-tool entry points", () => {
+    for (const route of REMOVED_PRODUCT_ROUTES) {
+      expect(settingsPage).not.toContain(`href="${route}"`);
     }
+
+    expect(settingsPage).not.toContain("我的资料");
+    expect(settingsPage).not.toContain("常用工具");
+    expect(settingsPage).not.toContain("formatBabyZodiacLine");
+    expect(settingsPage).not.toContain("state.profile");
   });
 
-  it("keeps local and WebDAV backup controls folded into one section", () => {
-    expect(settingsPage).toContain("备份与恢复");
-    expect(settingsPage).toContain("最近备份");
-    expect(settingsPage).toMatch(/<details[\s\S]*导入 \/ 复制 JSON/);
-    expect(settingsPage).toMatch(/<details[\s\S]*WebDAV 备份/);
-    expect(settingsPage).toMatch(/<details[\s\S]*连接设置/);
-    expect(settingsPage).toContain(
-      "浏览器请求会经 DadKit 同源代理转发。",
-    );
-    expect(settingsPage).not.toContain("Capacitor");
-    expect(settingsPage).not.toContain("native-http");
+  it("keeps destructive actions recoverable and feedback accessible", () => {
+    expect(settingsPage).toContain("操作前会先创建恢复点");
+    expect(settingsPage).toContain("恢复点只在当前浏览器中");
+    expect(settingsPage).toContain('aria-live="polite"');
+    expect(settingsPage).toContain('role={ok === false ? "alert" : "status"}');
   });
 
-  it("keeps privacy, support and the recoverable fresh-start action", () => {
-    expect(settingsPage).toContain("关于 DadKit");
-    expect(settingsPage).toContain("隐私政策");
+  it("keeps privacy and support as subordinate data-page links", () => {
+    expect(settingsPage).toContain("PUBLIC_PRIVACY_PATH");
+    expect(settingsPage).toContain("PUBLIC_SUPPORT_PATH");
+    expect(settingsPage).toContain("隐私说明");
     expect(settingsPage).toContain("支持与反馈");
-    expect(settingsPage).toContain("DisclaimerBox");
-    expect(settingsPage).toContain("恢复通用清单");
-    expect(settingsPage).toContain("恢复为全新清单");
-    expect(settingsPage).toContain(
-      "清除当前 V2 进度、可选资料、WebDAV 设置和本机物品照片，并立即重新生成一份通用清单。操作前会保留一份本地恢复快照。",
-    );
   });
 });

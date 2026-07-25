@@ -19,7 +19,7 @@ describe("webdav acceptance core", () => {
 
     expect(result.config.endpoint).toBe(WEBDAV_ACCEPTANCE_DEFAULTS.endpoint);
     expect(result.config.remoteDir).toBe("/DadKit");
-    expect(result.config.filename).toBe("dadkit-backup.json");
+    expect(result.config.filename).toBe("dadkit-backup-v3.json");
     expect(result.config.username).toBe("user");
     expect(result.secret).toBe("secret");
     expect(result.allowOverwrite).toBe(false);
@@ -35,16 +35,16 @@ describe("webdav acceptance core", () => {
     ]);
   });
 
-  it("builds schema V2 backups and rejects V1 envelopes or data", () => {
-    const backup = buildAcceptanceBackup("v2", "2026-06-30T00:00:00.000Z");
+  it("builds schema V3 backups and rejects older envelopes or data", () => {
+    const backup = buildAcceptanceBackup("v3", "2026-06-30T00:00:00.000Z");
 
-    expect(backup.schemaVersion).toBe(2);
-    expect(backup.data.version).toBe(2);
+    expect(backup.schemaVersion).toBe(3);
+    expect(backup.data.version).toBe(3);
     expect(isDadKitAcceptanceBackup(backup)).toBe(true);
     expect(
       isDadKitAcceptanceBackup({
         ...backup,
-        schemaVersion: 1,
+        schemaVersion: 2,
       }),
     ).toBe(false);
     expect(
@@ -52,7 +52,7 @@ describe("webdav acceptance core", () => {
         ...backup,
         data: {
           ...backup.data,
-          version: 1,
+          version: 2,
         },
       }),
     ).toBe(false);
@@ -83,7 +83,7 @@ describe("webdav acceptance core", () => {
 
   it("refuses to replace an existing non-acceptance backup unless allowed", async () => {
     const client = createMemoryWebDavClient();
-    const targetUrl = "https://example.com/dav/DadKit/dadkit-backup.json";
+    const targetUrl = "https://example.com/dav/DadKit/dadkit-backup-v3.json";
 
     client.directories.add("https://example.com/dav/DadKit");
     client.files.set(
@@ -131,7 +131,7 @@ function testConfig() {
     endpoint: "https://example.com/dav",
     username: "dad",
     remoteDir: "/DadKit",
-    filename: "dadkit-backup.json",
+    filename: "dadkit-backup-v3.json",
   };
 }
 

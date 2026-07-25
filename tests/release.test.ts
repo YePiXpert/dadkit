@@ -7,30 +7,52 @@ import { describe, expect, it } from "vitest";
 import { GET } from "@/app/healthz/route";
 import packageJson from "@/package.json";
 
-describe("release endpoints and pages", () => {
-  it("ships the fresh V2 PWA metadata", () => {
-    const readme = readFileSync(join(process.cwd(), "README.md"), "utf8");
-    const settingsPage = readFileSync(
-      join(process.cwd(), "app", "settings", "page.tsx"),
-      "utf8",
-    );
+const REMOVED_PRODUCT_ROUTES = [
+  "setup",
+  "hospital",
+  "timeline",
+  "contractions",
+  "go",
+  "birth-plan",
+  "postpartum",
+  "share",
+] as const;
+
+function readSource(...segments: string[]) {
+  return readFileSync(join(process.cwd(), ...segments), "utf8");
+}
+
+describe("release endpoints and product surface", () => {
+  it("ships checklist-and-backup PWA metadata", () => {
+    const readme = readSource("README.md");
     const manifest = JSON.parse(
-      readFileSync(join(process.cwd(), "public", "manifest.webmanifest"), "utf8"),
+      readSource("public", "manifest.webmanifest"),
     ) as {
       name: string;
       description: string;
+      shortcuts: Array<{ name: string; short_name: string; url: string }>;
     };
 
     expect(packageJson.version).toBe("2.0.0");
-    expect(settingsPage).toContain('version: "2.0.0"');
     expect(manifest.name).toBe("DadKit 待产包清单");
-    expect(manifest.description).toContain("打开即用");
-    expect(manifest.description).toContain("待购买");
-    expect(readme).toContain("# DadKit v2.0");
-    expect(readme).toContain("零输入启动");
+    expect(manifest.description).toContain("待产包");
+    expect(manifest.description).toContain("备份");
+    expect(
+      manifest.shortcuts.map(({ name, short_name, url }) => ({
+        name,
+        short_name,
+        url,
+      })),
+    ).toEqual([
+      { name: "待产清单", short_name: "清单", url: "/" },
+      { name: "数据备份", short_name: "数据", url: "/settings" },
+    ]);
+    expect(readme).toContain("清单");
+    expect(readme).toContain("JSON");
+    expect(readme).toContain("本地恢复快照");
+    expect(readme).toContain("WebDAV 备份");
     expect(readme).toContain("全部、待购买、待装包");
     expect(readme).toContain("纯 PWA");
-    expect(readme).not.toContain("四根柱子");
   });
 
   it("returns health status with version and buildTime", async () => {
@@ -47,7 +69,7 @@ describe("release endpoints and pages", () => {
 
   it("ships installable PWA PNG icons", () => {
     const manifest = JSON.parse(
-      readFileSync(join(process.cwd(), "public", "manifest.webmanifest"), "utf8"),
+      readSource("public", "manifest.webmanifest"),
     ) as {
       icons: Array<{
         src: string;
@@ -79,32 +101,97 @@ describe("release endpoints and pages", () => {
         }),
       ]),
     );
-    expect(existsSync(join(process.cwd(), "public", "icon-192.png"))).toBe(true);
-    expect(existsSync(join(process.cwd(), "public", "icon-512.png"))).toBe(true);
-    expect(
-      existsSync(join(process.cwd(), "public", "maskable-icon-512.png")),
-    ).toBe(true);
-    expect(
-      existsSync(join(process.cwd(), "public", "apple-touch-icon.png")),
-    ).toBe(true);
-    expect(existsSync(join(process.cwd(), "public", "og.png"))).toBe(true);
+
+    for (const asset of [
+      "icon-192.png",
+      "icon-512.png",
+      "maskable-icon-512.png",
+      "apple-touch-icon.png",
+      "og.png",
+    ]) {
+      expect(existsSync(join(process.cwd(), "public", asset))).toBe(true);
+    }
   });
 
-  it("pre-caches the V2 web app shell without illustrations", () => {
-    const sw = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
+  it("removes every retired product route and entry point", () => {
+    const sources = [
+      readSource("lib", "navigation.ts"),
+      readSource("app", "settings", "page.tsx"),
+      readSource("components", "ChecklistWorkspace.tsx"),
+      readSource("public", "sw.js"),
+      readSource("public", "manifest.webmanifest"),
+      readSource("README.md"),
+    ].join("\n");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.0.0-pwa-r2"');
-    expect(sw).toContain("const CORE_ROUTES = [");
-    expect(sw).toContain('"/hospital"');
-    expect(sw).toContain('"/timeline"');
+    for (const route of REMOVED_PRODUCT_ROUTES) {
+      expect(existsSync(join(process.cwd(), "app", route, "page.tsx"))).toBe(
+        false,
+      );
+      expect(sources).not.toContain(`/${route}`);
+    }
+
+    expect(existsSync(join(process.cwd(), "app", "page.tsx"))).toBe(true);
+    expect(existsSync(join(process.cwd(), "app", "settings", "page.tsx"))).toBe(
+      true,
+    );
+  });
+
+  it("pre-caches the r4 checklist-and-data shell with only support pages optional", () => {
+    const sw = readSource("public", "sw.js");
+
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.0.0-pwa-r4"');
+    expect(sw).toContain("const REQUIRED_ROUTES = CORE_ROUTES.slice(0, 2)");
+    expect(sw).toContain("const OPTIONAL_ROUTES = CORE_ROUTES.slice(2)");
+    expect(sw).toMatch(
+      /const CORE_ROUTES = \[\s*"\/",\s*"\/settings",\s*"\/privacy",\s*"\/support",\s*\]/,
+    );
+
+    for (const route of REMOVED_PRODUCT_ROUTES) {
+      expect(sw).not.toContain(`"/${route}"`);
+    }
+
     expect(sw).toContain("precacheAppShell");
-    expect(sw).not.toContain('url.pathname === "/_next/image"');
     expect(sw).not.toContain("/illustrations/");
-    expect(sw).not.toContain('url.pathname.startsWith("/illustrations/")');
+  });
+
+  it("deletes the previous r3 cache during activation", async () => {
+    const sw = readSource("public", "sw.js");
+    const listeners = new Map<string, (event: { waitUntil: (work: Promise<unknown>) => void }) => void>();
+    const deleted: string[] = [];
+    let activation: Promise<unknown> | undefined;
+    const context = {
+      self: {
+        addEventListener: (
+          type: string,
+          listener: (event: { waitUntil: (work: Promise<unknown>) => void }) => void,
+        ) => listeners.set(type, listener),
+        clients: { claim: () => undefined },
+        location: { origin: "https://dadkit.example" },
+      },
+      caches: {
+        async keys() {
+          return ["dadkit-v2.0.0-pwa-r3", "dadkit-v2.0.0-pwa-r4"];
+        },
+        async delete(key: string) {
+          deleted.push(key);
+          return true;
+        },
+      },
+    } as Record<string, unknown>;
+
+    runInNewContext(sw, context);
+    listeners.get("activate")?.({
+      waitUntil(work) {
+        activation = work;
+      },
+    });
+    await activation;
+
+    expect(deleted).toEqual(["dadkit-v2.0.0-pwa-r3"]);
   });
 
   it("extracts only real Next asset attributes from server HTML", () => {
-    const sw = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
+    const sw = readSource("public", "sw.js");
     const context = {
       self: {
         addEventListener: () => undefined,
@@ -121,14 +208,14 @@ describe("release endpoints and pages", () => {
     ) => string[];
     const assets = extractBuildAssets(`
       <link href="/_next/static/css/app.css" rel="stylesheet">
-      <script>self.__next_f.push([1,"href=\\\"/_next/static/css/flight.css\\\""])</script>
+      <script>self.__next_f.push([1,"href=\\"/_next/static/css/flight.css\\""])</script>
     `);
 
     expect(assets).toEqual(["/_next/static/css/app.css"]);
   });
 
-  it("keeps optional route and media failures from aborting app-shell install", async () => {
-    const sw = readFileSync(join(process.cwd(), "public", "sw.js"), "utf8");
+  it("caches both product pages while tolerating optional media failure", async () => {
+    const sw = readSource("public", "sw.js");
     const cachedUrls: string[] = [];
     class FakeRequest {
       constructor(readonly url: string) {}
@@ -157,17 +244,10 @@ describe("release endpoints and pages", () => {
         addEventListener: () => undefined,
         location: { origin: "https://dadkit.example" },
       },
-      caches: {
-        async open() {
-          return cache;
-        },
-      },
+      caches: { async open() { return cache; } },
       Request: FakeRequest,
       async fetch(request: FakeRequest) {
-        if (
-          request.url === "/hospital" ||
-          request.url === "/manifest.webmanifest"
-        ) {
+        if (request.url === "/manifest.webmanifest") {
           throw new Error("simulated optional fetch failure");
         }
 
@@ -187,8 +267,12 @@ describe("release endpoints and pages", () => {
 
     await expect(precacheAppShell()).resolves.toBeUndefined();
     expect(cachedUrls).toContain("/");
+    expect(cachedUrls).toContain("/settings");
     expect(cachedUrls).toContain("/_next/static/chunks/root.js");
-    expect(cachedUrls).not.toContain("/hospital");
     expect(cachedUrls).not.toContain("/manifest.webmanifest");
+
+    for (const route of REMOVED_PRODUCT_ROUTES) {
+      expect(cachedUrls).not.toContain(`/${route}`);
+    }
   });
 });

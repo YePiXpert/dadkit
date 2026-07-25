@@ -7,20 +7,21 @@ import { getReviewPageHref, PUBLIC_SUPPORT_PATH } from "@/lib/app-routes";
 export const metadata: Metadata = {
   title: "隐私政策 | DadKit",
   description:
-    "DadKit 的本地优先隐私说明：不需要账号，不默认上传个人资料，WebDAV 由用户手动配置。",
+    "DadKit 的本地优先隐私说明：不需要账号，清单默认保存在当前浏览器，WebDAV 由用户手动配置。",
 };
 
 const localDataItems = [
-  "预产期、地区、医院、生产方式等准备资料",
-  "待产清单、自定义项目、医院确认记录和时间线状态",
-  "宫缩记录、临出门沟通卡、产后提醒和本地快照",
+  "待产清单进度、自定义项目、隐藏项和清单显示模式",
+  "自动创建的本地恢复快照",
+  "仅存于当前设备 IndexedDB 的物品照片",
   "WebDAV 服务器地址、用户名、备份路径和可选的本机保存密码",
 ];
 
 const userControls = [
-  "在“我的”页面复制或导入 JSON 备份",
+  "在“数据”页面复制或导入 JSON 清单备份",
   "手动上传或下载 WebDAV 备份",
-  "清空当前浏览器或 App WebView 中的本地数据",
+  "从自动创建的本地快照恢复清单",
+  "清空当前浏览器中的清单数据和本机物品照片",
   "清除 WebDAV 配置和本机保存的凭据",
 ];
 
@@ -35,10 +36,21 @@ export default function PrivacyPage() {
           </CardHeader>
           <CardContent className="grid gap-3 text-sm leading-6 text-muted-foreground">
             <p>
-              生效日期：2026-06-30。DadKit 是本地优先的待产准备工具，不要求注册账号，也不默认把个人资料上传到 DadKit 服务器。
+              生效日期：2026-07-25。DadKit 是本地优先的待产清单工具，不要求注册账号，也不默认把清单上传到 DadKit 服务器。
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>清单备份包含什么</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 text-sm leading-6 text-muted-foreground">
+            <p>
+              JSON、本地恢复快照和 WebDAV 使用同一份清单备份数据，包括清单进度、自定义项目、隐藏项和清单显示模式。
             </p>
             <p>
-              DadKit 用来整理家庭准备事项，不提供医疗诊断、治疗建议或医院官方入院要求。医院规则和临产处理请以医生、助产士、护士、医院通知和当地政策为准。
+              这些备份不包含物品照片，也不包含 WebDAV 地址、用户名、备份路径、同步状态或密码等连接配置。
             </p>
           </CardContent>
         </Card>
@@ -66,7 +78,7 @@ export default function PrivacyPage() {
           <CardContent className="grid gap-2 text-sm leading-6 text-muted-foreground">
             <p>DadKit 当前不使用广告 SDK、第三方统计 SDK、账号系统或远程数据库。</p>
             <p>
-              DadKit 不出售个人数据，不用用户资料做广告定向，也不会在未操作备份时主动上传待产资料。
+              DadKit 不出售清单数据，不用清单内容做广告定向，也不会在未操作备份时主动上传清单。
             </p>
           </CardContent>
         </Card>
@@ -80,7 +92,7 @@ export default function PrivacyPage() {
               WebDAV 是用户手动配置的第三方备份位置。只有你主动测试连接、上传或下载时，DadKit 才会向你填写的 WebDAV 服务发送请求。
             </p>
             <p>
-              WebDAV 用户名、服务器地址和备份路径保存在当前设备；应用密码默认只存在当前会话，只有开启“记住密码在本设备”时才会保存在本机。
+              WebDAV 用户名、服务器地址和备份路径保存在当前设备，但不会写入清单备份文件；应用密码默认只存在当前会话，只有开启“记住密码在本设备”时才会保存在本机。
             </p>
             <p>
               第三方网盘或 WebDAV 服务如何处理数据，取决于该服务自己的隐私政策和账号设置。
