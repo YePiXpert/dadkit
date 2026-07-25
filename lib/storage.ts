@@ -228,6 +228,8 @@ function isChecklistItem(value: unknown): value is ChecklistItem {
       "mom_labor",
       "mom_postpartum",
       "baby",
+      "confinement_mom",
+      "confinement_baby",
       "partner",
       "going_home",
       "last_minute",
@@ -266,6 +268,7 @@ function isChecklistItem(value: unknown): value is ChecklistItem {
     (!("preparationKind" in value) ||
       isOneOf<PreparationKind>(value.preparationKind, [
         "buy_and_pack",
+        "buy_for_home",
         "pack_existing",
         "wash_then_pack",
         "document",

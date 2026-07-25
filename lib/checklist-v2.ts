@@ -20,6 +20,8 @@ export type ChecklistSectionId =
   | "documents"
   | "mom"
   | "baby"
+  | "confinementMom"
+  | "confinementBaby"
   | "partner"
   | "home"
   | "lastMinute";
@@ -32,6 +34,8 @@ export const CHECKLIST_SECTIONS: Array<{
   { id: "documents", label: "证件包", caption: "入院和办理材料" },
   { id: "mom", label: "妈妈包", caption: "产房与住院用品" },
   { id: "baby", label: "宝宝包", caption: "住院与出院用品" },
+  { id: "confinementMom", label: "月子妈妈包", caption: "产后恢复与哺乳，留在家里" },
+  { id: "confinementBaby", label: "宝宝家中囤货", caption: "月子吃穿洗护，留在家里" },
   { id: "partner", label: "陪产人", caption: "家人随身与协作" },
   { id: "home", label: "返家准备", caption: "出院路上和到家后" },
   { id: "lastMinute", label: "临出门拿", caption: "最后放进行李" },
@@ -73,7 +77,8 @@ export function isShoppingQueueItem(item: ChecklistItem) {
     return false;
   }
 
-  return inferPreparationKind(normalized) === "buy_and_pack";
+  const preparationKind = inferPreparationKind(normalized);
+  return preparationKind === "buy_and_pack" || preparationKind === "buy_for_home";
 }
 
 export function isPackingQueueItem(item: ChecklistItem) {
@@ -88,12 +93,16 @@ export function isPackingQueueItem(item: ChecklistItem) {
     return false;
   }
 
+  if (normalized.bag === "none") {
+    return false;
+  }
+
   if (state === "ready") {
     return true;
   }
 
   const preparationKind = inferPreparationKind(normalized);
-  return preparationKind !== "buy_and_pack";
+  return preparationKind !== "buy_and_pack" && preparationKind !== "buy_for_home";
 }
 
 export function getChecklistViewItems(
@@ -132,6 +141,14 @@ export function getChecklistSection(item: ChecklistItem): ChecklistSectionId {
     item.bag === "mom_bag"
   ) {
     return "mom";
+  }
+
+  if (item.category === "confinement_mom") {
+    return "confinementMom";
+  }
+
+  if (item.category === "confinement_baby") {
+    return "confinementBaby";
   }
 
   if (item.category === "baby" || item.bag === "baby_bag") {

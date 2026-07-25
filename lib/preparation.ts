@@ -17,6 +17,7 @@ const BUY_AND_PACK_KEYWORDS = [
 
 export const PREPARATION_KIND_LABELS: Record<PreparationKind, string> = {
   buy_and_pack: "需要购买",
+  buy_for_home: "买了放家里",
   pack_existing: "家里已有",
   wash_then_pack: "清洗后装包",
   document: "证件资料",
@@ -64,7 +65,7 @@ export function inferPreparationKind(item: ChecklistItem): PreparationKind {
 export function getStatusOptionsForItem(item: ChecklistItem): PackStatus[] {
   const preparationKind = inferPreparationKind(item);
 
-  if (preparationKind === "buy_and_pack") {
+  if (preparationKind === "buy_and_pack" || preparationKind === "buy_for_home") {
     return ["todo", "bought", "packed", "not_needed"];
   }
 
@@ -86,7 +87,7 @@ export function getStatusOptionsForItem(item: ChecklistItem): PackStatus[] {
 export function getQuickStatusOptionsForItem(item: ChecklistItem): PackStatus[] {
   const preparationKind = inferPreparationKind(item);
 
-  if (preparationKind === "buy_and_pack") {
+  if (preparationKind === "buy_and_pack" || preparationKind === "buy_for_home") {
     return ["todo", "bought", "packed"];
   }
 
@@ -121,6 +122,15 @@ export function getStatusLabelForItem(
       todo: "待购买",
       bought: "已购买",
       packed: "已装包",
+      not_needed: "不需要",
+    });
+  }
+
+  if (preparationKind === "buy_for_home") {
+    return labelFor(status, {
+      todo: "待购买",
+      bought: "已购买",
+      packed: "已就位",
       not_needed: "不需要",
     });
   }

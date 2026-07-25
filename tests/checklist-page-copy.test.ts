@@ -88,4 +88,16 @@ describe("V2 checklist experience", () => {
     expect(checklistCategoryCard).toContain("还剩 ${remaining} 项");
     expect(checklistCategoryCard).toContain("这一包已完成");
   });
+
+  it("keeps every section collapsed until the user taps it", () => {
+    expect(checklistWorkspace).not.toContain("defaultOpen");
+    expect(checklistCategoryCard).toContain("useState(false)");
+    expect(checklistCategoryCard).not.toContain("useEffect");
+    expect(checklistCategoryCard).toContain("aria-expanded={open}");
+  });
+
+  it("keeps item rows free of hard-coded offsets and wrapping pills", () => {
+    expect(checklistItemRow).not.toContain("ml-[6.5rem]");
+    expect(checklistItemRow).toContain("whitespace-nowrap");
+  });
 });

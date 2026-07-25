@@ -11,6 +11,8 @@ export type ChecklistCategory =
   | "mom_labor"
   | "mom_postpartum"
   | "baby"
+  | "confinement_mom"
+  | "confinement_baby"
   | "partner"
   | "going_home"
   | "last_minute";
@@ -45,6 +47,7 @@ export type ChecklistMode = "lean" | "full";
 
 export type PreparationKind =
   | "buy_and_pack"
+  | "buy_for_home"
   | "pack_existing"
   | "wash_then_pack"
   | "document"
@@ -87,6 +90,8 @@ export const CATEGORY_LABELS: Record<ChecklistCategory, string> = {
   mom_labor: "妈妈包",
   mom_postpartum: "妈妈包",
   baby: "宝宝包",
+  confinement_mom: "月子妈妈包",
+  confinement_baby: "宝宝家中囤货",
   partner: "爸爸协作",
   going_home: "出院返家",
   last_minute: "临出门拿",
@@ -97,6 +102,8 @@ export const CATEGORY_ORDER: ChecklistCategory[] = [
   "mom_labor",
   "mom_postpartum",
   "baby",
+  "confinement_mom",
+  "confinement_baby",
   "partner",
   "going_home",
   "last_minute",

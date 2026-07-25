@@ -39,6 +39,8 @@ const CUSTOM_CATEGORIES: ChecklistCategory[] = [
   "documents",
   "mom_labor",
   "baby",
+  "confinement_mom",
+  "confinement_baby",
   "partner",
   "going_home",
   "last_minute",
@@ -50,6 +52,7 @@ const CUSTOM_PREPARATION_OPTIONS: Array<{
 }> = [
   { label: "家里已有", value: "pack_existing" },
   { label: "需要购买", value: "buy_and_pack" },
+  { label: "买了放家里", value: "buy_for_home" },
 ];
 
 export function AddItemDialog({ defaultCategory = "mom_labor", trigger }: AddItemDialogProps) {

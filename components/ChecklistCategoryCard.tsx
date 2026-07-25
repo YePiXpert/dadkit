@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   AlarmClock,
   Baby,
   Backpack,
+  Boxes,
   Check,
   ChevronDown,
   FileText,
   HeartHandshake,
   Home,
+  Moon,
 } from "lucide-react";
 
 import { ChecklistItemRow } from "@/components/ChecklistItemRow";
@@ -33,6 +35,14 @@ const SECTION_META = {
     icon: Baby,
     className: "bg-[hsl(var(--tile-baby-bg))] text-[hsl(var(--tile-baby-fg))]",
   },
+  confinementMom: {
+    icon: Moon,
+    className: "bg-[hsl(var(--tile-mom-bg))] text-[hsl(var(--tile-mom-fg))]",
+  },
+  confinementBaby: {
+    icon: Boxes,
+    className: "bg-[hsl(var(--tile-baby-bg))] text-[hsl(var(--tile-baby-fg))]",
+  },
   partner: {
     icon: HeartHandshake,
     className: "bg-[hsl(var(--tile-dad-bg))] text-[hsl(var(--tile-dad-fg))]",
@@ -50,7 +60,6 @@ const SECTION_META = {
 
 type ChecklistCategoryCardProps = {
   caption?: string;
-  defaultOpen?: boolean;
   items: ChecklistItem[];
   sectionId: ChecklistSectionId;
   title: string;
@@ -58,12 +67,11 @@ type ChecklistCategoryCardProps = {
 
 export function ChecklistCategoryCard({
   caption,
-  defaultOpen = false,
   items,
   sectionId,
   title,
 }: ChecklistCategoryCardProps) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useState(false);
   const resolved = items.filter((item) =>
     ["packed", "not_needed"].includes(getChecklistItemState(item)),
   ).length;
@@ -72,10 +80,6 @@ export function ChecklistCategoryCard({
   ).length;
   const meta = SECTION_META[sectionId];
   const Icon = resolved === items.length ? Check : meta.icon;
-
-  useEffect(() => {
-    setOpen(defaultOpen);
-  }, [defaultOpen]);
 
   if (items.length === 0) {
     return null;
@@ -106,7 +110,7 @@ export function ChecklistCategoryCard({
             {remaining > 0 ? `还剩 ${remaining} 项` : "这一包已完成"}
           </span>
         </span>
-        <span className="shrink-0 text-xs font-semibold text-muted-foreground">
+        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
           {resolved}/{items.length}
         </span>
         <ChevronDown

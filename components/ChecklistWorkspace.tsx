@@ -173,10 +173,9 @@ export function ChecklistWorkspace() {
           />
         ) : (
           <div className="grid gap-3">
-            {sections.map((section, index) => (
+            {sections.map((section) => (
               <ChecklistCategoryCard
                 caption={section.caption}
-                defaultOpen={view !== "all" || index === 0}
                 items={section.items}
                 key={section.id}
                 sectionId={section.id}

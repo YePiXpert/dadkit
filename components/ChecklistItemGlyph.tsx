@@ -26,14 +26,14 @@ export function getChecklistGlyphKey(
   if (/(身份证|证件|医保|社保|户口|结婚证|资料|病历|银行卡|现金|票据)/.test(name)) {
     return "document";
   }
-  if (/(纸尿裤|尿不湿|隔尿|尿垫)/.test(name)) return "diaper";
-  if (/(奶瓶|奶粉|喂养|硅胶勺|吸奶器|储奶)/.test(name)) return "bottle";
+  if (/(纸尿裤|尿不湿|隔尿|尿垫|尿布台)/.test(name)) return "diaper";
+  if (/(奶瓶|奶粉|喂养|硅胶勺|吸奶器|储奶|奶嘴|温奶)/.test(name)) return "bottle";
   if (/(手机|充电|相机|耳机|插线|电源)/.test(name)) return "electronics";
   if (/(安全座椅|车辆|停车|接送)/.test(name) || item.bag === "car") return "car";
-  if (/(药|膏|冷敷|创可贴|消毒|护理|退热|体温)/.test(name)) return "care";
-  if (/(衣|裤|袜|鞋|帽|文胸|拖鞋|睡衣)/.test(name)) return "clothes";
-  if (/(包被|被子|睡袋|床单|枕|毯)/.test(name)) return "sleep";
-  if (/(洗|湿巾|棉柔巾|纸巾|毛巾|牙|漱口|梳|清洁|肥皂|脸盆)/.test(name)) {
+  if (/(药|膏|冷敷|创可贴|消毒|护理|退热|体温|温枪|维生素|氧化锌|炉甘石|面霜|身体乳|抚触|桃子水)/.test(name)) return "care";
+  if (/(衣|裤|袜|鞋|帽|文胸|拖鞋|睡衣|肚围)/.test(name)) return "clothes";
+  if (/(包被|被子|睡袋|床单|枕|毯|婴儿床|夜灯)/.test(name)) return "sleep";
+  if (/(洗|湿巾|棉柔巾|云柔巾|纸巾|毛巾|浴巾|口水巾|牙|漱口|梳|清洁|肥皂|脸盆)/.test(name)) {
     return "hygiene";
   }
   if (/(水|杯|零食|巧克力|餐|饭|食品|吸管)/.test(name)) return "food";
@@ -41,6 +41,8 @@ export function getChecklistGlyphKey(
   if (item.category === "going_home") return "home";
   if (item.category === "documents") return "document";
   if (item.category === "baby") return "bottle";
+  if (item.category === "confinement_mom") return "care";
+  if (item.category === "confinement_baby") return "bottle";
   if (item.category === "mom_labor" || item.category === "mom_postpartum") {
     return "care";
   }

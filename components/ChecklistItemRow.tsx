@@ -82,7 +82,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
 
         <span
           aria-hidden="true"
-          className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-foreground/70"
+          className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-foreground/70"
         >
           <ChecklistItemGlyph item={item} />
         </span>
@@ -99,7 +99,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             </h3>
             <span
               className={cn(
-                "shrink-0 rounded-full bg-card px-2 py-1 text-[10px] font-semibold text-muted-foreground",
+                "shrink-0 whitespace-nowrap rounded-full bg-card px-2 py-1 text-[10px] font-semibold text-muted-foreground",
                 itemState === "ready" && "bg-secondary text-primary",
                 itemState === "packed" && "bg-primary/10 text-primary",
               )}
@@ -108,15 +108,55 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             </span>
           </div>
           {item.quantity ? (
-            <p className="mt-1 text-xs font-medium text-muted-foreground">
-              建议 {item.quantity}
+            <p className="mt-1.5">
+              <span className="inline-flex max-w-full break-words rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium leading-4 text-muted-foreground">
+                建议 {item.quantity}
+              </span>
             </p>
           ) : null}
           {item.note ? (
-            <p className="mt-1.5 line-clamp-2 break-words rounded-lg bg-card px-2.5 py-1.5 text-xs leading-5 text-muted-foreground">
+            <p className="mt-2 line-clamp-2 break-words rounded-xl bg-muted/70 px-2.5 py-1.5 text-xs leading-5 text-muted-foreground">
               {item.note}
             </p>
           ) : null}
+
+          <details className="group mt-2">
+            <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-primary [&::-webkit-details-marker]:hidden">
+              说明与设置
+              <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="mt-3 grid gap-3 border-t border-border/70 pt-3">
+              <p className="text-xs leading-5 text-muted-foreground">
+                {item.note || "这件物品暂时没有补充说明，可以按家里实际情况调整。"}
+              </p>
+              <ItemPhotoField controller={itemPhoto} itemName={item.name} />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" variant="outline" onClick={() => advanceItem(item.id)}>
+                  {actionLabel}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => toggleItemSkipped(item.id)}
+                >
+                  {itemState === "not_needed" ? "恢复物品" : "标记不需要"}
+                </Button>
+                <EditItemDialog item={item} />
+                {item.removable ? (
+                  <Button
+                    className="size-8"
+                    size="icon"
+                    title="删除物品"
+                    variant="ghost"
+                    onClick={() => removeItem(item.id)}
+                  >
+                    <Trash2 className="size-4" />
+                    <span className="sr-only">删除物品</span>
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          </details>
         </div>
 
         {itemPhoto.photoUrl ? (
@@ -130,44 +170,6 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
           </span>
         ) : null}
       </div>
-
-      <details className="group ml-[6.5rem] mt-2">
-        <summary className="flex cursor-pointer list-none items-center gap-1 text-xs font-semibold text-primary [&::-webkit-details-marker]:hidden">
-          说明与设置
-          <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
-        </summary>
-        <div className="mt-3 grid gap-3 border-t border-border/70 pt-3">
-          <p className="text-xs leading-5 text-muted-foreground">
-            {item.note || "这件物品暂时没有补充说明，可以按家里实际情况调整。"}
-          </p>
-          <ItemPhotoField controller={itemPhoto} itemName={item.name} />
-          <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => advanceItem(item.id)}>
-              {actionLabel}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => toggleItemSkipped(item.id)}
-            >
-              {itemState === "not_needed" ? "恢复物品" : "标记不需要"}
-            </Button>
-            <EditItemDialog item={item} />
-            {item.removable ? (
-              <Button
-                className="size-8"
-                size="icon"
-                title="删除物品"
-                variant="ghost"
-                onClick={() => removeItem(item.id)}
-              >
-                <Trash2 className="size-4" />
-                <span className="sr-only">删除物品</span>
-              </Button>
-            ) : null}
-          </div>
-        </div>
-      </details>
     </article>
   );
 });
