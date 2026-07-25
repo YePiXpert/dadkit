@@ -125,7 +125,7 @@ describe("webdav helpers", () => {
     const backup = buildDadKitWebDavBackup(data, "device-1");
 
     expect(backup.schemaVersion).toBe(3);
-    expect(backup.data.version).toBe(3);
+    expect(backup.data.version).toBe(4);
     expect(backup.app).toBe("DadKit");
     expect(backup.deviceId).toBe("device-1");
     expect(backup.checksum).toBe(calculateChecksum(data));
@@ -177,6 +177,48 @@ describe("webdav helpers", () => {
       ok: false,
       message: "远端文件不是 DadKit WebDAV 备份。",
     });
+  });
+
+  it("rejects a checksummed WebDAV envelope with an invalid portable payload", async () => {
+    installStorage();
+    const validBackup = buildDadKitWebDavBackup(exportData(), "device-1");
+    const invalidData = {
+      ...validBackup.data,
+      growth: { version: 1, profile: {}, progress: {} },
+    };
+    const invalidBackup = {
+      ...validBackup,
+      data: invalidData,
+      checksum: calculateChecksum(invalidData),
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(JSON.stringify(invalidBackup), {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "x-dadkit-webdav-proxy": "1",
+          },
+        }),
+      ),
+    );
+
+    const result = await downloadWebDavBackup(
+      {
+        ...DEFAULT_WEBDAV_CONFIG,
+        endpoint: "https://example.com/dav",
+        username: "dad",
+      },
+      "secret",
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      message: "远端备份内容无效，未下载。",
+    });
+    expect(loadSnapshots()).toEqual([]);
   });
 
   it("does not include WebDAV secret in exported JSON", () => {

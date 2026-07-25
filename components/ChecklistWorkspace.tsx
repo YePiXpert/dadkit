@@ -1,19 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  ChevronDown,
-  ListRestart,
-  Plus,
-  Settings2,
-} from "lucide-react";
+import { useMemo } from "react";
+import Link from "next/link";
+import { Plus, Settings2 } from "lucide-react";
 
 import { AddItemDialog } from "@/components/AddItemDialog";
 import { ChecklistCategoryCard } from "@/components/ChecklistCategoryCard";
 import { ChecklistGroupTabs } from "@/components/ChecklistGroupTabs";
 import { EmptyState } from "@/components/EmptyState";
 import { InstallPrompt } from "@/components/InstallPrompt";
-import { Button } from "@/components/ui/button";
 import {
   CHECKLIST_VIEWS,
   getChecklistViewCounts,
@@ -21,17 +16,16 @@ import {
   groupChecklistViewItems,
   type ChecklistView,
 } from "@/lib/checklist-v2";
+import { getChecklistSectionHref } from "@/lib/checklist-display";
 import { filterItemsForChecklistMode, calculatePackingCompletion } from "@/lib/rules";
 import { useDadKitStore } from "@/lib/store";
+import { useChecklistViewQuery } from "@/lib/use-checklist-view-query";
 
 export function ChecklistWorkspace() {
-  const [view, setView] = useState<ChecklistView>("all");
-  const [message, setMessage] = useState("");
+  const { query, setView, view } = useChecklistViewQuery();
   const hydrated = useDadKitStore((state) => state.hydrated);
   const checklist = useDadKitStore((state) => state.checklist);
   const checklistMode = useDadKitStore((state) => state.checklistMode);
-  const setChecklistMode = useDadKitStore((state) => state.setChecklistMode);
-  const resetChecklist = useDadKitStore((state) => state.resetChecklist);
 
   const modeItems = useMemo(
     () => filterItemsForChecklistMode(checklist, checklistMode),
@@ -51,28 +45,10 @@ export function ChecklistWorkspace() {
     [modeItems, view],
   );
   const sections = useMemo(
-    () => groupChecklistViewItems(visibleItems),
+    () => groupChecklistViewItems(visibleItems, { includeEmpty: true }),
     [visibleItems],
   );
   const activeView = CHECKLIST_VIEWS.find((candidate) => candidate.id === view);
-
-  function resetToTemplate() {
-    if (!window.confirm("确认恢复通用清单？当前勾选进度和自定义物品会被清空。")) {
-      return;
-    }
-
-    try {
-      resetChecklist();
-      setMessage("已恢复为一份全新的通用清单。");
-      setView("all");
-    } catch (error) {
-      setMessage(
-        error instanceof Error && error.message
-          ? error.message
-          : "暂时无法恢复清单，请稍后再试。",
-      );
-    }
-  }
 
   if (!hydrated) {
     return <ChecklistWorkspaceSkeleton />;
@@ -100,7 +76,7 @@ export function ChecklistWorkspace() {
                   <span className="ml-1 text-2xl tracking-normal">%</span>
                 </span>
                 <span className="pb-1 text-sm text-muted-foreground">
-                  {packing.completed}/{packing.total} 已装包
+                  已装包 {packing.completed} 项，共 {packing.total} 项
                 </span>
               </div>
             </div>
@@ -142,35 +118,13 @@ export function ChecklistWorkspace() {
               {getViewCaption(view, visibleItems.length)}
             </p>
           </div>
-          <details className="relative">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
-              <Settings2 className="size-4" />
-              <span>清单设置</span>
-              <ChevronDown className="size-3.5" />
-            </summary>
-            <div className="absolute right-0 top-12 z-20 grid w-64 gap-2 rounded-3xl border border-border bg-card p-3 shadow-lg">
-              <p className="text-xs font-semibold text-foreground">清单设置</p>
-              <Button
-                className="justify-start"
-                size="sm"
-                variant="ghost"
-                onClick={() =>
-                  setChecklistMode(checklistMode === "lean" ? "full" : "lean")
-                }
-              >
-                {checklistMode === "lean" ? "显示全部建议项" : "只显示核心物品"}
-              </Button>
-              <Button
-                className="justify-start"
-                size="sm"
-                variant="ghost"
-                onClick={resetToTemplate}
-              >
-                <ListRestart className="size-4" />
-                恢复通用清单
-              </Button>
-            </div>
-          </details>
+          <Link
+            className="flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+            href="/settings/checklist"
+          >
+            <Settings2 className="size-4" />
+            <span>清单设置</span>
+          </Link>
         </div>
 
         {visibleItems.length === 0 ? (
@@ -182,25 +136,20 @@ export function ChecklistWorkspace() {
                 : "可以回到“全部”查看已完成物品，或新增自己的物品。"
             }
           />
-        ) : (
-          <div className="grid gap-4">
-            {sections.map((section) => (
-              <ChecklistCategoryCard
-                caption={section.caption}
-                items={section.items}
-                key={section.id}
-                sectionId={section.id}
-                title={section.label}
-              />
-            ))}
-          </div>
-        )}
-
-        {message ? (
-          <p className="rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
-            {message}
-          </p>
         ) : null}
+
+        <div className="grid gap-4">
+          {sections.map((section) => (
+            <ChecklistCategoryCard
+              caption={section.caption}
+              href={getChecklistSectionHref(section.id, query)}
+              items={section.items}
+              key={section.id}
+              sectionId={section.id}
+              title={section.label}
+            />
+          ))}
+        </div>
 
         <InstallPrompt />
         <p className="px-3 text-center text-xs leading-5 text-muted-foreground">
@@ -248,7 +197,7 @@ function getViewCaption(view: ChecklistView, count: number) {
   return `${count} 件物品，完成项会自动排到后面`;
 }
 
-function ChecklistWorkspaceSkeleton() {
+export function ChecklistWorkspaceSkeleton() {
   return (
     <div className="page-shell" aria-label="正在准备清单">
       <section className="mobile-shell grid animate-pulse gap-3 lg:max-w-2xl">

@@ -17,6 +17,7 @@ import {
   getChecklistItemState,
   type ChecklistItemState,
 } from "@/lib/checklist-v2";
+import { formatChecklistDisplayText } from "@/lib/checklist-display";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -37,16 +38,30 @@ const STATE_ICONS = {
 
 type ChecklistItemRowProps = {
   item: ChecklistItem;
+  showFullDescription?: boolean;
 };
 
 export const ChecklistItemRow = memo(function ChecklistItemRow({
   item,
+  showFullDescription = true,
 }: ChecklistItemRowProps) {
   const advanceItem = useDadKitStore((state) => state.advanceItem);
   const itemState = getChecklistItemState(item);
   const actionLabel = getActionLabel(itemState);
   const itemPhoto = useItemPhoto(item.id);
   const StateIcon = STATE_ICONS[itemState];
+  const displayOptions = {
+    transformAlternatives: item.source === "general",
+  } as const;
+  const displayName = formatChecklistDisplayText(item.name, displayOptions);
+  const displayNote = formatChecklistDisplayText(
+    item.note || "按家庭和医院实际需要准备",
+    displayOptions,
+  );
+  const displayQuantity = formatChecklistDisplayText(
+    item.quantity || "1 件",
+    displayOptions,
+  );
 
   return (
     <article
@@ -61,7 +76,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
         {itemPhoto.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            alt={`${item.name}的物品照片`}
+            alt={`${displayName}的物品照片`}
             className="size-full object-cover"
             src={itemPhoto.photoUrl}
           />
@@ -94,16 +109,18 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             itemState === "not_needed" && "text-muted-foreground",
           )}
         >
-          {item.name}
+          {displayName}
         </h3>
 
         <p className="mt-1 text-[11px] font-medium leading-4 text-muted-foreground">
-          建议 {item.quantity || "1 件"}
+          建议 {displayQuantity}
         </p>
 
-        <p className="mt-2 line-clamp-2 min-h-10 break-words rounded-xl bg-background/75 px-2 py-1.5 text-[11px] leading-[1.1rem] text-muted-foreground">
-          {item.note || "按家庭和医院实际需要准备"}
-        </p>
+        {showFullDescription ? (
+          <p className="mt-2 min-h-10 whitespace-pre-wrap break-words rounded-xl bg-background/75 px-2 py-1.5 text-[11px] leading-[1.1rem] text-muted-foreground">
+            {displayNote}
+          </p>
+        ) : null}
 
         <div className="mt-2.5 flex min-h-11 items-center justify-between gap-2 border-t border-border/65 pt-2">
           <ChecklistItemDetailsDialog
@@ -121,7 +138,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
           />
 
           <button
-            aria-label={`${actionLabel}：${item.name}`}
+            aria-label={`${actionLabel}：${displayName}`}
             className={cn(
               "flex size-11 shrink-0 items-center justify-center rounded-full border-2 border-border bg-card text-muted-foreground transition-all active:scale-95",
               itemState === "ready" &&

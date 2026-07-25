@@ -21,6 +21,16 @@ const checklistCategoryCard = readSource(
   "ChecklistCategoryCard.tsx",
 );
 const checklistGroupTabs = readSource("components", "ChecklistGroupTabs.tsx");
+const checklistSectionPage = readSource(
+  "app",
+  "checklist",
+  "[sectionId]",
+  "page.tsx",
+);
+const checklistSectionWorkspace = readSource(
+  "components",
+  "ChecklistSectionWorkspace.tsx",
+);
 
 describe("V2 checklist experience", () => {
   it("uses the checklist workspace as the only home implementation", () => {
@@ -46,7 +56,9 @@ describe("V2 checklist experience", () => {
   it("derives visible rows, sections and counters from the same V2 selectors", () => {
     expect(checklistWorkspace).toContain("getChecklistViewCounts(modeItems)");
     expect(checklistWorkspace).toContain("getChecklistViewItems(modeItems, view)");
-    expect(checklistWorkspace).toContain("groupChecklistViewItems(visibleItems)");
+    expect(checklistWorkspace).toContain(
+      "groupChecklistViewItems(visibleItems, { includeEmpty: true })",
+    );
     expect(checklistWorkspace).toContain("待买 {counts.shopping}");
     expect(checklistWorkspace).toContain("待装 {counts.packing}");
     expect(checklistWorkspace).toContain("共 {counts.all} 项");
@@ -87,25 +99,46 @@ describe("V2 checklist experience", () => {
     expect(checklistWorkspace).not.toContain("暂时没有待问事项");
   });
 
-  it("uses collapsible, touch-friendly category cards", () => {
-    expect(checklistCategoryCard).toContain("aria-expanded={open}");
+  it("uses touch-friendly category summaries that only link to detail pages", () => {
+    expect(checklistCategoryCard).toContain('import Link from "next/link"');
+    expect(checklistCategoryCard).toContain("href={href}");
     expect(checklistCategoryCard).toContain("min-w-0 flex-1");
     expect(checklistCategoryCard).toContain("break-words");
-    expect(checklistCategoryCard).toContain("还剩 ${remaining} 项");
-    expect(checklistCategoryCard).toContain("这一包已完成");
+    expect(checklistCategoryCard).toContain("还差 ${remaining} 项");
+    expect(checklistCategoryCard).not.toContain("ChecklistItemRow");
+    expect(checklistCategoryCard).not.toContain("aria-expanded");
   });
 
-  it("keeps every section collapsed until the user taps it", () => {
-    expect(checklistWorkspace).not.toContain("defaultOpen");
-    expect(checklistCategoryCard).toContain("useState(false)");
-    expect(checklistCategoryCard).not.toContain("useEffect");
-    expect(checklistCategoryCard).toContain("aria-expanded={open}");
+  it("routes all stable section ids through the independent detail page", () => {
+    expect(checklistSectionPage).toContain("generateStaticParams");
+    expect(checklistSectionPage).toContain("isChecklistSectionId(sectionId)");
+    expect(checklistWorkspace).toContain(
+      "getChecklistSectionHref(section.id, query)",
+    );
+    expect(checklistSectionWorkspace).toContain(
+      "getChecklistSection(item) === sectionId",
+    );
+    expect(checklistSectionWorkspace).toContain("getChecklistHomeHref(query)");
   });
 
-  it("keeps item cards responsive without hard-coded offsets", () => {
+  it("keeps full item explanations by default with an optional hidden mode", () => {
     expect(checklistItemRow).not.toContain("ml-[6.5rem]");
     expect(checklistItemRow).toContain("min-w-0");
-    expect(checklistItemRow).toContain("line-clamp-2");
+    expect(checklistItemRow).not.toContain("line-clamp");
+    expect(checklistItemRow).toContain("showFullDescription ? (");
     expect(checklistItemRow).toContain("size-11");
+    expect(checklistItemRow).toContain("showFullDescription = true");
+    expect(checklistSectionWorkspace).toContain("useChecklistDescriptionPreference");
+    expect(checklistSectionWorkspace).toContain("showFullDescription={showFullDescriptions}");
+    expect(checklistSectionWorkspace).toContain("不截断文字");
+  });
+
+  it("does not expose slash progress counters or raw slash-separated item copy", () => {
+    const checklistSources = `${checklistWorkspace}\n${checklistCategoryCard}`;
+    const itemSources = `${checklistItemRow}\n${checklistItemDetailsDialog}`;
+
+    expect(checklistSources).not.toContain("{packing.completed}/{packing.total}");
+    expect(checklistSources).not.toContain("{resolved}/{items.length}");
+    expect(itemSources).toContain("formatChecklistDisplayText");
   });
 });

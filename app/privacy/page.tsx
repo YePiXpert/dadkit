@@ -7,18 +7,19 @@ import { getReviewPageHref, PUBLIC_SUPPORT_PATH } from "@/lib/app-routes";
 export const metadata: Metadata = {
   title: "隐私政策 | DadKit",
   description:
-    "DadKit 的本地优先隐私说明：不需要账号，清单默认保存在当前浏览器，WebDAV 由用户手动配置。",
+    "DadKit 的本地优先隐私说明：不需要账号，清单与成长记默认保存在当前浏览器，WebDAV 由用户手动配置。",
 };
 
 const localDataItems = [
   "待产清单进度、自定义项目、隐藏项和清单显示模式",
+  "可选的宝宝称呼、预产期和产检时间表完成状态",
   "自动创建的本地恢复快照",
   "仅存于当前设备 IndexedDB 的物品照片",
   "WebDAV 服务器地址、用户名、备份路径和可选的本机保存密码",
 ];
 
 const userControls = [
-  "在“数据”页面复制或导入 JSON 清单备份",
+  "在“我的”中管理清单设置和备份恢复",
   "手动上传或下载 WebDAV 备份",
   "从自动创建的本地快照恢复清单",
   "清空当前浏览器中的清单数据和本机物品照片",
@@ -47,7 +48,7 @@ export default function PrivacyPage() {
           </CardHeader>
           <CardContent className="grid gap-2 text-sm leading-6 text-muted-foreground">
             <p>
-              JSON、本地恢复快照和 WebDAV 使用同一份清单备份数据，包括清单进度、自定义项目、隐藏项和清单显示模式。
+              本地恢复快照和 WebDAV 使用同一份便携备份数据，包括清单进度、自定义项目、隐藏项、清单显示模式，以及宝宝成长记中的可选资料和产检完成状态。
             </p>
             <p>
               这些备份不包含物品照片，也不包含 WebDAV 地址、用户名、备份路径、同步状态或密码等连接配置。

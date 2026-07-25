@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   metadataBase: getMetadataBase(),
   title: "DadKit 待产包清单",
   description:
-    "打开即用的待产包 Todo 清单，按全部、待购买和待装包快速确认准备进度。",
+    "打开即用的待产包清单与孕周成长参考，按全部、待购买和待装包快速确认准备进度。",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "DadKit 待产包清单",
-    description: "不用先填资料，打开就能确认待产包还差什么。",
+    description: "不用先填资料，打开就能确认待产包还差什么，也能按孕周查看成长参考。",
     type: "website",
     images: [
       {
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "DadKit 待产包清单",
-    description: "不用先填资料，打开就能确认待产包还差什么。",
+    description: "不用先填资料，打开就能确认待产包还差什么，也能按孕周查看成长参考。",
     images: ["/og.png"],
   },
 };

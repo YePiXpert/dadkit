@@ -16,6 +16,10 @@ export const CHECKLIST_VIEWS: Array<{
   { id: "packing", label: "待装包", shortLabel: "待装包" },
 ];
 
+export function isChecklistView(value: string | null): value is ChecklistView {
+  return CHECKLIST_VIEWS.some((view) => view.id === value);
+}
+
 export type ChecklistSectionId =
   | "documents"
   | "mom"
@@ -40,6 +44,12 @@ export const CHECKLIST_SECTIONS: Array<{
   { id: "home", label: "返家准备", caption: "出院路上和到家后" },
   { id: "lastMinute", label: "临出门拿", caption: "最后放进行李" },
 ];
+
+export function isChecklistSectionId(
+  value: string,
+): value is ChecklistSectionId {
+  return CHECKLIST_SECTIONS.some((section) => section.id === value);
+}
 
 export function isChecklistItemComplete(item: ChecklistItem) {
   return getChecklistItemState(item) === "packed";
@@ -162,8 +172,11 @@ export function getChecklistSection(item: ChecklistItem): ChecklistSectionId {
   return "home";
 }
 
-export function groupChecklistViewItems(items: ChecklistItem[]) {
-  return CHECKLIST_SECTIONS.map((section) => ({
+export function groupChecklistViewItems(
+  items: ChecklistItem[],
+  options: { includeEmpty?: boolean } = {},
+) {
+  const sections = CHECKLIST_SECTIONS.map((section) => ({
     ...section,
     items: items
       .filter((item) => getChecklistSection(item) === section.id)
@@ -184,7 +197,11 @@ export function groupChecklistViewItems(items: ChecklistItem[]) {
         const priorityOrder = { must: 0, recommended: 1, optional: 2 };
         return priorityOrder[left.priority] - priorityOrder[right.priority];
       }),
-  })).filter((section) => section.items.length > 0);
+  }));
+
+  return options.includeEmpty
+    ? sections
+    : sections.filter((section) => section.items.length > 0);
 }
 
 export function getChecklistViewCounts(items: ChecklistItem[]) {

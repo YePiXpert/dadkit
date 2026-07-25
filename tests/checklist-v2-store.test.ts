@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { getChecklistViewItems } from "@/lib/checklist-v2";
+import { GROWTH_STORAGE_KEYS } from "@/lib/growth-store";
 import { generateChecklist } from "@/lib/rules";
 import { saveChecklist, STORAGE_KEYS } from "@/lib/storage";
 import { useDadKitStore } from "@/lib/store";
@@ -96,7 +97,7 @@ describe("v3 checklist persistence", () => {
     ).toBe(true);
   });
 
-  it("ignores v2 data and leaves it untouched during reset", () => {
+  it("ignores v2 data and leaves it untouched during reset", async () => {
     const browserStorage = installBrowserStorage(LEGACY_SENTINELS);
 
     useDadKitStore.getState().hydrate();
@@ -109,10 +110,16 @@ describe("v3 checklist persistence", () => {
       false,
     );
 
-    useDadKitStore.getState().clearAll();
+    await useDadKitStore.getState().clearAll();
 
     expect(
-      browserStorage.removals.every((key) => key.startsWith("dadkit:v3:")),
+      browserStorage.removals.every(
+        (key) =>
+          key.startsWith("dadkit:v3:") ||
+          Object.values(GROWTH_STORAGE_KEYS).includes(
+            key as (typeof GROWTH_STORAGE_KEYS)[keyof typeof GROWTH_STORAGE_KEYS],
+          ),
+      ),
     ).toBe(true);
     for (const [key, value] of Object.entries(LEGACY_SENTINELS)) {
       expect(browserStorage.localValues.get(key)).toBe(value);

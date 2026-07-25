@@ -5,9 +5,7 @@ import { create } from "zustand";
 import { clearItemPhotos, deleteItemPhoto } from "@/lib/item-photos";
 import { generateChecklist, normalizeChecklistItem } from "@/lib/rules";
 import {
-  applyImportData,
   createSnapshot,
-  exportData,
   loadChecklist,
   loadChecklistMode,
   loadCustomItems,
@@ -15,10 +13,8 @@ import {
   resetAllData,
   saveChecklist,
   saveChecklistMode,
-  saveCustomItems,
-  saveHiddenTemplateItemIds,
-  validateImportData,
-  type ImportResult,
+  saveChecklistState,
+  SnapshotPersistenceError,
 } from "@/lib/storage";
 import type {
   ChecklistItem,
@@ -46,14 +42,13 @@ export type DadKitState = {
   hydrate: () => void;
   setChecklistMode: (mode: ChecklistMode) => void;
   resetChecklist: () => void;
+  restoreMissingTemplateItems: () => number;
   updateItem: (id: string, patch: Partial<ChecklistItem>) => void;
   advanceItem: (id: string) => void;
   toggleItemSkipped: (id: string) => void;
   addCustomItem: (item: AddCustomItemInput) => AddCustomItemResult;
   removeItem: (id: string) => void;
-  exportJson: () => string;
-  importJson: (json: string) => ImportResult;
-  clearAll: () => void;
+  clearAll: () => Promise<void>;
 };
 
 function itemId() {
@@ -90,8 +85,12 @@ export function mergeChecklistQuantity(current?: string, added?: string) {
   return `${left}；另加 ${right}`;
 }
 
-function snapshotBeforeChange(reason: string) {
-  createSnapshot(reason);
+function requireSnapshotBeforeChange(reason: string) {
+  const snapshot = createSnapshot(reason);
+
+  if (!snapshot) {
+    throw new SnapshotPersistenceError();
+  }
 }
 
 function patchChecklistItem(
@@ -146,13 +145,40 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     set({ checklistMode: mode });
   },
   resetChecklist: () => {
-    snapshotBeforeChange("重置清单前");
+    requireSnapshotBeforeChange("重建清单前");
 
     const checklist = generateChecklist();
-    saveChecklist(checklist);
-    saveCustomItems([]);
-    saveHiddenTemplateItemIds([]);
+    try {
+      saveChecklistState({
+        checklist,
+        customItems: [],
+        hiddenTemplateItemIds: [],
+      });
+    } catch {
+      throw new Error("清单重建失败，原有清单已保留。");
+    }
     set({ checklist, customItems: [], hiddenTemplateItemIds: [] });
+  },
+  restoreMissingTemplateItems: () => {
+    const state = get();
+    const currentItemIds = new Set(state.checklist.map((item) => item.id));
+    const checklist = generateChecklist({
+      currentItems: state.checklist,
+      customItems: state.customItems,
+      hiddenTemplateItemIds: [],
+    });
+    const restoredCount = checklist.filter(
+      (item) => item.source === "general" && !currentItemIds.has(item.id),
+    ).length;
+
+    saveChecklistState({
+      checklist,
+      customItems: state.customItems,
+      hiddenTemplateItemIds: [],
+    });
+    set({ checklist, hiddenTemplateItemIds: [] });
+
+    return restoredCount;
   },
   updateItem: (id, patch) => {
     const state = get();
@@ -163,8 +189,11 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       item.id === id ? patchChecklistItem(item, patch) : item,
     );
 
-    saveChecklist(checklist);
-    saveCustomItems(customItems);
+    saveChecklistState({
+      checklist,
+      customItems,
+      hiddenTemplateItemIds: state.hiddenTemplateItemIds,
+    });
     set({ checklist, customItems });
   },
   advanceItem: (id) => {
@@ -242,8 +271,11 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       hiddenTemplateItemIds: state.hiddenTemplateItemIds,
     });
 
-    saveCustomItems(customItems);
-    saveChecklist(checklist);
+    saveChecklistState({
+      checklist,
+      customItems,
+      hiddenTemplateItemIds: state.hiddenTemplateItemIds,
+    });
     set({ customItems, checklist });
 
     return {
@@ -270,36 +302,21 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     const checklist = state.checklist.filter((candidate) => candidate.id !== id);
 
     void deleteItemPhoto(id).catch(() => undefined);
-    saveChecklist(checklist);
-    saveCustomItems(customItems);
-    saveHiddenTemplateItemIds(hiddenTemplateItemIds);
+    saveChecklistState({ checklist, customItems, hiddenTemplateItemIds });
     set({ checklist, customItems, hiddenTemplateItemIds });
   },
-  exportJson: () => JSON.stringify(exportData(), null, 2),
-  importJson: (json) => {
-    const validation = validateImportData(json);
-
-    if (!validation.ok || !validation.data) {
-      return { ok: false, message: validation.message };
-    }
-
-    snapshotBeforeChange("导入 JSON 前");
-    const result = applyImportData(validation.data);
-
-    if (result.ok) {
-      get().hydrate();
-    }
-
-    return result;
-  },
-  clearAll: () => {
-    snapshotBeforeChange("清空本地数据前");
-
-    resetAllData();
-    void clearItemPhotos().catch(() => undefined);
+  clearAll: async () => {
+    requireSnapshotBeforeChange("清空本地数据前");
 
     const checklist = generateChecklist();
-    saveChecklist(checklist);
+    let sessionSecretCleared = true;
+
+    try {
+      ({ sessionSecretCleared } = resetAllData(checklist));
+    } catch {
+      throw new Error("本机数据清空失败，原有数据已保留。");
+    }
+
     set({
       hydrated: true,
       checklist,
@@ -307,5 +324,24 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       customItems: [],
       hiddenTemplateItemIds: [],
     });
+
+    let photosCleared = true;
+
+    try {
+      await clearItemPhotos();
+    } catch {
+      photosCleared = false;
+    }
+
+    if (!photosCleared || !sessionSecretCleared) {
+      const remaining = [
+        !photosCleared ? "物品照片" : "",
+        !sessionSecretCleared ? "当前会话中的 WebDAV 密码" : "",
+      ].filter(Boolean);
+
+      throw new Error(
+        `清单与成长数据已清空，但${remaining.join("和")}未能清理，请关闭其他 DadKit 页面后重试。`,
+      );
+    }
   },
 }));

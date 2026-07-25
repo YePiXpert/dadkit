@@ -13,6 +13,16 @@ import type {
   Priority,
 } from "@/lib/types";
 import {
+  DEFAULT_GROWTH_PROFILE,
+  DEFAULT_GROWTH_PROGRESS,
+  DEFAULT_GROWTH_VIEW,
+  GROWTH_STORAGE_KEYS,
+  exportGrowthData,
+  useGrowthStore,
+  validateGrowthPortableData,
+  type GrowthPortableData,
+} from "@/lib/growth-store";
+import {
   DEFAULT_WEBDAV_CONFIG,
   type WebDavConfig,
   type WebDavSyncState,
@@ -39,9 +49,12 @@ const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.webDavConfig,
   STORAGE_KEYS.webDavSyncState,
   STORAGE_KEYS.webDavSecret,
+  GROWTH_STORAGE_KEYS.profile,
+  GROWTH_STORAGE_KEYS.progress,
+  GROWTH_STORAGE_KEYS.view,
 ] as const;
 
-const EXPORT_KEYS = [
+const V3_EXPORT_KEYS = [
   "version",
   "exportedAt",
   "checklistMode",
@@ -50,7 +63,9 @@ const EXPORT_KEYS = [
   "hiddenTemplateItemIds",
 ] as const;
 
-export type DadKitExportData = {
+const V4_EXPORT_KEYS = [...V3_EXPORT_KEYS, "growth"] as const;
+
+export type DadKitExportDataV3 = {
   version: 3;
   exportedAt: string;
   checklistMode: ChecklistMode;
@@ -59,7 +74,12 @@ export type DadKitExportData = {
   hiddenTemplateItemIds: string[];
 };
 
-export type DadKitImportData = DadKitExportData;
+export type DadKitExportData = Omit<DadKitExportDataV3, "version"> & {
+  version: 4;
+  growth: GrowthPortableData;
+};
+
+export type DadKitImportData = DadKitExportDataV3 | DadKitExportData;
 
 export type ImportResult = {
   ok: boolean;
@@ -74,7 +94,7 @@ export type DadKitSnapshot = {
   id: string;
   createdAt: string;
   reason: string;
-  data: DadKitExportData;
+  data: DadKitImportData;
 };
 
 export class SnapshotPersistenceError extends Error {
@@ -299,25 +319,48 @@ function isValidDateString(value: unknown): value is string {
   );
 }
 
-function isDadKitExportData(value: unknown): value is DadKitExportData {
-  if (!isRecord(value) || !hasExactKeys(value, EXPORT_KEYS)) {
-    return false;
-  }
+function hasValidPortableChecklistData(value: Record<string, unknown>) {
+  const checklist = Array.isArray(value.checklist) ? value.checklist : [];
+  const customItems = Array.isArray(value.customItems) ? value.customItems : [];
+  const hiddenTemplateItemIds = Array.isArray(value.hiddenTemplateItemIds)
+    ? value.hiddenTemplateItemIds
+    : [];
 
   return (
-    value.version === 3 &&
     isValidDateString(value.exportedAt) &&
     isOneOf<ChecklistMode>(value.checklistMode, ["lean", "full"]) &&
     Array.isArray(value.checklist) &&
     value.checklist.every(isChecklistItem) &&
+    new Set(checklist.map((item) => (item as ChecklistItem).id)).size ===
+      checklist.length &&
     Array.isArray(value.customItems) &&
     value.customItems.every(
       (item) => isChecklistItem(item) && item.source === "user",
     ) &&
+    new Set(customItems.map((item) => (item as ChecklistItem).id)).size ===
+      customItems.length &&
     Array.isArray(value.hiddenTemplateItemIds) &&
     value.hiddenTemplateItemIds.every(
       (id) => typeof id === "string" && id.trim().length > 0,
-    )
+    ) &&
+    new Set(hiddenTemplateItemIds).size === hiddenTemplateItemIds.length
+  );
+}
+
+function isDadKitImportData(value: unknown): value is DadKitImportData {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (value.version === 3) {
+    return hasExactKeys(value, V3_EXPORT_KEYS) && hasValidPortableChecklistData(value);
+  }
+
+  return (
+    value.version === 4 &&
+    hasExactKeys(value, V4_EXPORT_KEYS) &&
+    hasValidPortableChecklistData(value) &&
+    validateGrowthPortableData(value.growth)
   );
 }
 
@@ -361,6 +404,29 @@ export function loadHiddenTemplateItemIds() {
 
 export function saveHiddenTemplateItemIds(ids: string[]) {
   writeJson(STORAGE_KEYS.hiddenTemplateItems, Array.from(new Set(ids)));
+}
+
+export function saveChecklistState({
+  checklist,
+  customItems,
+  hiddenTemplateItemIds,
+}: {
+  checklist: ChecklistItem[];
+  customItems: ChecklistItem[];
+  hiddenTemplateItemIds: string[];
+}) {
+  if (!canUseLocalStorage()) {
+    return;
+  }
+
+  applyStorageMutations([
+    { key: STORAGE_KEYS.checklist, value: JSON.stringify(checklist) },
+    { key: STORAGE_KEYS.customItems, value: JSON.stringify(customItems) },
+    {
+      key: STORAGE_KEYS.hiddenTemplateItems,
+      value: JSON.stringify(Array.from(new Set(hiddenTemplateItemIds))),
+    },
+  ]);
 }
 
 export function loadChecklistMode(): ChecklistMode {
@@ -508,26 +574,51 @@ export function clearWebDavSettings() {
   }
 }
 
-export function resetAllData() {
+export function resetAllData(initialChecklist?: ChecklistItem[]) {
   if (canUseLocalStorage()) {
     applyStorageMutations(
-      DATA_STORAGE_KEYS.map((key) => ({ key, value: null })),
+      DATA_STORAGE_KEYS.map((key) => {
+        if (initialChecklist && key === STORAGE_KEYS.checklist) {
+          return { key, value: JSON.stringify(initialChecklist) };
+        }
+
+        if (initialChecklist && key === STORAGE_KEYS.checklistMode) {
+          return { key, value: JSON.stringify("lean") };
+        }
+
+        return { key, value: null };
+      }),
     );
+    useGrowthStore.setState({
+      ...DEFAULT_GROWTH_PROFILE,
+      ...DEFAULT_GROWTH_PROGRESS,
+      ...DEFAULT_GROWTH_VIEW,
+      hydrated: true,
+    });
   }
 
+  let sessionSecretCleared = true;
+
   if (canUseSessionStorage()) {
-    window.sessionStorage.removeItem(WEBDAV_SESSION_SECRET_KEY);
+    try {
+      window.sessionStorage.removeItem(WEBDAV_SESSION_SECRET_KEY);
+    } catch {
+      sessionSecretCleared = false;
+    }
   }
+
+  return { sessionSecretCleared };
 }
 
 export function exportData(): DadKitExportData {
   return {
-    version: 3,
+    version: 4,
     exportedAt: new Date().toISOString(),
     checklistMode: loadChecklistMode(),
     checklist: loadChecklist(),
     customItems: loadCustomItems(),
     hiddenTemplateItemIds: loadHiddenTemplateItemIds(),
+    growth: exportGrowthData(),
   };
 }
 
@@ -537,58 +628,28 @@ export function validateImportData(rawJson: string): ImportValidationResult {
   try {
     parsed = JSON.parse(rawJson);
   } catch {
-    return { ok: false, message: "JSON 格式不正确，未修改本地数据。" };
+    return { ok: false, message: "备份格式不正确，未修改本地数据。" };
   }
 
   if (!isRecord(parsed)) {
-    return { ok: false, message: "JSON 内容不是 DadKit 备份，未修改本地数据。" };
+    return { ok: false, message: "内容不是 DadKit 备份，未修改本地数据。" };
   }
 
-  if (parsed.version !== 3) {
+  if (parsed.version !== 3 && parsed.version !== 4) {
     return { ok: false, message: "不支持的备份版本，未修改本地数据。" };
   }
 
-  if (!hasExactKeys(parsed, EXPORT_KEYS)) {
+  const expectedKeys = parsed.version === 4 ? V4_EXPORT_KEYS : V3_EXPORT_KEYS;
+
+  if (!hasExactKeys(parsed, expectedKeys)) {
     return {
       ok: false,
       message: "备份字段不完整或包含未知字段，未修改本地数据。",
     };
   }
 
-  if (!isValidDateString(parsed.exportedAt)) {
-    return { ok: false, message: "exportedAt 不是有效日期，未修改本地数据。" };
-  }
-
-  if (!isOneOf<ChecklistMode>(parsed.checklistMode, ["lean", "full"])) {
-    return {
-      ok: false,
-      message: "checklistMode 只能是 lean 或 full，未修改本地数据。",
-    };
-  }
-
-  if (!Array.isArray(parsed.checklist) || !parsed.checklist.every(isChecklistItem)) {
-    return { ok: false, message: "checklist 包含无效数据，未修改本地数据。" };
-  }
-
-  if (
-    !Array.isArray(parsed.customItems) ||
-    !parsed.customItems.every(
-      (item) => isChecklistItem(item) && item.source === "user",
-    )
-  ) {
-    return { ok: false, message: "customItems 包含无效数据，未修改本地数据。" };
-  }
-
-  if (
-    !Array.isArray(parsed.hiddenTemplateItemIds) ||
-    !parsed.hiddenTemplateItemIds.every(
-      (id) => typeof id === "string" && id.trim().length > 0,
-    )
-  ) {
-    return {
-      ok: false,
-      message: "hiddenTemplateItemIds 包含无效数据，未修改本地数据。",
-    };
+  if (!isDadKitImportData(parsed)) {
+    return { ok: false, message: "备份内容无效，未修改本地数据。" };
   }
 
   return {
@@ -609,7 +670,7 @@ export function importData(rawJson: string): ImportResult {
 }
 
 export function applyImportData(data: DadKitImportData): ImportResult {
-  if (!isDadKitExportData(data)) {
+  if (!isDadKitImportData(data)) {
     return { ok: false, message: "备份内容无效，未修改本地数据。" };
   }
 
@@ -630,8 +691,28 @@ export function applyImportData(data: DadKitImportData): ImportResult {
     },
   ];
 
+  if (data.version === 4) {
+    mutations.push(
+      {
+        key: GROWTH_STORAGE_KEYS.profile,
+        value: JSON.stringify(data.growth.profile),
+      },
+      {
+        key: GROWTH_STORAGE_KEYS.progress,
+        value: JSON.stringify(data.growth.progress),
+      },
+    );
+  }
+
   try {
     applyStorageMutations(mutations);
+    if (data.version === 4) {
+      useGrowthStore.setState({
+        ...data.growth.profile,
+        ...data.growth.progress,
+        hydrated: true,
+      });
+    }
     return { ok: true, message: "导入成功" };
   } catch (error) {
     if (error instanceof StorageTransactionError && !error.rollbackSucceeded) {
@@ -701,7 +782,10 @@ function hasSnapshotData(data: DadKitExportData) {
     data.checklistMode !== "lean" ||
     data.checklist.length > 0 ||
     data.customItems.length > 0 ||
-    data.hiddenTemplateItemIds.length > 0
+    data.hiddenTemplateItemIds.length > 0 ||
+    data.growth.profile.nickname.length > 0 ||
+    data.growth.profile.dueDate.length > 0 ||
+    data.growth.progress.completedTaskIds.length > 0
   );
 }
 
@@ -717,7 +801,7 @@ function isSnapshot(value: unknown): value is DadKitSnapshot {
     isValidDateString(value.createdAt) &&
     typeof value.reason === "string" &&
     value.reason.length > 0 &&
-    isDadKitExportData(value.data)
+    isDadKitImportData(value.data)
   );
 }
 

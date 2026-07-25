@@ -1,7 +1,7 @@
 {
   "name": "DadKit 待产包清单",
   "short_name": "DadKit",
-  "description": "打开即用的待产包 Todo 清单，支持 JSON 与 WebDAV 备份。",
+  "description": "打开即用的待产包清单与孕周成长参考，支持本机恢复点和 WebDAV 备份。",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -19,8 +19,8 @@
       ]
     },
     {
-      "name": "数据备份",
-      "short_name": "数据",
+      "name": "我的",
+      "short_name": "我的",
       "url": "/settings",
       "icons": [
         { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }

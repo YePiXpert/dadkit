@@ -1,20 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import {
   AlarmClock,
   Baby,
   Backpack,
   Boxes,
   Check,
-  ChevronDown,
+  ChevronRight,
   FileText,
   HeartHandshake,
   Home,
   Moon,
 } from "lucide-react";
 
-import { ChecklistItemRow } from "@/components/ChecklistItemRow";
 import {
   getChecklistItemState,
   type ChecklistSectionId,
@@ -60,6 +59,7 @@ const SECTION_META = {
 
 type ChecklistCategoryCardProps = {
   caption?: string;
+  href: string;
   items: ChecklistItem[];
   sectionId: ChecklistSectionId;
   title: string;
@@ -67,11 +67,11 @@ type ChecklistCategoryCardProps = {
 
 export function ChecklistCategoryCard({
   caption,
+  href,
   items,
   sectionId,
   title,
 }: ChecklistCategoryCardProps) {
-  const [open, setOpen] = useState(false);
   const resolved = items.filter((item) =>
     ["packed", "not_needed"].includes(getChecklistItemState(item)),
   ).length;
@@ -79,19 +79,13 @@ export function ChecklistCategoryCard({
     ["todo", "ready"].includes(getChecklistItemState(item)),
   ).length;
   const meta = SECTION_META[sectionId];
-  const Icon = resolved === items.length ? Check : meta.icon;
-
-  if (items.length === 0) {
-    return null;
-  }
+  const Icon = items.length > 0 && resolved === items.length ? Check : meta.icon;
 
   return (
-    <section className="grid gap-3">
-      <button
-        aria-expanded={open}
+    <section>
+      <Link
         className="flex min-h-[5.25rem] w-full items-center gap-3 rounded-[1.75rem] border border-border/80 bg-card px-4 py-3.5 text-left transition-colors hover:bg-muted/35"
-        type="button"
-        onClick={() => setOpen((value) => !value)}
+        href={href}
       >
         <span
           className={cn(
@@ -106,28 +100,18 @@ export function ChecklistCategoryCard({
             {title}
           </span>
           <span className="mt-0.5 block text-xs leading-4 text-muted-foreground">
-            {caption ? `${caption} · ` : ""}
-            {remaining > 0 ? `还剩 ${remaining} 项` : "这一包已完成"}
+            {caption}
           </span>
         </span>
         <span className="shrink-0 whitespace-nowrap rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
-          {resolved}/{items.length}
+          {items.length === 0
+            ? "暂无项目"
+            : remaining > 0
+              ? `还差 ${remaining} 项`
+              : "已完成"}
         </span>
-        <ChevronDown
-          className={cn(
-            "size-4 shrink-0 text-muted-foreground transition-transform",
-            open && "rotate-180",
-          )}
-        />
-      </button>
-
-      {open ? (
-        <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
-          {items.map((item) => (
-            <ChecklistItemRow item={item} key={item.id} />
-          ))}
-        </div>
-      ) : null}
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+      </Link>
     </section>
   );
 }

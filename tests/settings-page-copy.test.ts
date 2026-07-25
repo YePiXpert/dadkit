@@ -3,63 +3,107 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-const settingsPage = readFileSync(
-  join(process.cwd(), "app", "settings", "page.tsx"),
-  "utf8",
+import { PRIMARY_NAVIGATION_ITEMS } from "@/lib/navigation";
+
+function readSource(...segments: string[]) {
+  return readFileSync(join(process.cwd(), ...segments), "utf8");
+}
+
+const settingsPage = readSource("app", "settings", "page.tsx");
+const checklistSettingsPage = readSource(
+  "app",
+  "settings",
+  "checklist",
+  "page.tsx",
+);
+const backupSettingsPage = readSource(
+  "app",
+  "settings",
+  "backup",
+  "page.tsx",
 );
 
-const REMOVED_PRODUCT_ROUTES = [
-  "/setup",
-  "/hospital",
-  "/timeline",
-  "/contractions",
-  "/go",
-  "/birth-plan",
-  "/postpartum",
-  "/share",
-] as const;
-
-describe("data and backup page", () => {
-  it("presents the second product surface as data and backup", () => {
-    expect(settingsPage).toContain(">数据与备份</h1>");
-    expect(settingsPage).toContain("清单默认只保存在这个浏览器");
-    expect(settingsPage).toContain("JSON");
-    expect(settingsPage).toContain("WebDAV");
-    expect(settingsPage).not.toContain(">我的</h1>");
+describe("settings information architecture", () => {
+  it("uses 清单 / 我的 as the two primary destinations", () => {
+    expect(
+      PRIMARY_NAVIGATION_ITEMS.map(({ href, id, label }) => ({
+        href,
+        id,
+        label,
+      })),
+    ).toEqual([
+      { href: "/", id: "checklist", label: "清单" },
+      { href: "/settings", id: "mine", label: "我的" },
+    ]);
   });
 
-  it("contains only the four data-management capabilities", () => {
-    expect(settingsPage).toContain("手动备份");
-    expect(settingsPage).toContain("复制 JSON");
-    expect(settingsPage).toContain("导入 JSON");
-    expect(settingsPage).toContain("本机恢复点");
-    expect(settingsPage).toContain("最多保留 5 份");
-    expect(settingsPage).toContain("WebDAV 备份");
-    expect(settingsPage).toContain("清空并重新开始");
+  it("keeps /settings as a focused three-card 我的 entry page", () => {
+    expect(settingsPage).toContain("我的");
+    expect(settingsPage).toContain('href: "/growth"');
+    expect(settingsPage).toContain("宝宝成长记");
+    expect(settingsPage).toContain("按孕周查看宝宝发育与常见产检参考");
+    expect(settingsPage).toContain('href: "/settings/checklist"');
+    expect(settingsPage).toContain('href: "/settings/backup"');
+    expect(settingsPage).not.toContain("登录");
+    expect(settingsPage).not.toContain("心愿单");
   });
 
-  it("has no profile or removed-tool entry points", () => {
-    for (const route of REMOVED_PRODUCT_ROUTES) {
-      expect(settingsPage).not.toContain(`href="${route}"`);
-    }
+  it("moves backup capabilities out of the entry page and removes manual JSON UI", () => {
+    expect(settingsPage).not.toContain("loadSnapshots");
+    expect(settingsPage).not.toContain("clearAll");
+    expect(settingsPage).not.toContain("WebDAV 地址");
 
-    expect(settingsPage).not.toContain("我的资料");
-    expect(settingsPage).not.toContain("常用工具");
-    expect(settingsPage).not.toContain("formatBabyZodiacLine");
-    expect(settingsPage).not.toContain("state.profile");
+    expect(backupSettingsPage).toContain("备份与恢复");
+    expect(backupSettingsPage).toContain("本机恢复点");
+    expect(backupSettingsPage).toContain("最多保留 5 份");
+    expect(backupSettingsPage).toContain("WebDAV 备份");
+    expect(backupSettingsPage).not.toContain("复制 JSON");
+    expect(backupSettingsPage).not.toContain("导入 JSON");
+    expect(backupSettingsPage).not.toContain("手动备份");
+    expect(backupSettingsPage).not.toContain("JSON");
+    expect(backupSettingsPage).not.toContain("应用密码 / 密码");
+    expect(backupSettingsPage).not.toContain("exportJson");
+    expect(backupSettingsPage).not.toContain("importJson");
   });
 
-  it("keeps destructive actions recoverable and feedback accessible", () => {
-    expect(settingsPage).toContain("操作前会先创建恢复点");
-    expect(settingsPage).toContain("恢复点只在当前浏览器中");
-    expect(settingsPage).toContain('aria-live="polite"');
-    expect(settingsPage).toContain('role={ok === false ? "alert" : "status"}');
+  it("provides local checklist preferences and a non-destructive repair", () => {
+    expect(checklistSettingsPage).toContain(
+      "useChecklistDescriptionPreference",
+    );
+    expect(checklistSettingsPage).toContain("显示物品说明");
+    expect(checklistSettingsPage).toContain('value: "lean"');
+    expect(checklistSettingsPage).toContain('label: "精简"');
+    expect(checklistSettingsPage).toContain('value: "full"');
+    expect(checklistSettingsPage).toContain('label: "完整"');
+    expect(checklistSettingsPage).toContain("restoreMissingTemplateItems");
+    expect(checklistSettingsPage).toContain("不会清除勾选进度");
+    expect(checklistSettingsPage).toContain("不会删除自定义物品");
   });
 
-  it("keeps privacy and support as subordinate data-page links", () => {
-    expect(settingsPage).toContain("PUBLIC_PRIVACY_PATH");
-    expect(settingsPage).toContain("PUBLIC_SUPPORT_PATH");
-    expect(settingsPage).toContain("隐私说明");
-    expect(settingsPage).toContain("支持与反馈");
+  it("uses typed custom dialogs for rebuild and clear", () => {
+    expect(checklistSettingsPage).toContain("<Dialog");
+    expect(checklistSettingsPage).toContain(
+      'rebuildConfirmation !== "重新开始"',
+    );
+    expect(checklistSettingsPage).toContain("输入“重新开始”以继续");
+    expect(checklistSettingsPage).not.toContain("window.confirm");
+
+    expect(backupSettingsPage).toContain("<Dialog");
+    expect(backupSettingsPage).toContain(
+      'clearConfirmation !== "清空全部数据"',
+    );
+    expect(backupSettingsPage).toContain("输入“清空全部数据”以继续");
+    expect(backupSettingsPage).toContain("若恢复点保存失败，本次操作会立即中止");
+  });
+
+  it("keeps privacy and support subordinate to backup", () => {
+    expect(backupSettingsPage).toContain("PUBLIC_PRIVACY_PATH");
+    expect(backupSettingsPage).toContain("PUBLIC_SUPPORT_PATH");
+    expect(backupSettingsPage).toContain("隐私说明");
+    expect(backupSettingsPage).toContain("支持与反馈");
+    expect(backupSettingsPage).toContain('aria-live="polite"');
+    expect(backupSettingsPage).toContain(
+      'role={ok === false ? "alert" : "status"}',
+    );
   });
 });

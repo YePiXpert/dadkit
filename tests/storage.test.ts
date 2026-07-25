@@ -17,7 +17,12 @@ import {
   saveHiddenTemplateItemIds,
   STORAGE_KEYS,
   type DadKitExportData,
+  type DadKitExportDataV3,
 } from "@/lib/storage";
+import {
+  GROWTH_STORAGE_KEYS,
+  exportGrowthData,
+} from "@/lib/growth-store";
 import type { ChecklistItem } from "@/lib/types";
 
 type StorageHarness = {
@@ -89,12 +94,33 @@ function backupData(
   patch: Partial<DadKitExportData> = {},
 ): DadKitExportData {
   return {
-    version: 3,
+    version: 4,
     exportedAt: "2026-07-25T00:00:00.000Z",
     checklistMode: "full",
     checklist: [testItem("backup-item")],
     customItems: [],
     hiddenTemplateItemIds: [],
+    growth: {
+      version: 1,
+      profile: { nickname: "小满", dueDate: "2026-08-20" },
+      progress: { completedTaskIds: ["first-prenatal-contact"] },
+    },
+    ...patch,
+  };
+}
+
+function backupDataV3(
+  patch: Partial<DadKitExportDataV3> = {},
+): DadKitExportDataV3 {
+  const current = backupData();
+
+  return {
+    version: 3,
+    exportedAt: current.exportedAt,
+    checklistMode: current.checklistMode,
+    checklist: current.checklist,
+    customItems: current.customItems,
+    hiddenTemplateItemIds: current.hiddenTemplateItemIds,
     ...patch,
   };
 }
@@ -105,6 +131,7 @@ function currentDataSnapshot() {
     checklistMode: loadChecklistMode(),
     customItems: loadCustomItems(),
     hiddenTemplateItemIds: loadHiddenTemplateItemIds(),
+    growth: exportGrowthData(),
   };
 }
 
@@ -113,7 +140,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("v3 storage namespace and export schema", () => {
+describe("v4 portable backup with the existing local namespace", () => {
   it("owns only dadkit:v3 storage keys", () => {
     expect(Object.values(STORAGE_KEYS).length).toBeGreaterThan(0);
     expect(
@@ -121,7 +148,7 @@ describe("v3 storage namespace and export schema", () => {
     ).toBe(true);
   });
 
-  it("exports exactly the six portable checklist fields", () => {
+  it("exports checklist and growth data without connection settings", () => {
     installBrowserStorage();
     const checklist = [testItem("saved")];
     const customItems = [testItem("custom")];
@@ -141,19 +168,25 @@ describe("v3 storage namespace and export schema", () => {
         "checklist",
         "customItems",
         "hiddenTemplateItemIds",
+        "growth",
       ].sort(),
     );
     expect(exported).toMatchObject({
-      version: 3,
+      version: 4,
       checklistMode: "lean",
       checklist,
       customItems,
       hiddenTemplateItemIds: ["hidden-template"],
+      growth: {
+        version: 1,
+        profile: { nickname: "", dueDate: "" },
+        progress: { completedTaskIds: [] },
+      },
     });
     expect(Number.isNaN(Date.parse(exported.exportedAt))).toBe(false);
   });
 
-  it("round-trips a complete v3 backup", () => {
+  it("round-trips a complete v4 backup", () => {
     installBrowserStorage();
     const payload = backupData({
       checklistMode: "lean",
@@ -170,11 +203,30 @@ describe("v3 storage namespace and export schema", () => {
       checklistMode: "lean",
       customItems: payload.customItems,
       hiddenTemplateItemIds: ["hidden-template"],
+      growth: payload.growth,
+    });
+  });
+
+  it("restores a v3 checklist backup without clearing current growth data", () => {
+    installBrowserStorage({
+      [GROWTH_STORAGE_KEYS.profile]: JSON.stringify({
+        nickname: "旧昵称",
+        dueDate: "2026-09-01",
+      }),
+    });
+
+    const result = importData(JSON.stringify(backupDataV3()));
+
+    expect(result.ok).toBe(true);
+    expect(exportGrowthData()).toEqual({
+      version: 1,
+      profile: { nickname: "旧昵称", dueDate: "2026-09-01" },
+      progress: { completedTaskIds: [] },
     });
   });
 });
 
-describe("strict v3 import boundary", () => {
+describe("strict v3 and v4 import boundary", () => {
   it.each([
     ["invalid JSON", "{bad json"],
     ["old version", JSON.stringify({ ...backupData(), version: 2 })],
@@ -211,6 +263,27 @@ describe("strict v3 import boundary", () => {
     [
       "invalid mode",
       JSON.stringify({ ...backupData(), checklistMode: "compact" }),
+    ],
+    [
+      "invalid growth payload",
+      JSON.stringify({
+        ...backupData(),
+        growth: { version: 1, profile: {}, progress: {} },
+      }),
+    ],
+    [
+      "duplicate checklist ids",
+      JSON.stringify({
+        ...backupData(),
+        checklist: [testItem("duplicate"), testItem("duplicate")],
+      }),
+    ],
+    [
+      "duplicate hidden ids",
+      JSON.stringify({
+        ...backupData(),
+        hiddenTemplateItemIds: ["same-id", "same-id"],
+      }),
     ],
   ])("rejects %s without modifying current data", (_label, raw) => {
     installBrowserStorage();
@@ -253,6 +326,38 @@ describe("strict v3 import boundary", () => {
     expect(result.ok).toBe(false);
     expect(currentDataSnapshot()).toEqual(before);
   });
+
+  it("rolls back checklist and growth together when a growth write fails", () => {
+    installBrowserStorage();
+    const original = backupData({
+      checklist: [testItem("original")],
+      growth: {
+        version: 1,
+        profile: { nickname: "原昵称", dueDate: "2026-08-20" },
+        progress: { completedTaskIds: ["first-prenatal-contact"] },
+      },
+    });
+
+    expect(importData(JSON.stringify(original)).ok).toBe(true);
+    const before = currentDataSnapshot();
+    failNextStorageWrite(GROWTH_STORAGE_KEYS.profile);
+
+    const result = importData(
+      JSON.stringify(
+        backupData({
+          checklist: [testItem("replacement")],
+          growth: {
+            version: 1,
+            profile: { nickname: "新昵称", dueDate: "2026-09-10" },
+            progress: { completedTaskIds: ["dating-ultrasound"] },
+          },
+        }),
+      ),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(currentDataSnapshot()).toEqual(before);
+  });
 });
 
 describe("local recovery snapshots", () => {
@@ -273,7 +378,7 @@ describe("local recovery snapshots", () => {
     ]);
   });
 
-  it("stores only the exact v3 portable payload", () => {
+  it("stores only the exact v4 portable payload", () => {
     installBrowserStorage();
     saveChecklist([testItem("snapshot")]);
 
@@ -288,6 +393,7 @@ describe("local recovery snapshots", () => {
         "checklist",
         "customItems",
         "hiddenTemplateItemIds",
+        "growth",
       ].sort(),
     );
   });
@@ -344,6 +450,14 @@ describe("destructive storage scope", () => {
     saveChecklist([testItem("current")]);
     createSnapshot("保留恢复点");
     localValues.set(STORAGE_KEYS.webDavSecret, "secret");
+    localValues.set(
+      GROWTH_STORAGE_KEYS.profile,
+      JSON.stringify({ nickname: "小满", dueDate: "2026-08-20" }),
+    );
+    localValues.set(
+      GROWTH_STORAGE_KEYS.progress,
+      JSON.stringify({ completedTaskIds: ["first-prenatal-contact"] }),
+    );
     sessionValues.set("dadkit:v3:webdav-session-secret", "session-secret");
 
     resetAllData();
@@ -353,6 +467,8 @@ describe("destructive storage scope", () => {
     expect(localValues.get(v2Sentinel)).toBe("v2-sentinel");
     expect(localValues.get(unrelated)).toBe("unrelated-sentinel");
     expect(localValues.has(STORAGE_KEYS.webDavSecret)).toBe(false);
+    expect(localValues.has(GROWTH_STORAGE_KEYS.profile)).toBe(false);
+    expect(localValues.has(GROWTH_STORAGE_KEYS.progress)).toBe(false);
     expect(sessionValues.has("dadkit:v3:webdav-session-secret")).toBe(false);
   });
 });

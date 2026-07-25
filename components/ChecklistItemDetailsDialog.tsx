@@ -21,6 +21,7 @@ import {
   getChecklistItemState,
   type ChecklistItemState,
 } from "@/lib/checklist-v2";
+import { formatChecklistDisplayText } from "@/lib/checklist-display";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -50,9 +51,21 @@ export function ChecklistItemDetailsDialog({
   const removeItem = useDadKitStore((state) => state.removeItem);
   const itemState = getChecklistItemState(item);
   const stateMeta = STATE_META[itemState];
+  const displayOptions = {
+    transformAlternatives: item.source === "general",
+  } as const;
+  const displayName = formatChecklistDisplayText(item.name, displayOptions);
+  const displayNote = formatChecklistDisplayText(
+    item.note || "暂时没有补充说明，可以按家庭和医院实际情况调整。",
+    displayOptions,
+  );
+  const displayQuantity = formatChecklistDisplayText(
+    item.quantity || "1 件",
+    displayOptions,
+  );
 
   function confirmRemoval() {
-    if (!window.confirm(`从清单中删除“${item.name}”？`)) {
+    if (!window.confirm(`从清单中删除“${displayName}”？`)) {
       return;
     }
 
@@ -66,10 +79,10 @@ export function ChecklistItemDetailsDialog({
       <DialogContent className="gap-4 rounded-[2rem] border border-border bg-background p-5 sm:max-w-md">
         <DialogHeader className="pr-8">
           <DialogTitle className="break-words text-xl leading-7">
-            {item.name}
+            {displayName}
           </DialogTitle>
           <DialogDescription>
-            建议 {item.quantity || "1 件"} · {stateMeta.label}
+            建议 {displayQuantity} · {stateMeta.label}
           </DialogDescription>
         </DialogHeader>
 
@@ -107,11 +120,11 @@ export function ChecklistItemDetailsDialog({
         <section className="rounded-[1.5rem] border border-border/80 bg-card p-4">
           <p className="text-sm font-semibold">物品说明</p>
           <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
-            {item.note || "暂时没有补充说明，可以按家庭和医院实际情况调整。"}
+            {displayNote}
           </p>
         </section>
 
-        <ItemPhotoField controller={photoController} itemName={item.name} />
+        <ItemPhotoField controller={photoController} itemName={displayName} />
 
         <section className="grid gap-2 rounded-[1.5rem] border border-border/80 bg-card p-3">
           <div className="flex min-h-11 items-center justify-between gap-3 px-1">

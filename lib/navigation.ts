@@ -1,10 +1,10 @@
-import { ClipboardList, Database, type LucideIcon } from "lucide-react";
+import { ClipboardList, UserRound, type LucideIcon } from "lucide-react";
 
 export type PrimaryNavigationItem = {
   href: "/" | "/settings";
   icon: LucideIcon;
-  id: "checklist" | "data";
-  label: "清单" | "数据";
+  id: "checklist" | "mine";
+  label: "清单" | "我的";
   ownedRoutes: readonly string[];
 };
 
@@ -14,14 +14,14 @@ export const PRIMARY_NAVIGATION_ITEMS = [
     href: "/",
     label: "清单",
     icon: ClipboardList,
-    ownedRoutes: ["/"],
+    ownedRoutes: ["/", "/checklist"],
   },
   {
-    id: "data",
+    id: "mine",
     href: "/settings",
-    label: "数据",
-    icon: Database,
-    ownedRoutes: ["/settings", "/privacy", "/support"],
+    label: "我的",
+    icon: UserRound,
+    ownedRoutes: ["/settings", "/growth", "/privacy", "/support"],
   },
 ] as const satisfies readonly PrimaryNavigationItem[];
 

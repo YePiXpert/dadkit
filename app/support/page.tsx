@@ -11,9 +11,9 @@ export const metadata: Metadata = {
 };
 
 const testChecklist = [
-  "首次打开后确认首页直接显示清单，并能进入“数据”",
+  "首次打开后确认首页直接显示清单，并能进入“我的”",
   "修改一个清单状态，刷新或重新打开 PWA，确认本地数据仍在",
-  "在“数据”页面复制 JSON 备份，并尝试导入一份不含真实隐私的测试清单",
+  "在“备份与恢复”中创建恢复点，并尝试恢复一份不含真实隐私的测试清单",
   "如测试 WebDAV，请使用测试目录和应用密码，不要把真实清单截图发到反馈里",
 ];
 
@@ -100,7 +100,7 @@ export default function SupportPage() {
           </CardHeader>
           <CardContent className="grid gap-3 text-sm leading-6 text-muted-foreground">
             <p>
-              JSON、本地恢复快照和 WebDAV 只备份清单数据，不包含物品照片、WebDAV 连接配置或凭据。
+              本地恢复快照和 WebDAV 备份清单与成长记中的便携数据，不包含物品照片、WebDAV 连接配置或凭据。
             </p>
             <p>
               隐私说明见{" "}

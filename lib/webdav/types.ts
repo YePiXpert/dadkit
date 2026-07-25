@@ -1,4 +1,4 @@
-import type { DadKitExportData } from "@/lib/storage";
+import type { DadKitImportData } from "@/lib/storage";
 
 export type WebDavAuthMode = "basic" | "app_password";
 
@@ -29,7 +29,7 @@ export type DadKitWebDavBackup = {
   createdAt: string;
   updatedAt: string;
   checksum: string;
-  data: DadKitExportData;
+  data: DadKitImportData;
 };
 
 export type WebDavConnectionTestResult = {

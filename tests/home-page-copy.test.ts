@@ -12,10 +12,10 @@ const checklistWorkspace = readSource("components", "ChecklistWorkspace.tsx");
 
 describe("checklist home page", () => {
   it("uses the checklist workspace at the root route", () => {
-    expect(homePage).toContain(
-      'import { ChecklistWorkspace } from "@/components/ChecklistWorkspace"',
-    );
-    expect(homePage).toContain("return <ChecklistWorkspace />");
+    expect(homePage).toContain("ChecklistWorkspace,");
+    expect(homePage).toContain('from "@/components/ChecklistWorkspace"');
+    expect(homePage).toContain("<ChecklistWorkspace />");
+    expect(homePage).toContain("<Suspense");
   });
 
   it("opens directly into an actionable checklist", () => {

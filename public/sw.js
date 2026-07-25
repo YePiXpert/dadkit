@@ -1,12 +1,23 @@
-const CACHE_NAME = "dadkit-v2.0.0-pwa-r5";
+const CACHE_NAME = "dadkit-v2.0.0-pwa-r6";
 const CORE_ROUTES = [
   "/",
   "/settings",
+  "/settings/checklist",
+  "/settings/backup",
+  "/growth",
+  "/checklist/documents",
+  "/checklist/mom",
+  "/checklist/baby",
+  "/checklist/confinementMom",
+  "/checklist/confinementBaby",
+  "/checklist/partner",
+  "/checklist/home",
+  "/checklist/lastMinute",
   "/privacy",
   "/support",
 ];
-const REQUIRED_ROUTES = CORE_ROUTES.slice(0, 2);
-const OPTIONAL_ROUTES = CORE_ROUTES.slice(2);
+const REQUIRED_ROUTES = CORE_ROUTES.slice(0, -2);
+const OPTIONAL_ROUTES = CORE_ROUTES.slice(-2);
 const PWA_ICON_ASSETS = [
   "/manifest.webmanifest",
   "/icon.svg",

@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CHECKLIST_SECTIONS,
   CHECKLIST_VIEWS,
   getChecklistItemState,
   getChecklistViewCounts,
   getChecklistViewItems,
+  groupChecklistViewItems,
+  isChecklistSectionId,
 } from "@/lib/checklist-v2";
 import type {
   ChecklistItem,
@@ -36,6 +39,24 @@ function checklistItem(
 }
 
 describe("V2 checklist views", () => {
+  it("keeps the eight section route ids stable", () => {
+    expect(CHECKLIST_SECTIONS.map((section) => section.id)).toEqual([
+      "documents",
+      "mom",
+      "baby",
+      "confinementMom",
+      "confinementBaby",
+      "partner",
+      "home",
+      "lastMinute",
+    ]);
+    expect(
+      CHECKLIST_SECTIONS.every((section) => isChecklistSectionId(section.id)),
+    ).toBe(true);
+    expect(isChecklistSectionId("unknown")).toBe(false);
+    expect(groupChecklistViewItems([], { includeEmpty: true })).toHaveLength(8);
+  });
+
   it("exposes exactly the three user-facing views", () => {
     expect(CHECKLIST_VIEWS).toEqual([
       { id: "all", label: "全部物品", shortLabel: "全部" },

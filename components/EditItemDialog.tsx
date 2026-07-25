@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, PackageOpen, Pencil } from "lucide-react";
 
 import { QuantityStepper } from "@/components/QuantityStepper";
@@ -24,6 +24,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  formatChecklistDisplayText,
+  preserveChecklistStorageText,
+} from "@/lib/checklist-display";
 import { inferPreparationKind } from "@/lib/preparation";
 import {
   CATEGORY_LABELS,
@@ -60,14 +64,24 @@ const CUSTOM_PREPARATION_OPTIONS: Array<{
 
 export function EditItemDialog({ item }: EditItemDialogProps) {
   const updateItem = useDadKitStore((state) => state.updateItem);
+  const displayOptions = useMemo(
+    () => ({ transformAlternatives: item.source === "general" }),
+    [item.source],
+  );
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState(item.name);
+  const [name, setName] = useState(
+    formatChecklistDisplayText(item.name, displayOptions),
+  );
   const [category, setCategory] = useState<ChecklistCategory>(item.category);
   const [preparationKind, setPreparationKind] = useState<PreparationKind>(
     inferPreparationKind(item),
   );
-  const [quantity, setQuantity] = useState(item.quantity ?? "");
-  const [note, setNote] = useState(item.note ?? "");
+  const [quantity, setQuantity] = useState(
+    formatChecklistDisplayText(item.quantity, displayOptions),
+  );
+  const [note, setNote] = useState(
+    formatChecklistDisplayText(item.note, displayOptions),
+  );
   const canEditPreparationKind = item.source === "user";
 
   useEffect(() => {
@@ -75,12 +89,12 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
       return;
     }
 
-    setName(item.name);
+    setName(formatChecklistDisplayText(item.name, displayOptions));
     setCategory(item.category);
     setPreparationKind(inferPreparationKind(item));
-    setQuantity(item.quantity ?? "");
-    setNote(item.note ?? "");
-  }, [item, open]);
+    setQuantity(formatChecklistDisplayText(item.quantity, displayOptions));
+    setNote(formatChecklistDisplayText(item.note, displayOptions));
+  }, [displayOptions, item, open]);
 
   function submit() {
     if (!name.trim()) {
@@ -88,11 +102,16 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
     }
 
     updateItem(item.id, {
-      name,
+      name:
+        preserveChecklistStorageText(name, item.name, displayOptions) ?? name,
       category,
       ...(canEditPreparationKind ? { preparationKind } : {}),
-      quantity: quantity || undefined,
-      note: note || undefined,
+      quantity:
+        preserveChecklistStorageText(quantity, item.quantity, displayOptions) ||
+        undefined,
+      note:
+        preserveChecklistStorageText(note, item.note, displayOptions) ||
+        undefined,
     });
     setOpen(false);
   }

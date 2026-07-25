@@ -275,7 +275,7 @@ export function ItemPhotoField({
       </div>
 
       <p className="text-[10px] leading-4 text-muted-foreground">
-        照片仅保存在本设备，不包含在 JSON 或 WebDAV 备份中。
+        照片仅保存在本设备，不进入本机恢复点或 WebDAV 备份。
       </p>
       {controller.error ? (
         <p aria-live="polite" className="text-xs text-destructive" role="alert">

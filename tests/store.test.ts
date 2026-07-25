@@ -6,7 +6,6 @@ import {
   loadSnapshots,
   saveChecklist,
   STORAGE_KEYS,
-  type DadKitExportData,
 } from "@/lib/storage";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
@@ -69,18 +68,6 @@ function testItem(id: string, patch: Partial<ChecklistItem> = {}): ChecklistItem
   };
 }
 
-function backupData(patch: Partial<DadKitExportData> = {}): DadKitExportData {
-  return {
-    version: 3,
-    exportedAt: "2026-07-25T00:00:00.000Z",
-    checklistMode: "full",
-    checklist: generateChecklist(),
-    customItems: [],
-    hiddenTemplateItemIds: [],
-    ...patch,
-  };
-}
-
 function resetStoreState() {
   useDadKitStore.setState({
     hydrated: false,
@@ -109,26 +96,38 @@ describe("v3 checklist store", () => {
     expect(loadChecklist()).toEqual(state.checklist);
   });
 
-  it("exports exactly the portable v3 fields", () => {
+  it("restores only missing template items without losing progress or custom items", () => {
     installBrowserStorage();
     useDadKitStore.getState().hydrate();
 
-    const exported = JSON.parse(useDadKitStore.getState().exportJson());
+    const initial = useDadKitStore.getState().checklist;
+    const preserved = initial[0];
+    const removed = initial.find((item) => item.id !== preserved.id);
 
-    expect(Object.keys(exported).sort()).toEqual(
-      [
-        "version",
-        "exportedAt",
-        "checklistMode",
-        "checklist",
-        "customItems",
-        "hiddenTemplateItemIds",
-      ].sort(),
+    expect(removed).toBeDefined();
+    useDadKitStore.getState().updateItem(preserved.id, { status: "packed" });
+    useDadKitStore.getState().removeItem(removed!.id);
+    const custom = useDadKitStore.getState().addCustomItem({
+      name: "自定义测试物品",
+      category: "mom_labor",
+      priority: "must",
+    });
+
+    const restoredCount =
+      useDadKitStore.getState().restoreMissingTemplateItems();
+    const state = useDadKitStore.getState();
+
+    expect(restoredCount).toBe(1);
+    expect(state.hiddenTemplateItemIds).toEqual([]);
+    expect(state.checklist.find((item) => item.id === removed!.id)).toBeDefined();
+    expect(state.checklist.find((item) => item.id === preserved.id)?.status).toBe(
+      "packed",
     );
-    expect(exported.version).toBe(3);
+    expect(state.checklist.find((item) => item.id === custom.itemId)).toBeDefined();
+    expect(state.customItems.find((item) => item.id === custom.itemId)).toBeDefined();
   });
 
-  it("creates a recovery snapshot before importing valid JSON", () => {
+  it("rebuilds the checklist only after saving a recovery snapshot", () => {
     installBrowserStorage();
     const before = generateChecklist().map((item, index) =>
       index === 0 ? { ...item, status: "packed" as const } : item,
@@ -136,43 +135,44 @@ describe("v3 checklist store", () => {
     saveChecklist(before);
     useDadKitStore.getState().hydrate();
 
-    const result = useDadKitStore
-      .getState()
-      .importJson(JSON.stringify(backupData()));
+    useDadKitStore.getState().resetChecklist();
 
-    expect(result.ok).toBe(true);
-    expect(loadSnapshots()[0]?.reason).toBe("导入 JSON 前");
+    expect(loadSnapshots()[0]?.reason).toBe("重建清单前");
     expect(loadSnapshots()[0]?.data.checklist).toEqual(before);
+    expect(useDadKitStore.getState().checklist).toEqual(generateChecklist());
   });
 
-  it("rejects invalid JSON without creating a snapshot", () => {
+  it("rolls back every checklist field when rebuilding cannot finish", () => {
     installBrowserStorage();
-    useDadKitStore.getState().hydrate();
+    const before = [testItem("before-failed-rebuild", { status: "packed" })];
+    saveChecklist(before);
+    useDadKitStore.setState({ hydrated: true, checklist: before });
+    failNextStorageWrite(STORAGE_KEYS.customItems);
 
-    const result = useDadKitStore.getState().importJson("{bad json");
-
-    expect(result.ok).toBe(false);
-    expect(loadSnapshots()).toEqual([]);
+    expect(() => useDadKitStore.getState().resetChecklist()).toThrow(
+      "清单重建失败，原有清单已保留。",
+    );
+    expect(useDadKitStore.getState().checklist).toEqual(before);
+    expect(loadChecklist()).toEqual(before);
   });
 
-  it("aborts import when the recovery snapshot cannot be persisted", () => {
+  it("aborts rebuild when the recovery snapshot cannot be persisted", () => {
     installBrowserStorage();
-    const before = generateChecklist();
+    const before = generateChecklist().map((item, index) =>
+      index === 0 ? { ...item, status: "packed" as const } : item,
+    );
     saveChecklist(before);
     useDadKitStore.getState().hydrate();
     failNextStorageWrite(STORAGE_KEYS.snapshots);
 
-    expect(() =>
-      useDadKitStore.getState().importJson(
-        JSON.stringify(
-          backupData({ checklist: [testItem("replacement")] }),
-        ),
-      ),
-    ).toThrow("无法保存本地恢复快照，操作已中止。");
+    expect(() => useDadKitStore.getState().resetChecklist()).toThrow(
+      "无法保存本地恢复快照，操作已中止。",
+    );
+    expect(useDadKitStore.getState().checklist).toEqual(before);
     expect(loadChecklist()).toEqual(before);
   });
 
-  it("clears checklist data only after saving a recovery snapshot", () => {
+  it("clears checklist data only after saving a recovery snapshot", async () => {
     installBrowserStorage();
     const custom = testItem("custom", { status: "packed" });
     saveChecklist([custom]);
@@ -184,7 +184,7 @@ describe("v3 checklist store", () => {
       hiddenTemplateItemIds: ["general-baby-nail-clipper"],
     });
 
-    useDadKitStore.getState().clearAll();
+    await useDadKitStore.getState().clearAll();
 
     const state = useDadKitStore.getState();
     expect(loadSnapshots()[0]?.reason).toBe("清空本地数据前");
@@ -195,15 +195,29 @@ describe("v3 checklist store", () => {
     expect(state.hiddenTemplateItemIds).toEqual([]);
   });
 
-  it("aborts clear when the recovery snapshot cannot be persisted", () => {
+  it("aborts clear when the recovery snapshot cannot be persisted", async () => {
     installBrowserStorage();
     const before = [testItem("before-clear", { status: "packed" })];
     saveChecklist(before);
     useDadKitStore.setState({ hydrated: true, checklist: before });
     failNextStorageWrite(STORAGE_KEYS.snapshots);
 
-    expect(() => useDadKitStore.getState().clearAll()).toThrow(
+    await expect(useDadKitStore.getState().clearAll()).rejects.toThrow(
       "无法保存本地恢复快照，操作已中止。",
+    );
+    expect(useDadKitStore.getState().checklist).toEqual(before);
+    expect(loadChecklist()).toEqual(before);
+  });
+
+  it("rolls back a clear when the replacement checklist cannot be persisted", async () => {
+    installBrowserStorage();
+    const before = [testItem("before-failed-clear", { status: "packed" })];
+    saveChecklist(before);
+    useDadKitStore.setState({ hydrated: true, checklist: before });
+    failNextStorageWrite(STORAGE_KEYS.checklistMode);
+
+    await expect(useDadKitStore.getState().clearAll()).rejects.toThrow(
+      "本机数据清空失败，原有数据已保留。",
     );
     expect(useDadKitStore.getState().checklist).toEqual(before);
     expect(loadChecklist()).toEqual(before);

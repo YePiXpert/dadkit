@@ -1,8 +1,9 @@
 import {
+  applyImportData,
   createSnapshot,
-  importData,
   type DadKitExportData,
   type ImportResult,
+  validateImportData,
 } from "@/lib/storage";
 import type {
   DadKitWebDavBackup,
@@ -201,10 +202,16 @@ export async function downloadWebDavBackup(
       return { ok: false, message: "远端备份校验失败，未导入。" };
     }
 
+    const payloadValidation = validateImportData(JSON.stringify(parsed.data));
+
+    if (!payloadValidation.ok) {
+      return { ok: false, message: "远端备份内容无效，未下载。" };
+    }
+
     return { ok: true, message: "下载成功", backup: parsed };
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return { ok: false, message: "远端备份 JSON 格式不正确。" };
+      return { ok: false, message: "远端备份格式不正确。" };
     }
 
     return { ok: false, message: webDavErrorMessage(error) };
@@ -259,7 +266,7 @@ export function importDadKitWebDavBackup(
     return { ok: false, message: webDavErrorMessage(error) };
   }
 
-  return importData(JSON.stringify(backup.data));
+  return applyImportData(backup.data);
 }
 
 function validateWebDavInput(
@@ -308,7 +315,7 @@ async function webDavFetch(
   } catch (error) {
     if (error instanceof TypeError) {
       throw new Error(
-        "当前 WebDAV 服务未允许浏览器跨域访问。请改用支持 CORS 的 WebDAV 服务，或使用 JSON 备份手动导入导出。",
+        "当前 WebDAV 服务未允许浏览器跨域访问。请改用支持 CORS 的 WebDAV 服务，或通过服务器配置 DadKit 同源代理。",
       );
     }
 
@@ -419,7 +426,7 @@ function isDadKitWebDavBackup(value: unknown): value is DadKitWebDavBackup {
     typeof value.updatedAt === "string" &&
     typeof value.checksum === "string" &&
     isRecord(value.data) &&
-    value.data.version === 3
+    (value.data.version === 3 || value.data.version === 4)
   );
 }
 

@@ -12,6 +12,14 @@ import { cn } from "@/lib/utils";
 export function MobileNav() {
   const pathname = usePathname();
 
+  if (
+    pathname.startsWith("/checklist/") ||
+    pathname === "/growth" ||
+    pathname.startsWith("/settings/")
+  ) {
+    return null;
+  }
+
   return (
     <nav
       aria-label="主导航"

@@ -45,12 +45,12 @@ describe("release endpoints and product surface", () => {
       })),
     ).toEqual([
       { name: "待产清单", short_name: "清单", url: "/" },
-      { name: "数据备份", short_name: "数据", url: "/settings" },
+      { name: "我的", short_name: "我的", url: "/settings" },
     ]);
     expect(readme).toContain("清单");
-    expect(readme).toContain("JSON");
     expect(readme).toContain("本地恢复快照");
     expect(readme).toContain("WebDAV 备份");
+    expect(readme).toContain("宝宝成长记");
     expect(readme).toContain("全部、待购买、待装包");
     expect(readme).toContain("纯 PWA");
   });
@@ -136,15 +136,27 @@ describe("release endpoints and product surface", () => {
     );
   });
 
-  it("pre-caches the r5 checklist-and-data shell with only support pages optional", () => {
+  it("pre-caches the r6 checklist, growth and settings shell", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.0.0-pwa-r5"');
-    expect(sw).toContain("const REQUIRED_ROUTES = CORE_ROUTES.slice(0, 2)");
-    expect(sw).toContain("const OPTIONAL_ROUTES = CORE_ROUTES.slice(2)");
-    expect(sw).toMatch(
-      /const CORE_ROUTES = \[\s*"\/",\s*"\/settings",\s*"\/privacy",\s*"\/support",\s*\]/,
-    );
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.0.0-pwa-r6"');
+    expect(sw).toContain("const REQUIRED_ROUTES = CORE_ROUTES.slice(0, -2)");
+    expect(sw).toContain("const OPTIONAL_ROUTES = CORE_ROUTES.slice(-2)");
+    for (const route of [
+      "/settings/checklist",
+      "/settings/backup",
+      "/growth",
+      "/checklist/documents",
+      "/checklist/mom",
+      "/checklist/baby",
+      "/checklist/confinementMom",
+      "/checklist/confinementBaby",
+      "/checklist/partner",
+      "/checklist/home",
+      "/checklist/lastMinute",
+    ]) {
+      expect(sw).toContain(`"${route}"`);
+    }
 
     for (const route of REMOVED_PRODUCT_ROUTES) {
       expect(sw).not.toContain(`"/${route}"`);
@@ -154,7 +166,7 @@ describe("release endpoints and product surface", () => {
     expect(sw).not.toContain("/illustrations/");
   });
 
-  it("deletes the previous r4 cache during activation", async () => {
+  it("deletes the previous r5 cache during activation", async () => {
     const sw = readSource("public", "sw.js");
     const listeners = new Map<string, (event: { waitUntil: (work: Promise<unknown>) => void }) => void>();
     const deleted: string[] = [];
@@ -170,7 +182,7 @@ describe("release endpoints and product surface", () => {
       },
       caches: {
         async keys() {
-          return ["dadkit-v2.0.0-pwa-r4", "dadkit-v2.0.0-pwa-r5"];
+          return ["dadkit-v2.0.0-pwa-r5", "dadkit-v2.0.0-pwa-r6"];
         },
         async delete(key: string) {
           deleted.push(key);
@@ -187,7 +199,7 @@ describe("release endpoints and product surface", () => {
     });
     await activation;
 
-    expect(deleted).toEqual(["dadkit-v2.0.0-pwa-r4"]);
+    expect(deleted).toEqual(["dadkit-v2.0.0-pwa-r5"]);
   });
 
   it("extracts only real Next asset attributes from server HTML", () => {
@@ -268,6 +280,10 @@ describe("release endpoints and product surface", () => {
     await expect(precacheAppShell()).resolves.toBeUndefined();
     expect(cachedUrls).toContain("/");
     expect(cachedUrls).toContain("/settings");
+    expect(cachedUrls).toContain("/growth");
+    expect(cachedUrls).toContain("/settings/checklist");
+    expect(cachedUrls).toContain("/settings/backup");
+    expect(cachedUrls).toContain("/checklist/mom");
     expect(cachedUrls).toContain("/_next/static/chunks/root.js");
     expect(cachedUrls).not.toContain("/manifest.webmanifest");
 

@@ -128,17 +128,19 @@ describe("item photo integration contract", () => {
     expect(itemDetails).toContain("ItemPhotoField");
   });
 
-  it("keeps photos out of JSON and WebDAV data paths", () => {
+  it("keeps photos out of recovery points and WebDAV data paths", () => {
     expect(storage).not.toContain("@/lib/item-photos");
     expect(webDavClient).not.toContain("@/lib/item-photos");
-    expect(photoField).toContain("不包含在 JSON 或 WebDAV 备份中");
+    expect(photoField).toContain("不进入本机恢复点或 WebDAV 备份");
   });
 
-  it("schedules photo cleanup without awaiting it during clearAll", () => {
+  it("waits for photo cleanup during clearAll and reports partial failures", () => {
     expect(store).toContain('from "@/lib/item-photos"');
     expect(store).toContain("clearItemPhotos");
     expect(store).toContain("deleteItemPhoto");
-    expect(store).toContain("void clearItemPhotos().catch(() => undefined)");
+    expect(store).toContain("await clearItemPhotos()");
+    expect(store).toContain("photosCleared = false");
+    expect(store).toContain("清单与成长数据已清空");
     expect(store).toContain("void deleteItemPhoto(id).catch(() => undefined)");
   });
 });
