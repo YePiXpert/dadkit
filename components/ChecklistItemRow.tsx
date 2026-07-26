@@ -66,7 +66,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   return (
     <article
       className={cn(
-        "flex min-w-0 flex-col overflow-hidden rounded-[1.75rem] border border-border/70 bg-card p-2.5 transition-colors",
+        "flex min-w-0 flex-col overflow-hidden rounded-[1.75rem] border border-border/70 bg-card p-2.5 transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_26rem]",
         itemState === "ready" && "border-primary/30 bg-secondary/35",
         itemState === "packed" && "border-primary/35 bg-secondary/55",
         itemState === "not_needed" && "border-border/60 bg-muted/50",
@@ -78,6 +78,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
           <img
             alt={`${displayName}的物品照片`}
             className="size-full object-cover"
+            loading="lazy"
             src={itemPhoto.photoUrl}
           />
         ) : (
