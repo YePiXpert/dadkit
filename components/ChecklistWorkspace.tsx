@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Plus, Settings2 } from "lucide-react";
 
 import { AddItemDialog } from "@/components/AddItemDialog";
+import { CelebrationOverlay } from "@/components/CelebrationOverlay";
 import { ChecklistCategoryCard } from "@/components/ChecklistCategoryCard";
 import { ChecklistGroupTabs } from "@/components/ChecklistGroupTabs";
 import { EmptyState } from "@/components/EmptyState";
+import { HomeHeroIllustration } from "@/components/HomeHeroIllustration";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { PageHeader } from "@/components/PageHeader";
 import {
@@ -51,6 +53,19 @@ export function ChecklistWorkspace() {
   );
   const activeView = CHECKLIST_VIEWS.find((candidate) => candidate.id === view);
 
+  // 只在“进行中 → 100%”的这一刻庆祝：首次加载就是 100% 时不打扰。
+  const [celebrating, setCelebrating] = useState(false);
+  const previousPercentRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const previous = previousPercentRef.current;
+    previousPercentRef.current = packing.percent;
+
+    if (previous !== null && previous < 100 && packing.percent === 100) {
+      setCelebrating(true);
+    }
+  }, [packing.percent]);
+
   if (!hydrated) {
     return <ChecklistWorkspaceSkeleton />;
   }
@@ -77,9 +92,7 @@ export function ChecklistWorkspace() {
                 </span>
               </div>
             </div>
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-card text-2xl shadow-sm" aria-hidden="true">
-              🎒
-            </span>
+            <HomeHeroIllustration className="size-20 shrink-0 sm:size-24" />
           </div>
 
           <div
@@ -164,6 +177,11 @@ export function ChecklistWorkspace() {
             <Plus className="size-7" strokeWidth={2.2} />
           </button>
         }
+      />
+
+      <CelebrationOverlay
+        onClose={() => setCelebrating(false)}
+        open={celebrating}
       />
     </div>
   );

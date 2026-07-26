@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v2.0.0-pwa-r6";
+const CACHE_NAME = "dadkit-v2.0.0-pwa-r7";
 const CORE_ROUTES = [
   "/",
   "/settings",
@@ -79,6 +79,7 @@ self.addEventListener("fetch", (event) => {
 function shouldCacheAsset(url) {
   return (
     url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/item-refs/") ||
     STATIC_ASSETS.has(url.pathname)
   );
 }

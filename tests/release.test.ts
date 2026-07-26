@@ -136,10 +136,10 @@ describe("release endpoints and product surface", () => {
     );
   });
 
-  it("pre-caches the r6 checklist, growth and settings shell", () => {
+  it("pre-caches the r7 checklist, growth and settings shell", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.0.0-pwa-r6"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.0.0-pwa-r7"');
     expect(sw).toContain("const REQUIRED_ROUTES = CORE_ROUTES.slice(0, -2)");
     expect(sw).toContain("const OPTIONAL_ROUTES = CORE_ROUTES.slice(-2)");
     for (const route of [
@@ -166,7 +166,7 @@ describe("release endpoints and product surface", () => {
     expect(sw).not.toContain("/illustrations/");
   });
 
-  it("deletes the previous r5 cache during activation", async () => {
+  it("deletes the previous r6 cache during activation", async () => {
     const sw = readSource("public", "sw.js");
     const listeners = new Map<string, (event: { waitUntil: (work: Promise<unknown>) => void }) => void>();
     const deleted: string[] = [];
@@ -182,7 +182,7 @@ describe("release endpoints and product surface", () => {
       },
       caches: {
         async keys() {
-          return ["dadkit-v2.0.0-pwa-r5", "dadkit-v2.0.0-pwa-r6"];
+          return ["dadkit-v2.0.0-pwa-r6", "dadkit-v2.0.0-pwa-r7"];
         },
         async delete(key: string) {
           deleted.push(key);
@@ -199,7 +199,7 @@ describe("release endpoints and product surface", () => {
     });
     await activation;
 
-    expect(deleted).toEqual(["dadkit-v2.0.0-pwa-r5"]);
+    expect(deleted).toEqual(["dadkit-v2.0.0-pwa-r6"]);
   });
 
   it("extracts only real Next asset attributes from server HTML", () => {

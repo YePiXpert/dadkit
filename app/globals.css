@@ -232,3 +232,61 @@
     min-height: auto !important;
   }
 }
+
+@keyframes confetti-fall {
+  0% {
+    transform: translate3d(0, -12vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+
+  85% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate3d(0, 105vh, 0) rotate(540deg);
+    opacity: 0;
+  }
+}
+
+@keyframes sticker-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.celebration-confetti {
+  position: absolute;
+  top: 0;
+  border-radius: 2px;
+  animation-name: confetti-fall;
+  animation-timing-function: cubic-bezier(0.25, 0.4, 0.45, 1);
+  animation-fill-mode: forwards;
+  pointer-events: none;
+}
+
+.celebration-card {
+  animation: sticker-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .celebration-confetti,
+  .celebration-card {
+    animation: none !important;
+  }
+
+  .celebration-confetti {
+    display: none;
+  }
+}
