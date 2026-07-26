@@ -32,6 +32,9 @@ coverage
 .visual-screenshots
 *.tsbuildinfo
 
+# 本地运行时家庭同步数据(DADKIT_DATA_DIR 默认 ./data)
+data/
+
 # android TWA (bubblewrap 生成的工程产物与签名密钥)
 android/*
 !android/twa-manifest.example.json

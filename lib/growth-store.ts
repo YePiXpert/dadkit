@@ -8,6 +8,21 @@ import {
   clampGrowthWeek,
   isIsoCalendarDate,
 } from "@/lib/growth";
+import {
+  isGrowthTaskId,
+  normalizeNickname,
+  validateGrowthPortableData,
+  type GrowthPortableData,
+  type GrowthProfileData,
+  type GrowthProgressData,
+} from "@/lib/growth-portable";
+
+export { validateGrowthPortableData } from "@/lib/growth-portable";
+export type {
+  GrowthPortableData,
+  GrowthProfileData,
+  GrowthProgressData,
+} from "@/lib/growth-portable";
 
 export const GROWTH_STORAGE_KEYS = {
   profile: "dadkit-growth-profile-v1",
@@ -19,23 +34,8 @@ export const GROWTH_STORAGE_KEYS = {
 // 放在 dadkit:v3 命名空间,随 resetAllData 一并清空。
 export const GROWTH_UPDATED_AT_STORAGE_KEY = "dadkit:v3:growth-updated-at";
 
-export type GrowthProfileData = {
-  nickname: string;
-  dueDate: string;
-};
-
-export type GrowthProgressData = {
-  completedTaskIds: string[];
-};
-
 export type GrowthViewData = {
   lastViewedWeek: number;
-};
-
-export type GrowthPortableData = {
-  version: 1;
-  profile: GrowthProfileData;
-  progress: GrowthProgressData;
 };
 
 type GrowthStore = GrowthProfileData &
@@ -151,46 +151,6 @@ export function exportGrowthData(): GrowthPortableData {
     profile,
     progress,
   };
-}
-
-export function validateGrowthPortableData(
-  value: unknown,
-): value is GrowthPortableData {
-  if (
-    !isRecord(value) ||
-    !hasExactKeys(value, ["version", "profile", "progress"]) ||
-    value.version !== 1
-  ) {
-    return false;
-  }
-
-  if (
-    !isRecord(value.profile) ||
-    !hasExactKeys(value.profile, ["nickname", "dueDate"]) ||
-    !isRecord(value.progress) ||
-    !hasExactKeys(value.progress, ["completedTaskIds"])
-  ) {
-    return false;
-  }
-
-  const { nickname, dueDate } = value.profile;
-  const { completedTaskIds } = value.progress;
-
-  return (
-    typeof nickname === "string" &&
-    nickname === normalizeNickname(nickname) &&
-    typeof dueDate === "string" &&
-    (dueDate === "" || isIsoCalendarDate(dueDate)) &&
-    Array.isArray(completedTaskIds) &&
-    completedTaskIds.every(isGrowthTaskId) &&
-    new Set(completedTaskIds).size === completedTaskIds.length &&
-    completedTaskIds.every(
-      (taskId, index) =>
-        index === 0 ||
-        GROWTH_CHECKUP_TASK_IDS.indexOf(completedTaskIds[index - 1]) <
-          GROWTH_CHECKUP_TASK_IDS.indexOf(taskId),
-    )
-  );
 }
 
 export function applyGrowthPortableData(data: GrowthPortableData): void {
@@ -331,10 +291,6 @@ function hasBrowserStorage() {
   return typeof window !== "undefined" && Boolean(window.localStorage);
 }
 
-function normalizeNickname(value: string) {
-  return value.replace(/\s+/g, " ").trimStart().slice(0, 20);
-}
-
 function normalizeDueDate(value: string) {
   if (value === "" || isIsoCalendarDate(value)) {
     return value;
@@ -349,26 +305,6 @@ function normalizeCompletedTaskIds(value: unknown[]) {
   );
 }
 
-function isGrowthTaskId(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    GROWTH_CHECKUP_TASK_IDS.includes(value)
-  );
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function hasExactKeys(
-  value: Record<string, unknown>,
-  expectedKeys: readonly string[],
-) {
-  const actualKeys = Object.keys(value).sort();
-  const sortedExpectedKeys = [...expectedKeys].sort();
-
-  return (
-    actualKeys.length === sortedExpectedKeys.length &&
-    actualKeys.every((key, index) => key === sortedExpectedKeys[index])
-  );
 }

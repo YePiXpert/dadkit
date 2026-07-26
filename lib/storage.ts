@@ -20,9 +20,11 @@ import {
   GROWTH_UPDATED_AT_STORAGE_KEY,
   exportGrowthData,
   useGrowthStore,
+} from "@/lib/growth-store";
+import {
   validateGrowthPortableData,
   type GrowthPortableData,
-} from "@/lib/growth-store";
+} from "@/lib/growth-portable";
 import {
   DEFAULT_WEBDAV_CONFIG,
   type WebDavConfig,
