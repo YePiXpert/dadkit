@@ -15,6 +15,10 @@ export const GROWTH_STORAGE_KEYS = {
   view: "dadkit-growth-view-v1",
 } as const;
 
+// 成长记数据最近一次本地修改时间(epoch ms),用于多端合并时整体取新。
+// 放在 dadkit:v3 命名空间,随 resetAllData 一并清空。
+export const GROWTH_UPDATED_AT_STORAGE_KEY = "dadkit:v3:growth-updated-at";
+
 export type GrowthProfileData = {
   nickname: string;
   dueDate: string;
@@ -88,6 +92,7 @@ export const useGrowthStore = create<GrowthStore>((set, get) => ({
     };
 
     writeStorage(GROWTH_STORAGE_KEYS.profile, nextProfile);
+    markGrowthUpdated();
     set(nextProfile);
   },
 
@@ -102,6 +107,7 @@ export const useGrowthStore = create<GrowthStore>((set, get) => ({
     };
 
     writeStorage(GROWTH_STORAGE_KEYS.profile, nextProfile);
+    markGrowthUpdated();
     set(nextProfile);
   },
 
@@ -131,6 +137,7 @@ export const useGrowthStore = create<GrowthStore>((set, get) => ({
     const nextProgress = { completedTaskIds };
 
     writeStorage(GROWTH_STORAGE_KEYS.progress, nextProgress);
+    markGrowthUpdated();
     set(nextProgress);
   },
 }));
@@ -314,6 +321,10 @@ function writeStorage(key: string, value: unknown) {
   }
 
   window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function markGrowthUpdated() {
+  writeStorage(GROWTH_UPDATED_AT_STORAGE_KEY, Date.now());
 }
 
 function hasBrowserStorage() {

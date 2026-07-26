@@ -73,6 +73,7 @@ export type ChecklistItem = {
   bag?: ChecklistBag;
   bulk?: ItemBulk;
   timing: ChecklistTiming;
+  updatedAt?: number;
 };
 
 export type TemplateChecklistItem = Omit<ChecklistItem, "status"> & {

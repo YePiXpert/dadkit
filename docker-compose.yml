@@ -16,6 +16,9 @@ services:
       DADKIT_BUILD_TIME: "${DADKIT_BUILD_TIME:-unknown}"
       DADKIT_PUBLIC_ORIGIN: "${DADKIT_PUBLIC_ORIGIN:-}"
       DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS: "${DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS:-}"
+      DADKIT_DATA_DIR: "${DADKIT_DATA_DIR:-/app/data}"
+    volumes:
+      - "dadkit-data:${DADKIT_DATA_DIR:-/app/data}"
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -29,3 +32,6 @@ services:
       retries: 3
       start_period: 20s
     restart: unless-stopped
+
+volumes:
+  dadkit-data:

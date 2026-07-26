@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v2.0.0-pwa-r7";
+const CACHE_NAME = "dadkit-v2.0.0-pwa-r9";
 const CORE_ROUTES = [
   "/",
   "/settings",
@@ -67,7 +67,36 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (event.request.mode === "navigate") {
-    event.respondWith(networkFirst(event.request, true));
+    // 页面导航用 stale-while-revalidate：缓存秒开，后台静默更新。
+    // 带 ?view= 等查询参数的导航通过 ignoreSearch 命中同一份缓存。
+    const networkUpdate = fetch(event.request)
+      .then((response) => {
+        if (isCacheable(response)) {
+          const copy = response.clone();
+          caches
+            .open(CACHE_NAME)
+            .then((cache) => cache.put(event.request, copy));
+        }
+        return response;
+      })
+      .catch(() => null);
+
+    event.waitUntil(networkUpdate);
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(CACHE_NAME);
+        const cached = await cache.match(event.request, {
+          ignoreSearch: true,
+        });
+
+        if (cached) {
+          return cached;
+        }
+
+        const response = await networkUpdate;
+        return response || cache.match("/");
+      })(),
+    );
     return;
   }
 

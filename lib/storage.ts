@@ -17,6 +17,7 @@ import {
   DEFAULT_GROWTH_PROGRESS,
   DEFAULT_GROWTH_VIEW,
   GROWTH_STORAGE_KEYS,
+  GROWTH_UPDATED_AT_STORAGE_KEY,
   exportGrowthData,
   useGrowthStore,
   validateGrowthPortableData,
@@ -37,6 +38,11 @@ export const STORAGE_KEYS = {
   webDavConfig: "dadkit:v3:webdav-config",
   webDavSyncState: "dadkit:v3:webdav-sync-state",
   webDavSecret: "dadkit:v3:webdav-secret",
+  hiddenTemplateStamps: "dadkit:v3:hidden-template-stamps",
+  deletedCustomItems: "dadkit:v3:deleted-custom-items",
+  growthUpdatedAt: GROWTH_UPDATED_AT_STORAGE_KEY,
+  syncSession: "dadkit:v3:sync-session",
+  syncClientState: "dadkit:v3:sync-client-state",
 } as const;
 
 export const WEBDAV_SESSION_SECRET_KEY = "dadkit:v3:webdav-session-secret";
@@ -49,6 +55,11 @@ const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.webDavConfig,
   STORAGE_KEYS.webDavSyncState,
   STORAGE_KEYS.webDavSecret,
+  STORAGE_KEYS.hiddenTemplateStamps,
+  STORAGE_KEYS.deletedCustomItems,
+  STORAGE_KEYS.growthUpdatedAt,
+  STORAGE_KEYS.syncSession,
+  STORAGE_KEYS.syncClientState,
   GROWTH_STORAGE_KEYS.profile,
   GROWTH_STORAGE_KEYS.progress,
   GROWTH_STORAGE_KEYS.view,
@@ -65,6 +76,22 @@ const V3_EXPORT_KEYS = [
 
 const V4_EXPORT_KEYS = [...V3_EXPORT_KEYS, "growth"] as const;
 
+const V5_EXPORT_KEYS = [
+  ...V4_EXPORT_KEYS,
+  "hiddenTemplateItemStamps",
+  "deletedCustomItems",
+  "growthUpdatedAt",
+] as const;
+
+// 模板条目隐藏/恢复的时间戳记录;hidden:false 是“恢复”墓碑,参与多端合并。
+export type HiddenTemplateItemStamps = Record<
+  string,
+  { hidden: boolean; updatedAt: number }
+>;
+
+// 自定义物品删除墓碑:id → 删除时间(epoch ms)。
+export type DeletedCustomItemStamps = Record<string, number>;
+
 export type DadKitExportDataV3 = {
   version: 3;
   exportedAt: string;
@@ -74,12 +101,32 @@ export type DadKitExportDataV3 = {
   hiddenTemplateItemIds: string[];
 };
 
-export type DadKitExportData = Omit<DadKitExportDataV3, "version"> & {
+export type DadKitExportDataV4 = Omit<DadKitExportDataV3, "version"> & {
   version: 4;
   growth: GrowthPortableData;
 };
 
-export type DadKitImportData = DadKitExportDataV3 | DadKitExportData;
+export type DadKitExportData = Omit<DadKitExportDataV4, "version"> & {
+  version: 5;
+  hiddenTemplateItemStamps: HiddenTemplateItemStamps;
+  deletedCustomItems: DeletedCustomItemStamps;
+  growthUpdatedAt: number;
+};
+
+export type DadKitImportData =
+  | DadKitExportDataV3
+  | DadKitExportDataV4
+  | DadKitExportData;
+
+export type SyncSession = {
+  token: string;
+  joinedAt: string;
+};
+
+export type SyncClientState = {
+  lastSyncAt?: string;
+  lastError?: string;
+};
 
 export type ImportResult = {
   ok: boolean;
@@ -204,6 +251,7 @@ const CHECKLIST_ITEM_KEYS = [
   "bag",
   "bulk",
   "timing",
+  "updatedAt",
 ] as const;
 
 const REQUIRED_CHECKLIST_ITEM_KEYS = [
@@ -307,7 +355,10 @@ function isChecklistItem(value: unknown): value is ChecklistItem {
         "none",
       ])) &&
     (!("bulk" in value) ||
-      isOneOf<ItemBulk>(value.bulk, ["small", "medium", "large"]))
+      isOneOf<ItemBulk>(value.bulk, ["small", "medium", "large"])) &&
+    (!("updatedAt" in value) ||
+      (typeof value.updatedAt === "number" &&
+        Number.isFinite(value.updatedAt)))
   );
 }
 
@@ -347,7 +398,49 @@ function hasValidPortableChecklistData(value: Record<string, unknown>) {
   );
 }
 
-function isDadKitImportData(value: unknown): value is DadKitImportData {
+function isHiddenTemplateItemStamps(
+  value: unknown,
+): value is HiddenTemplateItemStamps {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return Object.entries(value).every(
+    ([id, stamp]) =>
+      id.trim().length > 0 &&
+      isRecord(stamp) &&
+      hasExactKeys(stamp, ["hidden", "updatedAt"]) &&
+      typeof stamp.hidden === "boolean" &&
+      typeof stamp.updatedAt === "number" &&
+      Number.isFinite(stamp.updatedAt),
+  );
+}
+
+function isDeletedCustomItemStamps(
+  value: unknown,
+): value is DeletedCustomItemStamps {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return Object.entries(value).every(
+    ([id, timestamp]) =>
+      id.trim().length > 0 &&
+      typeof timestamp === "number" &&
+      Number.isFinite(timestamp),
+  );
+}
+
+export function migrateHiddenStamps(
+  ids: string[],
+  updatedAt: number,
+): HiddenTemplateItemStamps {
+  return Object.fromEntries(
+    ids.map((id) => [id, { hidden: true, updatedAt }]),
+  );
+}
+
+export function isDadKitImportData(value: unknown): value is DadKitImportData {
   if (!isRecord(value)) {
     return false;
   }
@@ -356,11 +449,23 @@ function isDadKitImportData(value: unknown): value is DadKitImportData {
     return hasExactKeys(value, V3_EXPORT_KEYS) && hasValidPortableChecklistData(value);
   }
 
+  if (value.version === 4) {
+    return (
+      hasExactKeys(value, V4_EXPORT_KEYS) &&
+      hasValidPortableChecklistData(value) &&
+      validateGrowthPortableData(value.growth)
+    );
+  }
+
   return (
-    value.version === 4 &&
-    hasExactKeys(value, V4_EXPORT_KEYS) &&
+    value.version === 5 &&
+    hasExactKeys(value, V5_EXPORT_KEYS) &&
     hasValidPortableChecklistData(value) &&
-    validateGrowthPortableData(value.growth)
+    validateGrowthPortableData(value.growth) &&
+    isHiddenTemplateItemStamps(value.hiddenTemplateItemStamps) &&
+    isDeletedCustomItemStamps(value.deletedCustomItems) &&
+    typeof value.growthUpdatedAt === "number" &&
+    Number.isFinite(value.growthUpdatedAt)
   );
 }
 
@@ -404,6 +509,90 @@ export function loadHiddenTemplateItemIds() {
 
 export function saveHiddenTemplateItemIds(ids: string[]) {
   writeJson(STORAGE_KEYS.hiddenTemplateItems, Array.from(new Set(ids)));
+}
+
+export function loadHiddenTemplateItemStamps(): HiddenTemplateItemStamps {
+  const value = readJson<unknown>(
+    STORAGE_KEYS.hiddenTemplateStamps,
+    undefined,
+  );
+
+  if (value !== undefined) {
+    return isHiddenTemplateItemStamps(value) ? value : {};
+  }
+
+  // 旧数据没有 stamps 记录:从现有隐藏列表迁移,时间戳取 0,
+  // 任何一端的真实隐藏/恢复操作都会在合并时赢过它。
+  return migrateHiddenStamps(loadHiddenTemplateItemIds(), 0);
+}
+
+export function saveHiddenTemplateItemStamps(stamps: HiddenTemplateItemStamps) {
+  writeJson(STORAGE_KEYS.hiddenTemplateStamps, stamps);
+}
+
+export function loadDeletedCustomItems(): DeletedCustomItemStamps {
+  const value = readJson<unknown>(STORAGE_KEYS.deletedCustomItems, {});
+  return isDeletedCustomItemStamps(value) ? value : {};
+}
+
+export function saveDeletedCustomItems(stamps: DeletedCustomItemStamps) {
+  writeJson(STORAGE_KEYS.deletedCustomItems, stamps);
+}
+
+export function loadGrowthUpdatedAt(): number {
+  const value = readJson<unknown>(STORAGE_KEYS.growthUpdatedAt, 0);
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+export function saveGrowthUpdatedAt(timestamp: number) {
+  writeJson(STORAGE_KEYS.growthUpdatedAt, timestamp);
+}
+
+export function loadSyncSession(): SyncSession | undefined {
+  const value = readJson<unknown>(STORAGE_KEYS.syncSession, undefined);
+
+  if (
+    isRecord(value) &&
+    typeof value.token === "string" &&
+    value.token.length > 0 &&
+    typeof value.joinedAt === "string"
+  ) {
+    return { token: value.token, joinedAt: value.joinedAt };
+  }
+
+  return undefined;
+}
+
+export function saveSyncSession(session: SyncSession | undefined) {
+  if (!canUseLocalStorage()) {
+    return;
+  }
+
+  if (!session) {
+    window.localStorage.removeItem(STORAGE_KEYS.syncSession);
+    return;
+  }
+
+  writeJson(STORAGE_KEYS.syncSession, session);
+}
+
+export function loadSyncClientState(): SyncClientState {
+  const value = readJson<unknown>(STORAGE_KEYS.syncClientState, {});
+
+  if (!isRecord(value)) {
+    return {};
+  }
+
+  return {
+    lastSyncAt:
+      typeof value.lastSyncAt === "string" ? value.lastSyncAt : undefined,
+    lastError:
+      typeof value.lastError === "string" ? value.lastError : undefined,
+  };
+}
+
+export function saveSyncClientState(state: SyncClientState) {
+  writeJson(STORAGE_KEYS.syncClientState, state);
 }
 
 type ChecklistStatePayload = {
@@ -701,13 +890,16 @@ export function resetAllData(initialChecklist?: ChecklistItem[]) {
 
 export function exportData(): DadKitExportData {
   return {
-    version: 4,
+    version: 5,
     exportedAt: new Date().toISOString(),
     checklistMode: loadChecklistMode(),
     checklist: loadChecklist(),
     customItems: loadCustomItems(),
     hiddenTemplateItemIds: loadHiddenTemplateItemIds(),
     growth: exportGrowthData(),
+    hiddenTemplateItemStamps: loadHiddenTemplateItemStamps(),
+    deletedCustomItems: loadDeletedCustomItems(),
+    growthUpdatedAt: loadGrowthUpdatedAt(),
   };
 }
 
@@ -724,11 +916,16 @@ export function validateImportData(rawJson: string): ImportValidationResult {
     return { ok: false, message: "内容不是 DadKit 备份，未修改本地数据。" };
   }
 
-  if (parsed.version !== 3 && parsed.version !== 4) {
+  if (parsed.version !== 3 && parsed.version !== 4 && parsed.version !== 5) {
     return { ok: false, message: "不支持的备份版本，未修改本地数据。" };
   }
 
-  const expectedKeys = parsed.version === 4 ? V4_EXPORT_KEYS : V3_EXPORT_KEYS;
+  const expectedKeys =
+    parsed.version === 5
+      ? V5_EXPORT_KEYS
+      : parsed.version === 4
+        ? V4_EXPORT_KEYS
+        : V3_EXPORT_KEYS;
 
   if (!hasExactKeys(parsed, expectedKeys)) {
     return {
@@ -782,7 +979,7 @@ export function applyImportData(data: DadKitImportData): ImportResult {
     },
   ];
 
-  if (data.version === 4) {
+  if (data.version === 4 || data.version === 5) {
     mutations.push(
       {
         key: GROWTH_STORAGE_KEYS.profile,
@@ -795,9 +992,36 @@ export function applyImportData(data: DadKitImportData): ImportResult {
     );
   }
 
+  if (data.version === 5) {
+    mutations.push(
+      {
+        key: STORAGE_KEYS.hiddenTemplateStamps,
+        value: JSON.stringify(data.hiddenTemplateItemStamps),
+      },
+      {
+        key: STORAGE_KEYS.deletedCustomItems,
+        value: JSON.stringify(data.deletedCustomItems),
+      },
+      {
+        key: STORAGE_KEYS.growthUpdatedAt,
+        value: JSON.stringify(data.growthUpdatedAt),
+      },
+    );
+  } else {
+    // v3/v4 备份没有合并元数据:隐藏记录迁移为 ts=0 的 stamps,墓碑清空。
+    mutations.push(
+      {
+        key: STORAGE_KEYS.hiddenTemplateStamps,
+        value: JSON.stringify(migrateHiddenStamps(data.hiddenTemplateItemIds, 0)),
+      },
+      { key: STORAGE_KEYS.deletedCustomItems, value: JSON.stringify({}) },
+      { key: STORAGE_KEYS.growthUpdatedAt, value: JSON.stringify(0) },
+    );
+  }
+
   try {
     applyStorageMutations(mutations);
-    if (data.version === 4) {
+    if (data.version === 4 || data.version === 5) {
       useGrowthStore.setState({
         ...data.growth.profile,
         ...data.growth.progress,

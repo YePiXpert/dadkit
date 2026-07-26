@@ -9,12 +9,16 @@ import {
   loadChecklist,
   loadChecklistMode,
   loadCustomItems,
+  loadDeletedCustomItems,
   loadHiddenTemplateItemIds,
+  loadHiddenTemplateItemStamps,
   resetAllData,
   saveChecklist,
   saveChecklistMode,
   saveChecklistState,
   saveChecklistStateSoon,
+  saveDeletedCustomItems,
+  saveHiddenTemplateItemStamps,
   SnapshotPersistenceError,
 } from "@/lib/storage";
 import type {
@@ -109,6 +113,7 @@ function patchChecklistItem(
     ...patch,
     id: item.id,
     source: item.source,
+    updatedAt: Date.now(),
     preparationKind: shouldReinferPreparation
       ? undefined
       : patch.preparationKind ?? item.preparationKind,
@@ -148,6 +153,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   resetChecklist: () => {
     requireSnapshotBeforeChange("重建清单前");
 
+    const state = get();
     const checklist = generateChecklist();
     try {
       saveChecklistState({
@@ -158,6 +164,21 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     } catch {
       throw new Error("清单重建失败，原有清单已保留。");
     }
+
+    // 重建 = 删除全部自定义物品 + 恢复全部隐藏条目;逐个打墓碑/时间戳,
+    // 多端合并时这些删除会正确传播,而不是被远端旧数据“复活”。
+    const now = Date.now();
+    const stamps = { ...loadHiddenTemplateItemStamps() };
+    for (const id of state.hiddenTemplateItemIds) {
+      stamps[id] = { hidden: false, updatedAt: now };
+    }
+    saveHiddenTemplateItemStamps(stamps);
+    const tombstones = { ...loadDeletedCustomItems() };
+    for (const item of state.customItems) {
+      tombstones[item.id] = now;
+    }
+    saveDeletedCustomItems(tombstones);
+
     set({ checklist, customItems: [], hiddenTemplateItemIds: [] });
   },
   restoreMissingTemplateItems: () => {
@@ -177,6 +198,15 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       customItems: state.customItems,
       hiddenTemplateItemIds: [],
     });
+
+    // 批量恢复隐藏的模板条目:逐个写 hidden:false 墓碑,让另一端的隐藏状态可被合并覆盖。
+    const now = Date.now();
+    const stamps = { ...loadHiddenTemplateItemStamps() };
+    for (const id of state.hiddenTemplateItemIds) {
+      stamps[id] = { hidden: false, updatedAt: now };
+    }
+    saveHiddenTemplateItemStamps(stamps);
+
     set({ checklist, hiddenTemplateItemIds: [] });
 
     return restoredCount;
@@ -260,6 +290,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       bag: existing?.bag ?? item.bag,
       bulk: existing?.bulk ?? item.bulk,
       timing: existing?.timing ?? item.timing ?? "pack_now",
+      updatedAt: Date.now(),
     });
     const customItems = existingOverlay
       ? state.customItems.map((candidate) =>
@@ -291,6 +322,11 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     if (!item) return;
 
     const normalizedName = comparableItemName(item.name);
+    const removedCustomItems = state.customItems.filter(
+      (customItem) =>
+        customItem.id === id ||
+        comparableItemName(customItem.name) === normalizedName,
+    );
     const customItems = state.customItems.filter(
       (customItem) =>
         customItem.id !== id &&
@@ -304,6 +340,23 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
 
     void deleteItemPhoto(id).catch(() => undefined);
     saveChecklistState({ checklist, customItems, hiddenTemplateItemIds });
+
+    // 删除要参与多端合并:模板条目写隐藏时间戳,自定义物品写删除墓碑。
+    const now = Date.now();
+    if (item.source === "general") {
+      saveHiddenTemplateItemStamps({
+        ...loadHiddenTemplateItemStamps(),
+        [id]: { hidden: true, updatedAt: now },
+      });
+    }
+    if (removedCustomItems.length > 0) {
+      const tombstones = { ...loadDeletedCustomItems() };
+      for (const removed of removedCustomItems) {
+        tombstones[removed.id] = now;
+      }
+      saveDeletedCustomItems(tombstones);
+    }
+
     set({ checklist, customItems, hiddenTemplateItemIds });
   },
   clearAll: async () => {

@@ -426,7 +426,9 @@ function isDadKitWebDavBackup(value: unknown): value is DadKitWebDavBackup {
     typeof value.updatedAt === "string" &&
     typeof value.checksum === "string" &&
     isRecord(value.data) &&
-    (value.data.version === 3 || value.data.version === 4)
+    (value.data.version === 3 ||
+      value.data.version === 4 ||
+      value.data.version === 5)
   );
 }
 

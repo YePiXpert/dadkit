@@ -32,6 +32,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# 家庭同步数据目录(挂载 named volume 持久化)
+RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
+
 EXPOSE 3333
 
 USER nextjs

@@ -221,6 +221,7 @@ function mergeDuplicateItems(items: ChecklistItem[]) {
         editable: existing.editable || item.editable,
         removable: existing.removable && item.removable,
         sourceLabel: sourceLabel || existing.sourceLabel,
+        updatedAt: Math.max(existing.updatedAt ?? 0, item.updatedAt ?? 0) || undefined,
       }),
     );
   }
@@ -254,6 +255,7 @@ function preserveCurrentItemState(
       status: previous.status,
       quantity: previous.quantity ?? item.quantity,
       note: previous.note ?? item.note,
+      updatedAt: previous.updatedAt ?? item.updatedAt,
     });
   });
 }

@@ -7,7 +7,10 @@ import {
   loadChecklist,
   loadChecklistMode,
   loadCustomItems,
+  loadDeletedCustomItems,
+  loadGrowthUpdatedAt,
   loadHiddenTemplateItemIds,
+  loadHiddenTemplateItemStamps,
   loadSnapshots,
   resetAllData,
   restoreSnapshot,
@@ -94,7 +97,7 @@ function backupData(
   patch: Partial<DadKitExportData> = {},
 ): DadKitExportData {
   return {
-    version: 4,
+    version: 5,
     exportedAt: "2026-07-25T00:00:00.000Z",
     checklistMode: "full",
     checklist: [testItem("backup-item")],
@@ -105,6 +108,24 @@ function backupData(
       profile: { nickname: "小满", dueDate: "2026-08-20" },
       progress: { completedTaskIds: ["first-prenatal-contact"] },
     },
+    hiddenTemplateItemStamps: {},
+    deletedCustomItems: {},
+    growthUpdatedAt: 0,
+    ...patch,
+  };
+}
+
+function backupDataV4(patch: Record<string, unknown> = {}) {
+  const current = backupData();
+
+  return {
+    version: 4,
+    exportedAt: current.exportedAt,
+    checklistMode: current.checklistMode,
+    checklist: current.checklist,
+    customItems: current.customItems,
+    hiddenTemplateItemIds: current.hiddenTemplateItemIds,
+    growth: current.growth,
     ...patch,
   };
 }
@@ -140,7 +161,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("v4 portable backup with the existing local namespace", () => {
+describe("v5 portable backup with the existing local namespace", () => {
   it("owns only dadkit:v3 storage keys", () => {
     expect(Object.values(STORAGE_KEYS).length).toBeGreaterThan(0);
     expect(
@@ -169,14 +190,22 @@ describe("v4 portable backup with the existing local namespace", () => {
         "customItems",
         "hiddenTemplateItemIds",
         "growth",
+        "hiddenTemplateItemStamps",
+        "deletedCustomItems",
+        "growthUpdatedAt",
       ].sort(),
     );
     expect(exported).toMatchObject({
-      version: 4,
+      version: 5,
       checklistMode: "lean",
       checklist,
       customItems,
       hiddenTemplateItemIds: ["hidden-template"],
+      hiddenTemplateItemStamps: {
+        "hidden-template": { hidden: true, updatedAt: 0 },
+      },
+      deletedCustomItems: {},
+      growthUpdatedAt: 0,
       growth: {
         version: 1,
         profile: { nickname: "", dueDate: "" },
@@ -186,13 +215,18 @@ describe("v4 portable backup with the existing local namespace", () => {
     expect(Number.isNaN(Date.parse(exported.exportedAt))).toBe(false);
   });
 
-  it("round-trips a complete v4 backup", () => {
+  it("round-trips a complete v5 backup", () => {
     installBrowserStorage();
     const payload = backupData({
       checklistMode: "lean",
       checklist: [testItem("restored")],
       customItems: [testItem("restored-custom")],
       hiddenTemplateItemIds: ["hidden-template"],
+      hiddenTemplateItemStamps: {
+        "hidden-template": { hidden: true, updatedAt: 123 },
+      },
+      deletedCustomItems: { "gone-custom": 456 },
+      growthUpdatedAt: 789,
     });
 
     const result = importData(JSON.stringify(payload));
@@ -205,6 +239,26 @@ describe("v4 portable backup with the existing local namespace", () => {
       hiddenTemplateItemIds: ["hidden-template"],
       growth: payload.growth,
     });
+    expect(loadHiddenTemplateItemStamps()).toEqual({
+      "hidden-template": { hidden: true, updatedAt: 123 },
+    });
+    expect(loadDeletedCustomItems()).toEqual({ "gone-custom": 456 });
+    expect(loadGrowthUpdatedAt()).toBe(789);
+  });
+
+  it("migrates merge metadata when importing a v4 backup", () => {
+    installBrowserStorage();
+
+    const result = importData(
+      JSON.stringify(backupDataV4({ hiddenTemplateItemIds: ["hidden-template"] })),
+    );
+
+    expect(result.ok).toBe(true);
+    expect(loadHiddenTemplateItemStamps()).toEqual({
+      "hidden-template": { hidden: true, updatedAt: 0 },
+    });
+    expect(loadDeletedCustomItems()).toEqual({});
+    expect(loadGrowthUpdatedAt()).toBe(0);
   });
 
   it("restores a v3 checklist backup without clearing current growth data", () => {
@@ -226,7 +280,7 @@ describe("v4 portable backup with the existing local namespace", () => {
   });
 });
 
-describe("strict v3 and v4 import boundary", () => {
+describe("strict v3, v4 and v5 import boundary", () => {
   it.each([
     ["invalid JSON", "{bad json"],
     ["old version", JSON.stringify({ ...backupData(), version: 2 })],
@@ -378,7 +432,7 @@ describe("local recovery snapshots", () => {
     ]);
   });
 
-  it("stores only the exact v4 portable payload", () => {
+  it("stores only the exact v5 portable payload", () => {
     installBrowserStorage();
     saveChecklist([testItem("snapshot")]);
 
@@ -394,6 +448,9 @@ describe("local recovery snapshots", () => {
         "customItems",
         "hiddenTemplateItemIds",
         "growth",
+        "hiddenTemplateItemStamps",
+        "deletedCustomItems",
+        "growthUpdatedAt",
       ].sort(),
     );
   });
