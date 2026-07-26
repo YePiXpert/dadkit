@@ -87,4 +87,33 @@ describe("VPS Docker deployment", () => {
       expect(script).toContain("compose port dadkit 3333");
     }
   });
+
+  it("publishes a prebuilt GHCR image from CI on every main push", () => {
+    const workflow = workspaceFile(".github/workflows/docker.yml");
+
+    expect(workflow).toContain("branches: [main]");
+    expect(workflow).toContain("packages: write");
+    expect(workflow).toContain("docker/build-push-action@v6");
+    expect(workflow).toContain("ghcr.io/yepixpert/dadkit:latest");
+    expect(workflow).toContain("secrets.GITHUB_TOKEN");
+    expect(workflow).toContain("npm test");
+    expect(workflow).toContain("cache-from: type=gha");
+  });
+
+  it("pulls the prebuilt image by default with a local-build escape hatch", () => {
+    for (const scriptPath of [
+      "scripts/docker-deploy.sh",
+      "scripts/docker-upgrade.sh",
+    ]) {
+      const script = workspaceFile(scriptPath);
+
+      expect(script).toContain(
+        'DADKIT_IMAGE="${DADKIT_IMAGE:-ghcr.io/yepixpert/dadkit:latest}"',
+      );
+      expect(script).toContain("export DADKIT_IMAGE");
+      expect(script).toContain("compose pull dadkit");
+      expect(script).toContain('DADKIT_BUILD_LOCAL="${DADKIT_BUILD_LOCAL:-0}"');
+      expect(script).toContain("DADKIT_BUILD_LOCAL=1");
+    }
+  });
 });

@@ -96,6 +96,15 @@ BUBBLEWRAP_KEYSTORE_PASSWORD=... BUBBLEWRAP_KEY_PASSWORD=... npx @bubblewrap/cli
 
 前置条件：Linux 服务器已安装 `git`、Docker 和 Docker Compose v2，当前用户可以执行 Docker。脚本不会自动安装这些依赖。
 
+镜像由 GitHub Actions 预构建：每次推送到 `main`（或手动触发 `docker` 工作流）都会先跑 lint 和测试，再构建镜像并推送到 `ghcr.io/yepixpert/dadkit`。服务器端脚本默认只拉取预构建镜像，更新从几分钟的现场编译变成几十秒的下载。
+
+首次使用前需要让服务器能访问 GHCR 镜像，二选一：
+
+- **推荐**：首次工作流运行后，在 GitHub → Packages → `dadkit` → Package settings 把镜像可见性改为 Public，服务器无需任何登录；
+- 或者在服务器上用具备 `read:packages` 权限的 token 执行 `docker login ghcr.io`。
+
+如果临时需要在服务器本地编译（例如镜像仓库不可用），运行脚本时加 `DADKIT_BUILD_LOCAL=1` 即可回到原来的现场构建模式。
+
 ### 一键部署
 
 下面的命令会拉取 `main` 分支到 `/opt/dadkit`，构建并启动容器，等待 `/healthz` 通过后再退出。容器默认只绑定 `127.0.0.1:3333`，适合由 Caddy 或 Nginx 提供 HTTPS 反向代理。
@@ -139,6 +148,8 @@ sudo docker compose ps
 - `DADKIT_BRANCH`：部署分支，默认 `main`。
 - `DADKIT_REPO`：首次部署使用的 Git 仓库地址，默认当前 GitHub 仓库。
 - `DADKIT_WAIT_TIMEOUT`：等待容器健康的秒数，默认 `120`。
+- `DADKIT_IMAGE`：拉取的预构建镜像，默认 `ghcr.io/yepixpert/dadkit:latest`。
+- `DADKIT_BUILD_LOCAL`：设为 `1` 时在服务器本地构建镜像，不走 GHCR。
 
 首次运行时，显式传入的端口、监听地址、公开地址和 WebDAV 白名单会写入权限为 `600` 的 `.env`；已有 `.env` 不会被部署或更新脚本覆盖。后续要修改这些配置，请编辑部署目录中的 `.env` 再执行一键更新。
 

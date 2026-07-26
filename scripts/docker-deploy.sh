@@ -14,6 +14,9 @@ DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS_WAS_SET="${DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS+x
 DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS_VALUE="${DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS-}"
 DADKIT_FORCE_RESET="${DADKIT_FORCE_RESET:-0}"
 DADKIT_WAIT_TIMEOUT="${DADKIT_WAIT_TIMEOUT:-120}"
+DADKIT_IMAGE="${DADKIT_IMAGE:-ghcr.io/yepixpert/dadkit:latest}"
+DADKIT_BUILD_LOCAL="${DADKIT_BUILD_LOCAL:-0}"
+export DADKIT_IMAGE
 DADKIT_BUILD_TIME="${DADKIT_BUILD_TIME:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}"
 export DADKIT_BUILD_TIME
 
@@ -34,7 +37,16 @@ compose() {
 }
 
 start_and_wait() {
-  if compose up --build -d --remove-orphans --wait --wait-timeout "$DADKIT_WAIT_TIMEOUT"; then
+  up_mode=""
+  if [ "$DADKIT_BUILD_LOCAL" = "1" ]; then
+    up_mode="--build"
+  elif ! compose pull dadkit; then
+    echo "Failed to pull ${DADKIT_IMAGE}. Make the GHCR package public (or run docker login ghcr.io), or rerun with DADKIT_BUILD_LOCAL=1 to build on this host." >&2
+    exit 1
+  fi
+
+  # shellcheck disable=SC2086
+  if compose up $up_mode -d --remove-orphans --wait --wait-timeout "$DADKIT_WAIT_TIMEOUT"; then
     return
   fi
 
