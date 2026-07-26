@@ -2,7 +2,7 @@ import { normalizeChecklistItem } from "@/lib/rules";
 import { inferPreparationKind } from "@/lib/preparation";
 import type { ChecklistItem } from "@/lib/types";
 
-export type ChecklistView = "all" | "shopping" | "packing";
+export type ChecklistView = "all" | "shopping" | "packing" | "packed";
 
 export type ChecklistItemState = "todo" | "ready" | "packed" | "not_needed";
 
@@ -14,6 +14,7 @@ export const CHECKLIST_VIEWS: Array<{
   { id: "all", label: "全部物品", shortLabel: "全部" },
   { id: "shopping", label: "待购买", shortLabel: "待购买" },
   { id: "packing", label: "待装包", shortLabel: "待装包" },
+  { id: "packed", label: "已装包", shortLabel: "已装包" },
 ];
 
 export function isChecklistView(value: string | null): value is ChecklistView {
@@ -115,6 +116,14 @@ export function isPackingQueueItem(item: ChecklistItem) {
   return preparationKind !== "buy_and_pack" && preparationKind !== "buy_for_home";
 }
 
+export function isPackedViewItem(item: ChecklistItem) {
+  const normalized = normalizeChecklistItem(item);
+  return (
+    normalized.itemKind === "item" &&
+    getChecklistItemState(normalized) === "packed"
+  );
+}
+
 export function getChecklistViewItems(
   items: ChecklistItem[],
   view: ChecklistView,
@@ -127,6 +136,10 @@ export function getChecklistViewItems(
 
   if (view === "packing") {
     return normalizedItems.filter(isPackingQueueItem);
+  }
+
+  if (view === "packed") {
+    return normalizedItems.filter(isPackedViewItem);
   }
 
   return normalizedItems;
@@ -209,5 +222,6 @@ export function getChecklistViewCounts(items: ChecklistItem[]) {
     all: getChecklistViewItems(items, "all").length,
     shopping: getChecklistViewItems(items, "shopping").length,
     packing: getChecklistViewItems(items, "packing").length,
+    packed: getChecklistViewItems(items, "packed").length,
   } satisfies Record<ChecklistView, number>;
 }

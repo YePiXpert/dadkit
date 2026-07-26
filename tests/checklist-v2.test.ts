@@ -57,11 +57,12 @@ describe("V2 checklist views", () => {
     expect(groupChecklistViewItems([], { includeEmpty: true })).toHaveLength(8);
   });
 
-  it("exposes exactly the three user-facing views", () => {
+  it("exposes exactly the four user-facing views", () => {
     expect(CHECKLIST_VIEWS).toEqual([
       { id: "all", label: "全部物品", shortLabel: "全部" },
       { id: "shopping", label: "待购买", shortLabel: "待购买" },
       { id: "packing", label: "待装包", shortLabel: "待装包" },
+      { id: "packed", label: "已装包", shortLabel: "已装包" },
     ]);
   });
 
@@ -100,6 +101,9 @@ describe("V2 checklist views", () => {
     expect(
       getChecklistViewItems(items, "packing").map((item) => item.id),
     ).toEqual(["wash", "owned", "ready"]);
+    expect(
+      getChecklistViewItems(items, "packed").map((item) => item.id),
+    ).toEqual(["packed"]);
   });
 
   it("derives every displayed count from the same view selectors", () => {
@@ -118,6 +122,6 @@ describe("V2 checklist views", () => {
       );
     }
 
-    expect(counts).toEqual({ all: 5, shopping: 1, packing: 2 });
+    expect(counts).toEqual({ all: 5, shopping: 1, packing: 2, packed: 1 });
   });
 });

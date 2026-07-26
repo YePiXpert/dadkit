@@ -39,14 +39,15 @@ describe("V2 checklist experience", () => {
     expect(homePage).not.toContain("ChecklistProgressCard");
   });
 
-  it("shows exactly the three V2 views in a fixed mobile grid", () => {
+  it("shows exactly the four V2 views in a fixed mobile grid", () => {
     expect(CHECKLIST_VIEWS.map((view) => view.shortLabel)).toEqual([
       "全部",
       "待购买",
       "待装包",
+      "已装包",
     ]);
     expect(checklistGroupTabs).toContain('aria-label="清单视图"');
-    expect(checklistGroupTabs).toContain("grid grid-cols-3");
+    expect(checklistGroupTabs).toContain("grid grid-cols-4");
     expect(checklistGroupTabs).toContain("aria-pressed={active}");
     expect(checklistGroupTabs).toContain("{counts[view.id]} 项");
     expect(checklistGroupTabs).not.toContain("overflow-x-auto");
@@ -62,6 +63,7 @@ describe("V2 checklist experience", () => {
     expect(checklistWorkspace).toContain("待买 {counts.shopping}");
     expect(checklistWorkspace).toContain("待装 {counts.packing}");
     expect(checklistWorkspace).toContain("共 {counts.all} 项");
+    expect(checklistWorkspace).toContain('setView("packed")');
   });
 
   it("uses the four V2 states for direct, reversible item actions", () => {

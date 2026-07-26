@@ -87,9 +87,13 @@ export function ChecklistWorkspace() {
                   {packing.percent}
                   <span className="ml-1 text-2xl tracking-normal">%</span>
                 </span>
-                <span className="pb-1 text-sm text-muted-foreground">
+                <button
+                  className="rounded-lg pb-1 text-sm text-muted-foreground underline decoration-primary/40 underline-offset-4 transition-colors hover:text-foreground"
+                  type="button"
+                  onClick={() => setView("packed")}
+                >
                   已装包 {packing.completed} 项，共 {packing.total} 项
-                </span>
+                </button>
               </div>
             </div>
             <HomeHeroIllustration className="size-20 shrink-0 sm:size-24" />
@@ -139,11 +143,19 @@ export function ChecklistWorkspace() {
 
         {visibleItems.length === 0 ? (
           <EmptyState
-            title={view === "shopping" ? "待购买已经清空" : "这一页已经完成"}
+            title={
+              view === "shopping"
+                ? "待购买已经清空"
+                : view === "packed"
+                  ? "还没有已装包的物品"
+                  : "这一页已经完成"
+            }
             description={
               view === "shopping"
                 ? "需要购买的物品都已备好，可以去“待装包”继续。"
-                : "可以回到“全部”查看已完成物品，或新增自己的物品。"
+                : view === "packed"
+                  ? "在“待装包”里点一下，装好的物品会出现在这里。"
+                  : "可以回到“全部”查看已完成物品，或新增自己的物品。"
             }
           />
         ) : null}
@@ -207,6 +219,10 @@ function getViewCaption(view: ChecklistView, count: number) {
 
   if (view === "packing") {
     return `${count} 件已经可以放进行李`;
+  }
+
+  if (view === "packed") {
+    return `${count} 件已经装进行李`;
   }
 
   return `${count} 件物品，完成项会自动排到后面`;

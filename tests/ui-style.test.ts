@@ -147,13 +147,13 @@ describe("V2 PWA visual and navigation contract", () => {
     expect(mobileNav).toContain("env(safe-area-inset-bottom)");
   });
 
-  it("renders the three-view checklist workspace at the root URL", () => {
+  it("renders the four-view checklist workspace at the root URL", () => {
     expect(homePage).toContain("<ChecklistWorkspace />");
     expect(checklistWorkspace).toContain("<ChecklistGroupTabs");
     expect(checklistWorkspace).toContain("getChecklistViewCounts");
     expect(checklistWorkspace).toContain("getChecklistViewItems");
     expect(checklistWorkspace).not.toMatch(/if\s*\(\s*!profile\s*\)/);
-    expect(checklistGroupTabs).toContain("grid grid-cols-3");
+    expect(checklistGroupTabs).toContain("grid grid-cols-4");
     expect(checklistGroupTabs).toContain('aria-label="清单视图"');
     expect(checklistGroupTabs).not.toContain("overflow-x-auto");
   });

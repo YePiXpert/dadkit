@@ -108,7 +108,9 @@ export function ChecklistSectionWorkspace({
             title={
               view === "shopping"
                 ? "这个分类没有待购物品"
-                : "这个分类暂时没有项目"
+                : view === "packed"
+                  ? "这个分类还没有已装包物品"
+                  : "这个分类暂时没有项目"
             }
             description="切换上方筛选查看其他状态，或添加自己的物品。"
           />

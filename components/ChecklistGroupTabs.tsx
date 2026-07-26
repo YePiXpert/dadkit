@@ -1,6 +1,6 @@
 "use client";
 
-import { ListChecks, PackageCheck, ShoppingBasket } from "lucide-react";
+import { CheckCircle2, ListChecks, PackageCheck, ShoppingBasket } from "lucide-react";
 
 import {
   CHECKLIST_VIEWS,
@@ -12,6 +12,7 @@ const VIEW_ICONS = {
   all: ListChecks,
   shopping: ShoppingBasket,
   packing: PackageCheck,
+  packed: CheckCircle2,
 } as const;
 
 type ChecklistGroupTabsProps = {
@@ -28,7 +29,7 @@ export function ChecklistGroupTabs({
   return (
     <div
       aria-label="清单视图"
-      className="grid grid-cols-3 gap-1 rounded-[1.75rem] border border-border/70 bg-card/80 p-1.5"
+      className="grid grid-cols-4 gap-1 rounded-[1.75rem] border border-border/70 bg-card/80 p-1.5"
       role="group"
     >
       {CHECKLIST_VIEWS.map((view) => {
