@@ -55,6 +55,29 @@ describe("release endpoints and product surface", () => {
     expect(readme).toContain("纯 PWA");
   });
 
+  it("ships digital asset links for the Android TWA", () => {
+    const assetLinks = JSON.parse(
+      readSource("public", ".well-known", "assetlinks.json"),
+    ) as Array<{
+      relation: string[];
+      target: {
+        namespace: string;
+        package_name: string;
+        sha256_cert_fingerprints: string[];
+      };
+    }>;
+
+    expect(assetLinks).toHaveLength(1);
+    expect(assetLinks[0].relation).toContain(
+      "delegate_permission/common.handle_all_urls",
+    );
+    expect(assetLinks[0].target.namespace).toBe("android_app");
+    expect(assetLinks[0].target.package_name).toBe("com.dadkit.app");
+    expect(
+      assetLinks[0].target.sha256_cert_fingerprints.length,
+    ).toBeGreaterThan(0);
+  });
+
   it("returns health status with version and buildTime", async () => {
     const response = GET();
     const body = await response.json();

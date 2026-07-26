@@ -9,7 +9,7 @@ DadKit 是一个打开即用、本地优先的待产包清单 PWA。它不要求
 - **两项主导航**：清单、我的。
 - **四种简单状态**：待处理、已备好、已装包、不需要。
 - **数据由用户掌控**：本机恢复点与 WebDAV 都由用户主动操作。
-- **纯 PWA**：浏览器安装、离线缓存和本地存储；不再包含 Android、iOS 或 Capacitor 工程。
+- **纯 PWA**：浏览器安装、离线缓存和本地存储；仓库不包含原生工程，但可通过 TWA 把线上站点打包成安卓 APK（见下文）。
 
 ## 主要功能
 
@@ -70,6 +70,27 @@ V2 只保留 Web 发布链路：
 npm run build
 npm run start
 ```
+
+## 安卓 APK（TWA）
+
+安卓安装包用 [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap) 以 TWA（Trusted Web Activity）方式打包：APK 是线上站点的可信壳，无地址栏、全屏显示，内容就是部署的站点本身。因此**日常更新不需要动 APK**——照常执行一键更新部署网站，APP 下次打开自动就是新版本（Service Worker 为 network-first）。
+
+关键文件：
+
+- `android/twa-manifest.example.json`：TWA 配置模板（包名 `com.dadkit.app`、图标、颜色、签名别名）。真实的 `android/twa-manifest.json` 含部署域名，只保留在本机（已 gitignore）：复制模板并把 `dadkit.example.com` 替换为实际域名即可，改动后需重新生成工程。
+- `public/.well-known/assetlinks.json`：Digital Asset Links 声明，包含包名和签名证书的 SHA-256 指纹。**必须随网站部署上线**，否则 APP 会退回带地址栏的浏览器模式。
+- `android/android.keystore`：签名密钥，仅存在本机（已 gitignore）。**密钥和密码必须另行妥善备份**；丢失后将无法覆盖安装，只能换包名重新发布。
+- `android/` 目录内其余内容均为 Bubblewrap 生成的工程产物，已 gitignore，可随时重建。注意：工程生成命令会把目标目录当作 Android 工程根目录（内含自己的 `app/` 模块），**必须在 `android/` 子目录内执行**，切勿在仓库根目录运行。
+
+本机重新打包（JDK 17 与 Android SDK 位于 `~/.bubblewrap`，路径记录在 `~/.bubblewrap/config.json`）：
+
+```bash
+cd android
+npx @bubblewrap/cli update --skipVersionUpgrade   # 从本机 twa-manifest.json 重新生成工程
+BUBBLEWRAP_KEYSTORE_PASSWORD=... BUBBLEWRAP_KEY_PASSWORD=... npx @bubblewrap/cli build
+```
+
+产物为 `app-release-signed.apk`（侧载安装）和 `app-release-bundle-signed.aab`（上架 Play 备用）。仅当修改应用名称、图标、主题色或包名时才需要重新打包；用同一密钥签名的新 APK 覆盖安装，数据保留。APK 内嵌部署域名，公开发布 APK 等同于公开域名，请勿把 APK 上传到公开渠道。
 
 ## Docker 一键部署与更新
 

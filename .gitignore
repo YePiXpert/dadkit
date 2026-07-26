@@ -32,6 +32,12 @@ coverage
 .visual-screenshots
 *.tsbuildinfo
 
+# android TWA (bubblewrap 生成的工程产物与签名密钥)
+android/*
+!android/twa-manifest.example.json
+*.keystore
+*.jks
+
 # local coding assistants
 .serena/
 .agents/
