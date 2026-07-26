@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { installBrowserStorage } from "@/tests/helpers/browser-storage";
 import {
   joinSpace,
   leaveSpace,
@@ -14,28 +15,6 @@ import {
 } from "@/lib/storage";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
-
-function installBrowserStorage() {
-  const localValues = new Map<string, string>();
-  const sessionValues = new Map<string, string>();
-
-  vi.stubGlobal("window", {
-    localStorage: {
-      getItem: (key: string) => localValues.get(key) ?? null,
-      setItem: (key: string, value: string) => localValues.set(key, value),
-      removeItem: (key: string) => localValues.delete(key),
-      clear: () => localValues.clear(),
-    },
-    sessionStorage: {
-      getItem: (key: string) => sessionValues.get(key) ?? null,
-      setItem: (key: string, value: string) => sessionValues.set(key, value),
-      removeItem: (key: string) => sessionValues.delete(key),
-      clear: () => sessionValues.clear(),
-    },
-  });
-
-  return { localValues };
-}
 
 function testItem(id: string, patch: Partial<ChecklistItem> = {}): ChecklistItem {
   return {

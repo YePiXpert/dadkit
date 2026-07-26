@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  failNextStorageWrite,
+  installBrowserStorage,
+} from "@/tests/helpers/browser-storage";
+import {
   createSnapshot,
   exportData,
   importData,
@@ -27,51 +31,6 @@ import {
   exportGrowthData,
 } from "@/lib/growth-store";
 import type { ChecklistItem } from "@/lib/types";
-
-type StorageHarness = {
-  localValues: Map<string, string>;
-  sessionValues: Map<string, string>;
-};
-
-function installBrowserStorage(
-  initial: Record<string, string> = {},
-): StorageHarness {
-  const localValues = new Map(Object.entries(initial));
-  const sessionValues = new Map<string, string>();
-
-  vi.stubGlobal("window", {
-    localStorage: {
-      getItem: (key: string) => localValues.get(key) ?? null,
-      setItem: (key: string, value: string) => localValues.set(key, value),
-      removeItem: (key: string) => localValues.delete(key),
-      clear: () => localValues.clear(),
-    },
-    sessionStorage: {
-      getItem: (key: string) => sessionValues.get(key) ?? null,
-      setItem: (key: string, value: string) => sessionValues.set(key, value),
-      removeItem: (key: string) => sessionValues.delete(key),
-      clear: () => sessionValues.clear(),
-    },
-  });
-
-  return { localValues, sessionValues };
-}
-
-function failNextStorageWrite(key: string) {
-  const setItem = window.localStorage.setItem.bind(window.localStorage);
-  let shouldFail = true;
-
-  vi.spyOn(window.localStorage, "setItem").mockImplementation(
-    (candidateKey, value) => {
-      if (shouldFail && candidateKey === key) {
-        shouldFail = false;
-        throw new Error("simulated storage write failure");
-      }
-
-      setItem(candidateKey, value);
-    },
-  );
-}
 
 function testItem(id = "item-1", patch: Partial<ChecklistItem> = {}): ChecklistItem {
   return {

@@ -356,6 +356,7 @@ function IllustrationCompositionFrame({
     case "arch":
       return (
         <path
+          className="illustration-frame"
           d="M17 65V42c0-21 14-33 31-33s31 12 31 33v23"
           fill="none"
           opacity="0.5"
@@ -366,14 +367,14 @@ function IllustrationCompositionFrame({
       );
     case "pedestal":
       return (
-        <g opacity="0.68">
+        <g className="illustration-frame" opacity="0.68">
           <ellipse cx="48" cy="66" fill={secondary} rx="31" ry="8" />
           <path d="M25 64h46" stroke={primary} strokeLinecap="round" strokeWidth="2.5" />
         </g>
       );
     case "orbit":
       return (
-        <g fill="none" opacity="0.58" strokeLinecap="round">
+        <g className="illustration-frame" fill="none" opacity="0.58" strokeLinecap="round">
           <ellipse cx="48" cy="40" rx="40" ry="24" stroke={secondary} strokeDasharray="5 5" strokeWidth="3" />
           <circle cx="14" cy="28" fill={primary} r="4" stroke={ink} strokeWidth="1.5" />
           <circle cx="80" cy="54" fill={wash} r="3" stroke={primary} strokeWidth="2" />
@@ -381,7 +382,7 @@ function IllustrationCompositionFrame({
       );
     default:
       return (
-        <g opacity="0.52">
+        <g className="illustration-frame" opacity="0.52">
           <rect x="20" y="13" width="59" height="54" rx="13" fill={secondary} transform="rotate(5 49.5 40)" />
           <rect x="16" y="12" width="59" height="54" rx="13" fill={wash} stroke={primary} strokeWidth="2" transform="rotate(-4 45.5 39)" />
         </g>
@@ -508,6 +509,7 @@ export function ChecklistItemIllustration({
       xmlns="http://www.w3.org/2000/svg"
     >
       <ellipse
+        className="illustration-wash"
         cx="48"
         cy="43"
         fill={descriptor.palette.wash}

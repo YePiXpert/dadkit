@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { installBrowserStorage } from "@/tests/helpers/browser-storage";
 import { getChecklistViewItems } from "@/lib/checklist-v2";
 import { GROWTH_STORAGE_KEYS } from "@/lib/growth-store";
 import { generateChecklist } from "@/lib/rules";
@@ -15,40 +16,6 @@ const LEGACY_SENTINELS = {
   ]),
   "dadkit:v2:checklist-mode": JSON.stringify("lean"),
 } as const;
-
-function installBrowserStorage(initial: Record<string, string> = {}) {
-  const localValues = new Map(Object.entries(initial));
-  const sessionValues = new Map<string, string>();
-  const reads: string[] = [];
-  const writes: string[] = [];
-  const removals: string[] = [];
-
-  vi.stubGlobal("window", {
-    localStorage: {
-      getItem: (key: string) => {
-        reads.push(key);
-        return localValues.get(key) ?? null;
-      },
-      setItem: (key: string, value: string) => {
-        writes.push(key);
-        localValues.set(key, value);
-      },
-      removeItem: (key: string) => {
-        removals.push(key);
-        localValues.delete(key);
-      },
-      clear: () => localValues.clear(),
-    },
-    sessionStorage: {
-      getItem: (key: string) => sessionValues.get(key) ?? null,
-      setItem: (key: string, value: string) => sessionValues.set(key, value),
-      removeItem: (key: string) => sessionValues.delete(key),
-      clear: () => sessionValues.clear(),
-    },
-  });
-
-  return { localValues, reads, removals, writes };
-}
 
 function resetStoreState() {
   useDadKitStore.setState({

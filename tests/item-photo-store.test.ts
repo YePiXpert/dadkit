@@ -8,29 +8,11 @@ vi.mock("@/lib/item-photos", () => ({
   clearItemPhotos: photoMocks.clearItemPhotos,
 }));
 
+import { installBrowserStorage } from "@/tests/helpers/browser-storage";
 import { getChecklistViewItems } from "@/lib/checklist-v2";
 import { useDadKitStore } from "@/lib/store";
 
 const pristineStoreState = useDadKitStore.getState();
-
-function installBrowserStorage() {
-  const localValues = new Map<string, string>();
-  const sessionValues = new Map<string, string>();
-  const localStorage = {
-    getItem: (key: string) => localValues.get(key) ?? null,
-    setItem: (key: string, value: string) => localValues.set(key, value),
-    removeItem: (key: string) => localValues.delete(key),
-    clear: () => localValues.clear(),
-  };
-  const sessionStorage = {
-    getItem: (key: string) => sessionValues.get(key) ?? null,
-    setItem: (key: string, value: string) => sessionValues.set(key, value),
-    removeItem: (key: string) => sessionValues.delete(key),
-    clear: () => sessionValues.clear(),
-  };
-
-  vi.stubGlobal("window", { localStorage, sessionStorage });
-}
 
 afterEach(() => {
   useDadKitStore.setState(pristineStoreState, true);

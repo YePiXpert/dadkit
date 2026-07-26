@@ -1,26 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { installBrowserStorage } from "@/tests/helpers/browser-storage";
 import { mergeChecklistQuantity, useDadKitStore } from "@/lib/store";
 
 const pristineStoreState = useDadKitStore.getState();
-
-function installBrowserStorage() {
-  const createStorage = () => {
-    const values = new Map<string, string>();
-
-    return {
-      clear: () => values.clear(),
-      getItem: (key: string) => values.get(key) ?? null,
-      removeItem: (key: string) => values.delete(key),
-      setItem: (key: string, value: string) => values.set(key, value),
-    };
-  };
-
-  vi.stubGlobal("window", {
-    localStorage: createStorage(),
-    sessionStorage: createStorage(),
-  });
-}
 
 afterEach(() => {
   useDadKitStore.setState(pristineStoreState, true);

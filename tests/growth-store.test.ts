@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { installBrowserStorage } from "@/tests/helpers/browser-storage";
 import { DEFAULT_GROWTH_WEEK, GROWTH_WEEKS } from "@/lib/growth";
 import {
   DEFAULT_GROWTH_PROFILE,
@@ -15,18 +16,7 @@ import {
 } from "@/lib/growth-store";
 
 function installLocalStorage() {
-  const values = new Map<string, string>();
-
-  vi.stubGlobal("window", {
-    localStorage: {
-      getItem: (key: string) => values.get(key) ?? null,
-      setItem: (key: string, value: string) => values.set(key, value),
-      removeItem: (key: string) => values.delete(key),
-      clear: () => values.clear(),
-    },
-  });
-
-  return values;
+  return installBrowserStorage().localValues;
 }
 
 function resetStoreState() {

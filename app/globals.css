@@ -280,6 +280,16 @@
   animation: sticker-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
+/* 清单插画的浅色光晕与外框按浅色背景设计;深色模式下压暗,
+   避免浅色椭圆和虚线框在深背景上显形。 */
+.dark .illustration-wash {
+  opacity: 0.16;
+}
+
+.dark .illustration-frame {
+  opacity: 0.34;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .celebration-confetti,
   .celebration-card {

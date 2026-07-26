@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { installBrowserStorage } from "@/tests/helpers/browser-storage";
 import { getChecklistViewItems } from "@/lib/checklist-v2";
 import {
   getQuickStatusOptionsForItem,
@@ -40,18 +41,6 @@ function generatedItem(id: string) {
   return item;
 }
 
-function installLocalStorage() {
-  const values = new Map<string, string>();
-  vi.stubGlobal("window", {
-    localStorage: {
-      getItem: (key: string) => values.get(key) ?? null,
-      setItem: (key: string, value: string) => values.set(key, value),
-      removeItem: (key: string) => values.delete(key),
-      clear: () => values.clear(),
-    },
-  });
-}
-
 function resetStoreState() {
   useDadKitStore.setState({
     hydrated: false,
@@ -70,7 +59,7 @@ afterEach(() => {
 
 describe("checklist preparation semantics", () => {
   it("cycles buy-and-pack items through quick statuses", () => {
-    installLocalStorage();
+    installBrowserStorage();
     const item = generatedItem("general-postpartum-underwear");
 
     useDadKitStore.setState({
@@ -142,7 +131,7 @@ describe("checklist preparation semantics", () => {
   });
 
   it("persists preparation kind for custom items and edits", () => {
-    installLocalStorage();
+    installBrowserStorage();
 
     useDadKitStore.getState().addCustomItem({
       name: "自定义产褥垫",
