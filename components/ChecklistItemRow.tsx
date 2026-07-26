@@ -105,7 +105,6 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
         <h3
           className={cn(
             "break-words text-sm font-semibold leading-5 sm:text-[15px]",
-            itemState === "packed" && "text-muted-foreground line-through",
             itemState === "not_needed" && "text-muted-foreground",
           )}
         >

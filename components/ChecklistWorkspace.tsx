@@ -116,10 +116,10 @@ export function ChecklistWorkspace() {
           <div className="mt-4 grid grid-cols-3 divide-x divide-primary/10 rounded-2xl bg-card/70 py-3 text-center">
             <ProgressStat label="待买" value={counts.shopping} />
             <ProgressStat label="待装" value={counts.packing} />
-            <ProgressStat label="全部" value={counts.all} />
+            <ProgressStat label="已装" value={counts.packed} />
           </div>
           <span className="sr-only">
-            待买 {counts.shopping}，待装 {counts.packing}，共 {counts.all} 项
+            待买 {counts.shopping}，待装 {counts.packing}，已装 {counts.packed} 项
           </span>
         </section>
 
@@ -143,20 +143,8 @@ export function ChecklistWorkspace() {
 
         {visibleItems.length === 0 ? (
           <EmptyState
-            title={
-              view === "shopping"
-                ? "待购买已经清空"
-                : view === "packed"
-                  ? "还没有已装包的物品"
-                  : "这一页已经完成"
-            }
-            description={
-              view === "shopping"
-                ? "需要购买的物品都已备好，可以去“待装包”继续。"
-                : view === "packed"
-                  ? "在“待装包”里点一下，装好的物品会出现在这里。"
-                  : "可以回到“全部”查看已完成物品，或新增自己的物品。"
-            }
+            title={getEmptyStateCopy(view).title}
+            description={getEmptyStateCopy(view).description}
           />
         ) : null}
 
@@ -167,6 +155,9 @@ export function ChecklistWorkspace() {
               href={getChecklistSectionHref(section.id, query)}
               items={section.items}
               key={section.id}
+              resolvedLabel={
+                view === "packed" ? `${section.items.length} 项已装` : undefined
+              }
               sectionId={section.id}
               title={section.label}
             />
@@ -210,6 +201,34 @@ function ProgressStat({ label, value }: { label: string; value: number }) {
       </span>
     </span>
   );
+}
+
+function getEmptyStateCopy(view: ChecklistView) {
+  if (view === "shopping") {
+    return {
+      title: "待购买已经清空",
+      description: "需要购买的物品都已备好，可以去“待装包”继续。",
+    };
+  }
+
+  if (view === "packing") {
+    return {
+      title: "这一页已经完成",
+      description: "都装好了，去“已装包”核对行李。",
+    };
+  }
+
+  if (view === "packed") {
+    return {
+      title: "还没有已装包的物品",
+      description: "在“待装包”里点一下，装好的物品会出现在这里。",
+    };
+  }
+
+  return {
+    title: "清单还是空的",
+    description: "点击右下角按钮，新增第一件要准备的物品。",
+  };
 }
 
 function getViewCaption(view: ChecklistView, count: number) {

@@ -61,6 +61,7 @@ type ChecklistCategoryCardProps = {
   caption?: string;
   href: string;
   items: ChecklistItem[];
+  resolvedLabel?: string;
   sectionId: ChecklistSectionId;
   title: string;
 };
@@ -69,6 +70,7 @@ export function ChecklistCategoryCard({
   caption,
   href,
   items,
+  resolvedLabel,
   sectionId,
   title,
 }: ChecklistCategoryCardProps) {
@@ -108,7 +110,7 @@ export function ChecklistCategoryCard({
             ? "暂无项目"
             : remaining > 0
               ? `还差 ${remaining} 项`
-              : "已完成"}
+              : (resolvedLabel ?? "已完成")}
         </span>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
       </Link>

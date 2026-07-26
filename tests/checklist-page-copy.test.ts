@@ -62,7 +62,7 @@ describe("V2 checklist experience", () => {
     );
     expect(checklistWorkspace).toContain("待买 {counts.shopping}");
     expect(checklistWorkspace).toContain("待装 {counts.packing}");
-    expect(checklistWorkspace).toContain("共 {counts.all} 项");
+    expect(checklistWorkspace).toContain("已装 {counts.packed} 项");
     expect(checklistWorkspace).toContain('setView("packed")');
   });
 

@@ -51,7 +51,7 @@ describe("release endpoints and product surface", () => {
     expect(readme).toContain("本地恢复快照");
     expect(readme).toContain("WebDAV 备份");
     expect(readme).toContain("宝宝成长记");
-    expect(readme).toContain("全部、待购买、待装包");
+    expect(readme).toContain("全部、待购买、待装包、已装包");
     expect(readme).toContain("纯 PWA");
   });
 
