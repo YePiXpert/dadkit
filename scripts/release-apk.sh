@@ -43,11 +43,11 @@ else
 fi
 
 APK_SIZE=$(wc -c < "$APK_PATH" | tr -d '[:space:]')
-CONTAINER_TMP="$DATA_DIR/.dadkit-${VERSION_CODE}-$$.apk.tmp"
+CONTAINER_UPLOAD_TMP="/tmp/.dadkit-${VERSION_CODE}-$$.apk.tmp"
 
-docker cp "$APK_PATH" "$CONTAINER:$CONTAINER_TMP"
+docker cp "$APK_PATH" "$CONTAINER:$CONTAINER_UPLOAD_TMP"
 docker exec --user 0 "$CONTAINER" sh -c \
-  'chown nextjs:nodejs "$1" && chmod 600 "$1"' sh "$CONTAINER_TMP"
+  'chmod 644 "$1"' sh "$CONTAINER_UPLOAD_TMP"
 
 if ! docker exec -i \
   -e "DADKIT_RELEASE_VERSION_CODE=$VERSION_CODE" \
@@ -55,13 +55,14 @@ if ! docker exec -i \
   -e "DADKIT_RELEASE_NOTES=$NOTES" \
   -e "DADKIT_RELEASE_SHA256=$APK_SHA256" \
   -e "DADKIT_RELEASE_SIZE=$APK_SIZE" \
-  -e "DADKIT_RELEASE_TEMP_APK=$CONTAINER_TMP" \
+  -e "DADKIT_RELEASE_UPLOAD_APK=$CONTAINER_UPLOAD_TMP" \
   -e "DADKIT_RELEASE_DATA_DIR=$DATA_DIR" \
   "$CONTAINER" node <<'NODE'
 const { createReadStream } = require("node:fs");
 const {
   access,
   chmod,
+  copyFile,
   readFile,
   rename,
   stat,
@@ -87,11 +88,15 @@ async function main() {
   const notes = process.env.DADKIT_RELEASE_NOTES || "";
   const expectedSha = process.env.DADKIT_RELEASE_SHA256 || "";
   const expectedSize = Number(process.env.DADKIT_RELEASE_SIZE);
-  const tempApk = process.env.DADKIT_RELEASE_TEMP_APK || "";
+  const uploadApk = process.env.DADKIT_RELEASE_UPLOAD_APK || "";
   const dataDir = process.env.DADKIT_RELEASE_DATA_DIR || "";
   const manifestPath = path.join(dataDir, "app-release.json");
   const apkFile = `dadkit-${versionCode}.apk`;
   const finalApk = path.join(dataDir, apkFile);
+  const stagedApk = path.join(
+    dataDir,
+    `.${apkFile}.${randomBytes(8).toString("hex")}.tmp`,
+  );
   const tempManifest = `${manifestPath}.${randomBytes(8).toString("hex")}.tmp`;
 
   if (
@@ -134,8 +139,8 @@ async function main() {
     }
   }
 
-  const actual = await stat(tempApk);
-  const actualSha = await digest(tempApk);
+  const actual = await stat(uploadApk);
+  const actualSha = await digest(uploadApk);
   if (!actual.isFile() || actual.size !== expectedSize || actualSha !== expectedSha) {
     throw new Error("Copied APK size or SHA-256 does not match.");
   }
@@ -150,9 +155,14 @@ async function main() {
     apkFile,
   };
 
-  await rename(tempApk, finalApk);
-  await chmod(finalApk, 0o600);
   try {
+    // The upload is owned by Docker's root user in /tmp. Copying it into the
+    // mounted data directory as nextjs preserves cap_drop: ALL while keeping
+    // the final asset private and allowing same-volume atomic publication.
+    await copyFile(uploadApk, stagedApk);
+    await chmod(stagedApk, 0o600);
+    await rename(stagedApk, finalApk);
+    await chmod(finalApk, 0o600);
     await writeFile(tempManifest, `${JSON.stringify(manifest)}\n`, {
       encoding: "utf8",
       flag: "wx",
@@ -161,6 +171,7 @@ async function main() {
     await rename(tempManifest, manifestPath);
     await chmod(manifestPath, 0o600);
   } catch (error) {
+    await unlink(stagedApk).catch(() => undefined);
     await unlink(finalApk).catch(() => undefined);
     throw error;
   } finally {
@@ -168,15 +179,16 @@ async function main() {
   }
 }
 
-main().catch(async (error) => {
-  await unlink(process.env.DADKIT_RELEASE_TEMP_APK || "").catch(() => undefined);
+main().catch((error) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
 });
 NODE
 then
-  docker exec --user 0 "$CONTAINER" rm -f "$CONTAINER_TMP" >/dev/null 2>&1 || true
+  docker exec --user 0 "$CONTAINER" rm -f "$CONTAINER_UPLOAD_TMP" >/dev/null 2>&1 || true
   exit 1
 fi
+
+docker exec --user 0 "$CONTAINER" rm -f "$CONTAINER_UPLOAD_TMP"
 
 echo "Published Android $VERSION_NAME (versionCode $VERSION_CODE, sha256 $APK_SHA256)."

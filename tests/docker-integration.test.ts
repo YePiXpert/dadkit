@@ -77,6 +77,8 @@ describeDocker("Docker release integration", () => {
         "--detach",
         "--name",
         container,
+        "--cap-drop",
+        "ALL",
         "--publish",
         "127.0.0.1::3333",
         image,
@@ -200,6 +202,15 @@ describeDocker("Docker release integration", () => {
         "sh",
         "-c",
         "find /app/data -maxdepth 1 -name '*.tmp' -print",
+      ]),
+    ).toBe("");
+    expect(
+      docker([
+        "exec",
+        container,
+        "sh",
+        "-c",
+        "find /tmp -maxdepth 1 -name '.dadkit-*.apk.tmp' -print",
       ]),
     ).toBe("");
 
