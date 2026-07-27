@@ -8,6 +8,7 @@ import { generateChecklist } from "@/lib/rules";
 import {
   loadChecklist,
   loadSnapshots,
+  resetAllData,
   saveChecklist,
   STORAGE_KEYS,
 } from "@/lib/storage";
@@ -46,6 +47,12 @@ function resetStoreState() {
 
 afterEach(() => {
   resetStoreState();
+  // Retained dirty writes intentionally survive a storage failure. Reset the
+  // module repository between isolated browser harnesses so a previous test's
+  // in-memory retry cannot write into the next test's fresh localStorage.
+  if (typeof window !== "undefined") {
+    resetAllData();
+  }
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });

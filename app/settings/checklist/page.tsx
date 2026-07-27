@@ -1,7 +1,7 @@
 "use client";
 
 import { FileText, ListRestart, ListTodo } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/PageHeader";
 import { SettingToggleRow } from "@/components/SettingToggleRow";
@@ -42,6 +42,7 @@ const CHECKLIST_MODES = [
 }[];
 
 export default function ChecklistSettingsPage() {
+  const hydrate = useDadKitStore((state) => state.hydrate);
   const checklistMode = useDadKitStore((state) => state.checklistMode);
   const setChecklistMode = useDadKitStore((state) => state.setChecklistMode);
   const resetChecklist = useDadKitStore((state) => state.resetChecklist);
@@ -54,6 +55,10 @@ export default function ChecklistSettingsPage() {
   const [messageOk, setMessageOk] = useState<boolean>();
   const [rebuildDialogOpen, setRebuildDialogOpen] = useState(false);
   const [rebuildConfirmation, setRebuildConfirmation] = useState("");
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   function restoreMissingItems() {
     try {

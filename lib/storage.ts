@@ -128,6 +128,8 @@ export type SyncSession = {
 export type SyncClientState = {
   lastSyncAt?: string;
   lastError?: string;
+  lastEtag?: string;
+  lastSyncedChecksum?: string;
 };
 
 export type ImportResult = {
@@ -196,7 +198,11 @@ function writeJson<T>(key: string, value: T) {
     return;
   }
 
-  window.localStorage.setItem(key, JSON.stringify(value));
+  const serialized = JSON.stringify(value);
+
+  if (window.localStorage.getItem(key) !== serialized) {
+    window.localStorage.setItem(key, serialized);
+  }
 }
 
 function deviceId() {
@@ -478,6 +484,10 @@ export function loadChecklist() {
 
 export function saveChecklist(items: ChecklistItem[]) {
   writeJson(STORAGE_KEYS.checklist, items);
+  // This legacy, single-field helper is also used by import/repair tools and
+  // tests.  It cannot safely reconstruct the rest of the in-memory document,
+  // so make the next export/snapshot read the coherent persisted document.
+  latestChecklistState = undefined;
 }
 
 export function loadCustomItems() {
@@ -492,6 +502,7 @@ export function loadCustomItems() {
 
 export function saveCustomItems(items: ChecklistItem[]) {
   writeJson(STORAGE_KEYS.customItems, items);
+  latestChecklistState = undefined;
 }
 
 export function loadHiddenTemplateItemIds() {
@@ -511,6 +522,7 @@ export function loadHiddenTemplateItemIds() {
 
 export function saveHiddenTemplateItemIds(ids: string[]) {
   writeJson(STORAGE_KEYS.hiddenTemplateItems, Array.from(new Set(ids)));
+  latestChecklistState = undefined;
 }
 
 export function loadHiddenTemplateItemStamps(): HiddenTemplateItemStamps {
@@ -590,6 +602,12 @@ export function loadSyncClientState(): SyncClientState {
       typeof value.lastSyncAt === "string" ? value.lastSyncAt : undefined,
     lastError:
       typeof value.lastError === "string" ? value.lastError : undefined,
+    lastEtag:
+      typeof value.lastEtag === "string" ? value.lastEtag : undefined,
+    lastSyncedChecksum:
+      typeof value.lastSyncedChecksum === "string"
+        ? value.lastSyncedChecksum
+        : undefined,
   };
 }
 
@@ -597,11 +615,70 @@ export function saveSyncClientState(state: SyncClientState) {
   writeJson(STORAGE_KEYS.syncClientState, state);
 }
 
-type ChecklistStatePayload = {
+export type ChecklistStatePayload = {
   checklist: ChecklistItem[];
   customItems: ChecklistItem[];
   hiddenTemplateItemIds: string[];
 };
+
+export type ChecklistPersistenceStatus = {
+  dirtyRevision: number;
+  persistedRevision: number;
+  lastError?: string;
+};
+
+type PendingChecklistStateSave = {
+  payload: ChecklistStatePayload;
+  revision: number;
+};
+
+export const CHECKLIST_PERSISTENCE_EVENT = "dadkit:persistence-status";
+
+let latestChecklistState: ChecklistStatePayload | undefined;
+let checklistDirtyRevision = 0;
+let checklistPersistedRevision = 0;
+let checklistPersistenceError: string | undefined;
+
+function cloneChecklistState(
+  payload: ChecklistStatePayload,
+): ChecklistStatePayload {
+  // Cache the same portable representation that reaches localStorage.  In
+  // particular, generated template records can contain optional `undefined`
+  // properties; keeping those in memory would make a later snapshot fail its
+  // strict import validation even though the persisted JSON is valid.
+  return JSON.parse(
+    JSON.stringify({
+      checklist: payload.checklist,
+      customItems: payload.customItems,
+      hiddenTemplateItemIds: Array.from(new Set(payload.hiddenTemplateItemIds)),
+    }),
+  ) as ChecklistStatePayload;
+}
+
+function notifyChecklistPersistenceStatus() {
+  if (
+    typeof window !== "undefined" &&
+    typeof window.dispatchEvent === "function"
+  ) {
+    window.dispatchEvent(
+      new CustomEvent(CHECKLIST_PERSISTENCE_EVENT, {
+        detail: getChecklistPersistenceStatus(),
+      }),
+    );
+  }
+}
+
+export function getChecklistPersistenceStatus(): ChecklistPersistenceStatus {
+  return {
+    dirtyRevision: checklistDirtyRevision,
+    persistedRevision: checklistPersistedRevision,
+    lastError: checklistPersistenceError,
+  };
+}
+
+export function primeChecklistState(payload: ChecklistStatePayload) {
+  latestChecklistState = cloneChecklistState(payload);
+}
 
 function writeChecklistStateNow({
   checklist,
@@ -625,12 +702,30 @@ export function saveChecklistState(payload: ChecklistStatePayload) {
     return;
   }
 
-  writeChecklistStateNow(payload);
+  const revision = ++checklistDirtyRevision;
+  const next = cloneChecklistState(payload);
+
+  latestChecklistState = next;
+
+  try {
+    writeChecklistStateNow(next);
+    checklistPersistedRevision = revision;
+    checklistPersistenceError = undefined;
+    notifyChecklistPersistenceStatus();
+  } catch (error) {
+    pendingChecklistStateSave = { payload: next, revision };
+    checklistPersistenceError =
+      error instanceof Error && error.message
+        ? error.message
+        : "本机存储写入失败。";
+    notifyChecklistPersistenceStatus();
+    throw error;
+  }
 }
 
 const CHECKLIST_STATE_SAVE_DELAY_MS = 250;
 
-let pendingChecklistStateSave: ChecklistStatePayload | undefined;
+let pendingChecklistStateSave: PendingChecklistStateSave | undefined;
 let pendingChecklistStateTimer: ReturnType<typeof setTimeout> | undefined;
 let checklistStateSaveListenersInstalled = false;
 
@@ -664,17 +759,35 @@ export function flushPendingChecklistStateSave() {
 
   if (!pendingChecklistStateSave || !canUseLocalStorage()) {
     pendingChecklistStateSave = undefined;
-    return;
+    return true;
   }
 
-  const payload = pendingChecklistStateSave;
+  const pending = pendingChecklistStateSave;
   pendingChecklistStateSave = undefined;
 
   try {
-    writeChecklistStateNow(payload);
-  } catch {
+    writeChecklistStateNow(pending.payload);
+    checklistPersistedRevision = Math.max(
+      checklistPersistedRevision,
+      pending.revision,
+    );
+    checklistPersistenceError = undefined;
+    notifyChecklistPersistenceStatus();
+    return true;
+  } catch (error) {
+    pendingChecklistStateSave = pending;
+    checklistPersistenceError =
+      error instanceof Error && error.message
+        ? error.message
+        : "本机存储空间不足，修改尚未写入磁盘。";
+    notifyChecklistPersistenceStatus();
     // 写入失败（如存储已满）时保留内存状态，下一次变更会再次尝试持久化。
+    return false;
   }
+}
+
+export function retryPendingChecklistStateSave() {
+  return flushPendingChecklistStateSave();
 }
 
 function cancelPendingChecklistStateSave() {
@@ -693,7 +806,11 @@ export function saveChecklistStateSoon(payload: ChecklistStatePayload) {
     return;
   }
 
-  pendingChecklistStateSave = payload;
+  const revision = ++checklistDirtyRevision;
+  const next = cloneChecklistState(payload);
+
+  latestChecklistState = next;
+  pendingChecklistStateSave = { payload: next, revision };
   installChecklistStateSaveListeners();
 
   if (pendingChecklistStateTimer !== undefined) {
@@ -869,6 +986,16 @@ export function resetAllData(initialChecklist?: ChecklistItem[]) {
         return { key, value: null };
       }),
     );
+    latestChecklistState = initialChecklist
+      ? {
+          checklist: initialChecklist,
+          customItems: [],
+          hiddenTemplateItemIds: [],
+        }
+      : undefined;
+    checklistDirtyRevision = 0;
+    checklistPersistedRevision = 0;
+    checklistPersistenceError = undefined;
     useGrowthStore.setState({
       ...DEFAULT_GROWTH_PROFILE,
       ...DEFAULT_GROWTH_PROGRESS,
@@ -891,13 +1018,17 @@ export function resetAllData(initialChecklist?: ChecklistItem[]) {
 }
 
 export function exportData(): DadKitExportData {
+  flushPendingChecklistStateSave();
+  const latest = latestChecklistState;
+
   return {
     version: 5,
     exportedAt: new Date().toISOString(),
     checklistMode: loadChecklistMode(),
-    checklist: loadChecklist(),
-    customItems: loadCustomItems(),
-    hiddenTemplateItemIds: loadHiddenTemplateItemIds(),
+    checklist: latest?.checklist ?? loadChecklist(),
+    customItems: latest?.customItems ?? loadCustomItems(),
+    hiddenTemplateItemIds:
+      latest?.hiddenTemplateItemIds ?? loadHiddenTemplateItemIds(),
     growth: exportGrowthData(),
     hiddenTemplateItemStamps: loadHiddenTemplateItemStamps(),
     deletedCustomItems: loadDeletedCustomItems(),
@@ -1023,6 +1154,11 @@ export function applyImportData(data: DadKitImportData): ImportResult {
 
   try {
     applyStorageMutations(mutations);
+    primeChecklistState({
+      checklist: data.checklist,
+      customItems: data.customItems,
+      hiddenTemplateItemIds: data.hiddenTemplateItemIds,
+    });
     if (data.version === 4 || data.version === 5) {
       useGrowthStore.setState({
         ...data.growth.profile,

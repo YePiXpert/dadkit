@@ -54,11 +54,13 @@ describe("V2 checklist experience", () => {
     expect(checklistGroupTabs).not.toContain("min-w-max");
   });
 
-  it("derives visible rows, sections and counters from the same V2 selectors", () => {
-    expect(checklistWorkspace).toContain("getChecklistViewCounts(modeItems)");
-    expect(checklistWorkspace).toContain("getChecklistViewItems(modeItems, view)");
+  it("derives visible rows, sections and counters in one V2 traversal", () => {
+    expect(checklistWorkspace).toContain("deriveChecklistView");
     expect(checklistWorkspace).toContain(
-      "groupChecklistViewItems(visibleItems, { includeEmpty: true })",
+      "deriveChecklistView(checklist, { mode: checklistMode, view })",
+    );
+    expect(checklistWorkspace).toContain(
+      "const { counts, packing, sections, visibleItems }",
     );
     expect(checklistWorkspace).toContain("待买 {counts.shopping}");
     expect(checklistWorkspace).toContain("待装 {counts.packing}");
@@ -117,8 +119,9 @@ describe("V2 checklist experience", () => {
     expect(checklistWorkspace).toContain(
       "getChecklistSectionHref(section.id, query)",
     );
+    expect(checklistSectionWorkspace).toContain("deriveChecklistView(checklist");
     expect(checklistSectionWorkspace).toContain(
-      "getChecklistSection(item) === sectionId",
+      "sections.find((candidate) => candidate.id === sectionId)",
     );
     expect(checklistSectionWorkspace).toContain("getChecklistHomeHref(query)");
   });

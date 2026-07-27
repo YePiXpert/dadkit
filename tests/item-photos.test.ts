@@ -98,6 +98,10 @@ describe("item photo integration contract", () => {
     join(process.cwd(), "lib", "storage.ts"),
     "utf8",
   );
+  const migration = readFileSync(
+    join(process.cwd(), "lib", "migration", "transfer.ts"),
+    "utf8",
+  );
   const webDavClient = readFileSync(
     join(process.cwd(), "lib", "webdav", "client.ts"),
     "utf8",
@@ -110,6 +114,10 @@ describe("item photo integration contract", () => {
     expect(photoLibrary).toContain("canvas.toBlob");
     expect(photoLibrary).toContain("ITEM_PHOTO_MAX_EDGE = 800");
     expect(photoLibrary).toContain("ITEM_PHOTO_JPEG_QUALITY = 0.8");
+    expect(photoLibrary).toContain("ITEM_PHOTO_MAX_SOURCE_BYTES = 20");
+    expect(photoLibrary).toContain("migration-staging");
+    expect(photoLibrary).toContain("bytes: await record.blob.arrayBuffer()");
+    expect(photoLibrary).toContain("new Blob([value.bytes.slice(0)]");
   });
 
   it("offers gallery, rear-camera, replacement and deletion controls", () => {
@@ -118,20 +126,27 @@ describe("item photo integration contract", () => {
     expect(photoField).toContain("从相册替换");
     expect(photoField).toContain("重新拍照");
     expect(photoField).toContain("删除照片");
-    expect(photoField).toContain("URL.revokeObjectURL");
+    expect(photoField).toContain("处理中");
+    expect(photoLibrary).toContain("URL.revokeObjectURL");
   });
 
-  it("shows the local photo in the card media slot with an illustration fallback", () => {
-    expect(itemRow).toContain("useItemPhoto(item.id)");
+  it("loads row photos only near the viewport and keeps one controlled dialog", () => {
+    expect(itemRow).toContain("useItemPhoto(item.id, photoEnabled)");
+    expect(itemRow).toContain('rootMargin: "600px 0px"');
     expect(itemRow).toContain('className="size-full object-cover"');
     expect(itemRow).toContain("ChecklistItemIllustration");
     expect(itemDetails).toContain("ItemPhotoField");
+    expect(itemDetails).toContain("useItemPhoto(item.id, open)");
+    expect(itemDetails).toContain("const EditItemDialog = dynamic");
   });
 
-  it("keeps photos out of recovery points and WebDAV data paths", () => {
+  it("keeps photos out of normal backups but includes them in encrypted migration", () => {
     expect(storage).not.toContain("@/lib/item-photos");
     expect(webDavClient).not.toContain("@/lib/item-photos");
-    expect(photoField).toContain("不进入本机恢复点或 WebDAV 备份");
+    expect(photoField).toContain("WebDAV 备份");
+    expect(migration).toContain("getAllItemPhotos");
+    expect(migration).toContain("stageItemPhotos");
+    expect(migration).toContain("commitStagedItemPhotos");
   });
 
   it("waits for photo cleanup during clearAll and reports partial failures", () => {

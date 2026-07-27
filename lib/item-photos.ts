@@ -1,9 +1,12 @@
 const ITEM_PHOTO_DATABASE = "dadkit-v2-item-photos";
-const ITEM_PHOTO_DATABASE_VERSION = 1;
+const ITEM_PHOTO_DATABASE_VERSION = 2;
 const ITEM_PHOTO_STORE = "photos";
+const ITEM_PHOTO_STAGING_STORE = "migration-staging";
 
 export const ITEM_PHOTO_MAX_EDGE = 800;
 export const ITEM_PHOTO_JPEG_QUALITY = 0.8;
+export const ITEM_PHOTO_MAX_SOURCE_BYTES = 20 * 1024 * 1024;
+export const ITEM_PHOTO_MAX_STORED_BYTES = 5 * 1024 * 1024;
 
 export type ItemPhotoDimensions = {
   height: number;
@@ -13,6 +16,16 @@ export type ItemPhotoDimensions = {
 export type ItemPhotoRecord = ItemPhotoDimensions & {
   blob: Blob;
   itemId: string;
+  updatedAt: string;
+};
+
+// WebKit's IndexedDB implementation can reject Blob/File structured clones.
+// Persist raw bytes instead and recreate the Blob only at the UI/export edge.
+// Existing v2 records used Blob and remain readable through the legacy branch.
+type StoredBinaryItemPhotoRecord = ItemPhotoDimensions & {
+  bytes: ArrayBuffer;
+  itemId: string;
+  mimeType: string;
   updatedAt: string;
 };
 
@@ -30,6 +43,22 @@ type ItemPhotoChangeListener = (itemId?: string) => void;
 
 const photoChangeListeners = new Set<ItemPhotoChangeListener>();
 let photoDatabasePromise: Promise<IDBDatabase> | undefined;
+const photoReadPromises = new Map<
+  string,
+  Promise<ItemPhotoRecord | undefined>
+>();
+
+type PhotoUrlEntry = {
+  refs: number;
+  url: string;
+};
+
+export type ItemPhotoUrlLease = {
+  url?: string;
+  release: () => void;
+};
+
+const photoUrlEntries = new Map<string, PhotoUrlEntry>();
 
 export function getItemPhotoDimensions(
   width: number,
@@ -78,6 +107,10 @@ export async function compressItemPhoto(
 ): Promise<{ blob: Blob } & ItemPhotoDimensions> {
   if (!isImageBlob(sourceBlob)) {
     throw new Error("请选择图片文件。");
+  }
+
+  if (sourceBlob.size > ITEM_PHOTO_MAX_SOURCE_BYTES) {
+    throw new Error("图片不能超过 20 MiB。");
   }
 
   const normalizedOptions = normalizeItemPhotoCompressionOptions(options);
@@ -132,8 +165,28 @@ export async function compressItemPhoto(
   }
 }
 
-export async function getItemPhoto(itemId: string) {
+export function getItemPhoto(itemId: string) {
   const normalizedItemId = normalizeItemId(itemId);
+
+  const existing = photoReadPromises.get(normalizedItemId);
+
+  if (existing) {
+    return existing;
+  }
+
+  const pending = readItemPhoto(normalizedItemId);
+
+  photoReadPromises.set(normalizedItemId, pending);
+  void pending.catch(() => {
+    if (photoReadPromises.get(normalizedItemId) === pending) {
+      photoReadPromises.delete(normalizedItemId);
+    }
+  });
+
+  return pending;
+}
+
+async function readItemPhoto(normalizedItemId: string) {
   const database = await openItemPhotoDatabase();
 
   if (!database) {
@@ -150,13 +203,69 @@ export async function getItemPhoto(itemId: string) {
     completion,
   ]);
 
-  return isItemPhotoRecord(result) ? result : undefined;
+  return toItemPhotoRecord(result);
+}
+
+export async function acquireItemPhotoUrl(
+  itemId: string,
+): Promise<ItemPhotoUrlLease> {
+  const normalizedItemId = normalizeItemId(itemId);
+  const existing = photoUrlEntries.get(normalizedItemId);
+
+  if (existing) {
+    existing.refs += 1;
+    return createPhotoUrlLease(normalizedItemId, existing);
+  }
+
+  const record = await getItemPhoto(normalizedItemId);
+
+  if (!record) {
+    return { release: () => undefined };
+  }
+
+  if (
+    typeof URL === "undefined" ||
+    typeof URL.createObjectURL !== "function"
+  ) {
+    throw new Error("当前浏览器无法显示本地照片。");
+  }
+
+  const entry = {
+    refs: 1,
+    url: URL.createObjectURL(record.blob),
+  };
+
+  photoUrlEntries.set(normalizedItemId, entry);
+  return createPhotoUrlLease(normalizedItemId, entry);
+}
+
+function createPhotoUrlLease(
+  itemId: string,
+  entry: PhotoUrlEntry,
+): ItemPhotoUrlLease {
+  let released = false;
+
+  return {
+    url: entry.url,
+    release() {
+      if (released) return;
+      released = true;
+      entry.refs -= 1;
+
+      if (entry.refs <= 0) {
+        if (photoUrlEntries.get(itemId) === entry) {
+          photoUrlEntries.delete(itemId);
+        }
+        revokePhotoUrl(entry.url);
+      }
+    },
+  };
 }
 
 export async function saveItemPhoto(itemId: string, sourceBlob: Blob) {
   const normalizedItemId = normalizeItemId(itemId);
-  const database = await requireItemPhotoDatabase();
   const compressed = await compressItemPhoto(sourceBlob);
+  const database = await requireItemPhotoDatabase();
   const record: ItemPhotoRecord = {
     itemId: normalizedItemId,
     blob: compressed.blob,
@@ -164,11 +273,12 @@ export async function saveItemPhoto(itemId: string, sourceBlob: Blob) {
     height: compressed.height,
     updatedAt: new Date().toISOString(),
   };
+  const storedRecord = await toStoredItemPhotoRecord(record);
   const transaction = database.transaction(ITEM_PHOTO_STORE, "readwrite");
   const completion = waitForTransaction(transaction);
+  const request = transaction.objectStore(ITEM_PHOTO_STORE).put(storedRecord);
 
-  transaction.objectStore(ITEM_PHOTO_STORE).put(record);
-  await completion;
+  await Promise.all([waitForRequest(request), completion]);
   emitItemPhotoChange(normalizedItemId);
 
   return record;
@@ -203,6 +313,138 @@ export async function clearItemPhotos() {
   emitItemPhotoChange();
 }
 
+export async function getAllItemPhotos(): Promise<ItemPhotoRecord[]> {
+  const database = await openItemPhotoDatabase();
+
+  if (!database) {
+    return [];
+  }
+
+  const transaction = database.transaction(ITEM_PHOTO_STORE, "readonly");
+  const completion = waitForTransaction(transaction);
+  const records = await waitForRequest<unknown[]>(
+    transaction.objectStore(ITEM_PHOTO_STORE).getAll(),
+  );
+
+  await completion;
+  return records
+    .map(toItemPhotoRecord)
+    .filter((record): record is ItemPhotoRecord => record !== undefined);
+}
+
+export async function stageItemPhotos(records: ItemPhotoRecord[]) {
+  const database = await requireItemPhotoDatabase();
+  const validated = validatePhotoCollection(records);
+  const storedRecords = await Promise.all(
+    validated.map(toStoredItemPhotoRecord),
+  );
+  const transaction = database.transaction(
+    ITEM_PHOTO_STAGING_STORE,
+    "readwrite",
+  );
+  const store = transaction.objectStore(ITEM_PHOTO_STAGING_STORE);
+
+  store.clear();
+  for (const record of storedRecords) {
+    store.put(record);
+  }
+  await waitForTransaction(transaction);
+}
+
+export async function clearStagedItemPhotos() {
+  const database = await openItemPhotoDatabase();
+
+  if (!database) return;
+
+  const transaction = database.transaction(
+    ITEM_PHOTO_STAGING_STORE,
+    "readwrite",
+  );
+
+  transaction.objectStore(ITEM_PHOTO_STAGING_STORE).clear();
+  await waitForTransaction(transaction);
+}
+
+export async function commitStagedItemPhotos() {
+  const database = await requireItemPhotoDatabase();
+  const transaction = database.transaction(
+    [ITEM_PHOTO_STORE, ITEM_PHOTO_STAGING_STORE],
+    "readwrite",
+  );
+  const photos = transaction.objectStore(ITEM_PHOTO_STORE);
+  const staging = transaction.objectStore(ITEM_PHOTO_STAGING_STORE);
+  const request = staging.getAll();
+
+  await new Promise<void>((resolve, reject) => {
+    request.onsuccess = () => {
+      try {
+        const storedRecords = request.result as unknown[];
+        const records = storedRecords.map(toItemPhotoRecord);
+
+        if (records.some((record) => record === undefined)) {
+          throw new Error("迁移暂存照片格式无效。");
+        }
+
+        validatePhotoCollection(
+          records.filter(
+            (record): record is ItemPhotoRecord => record !== undefined,
+          ),
+        );
+        if (!storedRecords.every(isStoredBinaryItemPhotoRecord)) {
+          throw new Error("迁移暂存照片格式无效。");
+        }
+
+        photos.clear();
+        for (const record of storedRecords) {
+          photos.put(record);
+        }
+        staging.clear();
+      } catch (error) {
+        transaction.abort();
+        reject(error);
+      }
+    };
+    request.onerror = () => {
+      reject(request.error ?? new Error("读取迁移照片失败。"));
+    };
+    transaction.oncomplete = () => resolve();
+    transaction.onabort = () => {
+      reject(transaction.error ?? new Error("提交迁移照片失败。"));
+    };
+    transaction.onerror = () => {
+      reject(transaction.error ?? new Error("提交迁移照片失败。"));
+    };
+  });
+
+  emitItemPhotoChange();
+}
+
+function validatePhotoCollection(records: unknown[]) {
+  const validated: ItemPhotoRecord[] = [];
+  const ids = new Set<string>();
+
+  for (const value of records) {
+    if (!isItemPhotoRecord(value)) {
+      throw new Error("迁移包包含无效照片记录。");
+    }
+    if (
+      !isImageBlob(value.blob) ||
+      value.blob.size <= 0 ||
+      value.blob.size > ITEM_PHOTO_MAX_STORED_BYTES
+    ) {
+      throw new Error("迁移包中的照片类型或大小无效。");
+    }
+    if (ids.has(value.itemId)) {
+      throw new Error("迁移包包含重复照片。");
+    }
+
+    ids.add(value.itemId);
+    validated.push(value);
+  }
+
+  return validated;
+}
+
 export function subscribeToItemPhotoChanges(listener: ItemPhotoChangeListener) {
   photoChangeListeners.add(listener);
 
@@ -212,12 +454,43 @@ export function subscribeToItemPhotoChanges(listener: ItemPhotoChangeListener) {
 }
 
 function emitItemPhotoChange(itemId?: string) {
+  invalidatePhotoCaches(itemId);
+
   for (const listener of photoChangeListeners) {
     try {
       listener(itemId);
     } catch {
       // A stale UI subscriber must not make a successful photo write fail.
     }
+  }
+}
+
+function invalidatePhotoCaches(itemId?: string) {
+  const ids = itemId
+    ? [itemId]
+    : Array.from(
+        new Set([...photoReadPromises.keys(), ...photoUrlEntries.keys()]),
+      );
+
+  for (const id of ids) {
+    photoReadPromises.delete(id);
+    const entry = photoUrlEntries.get(id);
+
+    if (entry) {
+      photoUrlEntries.delete(id);
+      if (entry.refs <= 0) {
+        revokePhotoUrl(entry.url);
+      }
+    }
+  }
+}
+
+function revokePhotoUrl(url: string) {
+  if (
+    typeof URL !== "undefined" &&
+    typeof URL.revokeObjectURL === "function"
+  ) {
+    URL.revokeObjectURL(url);
   }
 }
 
@@ -237,6 +510,56 @@ function normalizeItemId(itemId: string) {
   }
 
   return normalized;
+}
+
+async function toStoredItemPhotoRecord(
+  record: ItemPhotoRecord,
+): Promise<StoredBinaryItemPhotoRecord> {
+  return {
+    bytes: await record.blob.arrayBuffer(),
+    height: record.height,
+    itemId: record.itemId,
+    mimeType: record.blob.type,
+    updatedAt: record.updatedAt,
+    width: record.width,
+  };
+}
+
+function toItemPhotoRecord(value: unknown): ItemPhotoRecord | undefined {
+  if (isItemPhotoRecord(value)) {
+    return value;
+  }
+
+  if (!isStoredBinaryItemPhotoRecord(value)) {
+    return undefined;
+  }
+
+  return {
+    blob: new Blob([value.bytes.slice(0)], { type: value.mimeType }),
+    height: value.height,
+    itemId: value.itemId,
+    updatedAt: value.updatedAt,
+    width: value.width,
+  };
+}
+
+function isStoredBinaryItemPhotoRecord(
+  value: unknown,
+): value is StoredBinaryItemPhotoRecord {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<StoredBinaryItemPhotoRecord>;
+
+  return (
+    typeof candidate.itemId === "string" &&
+    typeof candidate.updatedAt === "string" &&
+    typeof candidate.width === "number" &&
+    typeof candidate.height === "number" &&
+    typeof candidate.mimeType === "string" &&
+    candidate.bytes instanceof ArrayBuffer
+  );
 }
 
 function isItemPhotoRecord(value: unknown): value is ItemPhotoRecord {
@@ -287,6 +610,11 @@ function openItemPhotoDatabase(): Promise<IDBDatabase | undefined> {
 
       if (!database.objectStoreNames.contains(ITEM_PHOTO_STORE)) {
         database.createObjectStore(ITEM_PHOTO_STORE, { keyPath: "itemId" });
+      }
+      if (!database.objectStoreNames.contains(ITEM_PHOTO_STAGING_STORE)) {
+        database.createObjectStore(ITEM_PHOTO_STAGING_STORE, {
+          keyPath: "itemId",
+        });
       }
     };
     request.onsuccess = () => {

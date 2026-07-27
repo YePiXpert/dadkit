@@ -1,10 +1,7 @@
 #!/bin/sh
-# 把 Android 安装包发布到本服务器(家庭同步同一个容器的数据卷)。
-# 用法:
-#   sh scripts/release-apk.sh <apk路径> <versionCode> <versionName> [更新说明]
-# 例:
-#   sh scripts/release-apk.sh ~/dadkit-1.3.apk 4 1.3 "支持应用内检查更新"
-# 发布后,旧版 App 下次打开会弹"发现新版本,是否升级"。
+# Publish a verified APK into DadKit's persistent data directory.
+# Usage:
+#   sh scripts/release-apk.sh <apk-path> <versionCode> <versionName> [notes]
 set -eu
 
 APK_PATH=${1:-}
@@ -15,22 +12,171 @@ CONTAINER=${DADKIT_CONTAINER:-dadkit-dadkit-1}
 DATA_DIR=${DADKIT_DATA_DIR:-/app/data}
 
 if [ -z "$APK_PATH" ] || [ -z "$VERSION_CODE" ] || [ -z "$VERSION_NAME" ]; then
-  echo "用法: sh scripts/release-apk.sh <apk路径> <versionCode> <versionName> [更新说明]" >&2
+  echo "Usage: sh scripts/release-apk.sh <apk-path> <versionCode> <versionName> [notes]" >&2
+  exit 1
+fi
+
+case "$VERSION_CODE" in
+  *[!0-9]*|'')
+    echo "versionCode must be a positive integer." >&2
+    exit 1
+    ;;
+esac
+
+if [ "$VERSION_CODE" -lt 1 ]; then
+  echo "versionCode must be a positive integer." >&2
   exit 1
 fi
 
 if [ ! -f "$APK_PATH" ]; then
-  echo "找不到安装包: $APK_PATH" >&2
+  echo "APK not found: $APK_PATH" >&2
   exit 1
 fi
 
-TMP_JSON=$(mktemp)
-trap 'rm -f "$TMP_JSON"' EXIT
+if command -v sha256sum >/dev/null 2>&1; then
+  APK_SHA256=$(sha256sum "$APK_PATH" | awk '{print $1}')
+elif command -v shasum >/dev/null 2>&1; then
+  APK_SHA256=$(shasum -a 256 "$APK_PATH" | awk '{print $1}')
+else
+  echo "sha256sum or shasum is required." >&2
+  exit 1
+fi
 
-printf '{"versionCode":%s,"versionName":"%s","notes":"%s","url":"/api/app-version/apk"}\n' \
-  "$VERSION_CODE" "$VERSION_NAME" "$NOTES" > "$TMP_JSON"
+APK_SIZE=$(wc -c < "$APK_PATH" | tr -d '[:space:]')
+CONTAINER_TMP="$DATA_DIR/.dadkit-${VERSION_CODE}-$$.apk.tmp"
 
-docker cp "$APK_PATH" "$CONTAINER:$DATA_DIR/dadkit-latest.apk"
-docker cp "$TMP_JSON" "$CONTAINER:$DATA_DIR/app-release.json"
+docker cp "$APK_PATH" "$CONTAINER:$CONTAINER_TMP"
+docker exec --user 0 "$CONTAINER" sh -c \
+  'chown nextjs:nodejs "$1" && chmod 600 "$1"' sh "$CONTAINER_TMP"
 
-echo "已发布 Android $VERSION_NAME (versionCode $VERSION_CODE)。旧版 App 下次打开将提示升级。"
+if ! docker exec -i \
+  -e "DADKIT_RELEASE_VERSION_CODE=$VERSION_CODE" \
+  -e "DADKIT_RELEASE_VERSION_NAME=$VERSION_NAME" \
+  -e "DADKIT_RELEASE_NOTES=$NOTES" \
+  -e "DADKIT_RELEASE_SHA256=$APK_SHA256" \
+  -e "DADKIT_RELEASE_SIZE=$APK_SIZE" \
+  -e "DADKIT_RELEASE_TEMP_APK=$CONTAINER_TMP" \
+  -e "DADKIT_RELEASE_DATA_DIR=$DATA_DIR" \
+  "$CONTAINER" node <<'NODE'
+const { createReadStream } = require("node:fs");
+const {
+  access,
+  chmod,
+  readFile,
+  rename,
+  stat,
+  unlink,
+  writeFile,
+} = require("node:fs/promises");
+const { createHash, randomBytes } = require("node:crypto");
+const path = require("node:path");
+
+async function digest(file) {
+  return new Promise((resolve, reject) => {
+    const hash = createHash("sha256");
+    const stream = createReadStream(file);
+    stream.on("data", (chunk) => hash.update(chunk));
+    stream.on("error", reject);
+    stream.on("end", () => resolve(hash.digest("hex")));
+  });
+}
+
+async function main() {
+  const versionCode = Number(process.env.DADKIT_RELEASE_VERSION_CODE);
+  const versionName = process.env.DADKIT_RELEASE_VERSION_NAME || "";
+  const notes = process.env.DADKIT_RELEASE_NOTES || "";
+  const expectedSha = process.env.DADKIT_RELEASE_SHA256 || "";
+  const expectedSize = Number(process.env.DADKIT_RELEASE_SIZE);
+  const tempApk = process.env.DADKIT_RELEASE_TEMP_APK || "";
+  const dataDir = process.env.DADKIT_RELEASE_DATA_DIR || "";
+  const manifestPath = path.join(dataDir, "app-release.json");
+  const apkFile = `dadkit-${versionCode}.apk`;
+  const finalApk = path.join(dataDir, apkFile);
+  const tempManifest = `${manifestPath}.${randomBytes(8).toString("hex")}.tmp`;
+
+  if (
+    !Number.isSafeInteger(versionCode) ||
+    versionCode < 1 ||
+    !versionName ||
+    versionName.length > 64 ||
+    notes.length > 8000 ||
+    !/^[0-9a-f]{64}$/.test(expectedSha) ||
+    !Number.isSafeInteger(expectedSize) ||
+    expectedSize < 1
+  ) {
+    throw new Error("Invalid release metadata.");
+  }
+
+  try {
+    const current = JSON.parse(await readFile(manifestPath, "utf8"));
+    if (!Number.isSafeInteger(current.versionCode) || current.versionCode < 1) {
+      throw new Error("Existing release manifest is invalid.");
+    }
+    if (versionCode <= current.versionCode) {
+      throw new Error(
+        `versionCode ${versionCode} must be greater than ${current.versionCode}.`,
+      );
+    }
+  } catch (error) {
+    if (error && error.code === "ENOENT") {
+      // First publication: no existing manifest is expected.
+    } else {
+      throw error;
+    }
+  }
+
+  try {
+    await access(finalApk);
+    throw new Error(`Refusing to reuse existing ${apkFile}.`);
+  } catch (error) {
+    if (!error || error.code !== "ENOENT") {
+      throw error;
+    }
+  }
+
+  const actual = await stat(tempApk);
+  const actualSha = await digest(tempApk);
+  if (!actual.isFile() || actual.size !== expectedSize || actualSha !== expectedSha) {
+    throw new Error("Copied APK size or SHA-256 does not match.");
+  }
+
+  const manifest = {
+    versionCode,
+    versionName,
+    notes,
+    size: actual.size,
+    sha256: actualSha,
+    publishedAt: new Date().toISOString(),
+    apkFile,
+  };
+
+  await rename(tempApk, finalApk);
+  await chmod(finalApk, 0o600);
+  try {
+    await writeFile(tempManifest, `${JSON.stringify(manifest)}\n`, {
+      encoding: "utf8",
+      flag: "wx",
+      mode: 0o600,
+    });
+    await rename(tempManifest, manifestPath);
+    await chmod(manifestPath, 0o600);
+  } catch (error) {
+    await unlink(finalApk).catch(() => undefined);
+    throw error;
+  } finally {
+    await unlink(tempManifest).catch(() => undefined);
+  }
+}
+
+main().catch(async (error) => {
+  await unlink(process.env.DADKIT_RELEASE_TEMP_APK || "").catch(() => undefined);
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
+});
+NODE
+then
+  docker exec --user 0 "$CONTAINER" rm -f "$CONTAINER_TMP" >/dev/null 2>&1 || true
+  exit 1
+fi
+
+echo "Published Android $VERSION_NAME (versionCode $VERSION_CODE, sha256 $APK_SHA256)."

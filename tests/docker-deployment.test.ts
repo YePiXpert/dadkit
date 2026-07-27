@@ -33,7 +33,7 @@ describe("VPS Docker deployment", () => {
     expect(readme).toContain("DADKIT_PUBLIC_ORIGIN");
     expect(readme).toContain("DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS");
     expect(exampleEnv).toContain("DADKIT_BIND_ADDRESS=127.0.0.1");
-    expect(exampleEnv).toContain("DADKIT_PUBLIC_ORIGIN=https://dadkit.example.com");
+    expect(exampleEnv).toContain("DADKIT_PUBLIC_ORIGIN=https://dadkit.505f.com");
     expect(exampleEnv).toMatch(/^DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS=$/m);
     expect(exampleEnv).toContain(
       "# Example: webdav.example.com,dav.example.com:8443",

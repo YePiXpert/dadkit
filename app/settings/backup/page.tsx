@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -14,7 +15,7 @@ import {
   Upload,
 } from "lucide-react";
 
-import { FamilySyncCard } from "@/components/FamilySyncCard";
+import { MigrationTransferLauncher } from "@/components/MigrationTransferLauncher";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,6 +77,19 @@ import {
   type WebDavSyncState,
 } from "@/lib/webdav/types";
 
+const FamilySyncCard = dynamic(
+  () =>
+    import("@/components/FamilySyncCard").then(
+      (module) => module.FamilySyncCard,
+    ),
+  {
+    loading: () => (
+      <div className="h-28 animate-pulse rounded-[1.75rem] bg-muted" />
+    ),
+    ssr: false,
+  },
+);
+
 export default function BackupSettingsPage() {
   const clearAll = useDadKitStore((state) => state.clearAll);
   const hydrate = useDadKitStore((state) => state.hydrate);
@@ -122,10 +136,11 @@ export default function BackupSettingsPage() {
   }
 
   useEffect(() => {
+    hydrate();
     refreshSnapshots();
     refreshWebDavSettings();
     refreshSyncStatus();
-  }, []);
+  }, [hydrate]);
 
   function restoreLocalSnapshot(id: string) {
     if (!window.confirm("恢复此恢复点会替换当前清单。是否继续？")) {
@@ -374,6 +389,7 @@ export default function BackupSettingsPage() {
         </section>
 
         <FamilySyncCard />
+        <MigrationTransferLauncher />
 
         <Card className="overflow-hidden">
           <CardHeader className="pb-3">

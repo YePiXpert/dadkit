@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
 
 import { AppHeader } from "@/components/AppHeader";
+import { BackgroundTasks } from "@/components/BackgroundTasks";
 import { MobileNav } from "@/components/MobileNav";
-import { StoreHydrator } from "@/components/StoreHydrator";
-import { PwaRegister } from "@/components/PwaRegister";
+import { PersistenceWarning } from "@/components/PersistenceWarning";
 import "./globals.css";
 
 function getMetadataBase() {
@@ -77,8 +77,8 @@ export default function RootLayout({
     <html lang="zh-CN" suppressHydrationWarning>
       <body>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-        <StoreHydrator />
-        <PwaRegister />
+        <BackgroundTasks />
+        <PersistenceWarning />
         <AppHeader />
         <main>{children}</main>
         <MobileNav />

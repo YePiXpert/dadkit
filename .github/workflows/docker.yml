@@ -24,11 +24,22 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Verify lint, tests and production build inputs
+      - name: Verify lint, tests, production build and performance budgets
         run: |
           npm ci
           npm run lint
           npm test
+          npm run build
+          npm run performance:check
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Run Chromium and WebKit acceptance tests
+        run: npm run test:e2e
+
+      - name: Run Docker integration tests
+        run: npm run test:docker
 
       - name: Compute build time
         run: echo "DADKIT_BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"

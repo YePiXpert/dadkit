@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 
 import { AddItemDialog } from "@/components/AddItemDialog";
@@ -11,18 +12,22 @@ import { PageHeader } from "@/components/PageHeader";
 import { SettingToggleRow } from "@/components/SettingToggleRow";
 import {
   CHECKLIST_SECTIONS,
-  getChecklistSection,
-  getChecklistViewCounts,
-  getChecklistViewItems,
-  groupChecklistViewItems,
+  deriveChecklistView,
   type ChecklistSectionId,
 } from "@/lib/checklist-v2";
 import { getChecklistHomeHref } from "@/lib/checklist-display";
-import { filterItemsForChecklistMode } from "@/lib/rules";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistCategory } from "@/lib/types";
 import { useChecklistDescriptionPreference } from "@/lib/use-checklist-description-preference";
 import { useChecklistViewQuery } from "@/lib/use-checklist-view-query";
+
+const ChecklistItemDetailsDialog = dynamic(
+  () =>
+    import("@/components/ChecklistItemDetailsDialog").then(
+      (module) => module.ChecklistItemDetailsDialog,
+    ),
+  { ssr: false },
+);
 
 const DEFAULT_CATEGORY_BY_SECTION = {
   documents: "documents",
@@ -46,30 +51,31 @@ export function ChecklistSectionWorkspace({
     showFullDescriptions,
   } = useChecklistDescriptionPreference();
   const hydrated = useDadKitStore((state) => state.hydrated);
+  const hydrate = useDadKitStore((state) => state.hydrate);
   const checklist = useDadKitStore((state) => state.checklist);
   const checklistMode = useDadKitStore((state) => state.checklistMode);
+  const [detailsItemId, setDetailsItemId] = useState<string>();
   const section = CHECKLIST_SECTIONS.find(
     (candidate) => candidate.id === sectionId,
   )!;
-  const modeItems = useMemo(
-    () => filterItemsForChecklistMode(checklist, checklistMode),
-    [checklist, checklistMode],
-  );
-  const sectionItems = useMemo(
-    () => modeItems.filter((item) => getChecklistSection(item) === sectionId),
-    [modeItems, sectionId],
-  );
-  const counts = useMemo(
-    () => getChecklistViewCounts(sectionItems),
-    [sectionItems],
-  );
-  const visibleItems = useMemo(
+  const { counts, sections } = useMemo(
     () =>
-      groupChecklistViewItems(getChecklistViewItems(sectionItems, view)).find(
-        (candidate) => candidate.id === sectionId,
-      )?.items ?? [],
-    [sectionId, sectionItems, view],
+      deriveChecklistView(checklist, {
+        mode: checklistMode,
+        sectionId,
+        view,
+      }),
+    [checklist, checklistMode, sectionId, view],
   );
+  const visibleItems =
+    sections.find((candidate) => candidate.id === sectionId)?.items ?? [];
+  const detailsItem = detailsItemId
+    ? checklist.find((item) => item.id === detailsItemId)
+    : undefined;
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   if (!hydrated) {
     return <ChecklistSectionWorkspaceSkeleton />;
@@ -120,6 +126,7 @@ export function ChecklistSectionWorkspace({
               <ChecklistItemRow
                 item={item}
                 key={item.id}
+                onOpenDetails={setDetailsItemId}
                 showFullDescription={showFullDescriptions}
               />
             ))}
@@ -129,6 +136,16 @@ export function ChecklistSectionWorkspace({
         <p className="px-3 text-center text-xs leading-5 text-muted-foreground">
           清单是准备参考，不替代医院通知或医疗建议。
         </p>
+
+        {detailsItem ? (
+          <ChecklistItemDetailsDialog
+            item={detailsItem}
+            open
+            onOpenChange={(open) => {
+              if (!open) setDetailsItemId(undefined);
+            }}
+          />
+        ) : null}
       </section>
 
       <AddItemDialog

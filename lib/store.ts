@@ -5,13 +5,17 @@ import { create } from "zustand";
 import { clearItemPhotos, deleteItemPhoto } from "@/lib/item-photos";
 import { generateChecklist, normalizeChecklistItem } from "@/lib/rules";
 import {
+  SnapshotPersistenceError,
   createSnapshot,
+} from "@/lib/data/backup";
+import {
   loadChecklist,
   loadChecklistMode,
   loadCustomItems,
   loadDeletedCustomItems,
   loadHiddenTemplateItemIds,
   loadHiddenTemplateItemStamps,
+  primeChecklistState,
   resetAllData,
   saveChecklist,
   saveChecklistMode,
@@ -19,8 +23,7 @@ import {
   saveChecklistStateSoon,
   saveDeletedCustomItems,
   saveHiddenTemplateItemStamps,
-  SnapshotPersistenceError,
-} from "@/lib/storage";
+} from "@/lib/data/local-repository";
 import type {
   ChecklistItem,
   ChecklistMode,
@@ -127,6 +130,10 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
   customItems: [],
   hiddenTemplateItemIds: [],
   hydrate: () => {
+    if (get().hydrated) {
+      return;
+    }
+
     const storedChecklist = loadChecklist();
     const customItems = loadCustomItems();
     const hiddenTemplateItemIds = loadHiddenTemplateItemIds();
@@ -138,6 +145,11 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     });
 
     saveChecklist(checklist);
+    primeChecklistState({
+      checklist,
+      customItems,
+      hiddenTemplateItemIds,
+    });
     set({
       hydrated: true,
       checklist,

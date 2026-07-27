@@ -21,8 +21,9 @@ describe("checklist home page", () => {
   it("opens directly into an actionable checklist", () => {
     expect(checklistWorkspace).toContain("待产包清单");
     expect(checklistWorkspace).toContain("看一眼还差什么，准备好就打勾。");
-    expect(checklistWorkspace).toContain("getChecklistViewItems");
-    expect(checklistWorkspace).toContain("getChecklistViewCounts");
+    expect(checklistWorkspace).toContain("deriveChecklistView");
+    expect(checklistWorkspace).toContain("visibleItems");
+    expect(checklistWorkspace).toContain("counts");
   });
 
   it("does not depend on optional profile or removed tools", () => {

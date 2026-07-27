@@ -25,19 +25,27 @@ pnpm-debug.log*
 .env.*
 !.env.example
 .env*.local
+.secrets/
 
 # test/cache
 coverage
 .vitest
 .visual-screenshots
+playwright-report/
+test-results/
 *.tsbuildinfo
 
 # 本地运行时家庭同步数据(DADKIT_DATA_DIR 默认 ./data)
 data/
 
 # android TWA (bubblewrap 生成的工程产物与签名密钥)
-android/*
-!android/twa-manifest.example.json
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/*.keystore
+android/*.jks
+android/signing.properties
 *.keystore
 *.jks
 

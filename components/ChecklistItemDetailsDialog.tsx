@@ -1,13 +1,9 @@
 "use client";
 
-import { type ReactNode, useState } from "react";
+import dynamic from "next/dynamic";
 import { Ban, Check, PackageCheck, Trash2 } from "lucide-react";
 
-import { EditItemDialog } from "@/components/EditItemDialog";
-import {
-  ItemPhotoField,
-  type ItemPhotoController,
-} from "@/components/ItemPhotoField";
+import { ItemPhotoField, useItemPhoto } from "@/components/ItemPhotoField";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,7 +11,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   getChecklistItemState,
@@ -26,6 +21,14 @@ import { ITEM_REF_PHOTOS } from "@/lib/item-refs";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const EditItemDialog = dynamic(
+  () =>
+    import("@/components/EditItemDialog").then(
+      (module) => module.EditItemDialog,
+    ),
+  { ssr: false },
+);
 
 const STATE_META: Record<
   ChecklistItemState,
@@ -39,14 +42,14 @@ const STATE_META: Record<
 
 export function ChecklistItemDetailsDialog({
   item,
-  photoController,
-  trigger,
+  onOpenChange,
+  open,
 }: {
   item: ChecklistItem;
-  photoController: ItemPhotoController;
-  trigger: ReactNode;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const photoController = useItemPhoto(item.id, open);
   const advanceItem = useDadKitStore((state) => state.advanceItem);
   const toggleItemSkipped = useDadKitStore((state) => state.toggleItemSkipped);
   const removeItem = useDadKitStore((state) => state.removeItem);
@@ -58,7 +61,7 @@ export function ChecklistItemDetailsDialog({
   } as const;
   const displayName = formatChecklistDisplayText(item.name, displayOptions);
   const displayNote = formatChecklistDisplayText(
-    item.note || "暂时没有补充说明，可以按家庭和医院实际情况调整。",
+    item.note || "暂无补充说明，可以按家庭和医院实际情况调整。",
     displayOptions,
   );
   const displayQuantity = formatChecklistDisplayText(
@@ -72,12 +75,11 @@ export function ChecklistItemDetailsDialog({
     }
 
     removeItem(item.id);
-    setOpen(false);
+    onOpenChange(false);
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="gap-4 rounded-[2rem] border border-border bg-background p-5 sm:max-w-md">
         <DialogHeader className="pr-8">
           <DialogTitle className="break-words text-xl leading-7">
@@ -108,9 +110,7 @@ export function ChecklistItemDetailsDialog({
             </span>
           </div>
           <Button className="mt-4 w-full" onClick={() => advanceItem(item.id)}>
-            {itemState === "todo" ? (
-              <PackageCheck className="size-4" />
-            ) : itemState === "ready" ? (
+            {itemState === "ready" ? (
               <Check className="size-4" />
             ) : (
               <PackageCheck className="size-4" />
@@ -139,7 +139,7 @@ export function ChecklistItemDetailsDialog({
               />
             </div>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              通用参考图，与品牌无关，具体以医院要求为准
+              通用参考图，与品牌无关，具体以医院要求为准。
             </p>
           </section>
         ) : null}
@@ -150,7 +150,9 @@ export function ChecklistItemDetailsDialog({
           <div className="flex min-h-11 items-center justify-between gap-3 px-1">
             <div>
               <p className="text-sm font-semibold">编辑物品</p>
-              <p className="text-xs text-muted-foreground">修改分类、数量或备注</p>
+              <p className="text-xs text-muted-foreground">
+                修改分类、数量或备注
+              </p>
             </div>
             <EditItemDialog item={item} />
           </div>

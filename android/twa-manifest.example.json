@@ -1,6 +1,6 @@
 {
-  "packageId": "com.dadkit.app",
-  "host": "dadkit.example.com",
+  "packageId": "com.dadkit.mobile",
+  "host": "dadkit.505f.com",
   "name": "DadKit 待产包清单",
   "launcherName": "DadKit",
   "display": "standalone",
@@ -12,32 +12,32 @@
   "navigationDividerColorDark": "#000000",
   "backgroundColor": "#FBF8F2",
   "enableNotifications": true,
-  "startUrl": "/",
-  "iconUrl": "https://dadkit.example.com/icon-512.png",
-  "maskableIconUrl": "https://dadkit.example.com/maskable-icon-512.png",
+  "startUrl": "/?source=twa&appVersionCode=1",
+  "iconUrl": "https://dadkit.505f.com/icon-512.png",
+  "maskableIconUrl": "https://dadkit.505f.com/maskable-icon-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./android.keystore",
     "alias": "dadkit"
   },
-  "appVersionName": "1",
+  "appVersionName": "2.1.0",
   "appVersionCode": 1,
   "shortcuts": [
     {
       "name": "待产清单",
       "shortName": "清单",
-      "url": "https://dadkit.example.com/",
-      "chosenIconUrl": "https://dadkit.example.com/icon-192.png"
+      "url": "https://dadkit.505f.com/",
+      "chosenIconUrl": "https://dadkit.505f.com/icon-192.png"
     },
     {
       "name": "我的",
       "shortName": "我的",
-      "url": "https://dadkit.example.com/settings",
-      "chosenIconUrl": "https://dadkit.example.com/icon-192.png"
+      "url": "https://dadkit.505f.com/settings",
+      "chosenIconUrl": "https://dadkit.505f.com/icon-192.png"
     }
   ],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://dadkit.example.com/manifest.webmanifest",
+  "webManifestUrl": "https://dadkit.505f.com/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {},
   "alphaDependencies": {
@@ -46,13 +46,13 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://dadkit.example.com/",
+  "fullScopeUrl": "https://dadkit.505f.com/",
   "minSdkVersion": 21,
   "orientation": "default",
   "fingerprints": [
     {
       "name": "SHA-256",
-      "value": "5B:D2:6A:41:9F:67:A7:06:E1:8E:99:DA:7C:10:50:85:0A:54:EF:C3:A6:AD:3D:D3:12:31:22:23:C0:07:3B:3B"
+      "value": "69:E6:26:8F:01:DC:21:1A:CD:E1:7B:D9:6F:29:4D:73:02:1E:44:08:BD:04:20:47:34:21:5B:99:0A:0B:C0:F4"
     }
   ],
   "additionalTrustedOrigins": [],
@@ -61,5 +61,5 @@
   "fileHandlers": [],
   "launchHandlerClientMode": "",
   "displayOverride": [],
-  "appVersion": "1"
+  "appVersion": "2.1.0"
 }

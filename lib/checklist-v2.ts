@@ -1,6 +1,6 @@
 import { normalizeChecklistItem } from "@/lib/rules";
 import { inferPreparationKind } from "@/lib/preparation";
-import type { ChecklistItem } from "@/lib/types";
+import type { ChecklistItem, ChecklistMode } from "@/lib/types";
 
 export type ChecklistView = "all" | "shopping" | "packing" | "packed";
 
@@ -224,4 +224,168 @@ export function getChecklistViewCounts(items: ChecklistItem[]) {
     packing: getChecklistViewItems(items, "packing").length,
     packed: getChecklistViewItems(items, "packed").length,
   } satisfies Record<ChecklistView, number>;
+}
+
+type DerivedChecklistSection = (typeof CHECKLIST_SECTIONS)[number] & {
+  items: ChecklistItem[];
+};
+
+export type DerivedChecklistView = {
+  counts: Record<ChecklistView, number>;
+  packing: { total: number; completed: number; percent: number };
+  sections: DerivedChecklistSection[];
+  visibleItems: ChecklistItem[];
+};
+
+const DERIVED_STATE_ORDER: Record<ChecklistItemState, number> = {
+  todo: 0,
+  ready: 0,
+  packed: 1,
+  not_needed: 2,
+};
+const DERIVED_PRIORITY_ORDER = {
+  must: 0,
+  recommended: 1,
+  optional: 2,
+} as const;
+
+function matchesDerivedView(item: ChecklistItem, view: ChecklistView) {
+  if (view === "all") {
+    return true;
+  }
+
+  const state = getChecklistItemState(item);
+
+  if (view === "packed") {
+    return item.itemKind === "item" && state === "packed";
+  }
+
+  if (
+    item.itemKind !== "item" ||
+    state === "packed" ||
+    state === "not_needed"
+  ) {
+    return false;
+  }
+
+  const preparationKind = inferPreparationKind(item);
+
+  if (view === "shopping") {
+    return (
+      state === "todo" &&
+      (preparationKind === "buy_and_pack" ||
+        preparationKind === "buy_for_home")
+    );
+  }
+
+  return (
+    item.bag !== "none" &&
+    (state === "ready" ||
+      (preparationKind !== "buy_and_pack" &&
+        preparationKind !== "buy_for_home"))
+  );
+}
+
+function sortDerivedItems(items: ChecklistItem[]) {
+  items.sort((left, right) => {
+    const stateDifference =
+      DERIVED_STATE_ORDER[getChecklistItemState(left)] -
+      DERIVED_STATE_ORDER[getChecklistItemState(right)];
+
+    return (
+      stateDifference ||
+      DERIVED_PRIORITY_ORDER[left.priority] -
+        DERIVED_PRIORITY_ORDER[right.priority]
+    );
+  });
+}
+
+export function deriveChecklistView(
+  items: ChecklistItem[],
+  {
+    mode,
+    sectionId,
+    view,
+  }: {
+    mode: ChecklistMode;
+    sectionId?: ChecklistSectionId;
+    view: ChecklistView;
+  },
+): DerivedChecklistView {
+  const counts: Record<ChecklistView, number> = {
+    all: 0,
+    shopping: 0,
+    packing: 0,
+    packed: 0,
+  };
+  const sectionBuckets = new Map(
+    CHECKLIST_SECTIONS.map((section) => [section.id, [] as ChecklistItem[]]),
+  );
+  const visibleItems: ChecklistItem[] = [];
+  let packingTotal = 0;
+  let packingCompleted = 0;
+
+  for (const sourceItem of items) {
+    const item = normalizeChecklistItem(sourceItem);
+
+    if (
+      mode !== "full" &&
+      item.packTier !== "core" &&
+      item.packTier !== "confirm" &&
+      item.source !== "user" &&
+      item.status === "todo"
+    ) {
+      continue;
+    }
+
+    const itemSection = getChecklistSection(item);
+
+    if (sectionId && itemSection !== sectionId) {
+      continue;
+    }
+
+    counts.all += 1;
+    if (matchesDerivedView(item, "shopping")) counts.shopping += 1;
+    if (matchesDerivedView(item, "packing")) counts.packing += 1;
+    if (matchesDerivedView(item, "packed")) counts.packed += 1;
+
+    if (
+      item.itemKind === "item" &&
+      item.category !== "last_minute" &&
+      item.bag !== "none" &&
+      item.bag !== "car" &&
+      item.status !== "not_needed"
+    ) {
+      packingTotal += 1;
+      if (item.status === "packed") {
+        packingCompleted += 1;
+      }
+    }
+
+    if (matchesDerivedView(item, view)) {
+      visibleItems.push(item);
+      sectionBuckets.get(itemSection)?.push(item);
+    }
+  }
+
+  for (const bucket of sectionBuckets.values()) {
+    sortDerivedItems(bucket);
+  }
+
+  return {
+    counts,
+    packing: {
+      total: packingTotal,
+      completed: packingCompleted,
+      percent:
+        packingTotal === 0
+          ? 0
+          : Math.round((packingCompleted / packingTotal) * 100),
+    },
+    sections: CHECKLIST_SECTIONS.map((section) => ({
+      ...section,
+      items: sectionBuckets.get(section.id) ?? [],
+    })),
+    visibleItems,
+  };
 }

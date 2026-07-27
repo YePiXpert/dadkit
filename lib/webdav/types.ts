@@ -1,4 +1,4 @@
-import type { DadKitImportData } from "@/lib/storage";
+import type { DadKitImportData } from "@/lib/data/format";
 
 export type WebDavAuthMode = "basic" | "app_password";
 

@@ -10,10 +10,11 @@ import {
 
 import { Button } from "@/components/ui/button";
 import {
+  acquireItemPhotoUrl,
   deleteItemPhoto,
-  getItemPhoto,
   saveItemPhoto,
   subscribeToItemPhotoChanges,
+  type ItemPhotoUrlLease,
 } from "@/lib/item-photos";
 
 export type ItemPhotoController = {
@@ -25,54 +26,48 @@ export type ItemPhotoController = {
   savePhoto: (file: File) => Promise<void>;
 };
 
-export function useItemPhoto(itemId: string): ItemPhotoController {
+export function useItemPhoto(
+  itemId: string,
+  enabled = true,
+): ItemPhotoController {
   const [photoUrl, setPhotoUrl] = useState<string>();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
-  const objectUrlRef = useRef<string | undefined>(undefined);
+  const leaseRef = useRef<ItemPhotoUrlLease | undefined>(undefined);
   const requestSequenceRef = useRef(0);
   const mountedRef = useRef(false);
 
-  const replaceObjectUrl = useCallback((blob?: Blob) => {
-    const previousUrl = objectUrlRef.current;
-    let nextUrl: string | undefined;
-
-    if (blob) {
-      if (
-        typeof URL === "undefined" ||
-        typeof URL.createObjectURL !== "function"
-      ) {
-        throw new Error("当前浏览器无法显示本地照片。");
-      }
-
-      nextUrl = URL.createObjectURL(blob);
-    }
-
-    objectUrlRef.current = nextUrl;
-    setPhotoUrl(nextUrl);
-
-    if (previousUrl && typeof URL.revokeObjectURL === "function") {
-      URL.revokeObjectURL(previousUrl);
-    }
+  const releaseCurrentLease = useCallback(() => {
+    leaseRef.current?.release();
+    leaseRef.current = undefined;
+    setPhotoUrl(undefined);
   }, []);
 
   const refreshPhoto = useCallback(async () => {
+    if (!enabled || !itemId.trim()) {
+      setLoading(false);
+      return;
+    }
+
     const requestSequence = ++requestSequenceRef.current;
 
     setLoading(true);
 
     try {
-      const record = await getItemPhoto(itemId);
+      const lease = await acquireItemPhotoUrl(itemId);
 
       if (
         !mountedRef.current ||
         requestSequence !== requestSequenceRef.current
       ) {
+        lease.release();
         return;
       }
 
-      replaceObjectUrl(record?.blob);
+      leaseRef.current?.release();
+      leaseRef.current = lease;
+      setPhotoUrl(lease.url);
       setError(undefined);
     } catch (photoError) {
       if (
@@ -89,13 +84,20 @@ export function useItemPhoto(itemId: string): ItemPhotoController {
         setLoading(false);
       }
     }
-  }, [itemId, replaceObjectUrl]);
+  }, [enabled, itemId]);
 
   useEffect(() => {
     mountedRef.current = true;
-    replaceObjectUrl();
-    void refreshPhoto();
+    releaseCurrentLease();
 
+    if (!enabled || !itemId.trim()) {
+      setLoading(false);
+      return () => {
+        mountedRef.current = false;
+      };
+    }
+
+    void refreshPhoto();
     const unsubscribe = subscribeToItemPhotoChanges((changedItemId) => {
       if (!changedItemId || changedItemId === itemId) {
         void refreshPhoto();
@@ -106,19 +108,10 @@ export function useItemPhoto(itemId: string): ItemPhotoController {
       mountedRef.current = false;
       requestSequenceRef.current += 1;
       unsubscribe();
-
-      const objectUrl = objectUrlRef.current;
-      objectUrlRef.current = undefined;
-
-      if (
-        objectUrl &&
-        typeof URL !== "undefined" &&
-        typeof URL.revokeObjectURL === "function"
-      ) {
-        URL.revokeObjectURL(objectUrl);
-      }
+      leaseRef.current?.release();
+      leaseRef.current = undefined;
     };
-  }, [itemId, refreshPhoto, replaceObjectUrl]);
+  }, [enabled, itemId, refreshPhoto, releaseCurrentLease]);
 
   const savePhoto = useCallback(
     async (file: File) => {
@@ -204,8 +197,10 @@ export function ItemPhotoField({
     >
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-semibold text-foreground">物品照片</p>
-        {controller.loading ? (
-          <span className="text-[10px] text-muted-foreground">读取中…</span>
+        {controller.loading || controller.busy ? (
+          <span className="text-[10px] text-muted-foreground">
+            {controller.busy ? "处理中…" : "读取中…"}
+          </span>
         ) : null}
       </div>
 
@@ -275,7 +270,8 @@ export function ItemPhotoField({
       </div>
 
       <p className="text-[10px] leading-4 text-muted-foreground">
-        照片仅保存在本设备，不进入本机恢复点或 WebDAV 备份。
+        最长边压缩为 800px，原图上限 20 MiB。照片不会进入普通恢复点或
+        WebDAV 备份，仅可随加密迁移包转移。
       </p>
       {controller.error ? (
         <p aria-live="polite" className="text-xs text-destructive" role="alert">

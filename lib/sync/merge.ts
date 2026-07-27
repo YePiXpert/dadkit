@@ -4,7 +4,7 @@ import {
   type DadKitImportData,
   type DeletedCustomItemStamps,
   type HiddenTemplateItemStamps,
-} from "@/lib/storage";
+} from "@/lib/data/format";
 import type { ChecklistItem } from "@/lib/types";
 
 // 多端条目级合并:同一对象(updatedAt 新者胜),删除墓碑优先于更旧的数据。

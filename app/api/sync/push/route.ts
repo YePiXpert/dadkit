@@ -1,11 +1,11 @@
 import { bearerToken, syncError, syncJson } from "@/lib/sync/http";
 import { pushSpace, SyncStoreError } from "@/lib/sync/server-store";
-import { isDadKitImportData } from "@/lib/storage";
+import { isDadKitImportData } from "@/lib/data/format";
+import { readLimitedRequestText } from "@/lib/http/request-body";
 import {
-  createWebDavProxyRateLimiter,
-  proxyClientKey,
-  readLimitedRequestText,
-} from "@/lib/webdav/proxy";
+  clientKeyFromHeaders as proxyClientKey,
+  createRateLimiter as createWebDavProxyRateLimiter,
+} from "@/lib/http/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -44,13 +44,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const snapshot = pushSpace(token, payload);
+    const snapshot = await pushSpace(token, payload);
 
     if (!snapshot) {
       return syncError("同步会话已失效，请重新输入同步码。", 401);
     }
 
-    return syncJson(snapshot);
+    return syncJson(snapshot, 200, {
+      etag: `"dadkit-sync-${snapshot.version}"`,
+    });
   } catch (error) {
     if (error instanceof SyncStoreError) {
       return syncError("同步服务暂时不可用，请稍后再试。", 500);

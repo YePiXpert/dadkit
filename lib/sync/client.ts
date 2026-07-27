@@ -2,24 +2,29 @@
 
 import { create } from "zustand";
 
-import { GROWTH_STORAGE_KEYS, useGrowthStore } from "@/lib/growth-store";
-import { generateChecklist } from "@/lib/rules";
+import { exportData } from "@/lib/data/backup";
 import {
-  exportData,
   isDadKitImportData,
-  loadSyncClientState,
-  loadSyncSession,
+  type DadKitExportData,
+  type DadKitImportData,
+} from "@/lib/data/format";
+import {
+  flushPendingChecklistStateSave,
   saveChecklistState,
   saveDeletedCustomItems,
   saveGrowthUpdatedAt,
   saveHiddenTemplateItemStamps,
+} from "@/lib/data/local-repository";
+import {
+  loadSyncClientState,
+  loadSyncSession,
   saveSyncClientState,
   saveSyncSession,
-  type DadKitExportData,
-  type DadKitImportData,
-} from "@/lib/storage";
-import { useDadKitStore } from "@/lib/store";
+} from "@/lib/data/settings-repository";
+import { GROWTH_STORAGE_KEYS, useGrowthStore } from "@/lib/growth-store";
+import { generateChecklist } from "@/lib/rules";
 import { mergeExportData } from "@/lib/sync/merge";
+import { useDadKitStore } from "@/lib/store";
 import { calculateChecksum } from "@/lib/webdav/client";
 
 export type SyncOutcome = {
@@ -40,6 +45,12 @@ type SpaceSnapshotPayload = {
   data: unknown;
 };
 
+type ApiResult<T> = {
+  data?: T;
+  etag?: string;
+  notModified: boolean;
+};
+
 class SyncApiError extends Error {
   constructor(
     message: string,
@@ -50,6 +61,9 @@ class SyncApiError extends Error {
   }
 }
 
+export const SYNC_REQUEST_TIMEOUT_MS = 15_000;
+export const SYNC_RETRY_DELAYS_MS = [5_000, 15_000, 30_000, 120_000, 300_000];
+
 export const useSyncStatusStore = create<SyncStatus>(() => ({
   joined: false,
   syncing: false,
@@ -57,6 +71,9 @@ export const useSyncStatusStore = create<SyncStatus>(() => ({
 
 let applyingRemote = false;
 let syncInFlight: Promise<SyncOutcome> | undefined;
+let syncQueued = false;
+let retryAttempt = 0;
+let retryTimer: ReturnType<typeof setTimeout> | undefined;
 
 export function isApplyingRemote() {
   return applyingRemote;
@@ -93,22 +110,64 @@ async function apiRequest<T>(
   path: string,
   init: RequestInit = {},
   token?: string,
-): Promise<T> {
-  let response: Response;
+  options: { acceptNotModified?: boolean } = {},
+): Promise<ApiResult<T>> {
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(new Error("同步请求超时。")),
+    SYNC_REQUEST_TIMEOUT_MS,
+  );
+  const headers = new Headers(init.headers);
 
-  try {
-    response = await fetch(path, {
-      ...init,
-      headers: {
-        ...(init.body ? { "content-type": "application/json" } : {}),
-        ...(token ? { authorization: `Bearer ${token}` } : {}),
-      },
-    });
-  } catch {
-    throw new SyncApiError("网络连接失败，稍后会自动重试。", 0);
+  if (init.body && !headers.has("content-type")) {
+    headers.set("content-type", "application/json");
+  }
+  if (token) {
+    headers.set("authorization", `Bearer ${token}`);
   }
 
-  return parseApiResponse<T>(response);
+  const parentSignal = init.signal;
+  const abortFromParent = () => controller.abort(parentSignal?.reason);
+
+  if (parentSignal) {
+    if (parentSignal.aborted) {
+      abortFromParent();
+    } else {
+      parentSignal.addEventListener("abort", abortFromParent, { once: true });
+    }
+  }
+
+  try {
+    const response = await fetch(path, {
+      ...init,
+      headers,
+      signal: controller.signal,
+    });
+    const etag = response.headers.get("etag") ?? undefined;
+
+    if (options.acceptNotModified && response.status === 304) {
+      return { etag, notModified: true };
+    }
+
+    return {
+      data: await parseApiResponse<T>(response),
+      etag,
+      notModified: false,
+    };
+  } catch (error) {
+    if (error instanceof SyncApiError) {
+      throw error;
+    }
+
+    if (controller.signal.aborted && !parentSignal?.aborted) {
+      throw new SyncApiError("同步请求超过 15 秒，稍后会自动重试。", 0);
+    }
+
+    throw new SyncApiError("网络连接失败，稍后会自动重试。", 0);
+  } finally {
+    clearTimeout(timeout);
+    parentSignal?.removeEventListener("abort", abortFromParent);
+  }
 }
 
 function checksumOf(data: DadKitImportData) {
@@ -159,6 +218,32 @@ function applyMerged(data: DadKitExportData) {
   }
 }
 
+function clearRetrySchedule() {
+  if (retryTimer !== undefined) {
+    clearTimeout(retryTimer);
+    retryTimer = undefined;
+  }
+  retryAttempt = 0;
+}
+
+function scheduleRetry() {
+  if (retryTimer !== undefined || !loadSyncSession()) {
+    return;
+  }
+
+  const delay =
+    SYNC_RETRY_DELAYS_MS[
+      Math.min(retryAttempt, SYNC_RETRY_DELAYS_MS.length - 1)
+    ]!;
+
+  retryAttempt += 1;
+  retryTimer = setTimeout(() => {
+    retryTimer = undefined;
+    void syncNow();
+  }, delay);
+  (retryTimer as { unref?: () => void }).unref?.();
+}
+
 async function doSync(): Promise<SyncOutcome> {
   const session = loadSyncSession();
 
@@ -169,27 +254,42 @@ async function doSync(): Promise<SyncOutcome> {
   useSyncStatusStore.setState({ syncing: true });
 
   try {
+    flushPendingChecklistStateSave();
+    const previousState = loadSyncClientState();
+    const pullHeaders = new Headers();
+
+    if (previousState.lastEtag) {
+      pullHeaders.set("if-none-match", previousState.lastEtag);
+    }
+
     const pulled = await apiRequest<SpaceSnapshotPayload>(
       "/api/sync/pull",
-      {},
+      { headers: pullHeaders },
       session.token,
+      { acceptNotModified: true },
     );
     const local = exportData();
     let merged = local;
+    let latestEtag = pulled.etag ?? previousState.lastEtag;
+    let remoteData: DadKitImportData | undefined;
 
-    if (pulled.data && isDadKitImportData(pulled.data)) {
-      merged = mergeExportData(local, pulled.data);
+    if (
+      !pulled.notModified &&
+      pulled.data?.data &&
+      isDadKitImportData(pulled.data.data)
+    ) {
+      remoteData = pulled.data.data;
+      merged = mergeExportData(local, remoteData);
 
       if (checksumOf(merged) !== checksumOf(local)) {
         applyMerged(merged);
       }
     }
 
-    // 本地没有带来任何新内容时跳过上传,避免无意义的版本递增。
-    const localHasNews =
-      !pulled.data ||
-      !isDadKitImportData(pulled.data) ||
-      checksumOf(merged) !== checksumOf(pulled.data);
+    const mergedChecksum = checksumOf(merged);
+    const localHasNews = pulled.notModified
+      ? mergedChecksum !== previousState.lastSyncedChecksum
+      : !remoteData || mergedChecksum !== checksumOf(remoteData);
 
     if (localHasNews) {
       const pushed = await apiRequest<SpaceSnapshotPayload>(
@@ -198,25 +298,33 @@ async function doSync(): Promise<SyncOutcome> {
         session.token,
       );
 
+      latestEtag = pushed.etag ?? latestEtag;
+
       if (
-        pushed.data &&
-        isDadKitImportData(pushed.data) &&
-        pushed.data.version === 5 &&
-        checksumOf(pushed.data) !== checksumOf(merged)
+        pushed.data?.data &&
+        isDadKitImportData(pushed.data.data) &&
+        pushed.data.data.version === 5 &&
+        checksumOf(pushed.data.data) !== mergedChecksum
       ) {
-        applyMerged(pushed.data);
+        merged = pushed.data.data;
+        applyMerged(merged);
       }
     }
 
     const lastSyncAt = new Date().toISOString();
 
-    saveSyncClientState({ lastSyncAt });
+    saveSyncClientState({
+      lastSyncAt,
+      lastEtag: latestEtag,
+      lastSyncedChecksum: checksumOf(merged),
+    });
     useSyncStatusStore.setState({
       joined: true,
       syncing: false,
       lastSyncAt,
       lastError: undefined,
     });
+    clearRetrySchedule();
 
     return { ok: true };
   } catch (error) {
@@ -224,6 +332,7 @@ async function doSync(): Promise<SyncOutcome> {
       error instanceof Error && error.message ? error.message : "同步失败。";
 
     if (error instanceof SyncApiError && error.status === 401) {
+      clearRetrySchedule();
       saveSyncSession(undefined);
       saveSyncClientState({ lastError: message });
       useSyncStatusStore.setState({
@@ -237,19 +346,34 @@ async function doSync(): Promise<SyncOutcome> {
 
     const state = loadSyncClientState();
 
-    saveSyncClientState({ lastSyncAt: state.lastSyncAt, lastError: message });
+    saveSyncClientState({ ...state, lastError: message });
     useSyncStatusStore.setState({ syncing: false, lastError: message });
+    scheduleRetry();
 
     return { ok: false, message };
   }
 }
 
+async function runSyncQueue() {
+  let outcome: SyncOutcome = { ok: false };
+
+  do {
+    syncQueued = false;
+    outcome = await doSync();
+  } while (syncQueued && loadSyncSession());
+
+  return outcome;
+}
+
 export function syncNow(): Promise<SyncOutcome> {
-  if (!syncInFlight) {
-    syncInFlight = doSync().finally(() => {
-      syncInFlight = undefined;
-    });
+  if (syncInFlight) {
+    syncQueued = true;
+    return syncInFlight;
   }
+
+  syncInFlight = runSyncQueue().finally(() => {
+    syncInFlight = undefined;
+  });
 
   return syncInFlight;
 }
@@ -264,7 +388,16 @@ export async function joinSpace(
       body: JSON.stringify({ name, code }),
     });
 
-    saveSyncSession({ token: result.token, joinedAt: new Date().toISOString() });
+    if (!result.data?.token) {
+      throw new SyncApiError("同步服务没有返回有效会话。", 502);
+    }
+
+    clearRetrySchedule();
+    saveSyncClientState({});
+    saveSyncSession({
+      token: result.data.token,
+      joinedAt: new Date().toISOString(),
+    });
     useSyncStatusStore.setState({ joined: true });
 
     return await syncNow();
@@ -282,6 +415,7 @@ export async function joinSpace(
 export async function leaveSpace() {
   const session = loadSyncSession();
 
+  clearRetrySchedule();
   saveSyncSession(undefined);
   saveSyncClientState({});
   useSyncStatusStore.setState({
@@ -295,7 +429,7 @@ export async function leaveSpace() {
     try {
       await apiRequest("/api/sync/leave", { method: "POST" }, session.token);
     } catch {
-      // 本地已退出,服务端吊销失败不影响结果。
+      // Local logout is authoritative; server revocation is best-effort.
     }
   }
 }

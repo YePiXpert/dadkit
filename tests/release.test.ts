@@ -33,7 +33,7 @@ describe("release endpoints and product surface", () => {
       shortcuts: Array<{ name: string; short_name: string; url: string }>;
     };
 
-    expect(packageJson.version).toBe("2.0.0");
+    expect(packageJson.version).toBe("2.1.0");
     expect(manifest.name).toBe("DadKit 待产包清单");
     expect(manifest.description).toContain("待产包");
     expect(manifest.description).toContain("备份");
@@ -52,7 +52,9 @@ describe("release endpoints and product surface", () => {
     expect(readme).toContain("WebDAV 备份");
     expect(readme).toContain("宝宝成长记");
     expect(readme).toContain("全部、待购买、待装包、已装包");
-    expect(readme).toContain("纯 PWA");
+    expect(readme).toContain("https://dadkit.505f.com/");
+    expect(readme).toContain(".dadkit-transfer");
+    expect(readme).toContain("Android TWA");
   });
 
   it("ships digital asset links for the Android TWA", () => {
@@ -72,10 +74,23 @@ describe("release endpoints and product surface", () => {
       "delegate_permission/common.handle_all_urls",
     );
     expect(assetLinks[0].target.namespace).toBe("android_app");
-    expect(assetLinks[0].target.package_name).toBe("com.dadkit.app");
+    expect(assetLinks[0].target.package_name).toBe("com.dadkit.mobile");
     expect(
       assetLinks[0].target.sha256_cert_fingerprints.length,
     ).toBeGreaterThan(0);
+  });
+
+  it("keeps the Android tag release strict and normalizes certificate fingerprints", () => {
+    const workflow = readSource(".github", "workflows", "android-release.yml");
+
+    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v2.1.0"');
+    expect(workflow).toContain(
+      'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
+    );
+    expect(workflow).toContain('tr -d \':\' | tr \'[:upper:]\' \'[:lower:]\'');
+    expect(workflow).toContain("actions/upload-artifact@v4");
+    expect(workflow).toContain("retention-days: 30");
+    expect(workflow).toContain('gh release create "$GITHUB_REF_NAME"');
   });
 
   it("returns health status with version and buildTime", async () => {
@@ -159,10 +174,10 @@ describe("release endpoints and product surface", () => {
     );
   });
 
-  it("pre-caches the r9 checklist, growth and settings shell", () => {
+  it("pre-caches the v2.1.0 checklist, growth and settings shell", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.0.0-pwa-r9"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.0-pwa-r10"');
     expect(sw).toContain("const REQUIRED_ROUTES = CORE_ROUTES.slice(0, -2)");
     expect(sw).toContain("const OPTIONAL_ROUTES = CORE_ROUTES.slice(-2)");
     for (const route of [
@@ -189,7 +204,7 @@ describe("release endpoints and product surface", () => {
     expect(sw).not.toContain("/illustrations/");
   });
 
-  it("deletes the previous r8 cache during activation", async () => {
+  it("deletes the previous r9 cache during activation", async () => {
     const sw = readSource("public", "sw.js");
     const listeners = new Map<string, (event: { waitUntil: (work: Promise<unknown>) => void }) => void>();
     const deleted: string[] = [];
@@ -205,7 +220,7 @@ describe("release endpoints and product surface", () => {
       },
       caches: {
         async keys() {
-          return ["dadkit-v2.0.0-pwa-r8", "dadkit-v2.0.0-pwa-r9"];
+          return ["dadkit-v2.0.0-pwa-r9", "dadkit-v2.1.0-pwa-r10"];
         },
         async delete(key: string) {
           deleted.push(key);
@@ -222,7 +237,7 @@ describe("release endpoints and product surface", () => {
     });
     await activation;
 
-    expect(deleted).toEqual(["dadkit-v2.0.0-pwa-r8"]);
+    expect(deleted).toEqual(["dadkit-v2.0.0-pwa-r9"]);
   });
 
   it("extracts only real Next asset attributes from server HTML", () => {

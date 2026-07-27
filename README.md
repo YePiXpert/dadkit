@@ -1,213 +1,196 @@
-# DadKit v2.0.0 🧳
+# DadKit v2.1.0
 
-DadKit 是一个打开即用、本地优先的待产包清单 PWA。它不要求注册或预先配置；首次打开就会生成一份通用清单，像 Todo 一样逐项确认即可。
+DadKit 是一个本地优先的待产包清单与宝宝成长记 PWA。数据默认只保存在当前设备；需要时可以使用本地恢复快照、WebDAV 备份或家庭同步。
 
-## V2 的产品原则
+正式站点：[https://dadkit.505f.com/](https://dadkit.505f.com/)
 
-- **零输入启动**：没有引导表单，首页就是清单。
-- **四个行动视图**：全部、待购买、待装包、已装包。
-- **两项主导航**：清单、我的。
-- **四种简单状态**：待处理、已备好、已装包、不需要。
-- **数据由用户掌控**：本机恢复点与 WebDAV 都由用户主动操作。
-- **纯 PWA**：浏览器安装、离线缓存和本地存储；仓库不包含原生工程，但可通过 TWA 把线上站点打包成安卓 APK（见下文）。
+最新 Android APK：[GitHub Release](https://github.com/YePiXpert/dadkit/releases/latest) ｜ [DadKit-2.1.0.apk](https://github.com/YePiXpert/dadkit/releases/download/v2.1.0/DadKit-2.1.0.apk)
 
 ## 主要功能
 
-- 通用待产包清单，按证件、妈妈、宝宝、月子妈妈、宝宝家中囤货、陪产人、返家准备和临出门分组；点击分类进入独立双列清单页。
-- 每个实物条目提供数量参考、可完整显示或全局隐藏的说明，以及独立原创 SVG 插画。
-- 奶油色背景、珊瑚色行动强调和全新的奶瓶清单 PWA 图标，更适合长时间逐项核对。
-- 自定义新增、编辑、标记不需要和恢复物品。
-- 可为物品拍照或从相册上传，压缩后仅存当前设备，方便家人辨认实物。
-- 宝宝成长记覆盖孕 8 至 40 周，可选填写宝宝称呼和预产期，包含逐周发育参考与常见产检时间表。
-- 数据默认仅保存在当前浏览器，可使用本机恢复点，或手动配置 WebDAV 备份。
-- 可安装到手机桌面，并缓存核心页面供基础离线使用。
+- 清单按证件、妈妈、宝宝、月子、陪产、返家和临出门分组；使用全部、待购买、待装包、已装包四个视图逐项完成。
+- 可新增、编辑、隐藏或恢复条目，并提供物品说明和本机照片。
+- 宝宝成长记覆盖孕 8 至 40 周。
+- 本地恢复快照、WebDAV 备份和家庭同步均兼容既有 v3–v5 数据与同步 v5。
+- 物品照片默认只留在 IndexedDB；进入清单附近 600px 才读取，最长边压缩到 800px，原图限制 20 MiB。
 
-DadKit 不提供医疗判断、医院官方规则或商品链接。成长记中的孕周发育与产检时间窗仅作一般参考，地区、医院和个人情况可能不同；请以产检医生、入院须知和医院通知为准。
+DadKit 的清单和成长内容仅作准备参考，不替代医生、医院通知或医疗建议。
 
-## 清单怎么用
+## 安装方式
 
-- `全部`：查看所有仍需处理的任务与实物。
-- `待购买`：只看尚未备齐、并且确实需要购买的实物。
-- `待装包`：只看已经备好或无需购买、但还没有装入对应包袋的实物。
-- `已装包`：集中核对已经装入包袋的实物；点卡片按钮可随时重新打开。
-- 实物通常按 `待处理 → 已备好 → 已装包` 推进；不适合自己的条目可以标记为“不需要”，之后仍可恢复。
+### Android TWA（推荐 Android APK）
 
-## 页面
+下载并安装最新 APK。它使用包名 `com.dadkit.mobile`，由 `dadkit.505f.com` 提供网页内容；验证通过时以全屏 Trusted Web Activity 打开，不显示地址栏。
 
-- `/`：待产包清单，也是 PWA 启动页。
-- `/checklist/[sectionId]`：八个清单分类的独立物品页。
-- `/growth`：孕 8 至 40 周宝宝成长记。
-- `/settings`：“我的”入口。
-- `/settings/checklist`：说明显示、清单模式、恢复默认物品与危险操作。
-- `/settings/backup`：本机恢复点和 WebDAV 备份。
-- `/privacy`、`/support`：隐私与支持。
-- `/healthz`：部署健康检查。
+首次安装或升级后请打开一次网络正常的应用，以完成 Digital Asset Links 验证。若出现地址栏，请检查 `/.well-known/assetlinks.json` 是否可通过 HTTPS 访问，以及 APK 签名指纹是否一致。
 
-## 本地开发
+### Android 浏览器 PWA
 
-推荐使用 Node.js 22。仓库包含 lockfile，首次安装依赖请运行：
+在 Chrome 打开 [正式站点](https://dadkit.505f.com/)，选择浏览器菜单中的“安装应用”或“添加到主屏幕”。此方式不需要 APK，网站与 Service Worker 更新会自动生效。
+
+### iPhone Safari PWA
+
+在 Safari 打开 [正式站点](https://dadkit.505f.com/)，点分享按钮，选择“添加到主屏幕”。请用 Safari，而不是内置浏览器，以获得稳定的离线与安装支持。
+
+## 从旧站点迁移到 v2.1
+
+域名与 Android 包名已经变更。旧 APK 不能覆盖升级，必须通过本机加密迁移包转移数据。迁移包扩展名为 `.dadkit-transfer`，使用 Web Crypto AES-256-GCM 加密，并以 PBKDF2-SHA-256 从一次性密码派生密钥。
+
+每台设备都要单独导出自己的迁移包：照片、浏览器偏好和本地数据不在设备之间自动复制。
+
+### Android 迁移步骤
+
+1. 在旧应用的“我的 → 备份与恢复”打开“加密设备迁移”。
+2. 生成并妥善保存一次性密码（12–128 个字符），导出 `.dadkit-transfer`。
+3. 确认迁移包已保存后，卸载旧 APK。
+4. 安装新 APK `com.dadkit.mobile`，打开后回到“加密设备迁移”导入文件。
+5. 导入成功后重新输入 WebDAV 密码，并重新加入原家庭同步空间。
+6. 验证清单、成长记、照片和离线重开都正常后，删除迁移文件和一次性密码。
+
+### iPhone 迁移步骤
+
+1. 在旧 PWA 导出 `.dadkit-transfer` 并保存一次性密码。
+2. 删除旧 PWA 主屏幕图标。
+3. 用 Safari 打开正式站点并重新“添加到主屏幕”。
+4. 导入迁移包，重新输入 WebDAV 密码并重新加入家庭同步空间。
+5. 验证成功后删除迁移文件和一次性密码。
+
+### 迁移包包含与排除项
+
+迁移包包含：清单、成长记录、本地恢复快照、主题与说明显示偏好、WebDAV 的非敏感配置，以及所有本机物品照片。
+
+迁移包不包含：WebDAV 密码、家庭同步 token、浏览器缓存、站点来源或任何旧站点地址。导入会先校验格式、数量、图片类型、大小和 SHA-256；照片先进入 IndexedDB staging store，任一步失败都会回滚。
+
+不要通过聊天记录、公开网盘或不可信渠道发送迁移包或一次性密码。
+
+## 网站更新与 APK 更新
+
+- 普通业务功能、清单内容和样式通过网站部署及 Service Worker 更新；Android 浏览器 PWA、iPhone PWA 和 TWA 都会获得这些更新。
+- 只有包名、域名、图标、启动参数、原生壳配置或 Android 签名变化时才发布新的 APK。
+- 安装过 TWA 的设备会在站内检测到更高的 `versionCode` 后提示下载更新。后续 APK 必须按 `2`、`3`、`4` 递增，不能复用或降低版本号。
+
+## 数据与隐私
+
+- 清单数据存储在独立的 `dadkit:v3:*` 命名空间；本地照片在 IndexedDB。
+- 普通本地恢复快照与 WebDAV 备份不包含照片、WebDAV 凭据或家庭同步 token。
+- 家庭同步在服务端使用异步 scrypt、原子文件替换和每个空间的串行锁；数据文件权限为私有权限。
+- WebDAV 代理只允许 `DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS` 中明确列出的 HTTPS 主机，并保留 SSRF 防护与请求限流。
+- 本机写入失败时，页面会保留未落盘的修改并显示可重试提示；同步会在 15 秒超时后按 5、15、30、120、300 秒退避，期间的新修改会排入下一轮同步。
+
+## 本地开发与测试
+
+推荐 Node.js 22。安装依赖后运行：
 
 ```bash
 npm ci
-npm run dev
-```
-
-默认地址为 `http://localhost:3000`。提交前建议运行：
-
-```bash
 npm run lint
-npm run test
+npm test
 npm run build
 ```
 
-## PWA
-
-PWA 元信息位于 `public/manifest.webmanifest`，离线缓存逻辑位于 `public/sw.js`。部署必须使用 HTTPS（本地开发环境除外），浏览器才会提供安装能力和完整的 Service Worker 支持。检测到新版本后，页面会提示刷新；离线时会回退到已经缓存的核心页面。
-
-V2 只保留 Web 发布链路：
+端到端测试覆盖 Chromium 和 WebKit：
 
 ```bash
-npm run build
-npm run start
+npm run test:e2e:install
+npm run test:e2e
+npm run test:docker
 ```
 
-## 安卓 APK（TWA）
+生产构建会输出各路由的 First Load JS；发布门禁要求首页、清单页和备份页首载 JS 不超过 200 kB，并在真机上验证 TWA 首装、无地址栏、迁移导入和离线重开。
 
-安卓安装包用 [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap) 以 TWA（Trusted Web Activity）方式打包：APK 是线上站点的可信壳，无地址栏、全屏显示，内容就是部署的站点本身。因此**日常更新不需要动 APK**——照常执行一键更新部署网站，APP 下次打开自动就是新版本（Service Worker 为 network-first）。
+## Android TWA 工程
 
-关键文件：
+仓库提交了可重复生成的 Bubblewrap 工程与 Gradle wrapper：
 
-- `android/twa-manifest.example.json`：TWA 配置模板（包名 `com.dadkit.app`、图标、颜色、签名别名）。真实的 `android/twa-manifest.json` 含部署域名，只保留在本机（已 gitignore）：复制模板并把 `dadkit.example.com` 替换为实际域名即可，改动后需重新生成工程。
-- `public/.well-known/assetlinks.json`：Digital Asset Links 声明，包含包名和签名证书的 SHA-256 指纹。**必须随网站部署上线**，否则 APP 会退回带地址栏的浏览器模式。
-- `android/android.keystore`：签名密钥，仅存在本机（已 gitignore）。**密钥和密码必须另行妥善备份**；丢失后将无法覆盖安装，只能换包名重新发布。
-- `android/` 目录内其余内容均为 Bubblewrap 生成的工程产物，已 gitignore，可随时重建。注意：工程生成命令会把目标目录当作 Android 工程根目录（内含自己的 `app/` 模块），**必须在 `android/` 子目录内执行**，切勿在仓库根目录运行。
+- 包名：`com.dadkit.mobile`
+- Host：`dadkit.505f.com`
+- 启动地址：`/?source=twa&appVersionCode=1`
+- `versionName`：`2.1.0`
+- `versionCode`：`1`
+- Bubblewrap CLI：锁定为 `@bubblewrap/cli@1.24.1`
 
-本机重新打包（JDK 17 与 Android SDK 位于 `~/.bubblewrap`，路径记录在 `~/.bubblewrap/config.json`）：
+先验证配置：
 
 ```bash
+npm run android:validate -- v2.1.0
+```
+
+本机构建需要 JDK 17、Android SDK 和下列环境变量；密钥文件、密码和本机 SDK 路径均被 Git 忽略：
+
+```bash
+export ANDROID_KEYSTORE_PATH=/secure/path/dadkit-release.keystore
+export ANDROID_KEYSTORE_PASSWORD='...'
+export ANDROID_KEY_PASSWORD='...'
+export ANDROID_KEY_ALIAS=dadkit
 cd android
-npx @bubblewrap/cli update --skipVersionUpgrade   # 从本机 twa-manifest.json 重新生成工程
-BUBBLEWRAP_KEYSTORE_PASSWORD=... BUBBLEWRAP_KEY_PASSWORD=... npx @bubblewrap/cli build
+./gradlew --no-daemon clean assembleRelease bundleRelease
 ```
 
-产物为 `app-release-signed.apk`（侧载安装）和 `app-release-bundle-signed.aab`（上架 Play 备用）。仅当修改应用名称、图标、主题色或包名时才需要重新打包；用同一密钥签名的新 APK 覆盖安装，数据保留。APK 内嵌部署域名，公开发布 APK 等同于公开域名，请勿把 APK 上传到公开渠道。
+签名密钥必须是 RSA 4096、固定 alias `dadkit`、不含个人姓名的证书主体。至少保存三份加密备份：密码管理器、离线介质和独立安全存储。丢失密钥后无法为该包名升级，只能更换包名重新发布。
 
-## Docker 一键部署与更新
+## GitHub Release 流程
 
-前置条件：Linux 服务器已安装 `git`、Docker 和 Docker Compose v2，当前用户可以执行 Docker。脚本不会自动安装这些依赖。
+`android-release` 工作流只在 `v*` tag 上触发，并拒绝不是 `v2.1.0`、不属于 `main` 或不匹配 Android/TWA 配置的提交。工作流会运行 lint、Vitest、生产构建、Chromium/WebKit、Docker 集成测试、签名验证、`zipalign` 和 `apksigner`，最后才创建公开 Release。
 
-镜像由 GitHub Actions 预构建：每次推送到 `main`（或手动触发 `docker` 工作流）都会先跑 lint 和测试，再构建镜像并推送到 `ghcr.io/yepixpert/dadkit`。服务器端脚本默认只拉取预构建镜像，更新从几分钟的现场编译变成几十秒的下载。
+GitHub Actions Secrets 名称如下；仓库、日志、Artifact 和 Release 均不得包含其值：
 
-首次使用前需要让服务器能访问 GHCR 镜像，二选一：
+- `ANDROID_KEYSTORE_BASE64`
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_PASSWORD`
 
-- **推荐**：首次工作流运行后，在 GitHub → Packages → `dadkit` → Package settings 把镜像可见性改为 Public，服务器无需任何登录；
-- 或者在服务器上用具备 `read:packages` 权限的 token 执行 `docker login ghcr.io`。
+维护者发布步骤：
 
-如果临时需要在服务器本地编译（例如镜像仓库不可用），运行脚本时加 `DADKIT_BUILD_LOCAL=1` 即可回到原来的现场构建模式。
+1. 更新 `package.json`、`android/twa-manifest.json`、Gradle 版本和 `assetlinks.json`，并提高 `versionCode`。
+2. 运行 `npm run android:validate -- v2.1.0`、lint、Vitest、生产构建和真机验证。
+3. 推送已验证的 `main` 提交和 tag `v2.1.0`。
+4. 确认 GitHub Release 已公开，包含 `DadKit-2.1.0.apk` 与 `DadKit-2.1.0.apk.sha256`；AAB 仅作为 30 天私有 Actions Artifact。
+5. 在 VPS 下载指定 APK 和 SHA-256，核验后执行站内 APK 发布脚本。
 
-### 一键部署
+VPS 站内 APK 发布示例：
 
-下面的命令会拉取 `main` 分支到 `/opt/dadkit`，构建并启动容器，等待 `/healthz` 通过后再退出。容器默认只绑定 `127.0.0.1:3333`，适合由 Caddy 或 Nginx 提供 HTTPS 反向代理。
+```bash
+sha256sum -c DadKit-2.1.0.apk.sha256
+sh scripts/release-apk.sh DadKit-2.1.0.apk 1 2.1.0 '首次正式发布'
+```
+
+脚本会拒绝非正整数、重复或降低的 `versionCode`，并在容器数据卷中以临时文件与原子 rename 发布。`GET /api/app-version` 返回版本、说明、大小、SHA-256 和发布时间；`GET`/`HEAD /api/app-version/apk?versionCode=N` 支持 ETag、Range、206 与 416。
+
+## Docker 部署
+
+容器默认只绑定 VPS loopback，由 HTTPS 反向代理公开站点。生产环境必须设置：
+
+```dotenv
+DADKIT_BIND_ADDRESS=127.0.0.1
+DADKIT_PORT=3333
+DADKIT_PUBLIC_ORIGIN=https://dadkit.505f.com
+DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS=
+```
+
+示例部署：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docker-deploy.sh \
-  | sudo env DADKIT_PUBLIC_ORIGIN=https://dadkit.example.com sh
+  | sudo env DADKIT_PUBLIC_ORIGIN=https://dadkit.505f.com sh
 ```
 
-如果暂时只在服务器本机使用，可以省略 `DADKIT_PUBLIC_ORIGIN`：
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docker-deploy.sh | sudo sh
-```
-
-### 一键更新
-
-下面的命令会将现有部署快进到 `main` 最新版本，重新构建并启动容器，同时保留部署目录中已有的 `.env`：
+已有部署更新：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docker-upgrade.sh | sudo sh
 ```
 
-### 验证部署
+`DADKIT_BIND_ADDRESS`、`DADKIT_PUBLIC_ORIGIN` 和 WebDAV 白名单会保存在权限 `600` 的 `.env` 中。发布前请备份 `.env`、Docker named volume、当前镜像摘要和每台设备的迁移包。
+
+## 生产验证与 Digital Asset Links 排错
 
 ```bash
-curl http://127.0.0.1:3333/healthz
-cd /opt/dadkit
-sudo docker compose ps
+curl -fsSI https://dadkit.505f.com/
+curl -fsS https://dadkit.505f.com/.well-known/assetlinks.json
+curl -fsS https://dadkit.505f.com/manifest.webmanifest
+curl -fsSI https://dadkit.505f.com/sw.js
+curl -fsS http://127.0.0.1:3333/healthz
 ```
 
-健康检查返回包含 `"ok":true` 的 JSON，且容器状态为 `healthy` 即表示部署完成。
+检查正式站点、Manifest、Service Worker 和图标均为 HTTPS 200；确认响应带有 HSTS。`assetlinks.json` 的包名和 SHA-256 必须与 `apksigner verify --print-certs` 输出完全一致。若 TWA 出现地址栏，先清除应用数据、重新联网打开一次，再检查上述文件和证书指纹。
 
-### 常用环境变量
-
-- `DADKIT_DIR`：部署目录，默认 `/opt/dadkit`。
-- `DADKIT_PORT`：宿主机端口，默认 `3333`。
-- `DADKIT_BIND_ADDRESS`：监听地址，默认 `127.0.0.1`。
-- `DADKIT_PUBLIC_ORIGIN`：外部 HTTPS 地址。
-- `DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS`：允许 WebDAV 同源代理访问的精确主机列表。
-- `DADKIT_BRANCH`：部署分支，默认 `main`。
-- `DADKIT_REPO`：首次部署使用的 Git 仓库地址，默认当前 GitHub 仓库。
-- `DADKIT_WAIT_TIMEOUT`：等待容器健康的秒数，默认 `120`。
-- `DADKIT_IMAGE`：拉取的预构建镜像，默认 `ghcr.io/yepixpert/dadkit:latest`。
-- `DADKIT_BUILD_LOCAL`：设为 `1` 时在服务器本地构建镜像，不走 GHCR。
-- `DADKIT_DATA_DIR`：家庭同步数据在容器内的存放目录，默认 `/app/data`，由 `dadkit-data` named volume 持久化。
-
-首次运行时，显式传入的端口、监听地址、公开地址和 WebDAV 白名单会写入权限为 `600` 的 `.env`；已有 `.env` 不会被部署或更新脚本覆盖。后续要修改这些配置，请编辑部署目录中的 `.env` 再执行一键更新。
-
-如果首次部署使用了自定义目录，更新时只需传入相同的目录：
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docker-upgrade.sh \
-  | sudo env DADKIT_DIR=/srv/dadkit sh
-```
-
-脚本默认只接受 Git 的快进更新。仅当你已经确认部署目录没有需要保留的本地修改时，才可使用 `DADKIT_FORCE_RESET=1` 强制对齐远端分支。
-
-公开部署时请配置 HTTPS，并在反向代理层增加认证或访问白名单，尤其是启用 WebDAV 代理时。
-
-## 家庭同步（多人共用）
-
-两台设备可以共用同一份清单与成长记：谁勾选了物品，另一台几秒内就能看到。合并是条目级的——两个人同时改不同的条目会都保留，改同一条目时后改的一方生效。
-
-使用步骤：
-
-1. 在其中一台设备上打开「我的 → 备份与恢复 → 家庭同步」，输入一个空间名（例如你们的小家称呼）和一个同步码（6 位以上，只有家人知道的暗号），点「开始使用同步」。第一次输入会创建空间并上传本机数据。
-2. 在另一台设备上输入**相同的空间名和同步码**加入，两边的数据会立即合并出并集。
-3. 之后无需任何手动操作：本地改动 3 秒内自动上传，页面打开期间每 30 秒自动拉取对方的变化。
-
-实现方式与边界：
-
-- 数据保存在你自己的服务器上（`DADKIT_DATA_DIR`，默认由 `dadkit-data` Docker named volume 持久化），每个空间一个数据文件，不经过任何第三方服务。
-- 同步码只以 scrypt 哈希形式存盘，服务器不存明文；登录使用 180 天滑动有效期的会话令牌。同步码就是全部凭据，请妥善保管。
-- 精简/完整清单模式是每台设备自己的偏好，不同步；物品照片仍只保存在本机（IndexedDB），不同步。
-- 「清空并重新开始」会先退出家庭同步再清空本机；「重建清单」会把删除自定义物品、恢复隐藏条目这些操作同步给另一台设备。
-- WebDAV 备份保留为手动备份手段，与家庭同步互不影响。
-
-## 数据与隐私
-
-DadKit 不需要注册账号。清单数据使用独立的 `dadkit:v3:*` 命名空间，成长记录使用单独的本机存储键；这是全新数据模型，不读取或迁移更早版本的应用数据，也不会在清理当前数据时误删无关网站数据。未开启家庭同步时，全部数据只保存在当前浏览器。
-
-当前产品数据包括：
-
-- 清单进度、自定义物品、隐藏项和清单显示模式；
-- 可选的宝宝称呼、预产期、最近查看孕周和产检时间表完成状态；
-- 自动保留的本地恢复快照；
-- WebDAV 地址、用户名、备份路径和同步状态；
-- 单独保存在 IndexedDB 的本机物品照片。
-
-本地恢复快照和 WebDAV 使用同一份便携备份数据，覆盖清单与成长记资料。它们都不包含物品照片，也不包含 WebDAV 地址、用户名、路径、同步状态或密码等连接配置。
-
-WebDAV 密码默认只放在 `sessionStorage`；只有用户主动选择“记住密码在本设备”时才写入 `localStorage`。连接配置和凭据不会写入恢复快照或远端备份文件。
-
-破坏性操作前会自动创建本地恢复快照，最多保留最近 5 份。恢复缺失的默认物品不会覆盖已有进度或删除自定义物品；完整重建与清空只放在清单设置的危险区，并要求输入确认词。清空还会移除 WebDAV 配置、家庭同步登录状态和本机物品照片，操作前生成的恢复点会保留。
-
-WebDAV 只在用户手动上传或下载时同步，地址必须使用 HTTPS。浏览器会优先走 DadKit 的同源代理；部署端必须通过 `DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS` 明确允许目标主机，代理会拒绝本机和内网地址。单份备份上限为 2 MiB，代理请求上限为 3 MiB、上游响应上限为 8 MiB，超时时间为 30 秒。
-
-## 技术栈
-
-- Next.js App Router / React 19 / TypeScript
-- Tailwind CSS / 本地 UI 组件
-- Zustand / localStorage / sessionStorage / IndexedDB（物品照片）
-- PWA manifest / Service Worker
-- Vitest / ESLint
-- Docker / Docker Compose
+在所有设备迁移、网站、Release 和 VPS APK 通道验证完成后，立即从 DNS、反向代理、证书续期和日志配置中移除旧站点；不要为旧站点设置公开跳转，也不要在仓库、Release、APK、迁移包或日志中写入旧站点地址。

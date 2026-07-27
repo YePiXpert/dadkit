@@ -3,9 +3,9 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.dadkit.app",
+      "package_name": "com.dadkit.mobile",
       "sha256_cert_fingerprints": [
-        "5B:D2:6A:41:9F:67:A7:06:E1:8E:99:DA:7C:10:50:85:0A:54:EF:C3:A6:AD:3D:D3:12:31:22:23:C0:07:3B:3B"
+        "69:E6:26:8F:01:DC:21:1A:CD:E1:7B:D9:6F:29:4D:73:02:1E:44:08:BD:04:20:47:34:21:5B:99:0A:0B:C0:F4"
       ]
     }
   }

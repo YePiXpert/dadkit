@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import {
   Ban,
   Check,
@@ -10,7 +10,6 @@ import {
   RotateCcw,
 } from "lucide-react";
 
-import { ChecklistItemDetailsDialog } from "@/components/ChecklistItemDetailsDialog";
 import { ChecklistItemIllustration } from "@/components/ChecklistItemIllustration";
 import { useItemPhoto } from "@/components/ItemPhotoField";
 import {
@@ -38,17 +37,21 @@ const STATE_ICONS = {
 
 type ChecklistItemRowProps = {
   item: ChecklistItem;
+  onOpenDetails: (itemId: string) => void;
   showFullDescription?: boolean;
 };
 
 export const ChecklistItemRow = memo(function ChecklistItemRow({
   item,
+  onOpenDetails,
   showFullDescription = true,
 }: ChecklistItemRowProps) {
+  const articleRef = useRef<HTMLElement | null>(null);
+  const [photoEnabled, setPhotoEnabled] = useState(false);
   const advanceItem = useDadKitStore((state) => state.advanceItem);
   const itemState = getChecklistItemState(item);
   const actionLabel = getActionLabel(itemState);
-  const itemPhoto = useItemPhoto(item.id);
+  const itemPhoto = useItemPhoto(item.id, photoEnabled);
   const StateIcon = STATE_ICONS[itemState];
   const displayOptions = {
     transformAlternatives: item.source === "general",
@@ -63,8 +66,26 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
     displayOptions,
   );
 
+  useEffect(() => {
+    const element = articleRef.current;
+
+    if (!element || typeof IntersectionObserver === "undefined") {
+      setPhotoEnabled(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setPhotoEnabled(Boolean(entry?.isIntersecting)),
+      { rootMargin: "600px 0px" },
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <article
+      ref={articleRef}
       className={cn(
         "flex min-w-0 flex-col overflow-hidden rounded-[1.75rem] border border-border/70 bg-card p-2.5 transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_26rem]",
         itemState === "ready" && "border-primary/30 bg-secondary/35",
@@ -123,19 +144,14 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
         ) : null}
 
         <div className="mt-2.5 flex min-h-11 items-center justify-between gap-2 border-t border-border/70 pt-2">
-          <ChecklistItemDetailsDialog
-            item={item}
-            photoController={itemPhoto}
-            trigger={
-              <button
-                className="inline-flex min-h-11 min-w-0 items-center gap-1 rounded-full px-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                type="button"
-              >
-                <MoreHorizontal className="size-4 shrink-0" />
-                <span className="truncate">详情</span>
-              </button>
-            }
-          />
+          <button
+            className="inline-flex min-h-11 min-w-0 items-center gap-1 rounded-full px-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            type="button"
+            onClick={() => onOpenDetails(item.id)}
+          >
+            <MoreHorizontal className="size-4 shrink-0" />
+            <span className="truncate">详情</span>
+          </button>
 
           <button
             aria-label={`${actionLabel}：${displayName}`}
@@ -170,13 +186,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
 ChecklistItemRow.displayName = "ChecklistItemRow";
 
 function getActionLabel(state: ChecklistItemState) {
-  if (state === "ready") {
-    return "标记已装包";
-  }
-
-  if (state === "packed" || state === "not_needed") {
-    return "重新打开";
-  }
-
+  if (state === "ready") return "标记已装包";
+  if (state === "packed" || state === "not_needed") return "重新打开";
   return "标记已备好";
 }

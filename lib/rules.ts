@@ -156,10 +156,26 @@ export function normalizeChecklistItem(item: ChecklistItem): ChecklistItem {
     bulk: inferBulk(item),
   };
 
-  return {
+  const normalized: ChecklistItem = {
     ...baseItem,
     preparationKind: persistedPreparationKind(baseItem),
   };
+
+  // Keep the in-memory shape identical to the JSON shape written to storage.
+  // Optional fields with an explicit `undefined` would disappear on disk and
+  // then fail strict backup/snapshot validation while still in memory.
+  for (const key of [
+    "quantity",
+    "note",
+    "sourceLabel",
+    "updatedAt",
+  ] as const) {
+    if (normalized[key] === undefined) {
+      delete normalized[key];
+    }
+  }
+
+  return normalized;
 }
 
 function isSupportedTemplateItem(item: TemplateChecklistItem) {

@@ -1,9 +1,9 @@
 import { bearerToken, syncError, syncJson } from "@/lib/sync/http";
 import { pullSpace, SyncStoreError } from "@/lib/sync/server-store";
 import {
-  createWebDavProxyRateLimiter,
-  proxyClientKey,
-} from "@/lib/webdav/proxy";
+  clientKeyFromHeaders as proxyClientKey,
+  createRateLimiter as createWebDavProxyRateLimiter,
+} from "@/lib/http/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -25,13 +25,28 @@ export async function GET(request: Request) {
   }
 
   try {
-    const snapshot = pullSpace(token);
+    const snapshot = await pullSpace(token);
 
     if (!snapshot) {
       return syncError("同步会话已失效，请重新输入同步码。", 401);
     }
 
-    return syncJson(snapshot);
+    const etag = `"dadkit-sync-${snapshot.version}"`;
+
+    if (request.headers.get("if-none-match") === etag) {
+      return new Response(null, {
+        status: 304,
+        headers: {
+          "cache-control": "private, no-cache",
+          etag,
+        },
+      });
+    }
+
+    return syncJson(snapshot, 200, {
+      "cache-control": "private, no-cache",
+      etag,
+    });
   } catch (error) {
     if (error instanceof SyncStoreError) {
       return syncError("同步服务暂时不可用，请稍后再试。", 500);

@@ -3,11 +3,11 @@ import {
   joinSpace,
   SyncStoreError,
 } from "@/lib/sync/server-store";
+import { readLimitedRequestText } from "@/lib/http/request-body";
 import {
-  createWebDavProxyRateLimiter,
-  proxyClientKey,
-  readLimitedRequestText,
-} from "@/lib/webdav/proxy";
+  clientKeyFromHeaders as proxyClientKey,
+  createRateLimiter as createWebDavProxyRateLimiter,
+} from "@/lib/http/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = joinSpace(name, code);
+    const result = await joinSpace(name, code);
 
     if (!result) {
       return syncError("同步码不正确。", 401);

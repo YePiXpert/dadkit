@@ -1,9 +1,9 @@
 import { bearerToken, syncError, syncJson } from "@/lib/sync/http";
 import { leaveSpace, SyncStoreError } from "@/lib/sync/server-store";
 import {
-  createWebDavProxyRateLimiter,
-  proxyClientKey,
-} from "@/lib/webdav/proxy";
+  clientKeyFromHeaders as proxyClientKey,
+  createRateLimiter as createWebDavProxyRateLimiter,
+} from "@/lib/http/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    leaveSpace(token);
+    await leaveSpace(token);
     return syncJson({ ok: true });
   } catch (error) {
     if (error instanceof SyncStoreError) {

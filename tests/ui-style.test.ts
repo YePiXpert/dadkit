@@ -150,8 +150,8 @@ describe("V2 PWA visual and navigation contract", () => {
   it("renders the four-view checklist workspace at the root URL", () => {
     expect(homePage).toContain("<ChecklistWorkspace />");
     expect(checklistWorkspace).toContain("<ChecklistGroupTabs");
-    expect(checklistWorkspace).toContain("getChecklistViewCounts");
-    expect(checklistWorkspace).toContain("getChecklistViewItems");
+    expect(checklistWorkspace).toContain("deriveChecklistView");
+    expect(checklistWorkspace).toContain("visibleItems");
     expect(checklistWorkspace).not.toMatch(/if\s*\(\s*!profile\s*\)/);
     expect(checklistGroupTabs).toContain("grid grid-cols-4");
     expect(checklistGroupTabs).toContain('aria-label="清单视图"');

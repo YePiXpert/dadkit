@@ -14,48 +14,33 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 import { PageHeader } from "@/components/PageHeader";
 import {
   CHECKLIST_VIEWS,
-  getChecklistViewCounts,
-  getChecklistViewItems,
-  groupChecklistViewItems,
+  deriveChecklistView,
   type ChecklistView,
 } from "@/lib/checklist-v2";
 import { getChecklistSectionHref } from "@/lib/checklist-display";
-import { filterItemsForChecklistMode, calculatePackingCompletion } from "@/lib/rules";
 import { useDadKitStore } from "@/lib/store";
 import { useChecklistViewQuery } from "@/lib/use-checklist-view-query";
 
 export function ChecklistWorkspace() {
   const { query, setView, view } = useChecklistViewQuery();
   const hydrated = useDadKitStore((state) => state.hydrated);
+  const hydrate = useDadKitStore((state) => state.hydrate);
   const checklist = useDadKitStore((state) => state.checklist);
   const checklistMode = useDadKitStore((state) => state.checklistMode);
 
-  const modeItems = useMemo(
-    () => filterItemsForChecklistMode(checklist, checklistMode),
-    [checklist, checklistMode],
-  );
-  const counts = useMemo(() => getChecklistViewCounts(modeItems), [modeItems]);
-  const allItems = useMemo(
-    () => getChecklistViewItems(modeItems, "all"),
-    [modeItems],
-  );
-  const packing = useMemo(
-    () => calculatePackingCompletion(allItems),
-    [allItems],
-  );
-  const visibleItems = useMemo(
-    () => getChecklistViewItems(modeItems, view),
-    [modeItems, view],
-  );
-  const sections = useMemo(
-    () => groupChecklistViewItems(visibleItems, { includeEmpty: true }),
-    [visibleItems],
+  const { counts, packing, sections, visibleItems } = useMemo(
+    () => deriveChecklistView(checklist, { mode: checklistMode, view }),
+    [checklist, checklistMode, view],
   );
   const activeView = CHECKLIST_VIEWS.find((candidate) => candidate.id === view);
 
   // 只在“进行中 → 100%”的这一刻庆祝：首次加载就是 100% 时不打扰。
   const [celebrating, setCelebrating] = useState(false);
   const previousPercentRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   useEffect(() => {
     const previous = previousPercentRef.current;

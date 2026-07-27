@@ -2,16 +2,19 @@ import {
   assertSafeWebDavUrl,
   assertWebDavProxyEnabled,
   assertWebDavProxyRequest,
-  createWebDavProxyConcurrencyLimiter,
-  createWebDavProxyRateLimiter,
   parseProxyPayload,
-  proxyClientKey,
-  readLimitedRequestText,
   requestPinnedWebDav,
   sanitizeProxyHeaders,
   sanitizeProxyResponseHeaders,
   WebDavProxyError,
 } from "@/lib/webdav/proxy";
+import { HttpBoundaryError } from "@/lib/http/boundary-error";
+import { readLimitedRequestText } from "@/lib/http/request-body";
+import {
+  clientKeyFromHeaders as proxyClientKey,
+  createConcurrencyLimiter as createWebDavProxyConcurrencyLimiter,
+  createRateLimiter as createWebDavProxyRateLimiter,
+} from "@/lib/http/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -80,7 +83,9 @@ export async function POST(request: Request) {
   } catch (error) {
     return proxyError(
       webDavProxyErrorMessage(error),
-      error instanceof WebDavProxyError ? error.status : 502,
+      error instanceof WebDavProxyError || error instanceof HttpBoundaryError
+        ? error.status
+        : 502,
     );
   } finally {
     releaseConcurrency?.();
