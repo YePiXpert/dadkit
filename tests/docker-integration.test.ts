@@ -1,12 +1,14 @@
 import { createHash } from "node:crypto";
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFile, execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { promisify } from "node:util";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const root = process.cwd();
+const execFileAsync = promisify(execFile);
 const dockerAvailable =
   process.platform === "linux" &&
   spawnSync("docker", ["version", "--format", "{{.Server.Version}}"], {
@@ -36,6 +38,17 @@ describeDocker("Docker release integration", () => {
     }).trim();
   }
 
+  async function dockerAsync(args: string[], timeout = 60_000) {
+    const { stdout } = await execFileAsync("docker", args, {
+      cwd: root,
+      encoding: "utf8",
+      maxBuffer: 10 * 1024 * 1024,
+      timeout,
+    });
+
+    return stdout.trim();
+  }
+
   async function waitForServer(url: string) {
     let lastError: unknown;
 
@@ -55,7 +68,9 @@ describeDocker("Docker release integration", () => {
 
   beforeAll(async () => {
     writeFileSync(apkPath, apkBytes);
-    docker(["build", "--tag", image, "."], 480_000);
+    // docker build can take longer than Vitest's worker RPC heartbeat. Keep
+    // this child process asynchronous so the worker can continue responding.
+    await dockerAsync(["build", "--tag", image, "."], 480_000);
     docker(
       [
         "run",
