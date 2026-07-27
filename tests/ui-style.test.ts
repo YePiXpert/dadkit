@@ -174,6 +174,17 @@ describe("V2 PWA visual and navigation contract", () => {
     expect(card).toContain("bg-card");
   });
 
+  it("keeps update notices clear of the fixed add-item control", () => {
+    expect(globals).toContain(
+      "bottom: calc(10.75rem + env(safe-area-inset-bottom));",
+    );
+    expect(globals).toContain(
+      "bottom: calc(6.5rem + env(safe-area-inset-bottom));",
+    );
+    expect(pwaRegister).toContain("safe-bottom-toast");
+    expect(checklistWorkspace).toContain("safe-bottom-fab");
+  });
+
   it("keeps 我的 as a simple entry surface with subordinate settings pages", () => {
     expect(settingsPage).toContain("我的");
     expect(settingsPage).toContain('href: "/growth"');

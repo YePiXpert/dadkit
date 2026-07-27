@@ -167,7 +167,7 @@
   }
 
   .safe-bottom-toast {
-    bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    bottom: calc(10.75rem + env(safe-area-inset-bottom));
   }
 
   .card-surface {
@@ -207,7 +207,7 @@
   }
 
   .safe-bottom-toast {
-    bottom: calc(1.25rem + env(safe-area-inset-bottom));
+    bottom: calc(6.5rem + env(safe-area-inset-bottom));
   }
 }
 
