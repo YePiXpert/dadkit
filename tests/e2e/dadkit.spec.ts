@@ -5,6 +5,11 @@ import { expect, test } from "@playwright/test";
 const SAMPLE_IMAGE_PATH = path.join(process.cwd(), "public", "icon-192.png");
 
 test("清单和成长记在移动端完成 hydrate 并持久化", async ({ page }) => {
+  // Playwright WebKit on Windows can defer the first hydrated interaction
+  // while its process warms up. This is a functional workflow, not a
+  // performance assertion (the Chromium test below owns that budget).
+  test.setTimeout(120_000);
+
   const itemName = `E2E 自定义物品 ${test.info().project.name}`;
   const nickname = `E2E-${test.info().project.name.slice(0, 8)}`;
 
@@ -60,11 +65,15 @@ test("照片会进入加密迁移包并可原子导入", async ({ page }) => {
 });
 
 test("家庭同步可加入并手动完成一次同步", async ({ page }) => {
+  // FamilySyncCard intentionally loads after the backup shell. Give the
+  // WebKit project enough time to fetch and hydrate that optional module.
+  test.setTimeout(120_000);
+
   const project = test.info().project.name.startsWith("chromium") ? "c" : "w";
   const suffix = `${project}${String(Date.now()).slice(-8)}`;
 
   await page.goto("/settings/backup", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("#sync-name")).toBeVisible();
+  await expect(page.locator("#sync-name")).toBeVisible({ timeout: 60_000 });
   await page.locator("#sync-name").fill(`E2E ${suffix}`);
   await page.locator("#sync-code").fill(`e2e-${suffix}`);
   await page.getByRole("button", { name: "开始使用同步" }).click();

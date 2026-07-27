@@ -1,0 +1,336 @@
+import {
+  validateGrowthPortableData,
+  type GrowthPortableData,
+} from "@/lib/growth-portable";
+import type {
+  ChecklistBag,
+  ChecklistCategory,
+  ChecklistItem,
+  ChecklistMode,
+  ChecklistTiming,
+  ItemBulk,
+  ItemKind,
+  ItemSource,
+  PackStatus,
+  PackTier,
+  PreparationKind,
+  Priority,
+} from "@/lib/types";
+
+export type HiddenTemplateItemStamps = Record<
+  string,
+  { hidden: boolean; updatedAt: number }
+>;
+
+export type DeletedCustomItemStamps = Record<string, number>;
+
+export type DadKitExportDataV3 = {
+  version: 3;
+  exportedAt: string;
+  checklistMode: ChecklistMode;
+  checklist: ChecklistItem[];
+  customItems: ChecklistItem[];
+  hiddenTemplateItemIds: string[];
+};
+
+export type DadKitExportDataV4 = Omit<DadKitExportDataV3, "version"> & {
+  version: 4;
+  growth: GrowthPortableData;
+};
+
+export type DadKitExportData = Omit<DadKitExportDataV4, "version"> & {
+  version: 5;
+  hiddenTemplateItemStamps: HiddenTemplateItemStamps;
+  deletedCustomItems: DeletedCustomItemStamps;
+  growthUpdatedAt: number;
+};
+
+export type DadKitImportData =
+  | DadKitExportDataV3
+  | DadKitExportDataV4
+  | DadKitExportData;
+
+export const V3_EXPORT_KEYS = [
+  "version",
+  "exportedAt",
+  "checklistMode",
+  "checklist",
+  "customItems",
+  "hiddenTemplateItemIds",
+] as const;
+
+export const V4_EXPORT_KEYS = [...V3_EXPORT_KEYS, "growth"] as const;
+
+export const V5_EXPORT_KEYS = [
+  ...V4_EXPORT_KEYS,
+  "hiddenTemplateItemStamps",
+  "deletedCustomItems",
+  "growthUpdatedAt",
+] as const;
+
+const CHECKLIST_ITEM_KEYS = [
+  "id",
+  "name",
+  "category",
+  "priority",
+  "quantity",
+  "note",
+  "status",
+  "source",
+  "sourceLabel",
+  "editable",
+  "removable",
+  "packTier",
+  "itemKind",
+  "preparationKind",
+  "bag",
+  "bulk",
+  "timing",
+  "updatedAt",
+] as const;
+
+const REQUIRED_CHECKLIST_ITEM_KEYS = [
+  "id",
+  "name",
+  "category",
+  "priority",
+  "status",
+  "source",
+  "editable",
+  "removable",
+  "timing",
+] as const;
+
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function hasExactKeys(
+  value: Record<string, unknown>,
+  expected: readonly string[],
+) {
+  const actual = Object.keys(value).sort();
+  const wanted = [...expected].sort();
+
+  return (
+    actual.length === wanted.length &&
+    actual.every((key, index) => key === wanted[index])
+  );
+}
+
+function isOneOf<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+): value is T {
+  return typeof value === "string" && allowed.includes(value as T);
+}
+
+function hasOptionalString(value: Record<string, unknown>, key: string) {
+  return !(key in value) || typeof value[key] === "string";
+}
+
+function hasOnlyKnownKeys(
+  value: Record<string, unknown>,
+  allowed: readonly string[],
+) {
+  const allowedKeys = new Set(allowed);
+  return Object.keys(value).every((key) => allowedKeys.has(key));
+}
+
+export function isChecklistItem(value: unknown): value is ChecklistItem {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (
+    !hasOnlyKnownKeys(value, CHECKLIST_ITEM_KEYS) ||
+    !REQUIRED_CHECKLIST_ITEM_KEYS.every((key) => key in value)
+  ) {
+    return false;
+  }
+
+  return (
+    typeof value.id === "string" &&
+    value.id.trim().length > 0 &&
+    typeof value.name === "string" &&
+    value.name.trim().length > 0 &&
+    isOneOf<ChecklistCategory>(value.category, [
+      "documents",
+      "mom_labor",
+      "mom_postpartum",
+      "baby",
+      "confinement_mom",
+      "confinement_baby",
+      "partner",
+      "going_home",
+      "last_minute",
+    ]) &&
+    isOneOf<Priority>(value.priority, ["must", "recommended", "optional"]) &&
+    isOneOf<PackStatus>(value.status, [
+      "todo",
+      "bought",
+      "washed",
+      "packed",
+      "last_minute",
+      "not_needed",
+    ]) &&
+    isOneOf<ItemSource>(value.source, ["general", "user"]) &&
+    typeof value.editable === "boolean" &&
+    typeof value.removable === "boolean" &&
+    isOneOf<ChecklistTiming>(value.timing, [
+      "prepare_now",
+      "wash_before_pack",
+      "pack_now",
+      "grab_before_leaving",
+      "confirm_beforehand",
+    ]) &&
+    ["quantity", "note", "sourceLabel"].every((key) =>
+      hasOptionalString(value, key),
+    ) &&
+    (!("packTier" in value) ||
+      isOneOf<PackTier>(value.packTier, [
+        "core",
+        "confirm",
+        "optional",
+        "hidden",
+      ])) &&
+    (!("itemKind" in value) ||
+      isOneOf<ItemKind>(value.itemKind, ["item", "task"])) &&
+    (!("preparationKind" in value) ||
+      isOneOf<PreparationKind>(value.preparationKind, [
+        "buy_and_pack",
+        "buy_for_home",
+        "pack_existing",
+        "wash_then_pack",
+        "document",
+        "last_minute",
+        "task",
+        "install_or_place",
+      ])) &&
+    (!("bag" in value) ||
+      isOneOf<ChecklistBag>(value.bag, [
+        "documents_folder",
+        "mom_bag",
+        "baby_bag",
+        "dad_backpack",
+        "car",
+        "last_minute",
+        "none",
+      ])) &&
+    (!("bulk" in value) ||
+      isOneOf<ItemBulk>(value.bulk, ["small", "medium", "large"])) &&
+    (!("updatedAt" in value) ||
+      (typeof value.updatedAt === "number" &&
+        Number.isFinite(value.updatedAt)))
+  );
+}
+
+export function isValidDateString(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.trim().length > 0 &&
+    !Number.isNaN(Date.parse(value))
+  );
+}
+
+function hasValidPortableChecklistData(value: Record<string, unknown>) {
+  const checklist = Array.isArray(value.checklist) ? value.checklist : [];
+  const customItems = Array.isArray(value.customItems) ? value.customItems : [];
+  const hiddenTemplateItemIds = Array.isArray(value.hiddenTemplateItemIds)
+    ? value.hiddenTemplateItemIds
+    : [];
+
+  return (
+    isValidDateString(value.exportedAt) &&
+    isOneOf<ChecklistMode>(value.checklistMode, ["lean", "full"]) &&
+    Array.isArray(value.checklist) &&
+    value.checklist.every(isChecklistItem) &&
+    new Set(checklist.map((item) => (item as ChecklistItem).id)).size ===
+      checklist.length &&
+    Array.isArray(value.customItems) &&
+    value.customItems.every(
+      (item) => isChecklistItem(item) && item.source === "user",
+    ) &&
+    new Set(customItems.map((item) => (item as ChecklistItem).id)).size ===
+      customItems.length &&
+    Array.isArray(value.hiddenTemplateItemIds) &&
+    value.hiddenTemplateItemIds.every(
+      (id) => typeof id === "string" && id.trim().length > 0,
+    ) &&
+    new Set(hiddenTemplateItemIds).size === hiddenTemplateItemIds.length
+  );
+}
+
+export function isHiddenTemplateItemStamps(
+  value: unknown,
+): value is HiddenTemplateItemStamps {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return Object.entries(value).every(
+    ([id, stamp]) =>
+      id.trim().length > 0 &&
+      isRecord(stamp) &&
+      hasExactKeys(stamp, ["hidden", "updatedAt"]) &&
+      typeof stamp.hidden === "boolean" &&
+      typeof stamp.updatedAt === "number" &&
+      Number.isFinite(stamp.updatedAt),
+  );
+}
+
+export function isDeletedCustomItemStamps(
+  value: unknown,
+): value is DeletedCustomItemStamps {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return Object.entries(value).every(
+    ([id, timestamp]) =>
+      id.trim().length > 0 &&
+      typeof timestamp === "number" &&
+      Number.isFinite(timestamp),
+  );
+}
+
+export function migrateHiddenStamps(
+  ids: string[],
+  updatedAt: number,
+): HiddenTemplateItemStamps {
+  return Object.fromEntries(
+    ids.map((id) => [id, { hidden: true, updatedAt }]),
+  );
+}
+
+export function isDadKitImportData(value: unknown): value is DadKitImportData {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (value.version === 3) {
+    return (
+      hasExactKeys(value, V3_EXPORT_KEYS) &&
+      hasValidPortableChecklistData(value)
+    );
+  }
+
+  if (value.version === 4) {
+    return (
+      hasExactKeys(value, V4_EXPORT_KEYS) &&
+      hasValidPortableChecklistData(value) &&
+      validateGrowthPortableData(value.growth)
+    );
+  }
+
+  return (
+    value.version === 5 &&
+    hasExactKeys(value, V5_EXPORT_KEYS) &&
+    hasValidPortableChecklistData(value) &&
+    validateGrowthPortableData(value.growth) &&
+    isHiddenTemplateItemStamps(value.hiddenTemplateItemStamps) &&
+    isDeletedCustomItemStamps(value.deletedCustomItems) &&
+    typeof value.growthUpdatedAt === "number" &&
+    Number.isFinite(value.growthUpdatedAt)
+  );
+}

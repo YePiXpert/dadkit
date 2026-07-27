@@ -7,7 +7,7 @@ import {
 } from "node:net";
 import { PassThrough } from "node:stream";
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { POST } from "@/app/api/webdav/route";
 import {
@@ -29,6 +29,12 @@ import {
 
 afterEach(() => {
   vi.unstubAllEnvs();
+});
+
+beforeEach(() => {
+  // Individual request-boundary cases use dadkit.example as their synthetic
+  // origin. Keep them isolated from a production public-origin environment.
+  vi.stubEnv("DADKIT_PUBLIC_ORIGIN", "");
 });
 
 function fakeClientRequest(start: () => void) {
