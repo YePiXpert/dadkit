@@ -43,11 +43,19 @@ else
 fi
 
 APK_SIZE=$(wc -c < "$APK_PATH" | tr -d '[:space:]')
-CONTAINER_UPLOAD_TMP="/tmp/.dadkit-${VERSION_CODE}-$$.apk.tmp"
+HOST_UPLOAD_TMP=$(mktemp "${TMPDIR:-/tmp}/dadkit-apk-XXXXXX")
+CONTAINER_UPLOAD_TMP="/app/.dadkit-${VERSION_CODE}-$$.apk.upload"
 
-docker cp "$APK_PATH" "$CONTAINER:$CONTAINER_UPLOAD_TMP"
-docker exec --user 0 "$CONTAINER" sh -c \
-  'chmod 644 "$1"' sh "$CONTAINER_UPLOAD_TMP"
+cleanup_host_upload() {
+  rm -f "$HOST_UPLOAD_TMP"
+}
+trap cleanup_host_upload EXIT HUP INT TERM
+
+# docker cp preserves the host file owner. Use a readable staging copy so the
+# unprivileged app user can verify it without requesting runtime capabilities.
+cp "$APK_PATH" "$HOST_UPLOAD_TMP"
+chmod 644 "$HOST_UPLOAD_TMP"
+docker cp "$HOST_UPLOAD_TMP" "$CONTAINER:$CONTAINER_UPLOAD_TMP"
 
 if ! docker exec -i \
   -e "DADKIT_RELEASE_VERSION_CODE=$VERSION_CODE" \
@@ -156,9 +164,9 @@ async function main() {
   };
 
   try {
-    // The upload is owned by Docker's root user in /tmp. Copying it into the
-    // mounted data directory as nextjs preserves cap_drop: ALL while keeping
-    // the final asset private and allowing same-volume atomic publication.
+    // Docker can preserve a host UID for uploads. nextjs reads the staged
+    // public APK from /app, then writes a private file to the mounted data
+    // directory for same-volume atomic publication under cap_drop: ALL.
     await copyFile(uploadApk, stagedApk);
     await chmod(stagedApk, 0o600);
     await rename(stagedApk, finalApk);

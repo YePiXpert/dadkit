@@ -67,7 +67,7 @@ describeDocker("Docker release integration", () => {
   }
 
   beforeAll(async () => {
-    writeFileSync(apkPath, apkBytes);
+    writeFileSync(apkPath, apkBytes, { mode: 0o600 });
     // docker build can take longer than Vitest's worker RPC heartbeat. Keep
     // this child process asynchronous so the worker can continue responding.
     await dockerAsync(["build", "--tag", image, "."], 480_000);
@@ -210,7 +210,7 @@ describeDocker("Docker release integration", () => {
         container,
         "sh",
         "-c",
-        "find /tmp -maxdepth 1 -name '.dadkit-*.apk.tmp' -print",
+        "find /app -maxdepth 1 -name '.dadkit-*.apk.upload' -print",
       ]),
     ).toBe("");
 
