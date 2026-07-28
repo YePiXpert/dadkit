@@ -1,3 +1,6 @@
+import { existsSync, statSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -13,6 +16,7 @@ import {
   getGrowthWeek,
   getProjectedGrowthWeekDate,
 } from "@/lib/growth";
+import { GROWTH_ILLUSTRATIONS } from "@/lib/growth-illustrations";
 
 describe("growth content", () => {
   it("covers every week from 8 through 40 with week 36 as the default", () => {
@@ -37,6 +41,28 @@ describe("growth content", () => {
     expect(new Set(GROWTH_CHECKUP_TASK_IDS).size).toBe(GROWTH_WEEKS.length);
     expect(GROWTH_CHECKUP_TASK_IDS[0]).toBe("first-prenatal-contact");
     expect(GROWTH_CHECKUP_TASK_IDS.at(-1)).toBe("who-contact-40-weeks");
+  });
+
+  it("ships one optimized generated illustration for every growth week", () => {
+    expect(Object.keys(GROWTH_ILLUSTRATIONS).map(Number)).toEqual(
+      GROWTH_WEEKS.map((entry) => entry.week),
+    );
+
+    let totalBytes = 0;
+
+    for (const src of Object.values(GROWTH_ILLUSTRATIONS)) {
+      const filePath = join(process.cwd(), "public", src.slice(1));
+
+      expect(existsSync(filePath), `${src} should exist`).toBe(true);
+      const size = statSync(filePath).size;
+
+      expect(size, `${src} should stay below 160 KiB`).toBeLessThan(
+        160 * 1024,
+      );
+      totalBytes += size;
+    }
+
+    expect(totalBytes).toBeLessThan(3 * 1024 * 1024);
   });
 
   it("only shows the INTERGROWTH reference weight from week 22 onward", () => {

@@ -271,7 +271,7 @@ export function ItemPhotoField({
 
       <p className="text-[10px] leading-4 text-muted-foreground">
         最长边压缩为 800px，原图上限 20 MiB。照片不会进入普通恢复点或
-        WebDAV 备份，仅可随加密迁移包转移。
+        WebDAV 备份，仅保存在当前浏览器；清除站点数据或卸载应用前请自行保存原图。
       </p>
       {controller.error ? (
         <p aria-live="polite" className="text-xs text-destructive" role="alert">

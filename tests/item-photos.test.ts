@@ -98,10 +98,6 @@ describe("item photo integration contract", () => {
     join(process.cwd(), "lib", "storage.ts"),
     "utf8",
   );
-  const migration = readFileSync(
-    join(process.cwd(), "lib", "migration", "transfer.ts"),
-    "utf8",
-  );
   const webDavClient = readFileSync(
     join(process.cwd(), "lib", "webdav", "client.ts"),
     "utf8",
@@ -115,7 +111,6 @@ describe("item photo integration contract", () => {
     expect(photoLibrary).toContain("ITEM_PHOTO_MAX_EDGE = 800");
     expect(photoLibrary).toContain("ITEM_PHOTO_JPEG_QUALITY = 0.8");
     expect(photoLibrary).toContain("ITEM_PHOTO_MAX_SOURCE_BYTES = 20");
-    expect(photoLibrary).toContain("migration-staging");
     expect(photoLibrary).toContain("bytes: await record.blob.arrayBuffer()");
     expect(photoLibrary).toContain("new Blob([value.bytes.slice(0)]");
   });
@@ -140,13 +135,13 @@ describe("item photo integration contract", () => {
     expect(itemDetails).toContain("const EditItemDialog = dynamic");
   });
 
-  it("keeps photos out of normal backups but includes them in encrypted migration", () => {
+  it("keeps photos local and out of portable backups", () => {
     expect(storage).not.toContain("@/lib/item-photos");
     expect(webDavClient).not.toContain("@/lib/item-photos");
     expect(photoField).toContain("WebDAV 备份");
-    expect(migration).toContain("getAllItemPhotos");
-    expect(migration).toContain("stageItemPhotos");
-    expect(migration).toContain("commitStagedItemPhotos");
+    expect(photoField).toContain("仅保存在当前浏览器");
+    expect(photoLibrary).toContain("ITEM_PHOTO_DATABASE_VERSION = 3");
+    expect(photoLibrary).toContain("deleteObjectStore");
   });
 
   it("waits for photo cleanup during clearAll and reports partial failures", () => {

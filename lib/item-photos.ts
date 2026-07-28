@@ -1,12 +1,10 @@
 const ITEM_PHOTO_DATABASE = "dadkit-v2-item-photos";
-const ITEM_PHOTO_DATABASE_VERSION = 2;
+const ITEM_PHOTO_DATABASE_VERSION = 3;
 const ITEM_PHOTO_STORE = "photos";
-const ITEM_PHOTO_STAGING_STORE = "migration-staging";
 
 export const ITEM_PHOTO_MAX_EDGE = 800;
 export const ITEM_PHOTO_JPEG_QUALITY = 0.8;
 export const ITEM_PHOTO_MAX_SOURCE_BYTES = 20 * 1024 * 1024;
-export const ITEM_PHOTO_MAX_STORED_BYTES = 5 * 1024 * 1024;
 
 export type ItemPhotoDimensions = {
   height: number;
@@ -313,138 +311,6 @@ export async function clearItemPhotos() {
   emitItemPhotoChange();
 }
 
-export async function getAllItemPhotos(): Promise<ItemPhotoRecord[]> {
-  const database = await openItemPhotoDatabase();
-
-  if (!database) {
-    return [];
-  }
-
-  const transaction = database.transaction(ITEM_PHOTO_STORE, "readonly");
-  const completion = waitForTransaction(transaction);
-  const records = await waitForRequest<unknown[]>(
-    transaction.objectStore(ITEM_PHOTO_STORE).getAll(),
-  );
-
-  await completion;
-  return records
-    .map(toItemPhotoRecord)
-    .filter((record): record is ItemPhotoRecord => record !== undefined);
-}
-
-export async function stageItemPhotos(records: ItemPhotoRecord[]) {
-  const database = await requireItemPhotoDatabase();
-  const validated = validatePhotoCollection(records);
-  const storedRecords = await Promise.all(
-    validated.map(toStoredItemPhotoRecord),
-  );
-  const transaction = database.transaction(
-    ITEM_PHOTO_STAGING_STORE,
-    "readwrite",
-  );
-  const store = transaction.objectStore(ITEM_PHOTO_STAGING_STORE);
-
-  store.clear();
-  for (const record of storedRecords) {
-    store.put(record);
-  }
-  await waitForTransaction(transaction);
-}
-
-export async function clearStagedItemPhotos() {
-  const database = await openItemPhotoDatabase();
-
-  if (!database) return;
-
-  const transaction = database.transaction(
-    ITEM_PHOTO_STAGING_STORE,
-    "readwrite",
-  );
-
-  transaction.objectStore(ITEM_PHOTO_STAGING_STORE).clear();
-  await waitForTransaction(transaction);
-}
-
-export async function commitStagedItemPhotos() {
-  const database = await requireItemPhotoDatabase();
-  const transaction = database.transaction(
-    [ITEM_PHOTO_STORE, ITEM_PHOTO_STAGING_STORE],
-    "readwrite",
-  );
-  const photos = transaction.objectStore(ITEM_PHOTO_STORE);
-  const staging = transaction.objectStore(ITEM_PHOTO_STAGING_STORE);
-  const request = staging.getAll();
-
-  await new Promise<void>((resolve, reject) => {
-    request.onsuccess = () => {
-      try {
-        const storedRecords = request.result as unknown[];
-        const records = storedRecords.map(toItemPhotoRecord);
-
-        if (records.some((record) => record === undefined)) {
-          throw new Error("迁移暂存照片格式无效。");
-        }
-
-        validatePhotoCollection(
-          records.filter(
-            (record): record is ItemPhotoRecord => record !== undefined,
-          ),
-        );
-        if (!storedRecords.every(isStoredBinaryItemPhotoRecord)) {
-          throw new Error("迁移暂存照片格式无效。");
-        }
-
-        photos.clear();
-        for (const record of storedRecords) {
-          photos.put(record);
-        }
-        staging.clear();
-      } catch (error) {
-        transaction.abort();
-        reject(error);
-      }
-    };
-    request.onerror = () => {
-      reject(request.error ?? new Error("读取迁移照片失败。"));
-    };
-    transaction.oncomplete = () => resolve();
-    transaction.onabort = () => {
-      reject(transaction.error ?? new Error("提交迁移照片失败。"));
-    };
-    transaction.onerror = () => {
-      reject(transaction.error ?? new Error("提交迁移照片失败。"));
-    };
-  });
-
-  emitItemPhotoChange();
-}
-
-function validatePhotoCollection(records: unknown[]) {
-  const validated: ItemPhotoRecord[] = [];
-  const ids = new Set<string>();
-
-  for (const value of records) {
-    if (!isItemPhotoRecord(value)) {
-      throw new Error("迁移包包含无效照片记录。");
-    }
-    if (
-      !isImageBlob(value.blob) ||
-      value.blob.size <= 0 ||
-      value.blob.size > ITEM_PHOTO_MAX_STORED_BYTES
-    ) {
-      throw new Error("迁移包中的照片类型或大小无效。");
-    }
-    if (ids.has(value.itemId)) {
-      throw new Error("迁移包包含重复照片。");
-    }
-
-    ids.add(value.itemId);
-    validated.push(value);
-  }
-
-  return validated;
-}
-
 export function subscribeToItemPhotoChanges(listener: ItemPhotoChangeListener) {
   photoChangeListeners.add(listener);
 
@@ -611,10 +477,11 @@ function openItemPhotoDatabase(): Promise<IDBDatabase | undefined> {
       if (!database.objectStoreNames.contains(ITEM_PHOTO_STORE)) {
         database.createObjectStore(ITEM_PHOTO_STORE, { keyPath: "itemId" });
       }
-      if (!database.objectStoreNames.contains(ITEM_PHOTO_STAGING_STORE)) {
-        database.createObjectStore(ITEM_PHOTO_STAGING_STORE, {
-          keyPath: "itemId",
-        });
+
+      for (const storeName of Array.from(database.objectStoreNames)) {
+        if (storeName !== ITEM_PHOTO_STORE) {
+          database.deleteObjectStore(storeName);
+        }
       }
     };
     request.onsuccess = () => {

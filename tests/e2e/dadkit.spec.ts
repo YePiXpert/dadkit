@@ -30,7 +30,7 @@ test("清单和成长记在移动端完成 hydrate 并持久化", async ({ page 
   await expect(page.locator("#growth-nickname")).toHaveValue(nickname);
 });
 
-test("照片会进入加密迁移包并可原子导入", async ({ page }) => {
+test("照片保存在当前浏览器且备份页不再提供设备迁移", async ({ page }) => {
   test.setTimeout(90_000);
 
   await page.goto("/checklist/documents", { waitUntil: "domcontentloaded" });
@@ -45,23 +45,13 @@ test("照片会进入加密迁移包并可原子导入", async ({ page }) => {
   await expect(page.locator('img[src^="blob:"]').last()).toBeVisible();
   await page.keyboard.press("Escape");
 
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "详情" }).first().click();
+  await expect(page.locator('img[src^="blob:"]').last()).toBeVisible();
+  await page.keyboard.press("Escape");
+
   await page.goto("/settings/backup", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "打开迁移工具" }).click();
-  await expect(page.locator("#transfer-password")).toBeVisible();
-  await page.locator("#transfer-password").fill("migration-e2e-password-2026");
-
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出加密迁移包" }).click();
-  const download = await downloadPromise;
-  const archivePath = await download.path();
-
-  if (!archivePath) {
-    throw new Error("迁移包下载路径不可用。");
-  }
-
-  await page.locator('input[type="file"]').setInputFiles(archivePath);
-  await page.getByRole("button", { name: "导入并替换本机数据" }).click();
-  await expect(page.getByText(/已恢复 1 张照片/)).toBeVisible();
+  await expect(page.getByText("加密设备迁移")).toHaveCount(0);
 });
 
 test("家庭同步可加入并手动完成一次同步", async ({ page }) => {

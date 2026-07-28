@@ -53,7 +53,8 @@ describe("release endpoints and product surface", () => {
     expect(readme).toContain("宝宝成长记");
     expect(readme).toContain("全部、待购买、待装包、已装包");
     expect(readme).toContain("https://dadkit.505f.com/");
-    expect(readme).toContain(".dadkit-transfer");
+    expect(readme).toContain("不再提供加密设备迁移功能");
+    expect(readme).toContain("本机照片不会随备份或同步转移");
     expect(readme).toContain("Android TWA");
   });
 
@@ -177,7 +178,7 @@ describe("release endpoints and product surface", () => {
   it("pre-caches the v2.1.0 checklist, growth and settings shell", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.0-pwa-r10"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.0-pwa-r11"');
     expect(sw).toContain("const REQUIRED_ROUTES = CORE_ROUTES.slice(0, -2)");
     expect(sw).toContain("const OPTIONAL_ROUTES = CORE_ROUTES.slice(-2)");
     for (const route of [
@@ -204,7 +205,7 @@ describe("release endpoints and product surface", () => {
     expect(sw).not.toContain("/illustrations/");
   });
 
-  it("deletes the previous r9 cache during activation", async () => {
+  it("deletes previous app caches during activation", async () => {
     const sw = readSource("public", "sw.js");
     const listeners = new Map<string, (event: { waitUntil: (work: Promise<unknown>) => void }) => void>();
     const deleted: string[] = [];
@@ -220,7 +221,11 @@ describe("release endpoints and product surface", () => {
       },
       caches: {
         async keys() {
-          return ["dadkit-v2.0.0-pwa-r9", "dadkit-v2.1.0-pwa-r10"];
+          return [
+            "dadkit-v2.0.0-pwa-r9",
+            "dadkit-v2.1.0-pwa-r10",
+            "dadkit-v2.1.0-pwa-r11",
+          ];
         },
         async delete(key: string) {
           deleted.push(key);
@@ -237,7 +242,10 @@ describe("release endpoints and product surface", () => {
     });
     await activation;
 
-    expect(deleted).toEqual(["dadkit-v2.0.0-pwa-r9"]);
+    expect(deleted).toEqual([
+      "dadkit-v2.0.0-pwa-r9",
+      "dadkit-v2.1.0-pwa-r10",
+    ]);
   });
 
   it("extracts only real Next asset attributes from server HTML", () => {

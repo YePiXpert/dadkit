@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v2.1.0-pwa-r10";
+const CACHE_NAME = "dadkit-v2.1.0-pwa-r11";
 const CORE_ROUTES = [
   "/",
   "/settings",
@@ -109,6 +109,7 @@ function shouldCacheAsset(url) {
   return (
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/item-refs/") ||
+    url.pathname.startsWith("/growth/") ||
     STATIC_ASSETS.has(url.pathname)
   );
 }

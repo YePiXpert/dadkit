@@ -15,7 +15,6 @@ import {
   Upload,
 } from "lucide-react";
 
-import { MigrationTransferLauncher } from "@/components/MigrationTransferLauncher";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -389,7 +388,6 @@ export default function BackupSettingsPage() {
         </section>
 
         <FamilySyncCard />
-        <MigrationTransferLauncher />
 
         <Card className="overflow-hidden">
           <CardHeader className="pb-3">

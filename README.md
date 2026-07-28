@@ -10,7 +10,7 @@ DadKit 是一个本地优先的待产包清单与宝宝成长记 PWA。数据默
 
 - 清单按证件、妈妈、宝宝、月子、陪产、返家和临出门分组；使用全部、待购买、待装包、已装包四个视图逐项完成。
 - 可新增、编辑、隐藏或恢复条目，并提供物品说明和本机照片。
-- 宝宝成长记覆盖孕 8 至 40 周。
+- 宝宝成长记覆盖孕 8 至 40 周，每周配有独立的纸感水粉成长插图。
 - 本地恢复快照、WebDAV 备份和家庭同步均兼容既有 v3–v5 数据与同步 v5。
 - 物品照片默认只留在 IndexedDB；进入清单附近 600px 才读取，最长边压缩到 800px，原图限制 20 MiB。
 
@@ -32,36 +32,11 @@ DadKit 的清单和成长内容仅作准备参考，不替代医生、医院通�
 
 在 Safari 打开 [正式站点](https://dadkit.505f.com/)，点分享按钮，选择“添加到主屏幕”。请用 Safari，而不是内置浏览器，以获得稳定的离线与安装支持。
 
-## 从旧站点迁移到 v2.1
+## 设备与本机数据
 
-域名与 Android 包名已经变更。旧 APK 不能覆盖升级，必须通过本机加密迁移包转移数据。迁移包扩展名为 `.dadkit-transfer`，使用 Web Crypto AES-256-GCM 加密，并以 PBKDF2-SHA-256 从一次性密码派生密钥。
+DadKit 不再提供加密设备迁移功能。清单和成长记录可通过 WebDAV 备份或家庭同步在设备间恢复；WebDAV 密码、家庭同步 token 和浏览器偏好仍需在新设备重新设置。
 
-每台设备都要单独导出自己的迁移包：照片、浏览器偏好和本地数据不在设备之间自动复制。
-
-### Android 迁移步骤
-
-1. 在旧应用的“我的 → 备份与恢复”打开“加密设备迁移”。
-2. 生成并妥善保存一次性密码（12–128 个字符），导出 `.dadkit-transfer`。
-3. 确认迁移包已保存后，卸载旧 APK。
-4. 安装新 APK `com.dadkit.mobile`，打开后回到“加密设备迁移”导入文件。
-5. 导入成功后重新输入 WebDAV 密码，并重新加入原家庭同步空间。
-6. 验证清单、成长记、照片和离线重开都正常后，删除迁移文件和一次性密码。
-
-### iPhone 迁移步骤
-
-1. 在旧 PWA 导出 `.dadkit-transfer` 并保存一次性密码。
-2. 删除旧 PWA 主屏幕图标。
-3. 用 Safari 打开正式站点并重新“添加到主屏幕”。
-4. 导入迁移包，重新输入 WebDAV 密码并重新加入家庭同步空间。
-5. 验证成功后删除迁移文件和一次性密码。
-
-### 迁移包包含与排除项
-
-迁移包包含：清单、成长记录、本地恢复快照、主题与说明显示偏好、WebDAV 的非敏感配置，以及所有本机物品照片。
-
-迁移包不包含：WebDAV 密码、家庭同步 token、浏览器缓存、站点来源或任何旧站点地址。导入会先校验格式、数量、图片类型、大小和 SHA-256；照片先进入 IndexedDB staging store，任一步失败都会回滚。
-
-不要通过聊天记录、公开网盘或不可信渠道发送迁移包或一次性密码。
+本机照片不会随备份或同步转移，只保存在当前浏览器的 IndexedDB。清除站点数据、卸载应用或更换设备前，请先自行保存需要保留的原图。由于 Android 包名已经变更，旧 APK 不能覆盖安装新 APK；安装后会使用一套独立的本机存储。
 
 ## 网站更新与 APK 更新
 
@@ -96,7 +71,7 @@ npm run test:e2e
 npm run test:docker
 ```
 
-生产构建会输出各路由的 First Load JS；发布门禁要求首页、清单页和备份页首载 JS 不超过 200 kB，并在真机上验证 TWA 首装、无地址栏、迁移导入和离线重开。
+生产构建会输出各路由的 First Load JS；发布门禁要求首页、清单页和备份页首载 JS 不超过 200 kB，并在真机上验证 TWA 首装、无地址栏和离线重开。
 
 ## Android TWA 工程
 
@@ -179,7 +154,7 @@ curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docke
 curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docker-upgrade.sh | sudo sh
 ```
 
-`DADKIT_BIND_ADDRESS`、`DADKIT_PUBLIC_ORIGIN` 和 WebDAV 白名单会保存在权限 `600` 的 `.env` 中。发布前请备份 `.env`、Docker named volume、当前镜像摘要和每台设备的迁移包。
+`DADKIT_BIND_ADDRESS`、`DADKIT_PUBLIC_ORIGIN` 和 WebDAV 白名单会保存在权限 `600` 的 `.env` 中。发布前请备份 `.env`、Docker named volume 和当前镜像摘要。
 
 ## 生产验证与 Digital Asset Links 排错
 
@@ -193,4 +168,4 @@ curl -fsS http://127.0.0.1:3333/healthz
 
 检查正式站点、Manifest、Service Worker 和图标均为 HTTPS 200；确认响应带有 HSTS。`assetlinks.json` 的包名和 SHA-256 必须与 `apksigner verify --print-certs` 输出完全一致。若 TWA 出现地址栏，先清除应用数据、重新联网打开一次，再检查上述文件和证书指纹。
 
-在所有设备迁移、网站、Release 和 VPS APK 通道验证完成后，立即从 DNS、反向代理、证书续期和日志配置中移除旧站点；不要为旧站点设置公开跳转，也不要在仓库、Release、APK、迁移包或日志中写入旧站点地址。
+在网站、Release 和 VPS APK 通道验证完成后，立即从 DNS、反向代理、证书续期和日志配置中移除旧站点；不要为旧站点设置公开跳转，也不要在仓库、Release、APK 或日志中写入旧站点地址。

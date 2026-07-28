@@ -175,7 +175,6 @@ export function GrowthWorkspace() {
             <div className="rounded-[1.75rem] border border-card/80 bg-card/70 p-3">
               <GrowthAnalogyIllustration
                 analogy={current.analogy}
-                kind={current.illustration}
                 week={current.week}
               />
               <p className="mt-1 text-center text-xs text-muted-foreground">
