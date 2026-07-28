@@ -20,6 +20,7 @@ const PwaRegister = dynamic(
 
 export function BackgroundTasks() {
   const [idle, setIdle] = useState(false);
+  const [bundledAndroid, setBundledAndroid] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,6 +29,7 @@ export function BackgroundTasks() {
 
     const start = () => {
       if (cancelled) return;
+      setBundledAndroid(navigator.userAgent.includes("DadKitAndroid/"));
       setIdle(true);
       void import("@/lib/sync/auto-sync").then(({ startAutoSync }) => {
         if (!cancelled) {
@@ -55,7 +57,7 @@ export function BackgroundTasks() {
 
   return idle ? (
     <>
-      <PwaRegister />
+      {bundledAndroid ? null : <PwaRegister />}
       <AndroidUpdatePrompt />
     </>
   ) : null;

@@ -98,7 +98,7 @@ describe("V2 PWA visual and navigation contract", () => {
     }
   });
 
-  it("ships as a standalone web PWA without a native build surface", () => {
+  it("ships standalone web and a dependency-light bundled Android surface", () => {
     const dependencyNames = Object.keys({
       ...packageJson.dependencies,
       ...packageJson.devDependencies,
@@ -110,7 +110,10 @@ describe("V2 PWA visual and navigation contract", () => {
     expect(Object.keys(packageJson.scripts).some((name) => name.startsWith("mobile:"))).toBe(
       false,
     );
-    expect(nextConfig).toContain('output: "standalone"');
+    expect(nextConfig).toContain(
+      'output: isAndroidBundle ? "export" : "standalone"',
+    );
+    expect(nextConfig).toContain('DADKIT_BUILD_TARGET === "android"');
     expect(nextConfig).not.toContain("DADKIT_CAPACITOR_EXPORT");
     expect(pwaRegister).not.toContain("gesturestart");
     expect(pwaRegister).not.toContain("preventDoubleTapZoom");
@@ -167,7 +170,7 @@ describe("V2 PWA visual and navigation contract", () => {
     expect(checklistSectionWorkspace).toContain('className="item-card-grid"');
     expect(globals).toContain("@media (min-width: 360px)");
     expect(globals).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
-    expect(checklistItemRow).toContain("ChecklistItemIllustration");
+    expect(checklistItemRow).toContain("ChecklistItemArt");
     expect(button).toContain("rounded-full");
     expect(card).toContain("rounded-[1.75rem]");
     expect(card).toContain("border border-border");

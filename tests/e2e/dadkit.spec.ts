@@ -4,6 +4,8 @@ import { expect, test } from "@playwright/test";
 
 const SAMPLE_IMAGE_PATH = path.join(process.cwd(), "public", "icon-192.png");
 
+test.describe.configure({ timeout: 120_000 });
+
 test("清单和成长记在移动端完成 hydrate 并持久化", async ({ page }) => {
   // Playwright WebKit on Windows can defer the first hydrated interaction
   // while its process warms up. This is a functional workflow, not a
@@ -14,7 +16,9 @@ test("清单和成长记在移动端完成 hydrate 并持久化", async ({ page 
   const nickname = `E2E-${test.info().project.name.slice(0, 8)}`;
 
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("progressbar")).toBeVisible();
+  await expect(page.getByRole("button", { name: "新增物品" })).toBeVisible({
+    timeout: 60_000,
+  });
 
   await page.getByRole("button", { name: "新增物品" }).click();
   await page.locator("#add-item-name").fill(itemName);
@@ -81,7 +85,9 @@ test("Service Worker 缓存支持离线重开首页", async ({
   test.setTimeout(100_000);
 
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("progressbar")).toBeVisible();
+  await expect(page.getByRole("button", { name: "新增物品" })).toBeVisible({
+    timeout: 60_000,
+  });
   const serviceWorkerState = await page.evaluate(async () => {
     if (!("serviceWorker" in navigator)) return false;
 

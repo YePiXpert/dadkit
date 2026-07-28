@@ -126,12 +126,14 @@ describe("item photo integration contract", () => {
   });
 
   it("loads row photos only near the viewport and keeps one controlled dialog", () => {
-    expect(itemRow).toContain("useItemPhoto(item.id, photoEnabled)");
+    expect(itemRow).toContain("useItemPhoto(item.id, mediaEnabled)");
     expect(itemRow).toContain('rootMargin: "600px 0px"');
     expect(itemRow).toContain('className="size-full object-cover"');
-    expect(itemRow).toContain("ChecklistItemIllustration");
+    expect(itemRow).toContain("!mediaEnabled || itemPhoto.loading");
+    expect(itemRow).toContain("ChecklistItemArt");
     expect(itemDetails).toContain("ItemPhotoField");
     expect(itemDetails).toContain("useItemPhoto(item.id, open)");
+    expect(itemDetails).toContain("!photoController.photoUrl");
     expect(itemDetails).toContain("const EditItemDialog = dynamic");
   });
 

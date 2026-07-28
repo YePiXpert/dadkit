@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { Ban, Check, PackageCheck, Trash2 } from "lucide-react";
 
+import { ChecklistItemArt } from "@/components/ChecklistItemArt";
 import { ItemPhotoField, useItemPhoto } from "@/components/ItemPhotoField";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +18,6 @@ import {
   type ChecklistItemState,
 } from "@/lib/checklist-v2";
 import { formatChecklistDisplayText } from "@/lib/checklist-display";
-import { ITEM_REF_PHOTOS } from "@/lib/item-refs";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -55,7 +55,6 @@ export function ChecklistItemDetailsDialog({
   const removeItem = useDadKitStore((state) => state.removeItem);
   const itemState = getChecklistItemState(item);
   const stateMeta = STATE_META[itemState];
-  const refPhoto = ITEM_REF_PHOTOS[item.id];
   const displayOptions = {
     transformAlternatives: item.source === "general",
   } as const;
@@ -126,20 +125,17 @@ export function ChecklistItemDetailsDialog({
           </p>
         </section>
 
-        {refPhoto ? (
+        {!photoController.loading && !photoController.photoUrl ? (
           <section className="rounded-[1.5rem] border border-border/70 bg-card p-4">
-            <p className="text-sm font-semibold">参考实拍</p>
+            <p className="text-sm font-semibold">物品示意</p>
             <div className="relative mt-2 aspect-[4/3] max-h-52 overflow-hidden rounded-xl bg-background">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                alt={refPhoto.alt}
-                className="size-full object-cover"
-                loading="lazy"
-                src={refPhoto.src}
+              <ChecklistItemArt
+                alt={`${displayName}的物品插画`}
+                item={item}
               />
             </div>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              通用参考图，与品牌无关，具体以医院要求为准。
+              无品牌示意图，具体物品以医院和家庭实际需要为准。
             </p>
           </section>
         ) : null}

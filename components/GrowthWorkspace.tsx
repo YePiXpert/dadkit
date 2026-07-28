@@ -118,7 +118,7 @@ export function GrowthWorkspace() {
                 autoComplete="off"
                 id="growth-nickname"
                 maxLength={20}
-                onChange={(event) => setNickname(event.target.value)}
+                onInput={(event) => setNickname(event.currentTarget.value)}
                 placeholder="例如：小栗子"
                 value={nickname}
               />

@@ -46,11 +46,12 @@ jobs:
       - name: Install and verify web application
         run: |
           npm ci
-          npm run android:validate -- "$GITHUB_REF_NAME"
           npm run lint
           npm test
           npm run build
           npm run performance:check
+          npm run android:bundle
+          npm run android:validate -- "$GITHUB_REF_NAME"
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium webkit
@@ -90,7 +91,7 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon clean assembleRelease bundleRelease
 
-      - name: Verify APK alignment, signature and Digital Asset Links
+      - name: Verify bundled APK alignment and signature
         id: apk
         shell: bash
         run: |
@@ -102,10 +103,6 @@ jobs:
           test -f "$AAB"
           "$BUILD_TOOLS/zipalign" -c -v 4 "$APK"
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
-          ACTUAL=$("$BUILD_TOOLS/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | tr -d ':' | tr '[:upper:]' '[:lower:]')
-          EXPECTED=$(node -e 'const a=require("./public/.well-known/assetlinks.json"); console.log(a[0].target.sha256_cert_fingerprints[0].replaceAll(":","").toLowerCase())')
-          test -n "$ACTUAL"
-          test "$ACTUAL" = "$EXPECTED"
           cp "$APK" DadKit-2.1.0.apk
           sha256sum DadKit-2.1.0.apk > DadKit-2.1.0.apk.sha256
           cp "$AAB" DadKit-2.1.0.aab
@@ -127,9 +124,8 @@ jobs:
 
           - 正式站点迁移到 https://dadkit.505f.com/
           - 新 Android 包名为 com.dadkit.mobile，首次 versionCode 为 1
-          - 新增本地加密迁移包、移动端性能优化、同步可靠性与站内更新提示
-
-          旧 APK 不能覆盖安装。请先在旧应用导出 `.dadkit-transfer`，再卸载旧 APK、安装本版本并导入。
+          - APK 内置完整界面、清单、成长图和物品图，断网可直接打开
+          - 清单、成长记录和照片保存在应用本机沙箱；家庭同步与 WebDAV 为可选联网功能
           EOF
           gh release create "$GITHUB_REF_NAME" \
             DadKit-2.1.0.apk \

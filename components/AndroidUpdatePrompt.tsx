@@ -20,8 +20,9 @@ export function AndroidUpdatePrompt() {
     const search = new URLSearchParams(window.location.search);
     const source = search.get("source");
     const queryVersion = Number(search.get("appVersionCode"));
+    const isAndroidApp = source === "twa" || source === "apk";
 
-    if (source === "twa" && Number.isInteger(queryVersion) && queryVersion > 0) {
+    if (isAndroidApp && Number.isInteger(queryVersion) && queryVersion > 0) {
       window.localStorage.setItem(
         ANDROID_VERSION_STORAGE_KEY,
         String(queryVersion),
@@ -29,7 +30,7 @@ export function AndroidUpdatePrompt() {
     }
 
     const currentVersion = Number(
-      source === "twa" && queryVersion > 0
+      isAndroidApp && queryVersion > 0
         ? queryVersion
         : window.localStorage.getItem(ANDROID_VERSION_STORAGE_KEY),
     );

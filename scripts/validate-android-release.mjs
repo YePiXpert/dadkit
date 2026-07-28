@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 const root = process.cwd();
@@ -9,41 +9,24 @@ const expected = {
   packageId: "com.dadkit.mobile",
   host: "dadkit.505f.com",
 };
+const tag = process.env.GITHUB_REF_NAME || process.argv[2];
 
 const packageJson = await readJson("package.json");
 const packageLock = await readJson("package-lock.json");
-const twaManifest = await readJson("android/twa-manifest.json");
-const assetLinks = await readJson("public/.well-known/assetlinks.json");
-const gradle = await readFile(
-  path.join(root, "android", "app", "build.gradle"),
-  "utf8",
+const gradle = await readText("android/app/build.gradle");
+const manifest = await readText("android/app/src/main/AndroidManifest.xml");
+const activity = await readText(
+  "android/app/src/main/java/com/dadkit/mobile/LauncherActivity.java",
 );
-const tag = process.env.GITHUB_REF_NAME || process.argv[2];
 
 assert(packageJson.version === expected.versionName, "package.json version");
 assert(
-  packageLock.packages?.[""]?.devDependencies?.["@bubblewrap/cli"] ===
-    "1.24.1",
-  "Bubblewrap must be pinned to 1.24.1",
-);
-assert(twaManifest.packageId === expected.packageId, "TWA packageId");
-assert(twaManifest.host === expected.host, "TWA host");
-assert(
-  twaManifest.startUrl === "/?source=twa&appVersionCode=1",
-  "TWA startUrl",
+  !packageJson.devDependencies?.["@bubblewrap/cli"],
+  "Bubblewrap dependency must be removed",
 );
 assert(
-  twaManifest.appVersionName === expected.versionName,
-  "TWA versionName",
-);
-assert(
-  twaManifest.appVersionCode === expected.versionCode,
-  "TWA versionCode",
-);
-assert(
-  Array.isArray(twaManifest.additionalTrustedOrigins) &&
-    twaManifest.additionalTrustedOrigins.length === 0,
-  "additional trusted origins must be empty",
+  !packageLock.packages?.[""]?.devDependencies?.["@bubblewrap/cli"],
+  "Bubblewrap lock entry must be removed",
 );
 assert(
   gradle.includes(`applicationId "${expected.packageId}"`),
@@ -57,22 +40,47 @@ assert(
   gradle.includes(`versionName "${expected.versionName}"`),
   "Gradle versionName",
 );
-
-const urls = collectHttpsUrls(twaManifest);
-assert(urls.length > 0, "TWA HTTPS URL list");
-for (const value of urls) {
-  assert(new URL(value).hostname === expected.host, `unexpected URL ${value}`);
-}
-
-assert(Array.isArray(assetLinks) && assetLinks.length === 1, "assetlinks entry");
+assert(manifest.includes("android.permission.INTERNET"), "Internet permission");
+assert(manifest.includes('android:allowBackup="false"'), "private app data");
+assert(!manifest.includes("trusted"), "TWA manifest entries must be absent");
+assert(!manifest.includes("asset_statements"), "Digital Asset Links metadata");
+assert(activity.includes("extends Activity"), "native WebView activity");
+assert(activity.includes("new WebView(this)"), "bundled WebView");
+assert(activity.includes(`APP_HOST = "${expected.host}"`), "production API host");
 assert(
-  assetLinks[0]?.target?.package_name === expected.packageId,
-  "assetlinks package",
+  activity.includes(`source=apk&appVersionCode=${expected.versionCode}`),
+  "bundled APK start URL",
 );
 assert(
-  JSON.stringify(assetLinks[0]?.target?.sha256_cert_fingerprints) ===
-    JSON.stringify(twaManifest.fingerprints.map((entry) => entry.value)),
-  "assetlinks fingerprint",
+  activity.includes('getAssets().open("www/" + assetPath)'),
+  "APK asset loader",
+);
+
+for (const retiredPath of [
+  "android/twa-manifest.json",
+  "android/twa-manifest.example.json",
+  "scripts/generate-android-project.mjs",
+]) {
+  await assertMissing(retiredPath);
+}
+
+const bundledRoot = path.join(
+  root,
+  "android",
+  "app",
+  "src",
+  "main",
+  "assets",
+  "www",
+);
+await access(path.join(bundledRoot, "index.html"));
+await access(path.join(bundledRoot, "growth", "index.html"));
+await access(path.join(bundledRoot, "checklist", "baby", "index.html"));
+
+const itemArt = await readdir(path.join(bundledRoot, "item-art"));
+assert(
+  itemArt.filter((file) => file.endsWith(".webp")).length === 64,
+  "64 bundled item illustrations",
 );
 
 if (tag) {
@@ -80,22 +88,24 @@ if (tag) {
 }
 
 console.log(
-  `Validated ${expected.tag}: ${expected.packageId}, versionCode ${expected.versionCode}, host ${expected.host}.`,
+  `Validated bundled APK ${expected.tag}: ${expected.packageId}, versionCode ${expected.versionCode}, ${itemArt.length} item-art assets.`,
 );
 
 async function readJson(relativePath) {
-  return JSON.parse(await readFile(path.join(root, relativePath), "utf8"));
+  return JSON.parse(await readText(relativePath));
 }
 
-function collectHttpsUrls(value, output = []) {
-  if (typeof value === "string" && value.startsWith("https://")) {
-    output.push(value);
-  } else if (Array.isArray(value)) {
-    for (const entry of value) collectHttpsUrls(entry, output);
-  } else if (value && typeof value === "object") {
-    for (const entry of Object.values(value)) collectHttpsUrls(entry, output);
+async function readText(relativePath) {
+  return readFile(path.join(root, relativePath), "utf8");
+}
+
+async function assertMissing(relativePath) {
+  try {
+    await access(path.join(root, relativePath));
+  } catch {
+    return;
   }
-  return output;
+  throw new Error(`Android release validation failed: ${relativePath} still exists.`);
 }
 
 function assert(condition, label) {

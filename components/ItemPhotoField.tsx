@@ -32,6 +32,7 @@ export function useItemPhoto(
 ): ItemPhotoController {
   const [photoUrl, setPhotoUrl] = useState<string>();
   const [loading, setLoading] = useState(enabled);
+  const [resolvedItemId, setResolvedItemId] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   const leaseRef = useRef<ItemPhotoUrlLease | undefined>(undefined);
@@ -81,6 +82,7 @@ export function useItemPhoto(
         mountedRef.current &&
         requestSequence === requestSequenceRef.current
       ) {
+        setResolvedItemId(itemId);
         setLoading(false);
       }
     }
@@ -153,7 +155,7 @@ export function useItemPhoto(
   return {
     busy,
     error,
-    loading,
+    loading: enabled && resolvedItemId !== itemId ? true : loading,
     photoUrl,
     removePhoto,
     savePhoto,

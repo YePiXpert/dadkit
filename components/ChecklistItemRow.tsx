@@ -10,7 +10,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 
-import { ChecklistItemIllustration } from "@/components/ChecklistItemIllustration";
+import { ChecklistItemArt } from "@/components/ChecklistItemArt";
 import { useItemPhoto } from "@/components/ItemPhotoField";
 import {
   getChecklistItemState,
@@ -47,11 +47,11 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   showFullDescription = true,
 }: ChecklistItemRowProps) {
   const articleRef = useRef<HTMLElement | null>(null);
-  const [photoEnabled, setPhotoEnabled] = useState(false);
+  const [mediaEnabled, setMediaEnabled] = useState(false);
   const advanceItem = useDadKitStore((state) => state.advanceItem);
   const itemState = getChecklistItemState(item);
   const actionLabel = getActionLabel(itemState);
-  const itemPhoto = useItemPhoto(item.id, photoEnabled);
+  const itemPhoto = useItemPhoto(item.id, mediaEnabled);
   const StateIcon = STATE_ICONS[itemState];
   const displayOptions = {
     transformAlternatives: item.source === "general",
@@ -70,12 +70,12 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
     const element = articleRef.current;
 
     if (!element || typeof IntersectionObserver === "undefined") {
-      setPhotoEnabled(true);
+      setMediaEnabled(true);
       return;
     }
 
     const observer = new IntersectionObserver(
-      ([entry]) => setPhotoEnabled(Boolean(entry?.isIntersecting)),
+      ([entry]) => setMediaEnabled(Boolean(entry?.isIntersecting)),
       { rootMargin: "600px 0px" },
     );
 
@@ -94,7 +94,12 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
       )}
     >
       <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[1.35rem] bg-muted/75">
-        {itemPhoto.photoUrl ? (
+        {!mediaEnabled || itemPhoto.loading ? (
+          <div
+            aria-hidden="true"
+            className="size-full animate-pulse bg-muted/70"
+          />
+        ) : itemPhoto.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             alt={`${displayName}的物品照片`}
@@ -103,8 +108,8 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             src={itemPhoto.photoUrl}
           />
         ) : (
-          <ChecklistItemIllustration
-            className="h-[68%] w-[68%] max-h-28 max-w-28"
+          <ChecklistItemArt
+            alt={`${displayName}的物品插画`}
             item={item}
           />
         )}

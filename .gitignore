@@ -38,9 +38,10 @@ test-results/
 # 本地运行时家庭同步数据(DADKIT_DATA_DIR 默认 ./data)
 /data/
 
-# android TWA (bubblewrap 生成的工程产物与签名密钥)
+# android build output, bundled web assets and signing keys
 android/.gradle/
 android/app/build/
+android/app/src/main/assets/www/
 android/build/
 android/local.properties
 android/*.keystore
@@ -48,6 +49,8 @@ android/*.jks
 android/signing.properties
 *.keystore
 *.jks
+.android-static-build/
+/artifacts/
 
 # local coding assistants
 .serena/

@@ -55,40 +55,48 @@ describe("release endpoints and product surface", () => {
     expect(readme).toContain("https://dadkit.505f.com/");
     expect(readme).toContain("不再提供加密设备迁移功能");
     expect(readme).toContain("本机照片不会随备份或同步转移");
-    expect(readme).toContain("Android TWA");
+    expect(readme).toContain("Android 本地 APK");
   });
 
-  it("ships digital asset links for the Android TWA", () => {
-    const assetLinks = JSON.parse(
-      readSource("public", ".well-known", "assetlinks.json"),
-    ) as Array<{
-      relation: string[];
-      target: {
-        namespace: string;
-        package_name: string;
-        sha256_cert_fingerprints: string[];
-      };
-    }>;
-
-    expect(assetLinks).toHaveLength(1);
-    expect(assetLinks[0].relation).toContain(
-      "delegate_permission/common.handle_all_urls",
+  it("ships a bundled Android WebView shell without TWA dependencies", () => {
+    const manifest = readSource(
+      "android",
+      "app",
+      "src",
+      "main",
+      "AndroidManifest.xml",
     );
-    expect(assetLinks[0].target.namespace).toBe("android_app");
-    expect(assetLinks[0].target.package_name).toBe("com.dadkit.mobile");
-    expect(
-      assetLinks[0].target.sha256_cert_fingerprints.length,
-    ).toBeGreaterThan(0);
+    const activity = readSource(
+      "android",
+      "app",
+      "src",
+      "main",
+      "java",
+      "com",
+      "dadkit",
+      "mobile",
+      "LauncherActivity.java",
+    );
+    const androidBundle = readSource("scripts", "build-android-web.mjs");
+
+    expect(manifest).toContain("android.permission.INTERNET");
+    expect(manifest).not.toContain("trusted");
+    expect(manifest).not.toContain("asset_statements");
+    expect(activity).toContain('getAssets().open("www/" + assetPath)');
+    expect(activity).toContain("source=apk&appVersionCode=1");
+    expect(androidBundle).toContain('rm(path.join(staging, "app", "api")');
+    expect(packageJson.devDependencies).not.toHaveProperty("@bubblewrap/cli");
   });
 
-  it("keeps the Android tag release strict and normalizes certificate fingerprints", () => {
+  it("keeps the Android tag release strict and verifies the signed APK", () => {
     const workflow = readSource(".github", "workflows", "android-release.yml");
 
     expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v2.1.0"');
     expect(workflow).toContain(
       'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
     );
-    expect(workflow).toContain('tr -d \':\' | tr \'[:upper:]\' \'[:lower:]\'');
+    expect(workflow).toContain("npm run android:bundle");
+    expect(workflow).toContain("apksigner");
     expect(workflow).toContain("actions/upload-artifact@v4");
     expect(workflow).toContain("retention-days: 30");
     expect(workflow).toContain('gh release create "$GITHUB_REF_NAME"');
@@ -178,7 +186,7 @@ describe("release endpoints and product surface", () => {
   it("pre-caches the v2.1.0 checklist, growth and settings shell", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.0-pwa-r11"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.0-pwa-r12"');
     expect(sw).toContain("const REQUIRED_ROUTES = CORE_ROUTES.slice(0, -2)");
     expect(sw).toContain("const OPTIONAL_ROUTES = CORE_ROUTES.slice(-2)");
     for (const route of [
@@ -225,6 +233,7 @@ describe("release endpoints and product surface", () => {
             "dadkit-v2.0.0-pwa-r9",
             "dadkit-v2.1.0-pwa-r10",
             "dadkit-v2.1.0-pwa-r11",
+            "dadkit-v2.1.0-pwa-r12",
           ];
         },
         async delete(key: string) {
@@ -245,6 +254,7 @@ describe("release endpoints and product surface", () => {
     expect(deleted).toEqual([
       "dadkit-v2.0.0-pwa-r9",
       "dadkit-v2.1.0-pwa-r10",
+      "dadkit-v2.1.0-pwa-r11",
     ]);
   });
 

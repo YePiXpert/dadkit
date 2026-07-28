@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const isAndroidBundle = process.env.DADKIT_BUILD_TARGET === "android";
+
 const vpsSecurityHeaders = [
   { key: "Content-Security-Policy", value: "base-uri 'self'; frame-ancestors 'none'; object-src 'none'" },
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
@@ -12,18 +14,23 @@ const vpsSecurityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  output: "standalone",
+  output: isAndroidBundle ? "export" : "standalone",
+  trailingSlash: isAndroidBundle,
   images: {
     unoptimized: true,
   },
-  async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: vpsSecurityHeaders,
-      },
-    ];
-  },
+  ...(isAndroidBundle
+    ? {}
+    : {
+        async headers() {
+          return [
+            {
+              source: "/:path*",
+              headers: vpsSecurityHeaders,
+            },
+          ];
+        },
+      }),
 };
 
 export default nextConfig;

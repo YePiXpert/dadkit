@@ -164,7 +164,7 @@ describe("v3 checklist store", () => {
         loadChecklist().find((item) => item.id === first.id)?.status,
       ).not.toBe("packed");
 
-      vi.advanceTimersByTime(300);
+      vi.advanceTimersByTime(1_100);
 
       expect(
         loadChecklist().find((item) => item.id === first.id)?.status,

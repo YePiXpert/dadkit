@@ -2,7 +2,7 @@
   "name": "dadkit",
   "version": "2.1.0",
   "private": true,
-  "description": "A local-first maternity preparation PWA.",
+  "description": "A local-first maternity preparation app for web and Android.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -14,6 +14,7 @@
     "test:e2e:install": "playwright install chromium webkit",
     "test:docker": "vitest run --config vitest.docker.config.ts tests/docker-integration.test.ts",
     "performance:check": "node scripts/check-performance-budgets.mjs",
+    "android:bundle": "node scripts/build-android-web.mjs",
     "android:validate": "node scripts/validate-android-release.mjs",
     "webdav:verify": "node scripts/verify-webdav-acceptance.mjs",
     "webdav:verify:prompt": "powershell -ExecutionPolicy Bypass -File scripts/verify-webdav-acceptance.ps1"
@@ -34,7 +35,6 @@
     "zustand": "^5.0.5"
   },
   "devDependencies": {
-    "@bubblewrap/cli": "1.24.1",
     "@eslint/eslintrc": "^3.3.1",
     "@playwright/test": "1.62.0",
     "@types/node": "^22.15.29",

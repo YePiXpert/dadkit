@@ -655,6 +655,20 @@ function cloneChecklistState(
   ) as ChecklistStatePayload;
 }
 
+function captureChecklistState(
+  payload: ChecklistStatePayload,
+): ChecklistStatePayload {
+  // Hot-path updates only need an immutable point-in-time view. Copy the
+  // containers here and defer expensive JSON normalization until flush.
+  return {
+    checklist: [...payload.checklist],
+    customItems: [...payload.customItems],
+    hiddenTemplateItemIds: Array.from(
+      new Set(payload.hiddenTemplateItemIds),
+    ),
+  };
+}
+
 function notifyChecklistPersistenceStatus() {
   if (
     typeof window !== "undefined" &&
@@ -723,7 +737,7 @@ export function saveChecklistState(payload: ChecklistStatePayload) {
   }
 }
 
-const CHECKLIST_STATE_SAVE_DELAY_MS = 250;
+const CHECKLIST_STATE_SAVE_DELAY_MS = 1_000;
 
 let pendingChecklistStateSave: PendingChecklistStateSave | undefined;
 let pendingChecklistStateTimer: ReturnType<typeof setTimeout> | undefined;
@@ -766,7 +780,10 @@ export function flushPendingChecklistStateSave() {
   pendingChecklistStateSave = undefined;
 
   try {
-    writeChecklistStateNow(pending.payload);
+    const normalized = cloneChecklistState(pending.payload);
+
+    writeChecklistStateNow(normalized);
+    latestChecklistState = normalized;
     checklistPersistedRevision = Math.max(
       checklistPersistedRevision,
       pending.revision,
@@ -799,15 +816,15 @@ function cancelPendingChecklistStateSave() {
   pendingChecklistStateSave = undefined;
 }
 
-// 高频点按路径使用：把整包 localStorage 序列化写入从每次点按
-// 合并为至多每 250ms 一次，避免主线程被同步 I/O 卡住。
+// 高频点按路径使用：只复制数组容器，避免每次点按深度序列化 141 条
+// 清单；完整规范化与 localStorage 写入合并到空闲后的 1 秒窗口。
 export function saveChecklistStateSoon(payload: ChecklistStatePayload) {
   if (!canUseLocalStorage()) {
     return;
   }
 
   const revision = ++checklistDirtyRevision;
-  const next = cloneChecklistState(payload);
+  const next = captureChecklistState(payload);
 
   latestChecklistState = next;
   pendingChecklistStateSave = { payload: next, revision };

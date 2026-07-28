@@ -326,7 +326,9 @@ export function deriveChecklistView(
   let packingCompleted = 0;
 
   for (const sourceItem of items) {
-    const item = normalizeChecklistItem(sourceItem);
+    // Store items are normalized at every write boundary. Preserve their
+    // identity here so memoized rows do not all re-render after one change.
+    const item = sourceItem;
 
     if (
       mode !== "full" &&
@@ -368,8 +370,10 @@ export function deriveChecklistView(
     }
   }
 
-  for (const bucket of sectionBuckets.values()) {
-    sortDerivedItems(bucket);
+  if (view !== "all") {
+    for (const bucket of sectionBuckets.values()) {
+      sortDerivedItems(bucket);
+    }
   }
 
   return {
