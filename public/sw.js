@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v2.1.0-pwa-r12";
+const CACHE_NAME = "dadkit-v2.1.1-pwa-r13";
 const CORE_ROUTES = [
   "/",
   "/settings",

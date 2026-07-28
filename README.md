@@ -1,10 +1,10 @@
-# DadKit v2.1.0
+# DadKit v2.1.1
 
 DadKit 是一个本地优先的待产包清单与宝宝成长记应用。Android APK 将完整界面、清单、成长图和物品插画打包在应用中；网站也可作为 PWA 使用。清单、成长记录和照片默认只保存在当前设备，需要时可使用本地恢复快照、WebDAV 备份或家庭同步。
 
 正式站点：[https://dadkit.505f.com/](https://dadkit.505f.com/)
 
-最新 Android APK：[GitHub Release](https://github.com/YePiXpert/dadkit/releases/latest) · [DadKit-2.1.0.apk](https://github.com/YePiXpert/dadkit/releases/download/v2.1.0/DadKit-2.1.0.apk)
+最新 Android APK：[GitHub Release](https://github.com/YePiXpert/dadkit/releases/latest) · [DadKit-2.1.1.apk](https://github.com/YePiXpert/dadkit/releases/download/v2.1.1/DadKit-2.1.1.apk)
 
 ## 主要功能
 
@@ -84,16 +84,16 @@ npm run test:docker
 仓库包含原生 WebView 壳、Gradle 工程和 wrapper，不包含签名密钥。静态站点先由 Next.js 导出，再写入 APK 的 `assets/www`；服务端 API 路由不会打入安装包。
 
 - 包名：`com.dadkit.mobile`
-- 本地启动地址：`https://dadkit.505f.com/?source=apk&appVersionCode=1`
-- `versionName`：`2.1.0`
-- `versionCode`：`1`
+- 本地启动地址：`https://dadkit.505f.com/?source=apk&appVersionCode=2`
+- `versionName`：`2.1.1`
+- `versionCode`：`2`
 - 最低 Android：API 23
 
 生成静态资源并检查配置：
 
 ```bash
 npm run android:bundle
-npm run android:validate -- v2.1.0
+npm run android:validate -- v2.1.1
 ```
 
 本机签名构建需要 JDK 17、Android SDK 以及以下环境变量；密钥文件、密码、本机 SDK 路径和构建产物均被 Git 忽略：
@@ -112,7 +112,7 @@ cd android
 
 ## GitHub Release 流程
 
-`android-release` 工作流仅由 `v*` tag 触发，并拒绝不等于 `v2.1.0`、不属于 `main` 或不匹配 Android 配置的提交。流水线运行 lint、Vitest、生产构建、性能门禁、静态 APK 资源打包、Chromium/WebKit、Docker 集成测试、`zipalign` 和 `apksigner`，全部成功后创建公开 Release。
+`android-release` 工作流仅由 `v*` tag 触发，并拒绝不等于 `v2.1.1`、不属于 `main` 或不匹配 Android 配置的提交。流水线运行 lint、Vitest、生产构建、性能门禁、静态 APK 资源打包、Chromium/WebKit、Docker 集成测试、`zipalign` 和 `apksigner`，全部成功后创建公开 Release。
 
 GitHub Actions Secrets：
 
@@ -123,14 +123,14 @@ GitHub Actions Secrets：
 维护者发布步骤：
 
 1. 更新 `package.json`、Gradle 的 `versionName`/`versionCode`、APK 启动参数和校验脚本。
-2. 运行 `npm run android:bundle`、`npm run android:validate -- v2.1.0`、lint、Vitest、生产构建和真机验证。
-3. 推送已验证的 `main` 提交和 tag `v2.1.0`。
-4. 确认公开 Release 包含 `DadKit-2.1.0.apk` 与 `DadKit-2.1.0.apk.sha256`；AAB 仅保存为 30 天私有 Actions Artifact。
+2. 运行 `npm run android:bundle`、`npm run android:validate -- v2.1.1`、lint、Vitest、生产构建和真机验证。
+3. 推送已验证的 `main` 提交和 tag `v2.1.1`。
+4. 确认公开 Release 包含 `DadKit-2.1.1.apk` 与 `DadKit-2.1.1.apk.sha256`；AAB 仅保存为 30 天私有 Actions Artifact。
 5. 在 VPS 下载 APK 和 SHA-256，校验后执行站内 APK 发布脚本。
 
 ```bash
-sha256sum -c DadKit-2.1.0.apk.sha256
-sh scripts/release-apk.sh DadKit-2.1.0.apk 1 2.1.0 '首次正式发布'
+sha256sum -c DadKit-2.1.1.apk.sha256
+sh scripts/release-apk.sh DadKit-2.1.1.apk 2 2.1.1 '本地 APK 正式发布'
 ```
 
 发布脚本拒绝非正整数、重复或降低的 `versionCode`，并通过临时文件和原子 rename 发布。`GET /api/app-version` 返回版本、说明、大小、SHA-256 和发布时间；`GET|HEAD /api/app-version/apk?versionCode=N` 支持 ETag、Range、206 和 416。

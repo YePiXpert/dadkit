@@ -30,7 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$GITHUB_REF_NAME" = "v2.1.0"
+          test "$GITHUB_REF_NAME" = "v2.1.1"
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
@@ -103,15 +103,15 @@ jobs:
           test -f "$AAB"
           "$BUILD_TOOLS/zipalign" -c -v 4 "$APK"
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
-          cp "$APK" DadKit-2.1.0.apk
-          sha256sum DadKit-2.1.0.apk > DadKit-2.1.0.apk.sha256
-          cp "$AAB" DadKit-2.1.0.aab
+          cp "$APK" DadKit-2.1.1.apk
+          sha256sum DadKit-2.1.1.apk > DadKit-2.1.1.apk.sha256
+          cp "$AAB" DadKit-2.1.1.aab
 
       - name: Store AAB privately for 30 days
         uses: actions/upload-artifact@v4
         with:
-          name: DadKit-2.1.0-aab
-          path: DadKit-2.1.0.aab
+          name: DadKit-2.1.1-aab
+          path: DadKit-2.1.1.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -120,16 +120,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          DadKit 2.1.0
+          DadKit 2.1.1
 
           - 正式站点迁移到 https://dadkit.505f.com/
-          - 新 Android 包名为 com.dadkit.mobile，首次 versionCode 为 1
+          - Android 包名为 com.dadkit.mobile，versionCode 为 2
           - APK 内置完整界面、清单、成长图和物品图，断网可直接打开
           - 清单、成长记录和照片保存在应用本机沙箱；家庭同步与 WebDAV 为可选联网功能
           EOF
           gh release create "$GITHUB_REF_NAME" \
-            DadKit-2.1.0.apk \
-            DadKit-2.1.0.apk.sha256 \
+            DadKit-2.1.1.apk \
+            DadKit-2.1.1.apk.sha256 \
             --verify-tag \
-            --title "DadKit 2.1.0" \
+            --title "DadKit 2.1.1" \
             --notes-file release-notes.md

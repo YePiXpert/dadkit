@@ -33,7 +33,7 @@ describe("release endpoints and product surface", () => {
       shortcuts: Array<{ name: string; short_name: string; url: string }>;
     };
 
-    expect(packageJson.version).toBe("2.1.0");
+    expect(packageJson.version).toBe("2.1.1");
     expect(manifest.name).toBe("DadKit 待产包清单");
     expect(manifest.description).toContain("待产包");
     expect(manifest.description).toContain("备份");
@@ -83,7 +83,7 @@ describe("release endpoints and product surface", () => {
     expect(manifest).not.toContain("trusted");
     expect(manifest).not.toContain("asset_statements");
     expect(activity).toContain('getAssets().open("www/" + assetPath)');
-    expect(activity).toContain("source=apk&appVersionCode=1");
+    expect(activity).toContain("source=apk&appVersionCode=2");
     expect(androidBundle).toContain('rm(path.join(staging, "app", "api")');
     expect(packageJson.devDependencies).not.toHaveProperty("@bubblewrap/cli");
   });
@@ -91,7 +91,7 @@ describe("release endpoints and product surface", () => {
   it("keeps the Android tag release strict and verifies the signed APK", () => {
     const workflow = readSource(".github", "workflows", "android-release.yml");
 
-    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v2.1.0"');
+    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v2.1.1"');
     expect(workflow).toContain(
       'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
     );
@@ -183,10 +183,10 @@ describe("release endpoints and product surface", () => {
     );
   });
 
-  it("pre-caches the v2.1.0 checklist, growth and settings shell", () => {
+  it("pre-caches the v2.1.1 checklist, growth and settings shell", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.0-pwa-r12"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.1-pwa-r13"');
     expect(sw).toContain("const REQUIRED_ROUTES = CORE_ROUTES.slice(0, -2)");
     expect(sw).toContain("const OPTIONAL_ROUTES = CORE_ROUTES.slice(-2)");
     for (const route of [
@@ -234,6 +234,7 @@ describe("release endpoints and product surface", () => {
             "dadkit-v2.1.0-pwa-r10",
             "dadkit-v2.1.0-pwa-r11",
             "dadkit-v2.1.0-pwa-r12",
+            "dadkit-v2.1.1-pwa-r13",
           ];
         },
         async delete(key: string) {
@@ -255,6 +256,7 @@ describe("release endpoints and product surface", () => {
       "dadkit-v2.0.0-pwa-r9",
       "dadkit-v2.1.0-pwa-r10",
       "dadkit-v2.1.0-pwa-r11",
+      "dadkit-v2.1.0-pwa-r12",
     ]);
   });
 

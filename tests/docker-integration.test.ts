@@ -25,7 +25,7 @@ describeDocker("Docker release integration", () => {
   const apkBytes = Buffer.from("DadKit integration APK\n", "utf8");
   const sha256 = createHash("sha256").update(apkBytes).digest("hex");
   const tempDirectory = mkdtempSync(path.join(tmpdir(), "dadkit-docker-"));
-  const apkPath = path.join(tempDirectory, "DadKit-2.1.0.apk");
+  const apkPath = path.join(tempDirectory, "DadKit-2.1.1.apk");
   let baseURL = "";
   let containerStarted = false;
 
@@ -121,8 +121,8 @@ describeDocker("Docker release integration", () => {
       [
         path.join(root, "scripts", "release-apk.sh"),
         apkPath,
-        "1",
-        "2.1.0",
+        "2",
+        "2.1.1",
         notes,
       ],
       {
@@ -145,12 +145,12 @@ describeDocker("Docker release integration", () => {
       notes,
       sha256,
       size: apkBytes.byteLength,
-      versionCode: 1,
-      versionName: "2.1.0",
+      versionCode: 2,
+      versionName: "2.1.1",
     });
 
     const rangeResponse = await fetch(
-      `${baseURL}/api/app-version/apk?versionCode=1`,
+      `${baseURL}/api/app-version/apk?versionCode=2`,
       { headers: { Range: "bytes=2-8" } },
     );
     expect(rangeResponse.status).toBe(206);
@@ -163,7 +163,7 @@ describeDocker("Docker release integration", () => {
     );
 
     const headResponse = await fetch(
-      `${baseURL}/api/app-version/apk?versionCode=1`,
+      `${baseURL}/api/app-version/apk?versionCode=2`,
       { method: "HEAD" },
     );
     expect(headResponse.status).toBe(200);
@@ -180,7 +180,7 @@ describeDocker("Docker release integration", () => {
         "stat",
         "-c",
         "%a:%U:%G",
-        "/app/data/dadkit-1.apk",
+        "/app/data/dadkit-2.apk",
       ]),
     ).toBe("600:nextjs:nodejs");
     expect(
@@ -219,8 +219,8 @@ describeDocker("Docker release integration", () => {
       [
         path.join(root, "scripts", "release-apk.sh"),
         apkPath,
-        "1",
-        "2.1.0",
+        "2",
+        "2.1.1",
         notes,
       ],
       {
@@ -236,6 +236,6 @@ describeDocker("Docker release integration", () => {
     );
 
     expect(duplicateRelease.status).not.toBe(0);
-    expect(duplicateRelease.stderr).toContain("must be greater than 1");
+    expect(duplicateRelease.stderr).toContain("must be greater than 2");
   }, 90_000);
 });
