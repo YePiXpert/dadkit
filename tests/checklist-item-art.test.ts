@@ -9,31 +9,52 @@ import { ChecklistItemArt } from "@/components/ChecklistItemArt";
 import {
   CHECKLIST_ITEM_ART_KEYS,
   getChecklistItemArtKey,
+  getChecklistItemArtPresentation,
   getChecklistItemArtSrc,
 } from "@/lib/checklist-item-art";
 import { generalTemplate } from "@/lib/templates/general";
 
 describe("checklist item artwork", () => {
-  it("covers all 141 bundled items with the 64 reviewed WebP illustrations", () => {
+  it("gives all 144 bundled items their own reviewed WebP illustration", () => {
     const usedKeys = new Set<string>();
+    const usedPresentations = new Set<string>();
+    const usedSources = new Set<string>();
 
-    expect(generalTemplate).toHaveLength(141);
-    expect(CHECKLIST_ITEM_ART_KEYS).toHaveLength(64);
+    expect(generalTemplate).toHaveLength(144);
+    expect(CHECKLIST_ITEM_ART_KEYS).toHaveLength(144);
 
     for (const item of generalTemplate) {
       const key = getChecklistItemArtKey(item);
+      const presentation = getChecklistItemArtPresentation(item);
       const src = getChecklistItemArtSrc(item);
+      const presentationKey = [
+        src,
+        presentation.backgroundColor,
+        presentation.objectPosition,
+        presentation.transform,
+      ].join("|");
 
       expect(CHECKLIST_ITEM_ART_KEYS).toContain(key);
       expect(src).toBe(`/item-art/${key}.webp`);
+      expect(usedSources.has(src), `重复的物品插画文件: ${item.id}`).toBe(
+        false,
+      );
       expect(
         existsSync(join(process.cwd(), "public", src)),
         `缺少物品插画: ${src}`,
       ).toBe(true);
+      expect(
+        usedPresentations.has(presentationKey),
+        `重复的物品插画呈现: ${item.id}`,
+      ).toBe(false);
       usedKeys.add(key);
+      usedPresentations.add(presentationKey);
+      usedSources.add(src);
     }
 
     expect(usedKeys).toEqual(new Set(CHECKLIST_ITEM_ART_KEYS));
+    expect(usedPresentations).toHaveLength(generalTemplate.length);
+    expect(usedSources).toHaveLength(generalTemplate.length);
   });
 
   it("keeps every optimized asset below 20 KiB and the full set below 1 MiB", () => {
@@ -66,6 +87,8 @@ describe("checklist item artwork", () => {
     expect(markup).toContain('loading="lazy"');
     expect(markup).toContain('width="512"');
     expect(markup).toContain('height="384"');
+    expect(markup).toContain("data-art-tone=");
+    expect(markup).toContain("mix-blend-multiply");
     expect(markup).not.toContain("<svg");
   });
 

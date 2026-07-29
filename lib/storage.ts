@@ -828,7 +828,7 @@ function cancelPendingChecklistStateSave() {
   pendingChecklistStateSave = undefined;
 }
 
-// 高频点按路径使用：只复制数组容器，避免每次点按深度序列化 141 条
+// 高频点按路径使用：只复制数组容器，避免每次点按深度序列化整份内置清单
 // 清单；完整规范化与 localStorage 写入合并到空闲后的 1 秒窗口。
 export function saveChecklistStateSoon(payload: ChecklistStatePayload) {
   if (!canUseLocalStorage()) {

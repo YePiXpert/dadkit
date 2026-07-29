@@ -79,8 +79,8 @@ await access(path.join(bundledRoot, "checklist", "baby", "index.html"));
 
 const itemArt = await readdir(path.join(bundledRoot, "item-art"));
 assert(
-  itemArt.filter((file) => file.endsWith(".webp")).length === 64,
-  "64 bundled item illustrations",
+  itemArt.filter((file) => file.endsWith(".webp")).length === 144,
+  "144 bundled item illustrations",
 );
 
 if (tag) {

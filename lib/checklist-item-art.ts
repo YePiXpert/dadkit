@@ -1,6 +1,6 @@
 import type { ChecklistItem } from "@/lib/types";
 
-export const CHECKLIST_ITEM_ART_KEYS = [
+const BASE_CHECKLIST_ITEM_ART_KEYS = [
   "general-baby-blanket",
   "general-baby-bottle-brush",
   "general-baby-diaper-cream",
@@ -17,6 +17,8 @@ export const CHECKLIST_ITEM_ART_KEYS = [
   "general-confinement-baby-bottle-warmer",
   "general-confinement-baby-crib",
   "general-confinement-baby-kettle",
+  "general-confinement-baby-medicine-syringe",
+  "general-confinement-baby-nasal-care",
   "general-confinement-baby-night-light",
   "general-confinement-baby-pacifier",
   "general-confinement-baby-sleep-sack",
@@ -27,6 +29,7 @@ export const CHECKLIST_ITEM_ART_KEYS = [
   "general-confinement-baby-washer",
   "general-confinement-mom-diaper-bag",
   "general-confinement-mom-nursing-pillow",
+  "general-confinement-mom-pumping-bra",
   "general-doc-admission",
   "general-doc-birth-plan",
   "general-doc-birth-registration",
@@ -67,11 +70,10 @@ export const CHECKLIST_ITEM_ART_KEYS = [
   "general-postpartum-underwear",
 ] as const;
 
-export type ChecklistItemArtKey = (typeof CHECKLIST_ITEM_ART_KEYS)[number];
+type BaseChecklistItemArtKey =
+  (typeof BASE_CHECKLIST_ITEM_ART_KEYS)[number];
 
-const ART_KEY_SET = new Set<string>(CHECKLIST_ITEM_ART_KEYS);
-
-const BUNDLED_ART_ALIASES: Record<string, ChecklistItemArtKey> = {
+const BUNDLED_ART_ALIASES = {
   "general-doc-bank-card": "general-doc-medical-card",
   "general-labor-power-bank": "general-labor-long-cable",
   "general-labor-tissues": "general-baby-wipes",
@@ -154,9 +156,63 @@ const BUNDLED_ART_ALIASES: Record<string, ChecklistItemArtKey> = {
   "general-last-glasses": "general-labor-glasses",
   "general-last-payment": "general-doc-cash",
   "general-last-car-seat": "general-going-home-car-seat",
-};
+} as const satisfies Record<string, BaseChecklistItemArtKey>;
+
+export const CHECKLIST_ITEM_ART_KEYS = [
+  ...BASE_CHECKLIST_ITEM_ART_KEYS,
+  ...(Object.keys(BUNDLED_ART_ALIASES) as Array<
+    keyof typeof BUNDLED_ART_ALIASES
+  >),
+] as const;
+
+export type ChecklistItemArtKey =
+  | BaseChecklistItemArtKey
+  | keyof typeof BUNDLED_ART_ALIASES;
+
+const ART_KEY_SET = new Set<string>(CHECKLIST_ITEM_ART_KEYS);
 
 type ItemArtInput = Pick<ChecklistItem, "category" | "id" | "name">;
+
+const MACARON_ART_PALETTE = [
+  { backgroundColor: "#f8dfe3", tone: "草莓奶霜" },
+  { backgroundColor: "#f9e3d2", tone: "蜜桃奶油" },
+  { backgroundColor: "#f5ebc9", tone: "柠檬曲奇" },
+  { backgroundColor: "#e5efd1", tone: "青提奶绿" },
+  { backgroundColor: "#dcebd8", tone: "开心果绿" },
+  { backgroundColor: "#d9ece7", tone: "薄荷牛乳" },
+  { backgroundColor: "#dcecf4", tone: "苏打浅蓝" },
+  { backgroundColor: "#dfe5f5", tone: "云朵蓝莓" },
+  { backgroundColor: "#e5e0f3", tone: "香芋奶昔" },
+  { backgroundColor: "#ecddf0", tone: "淡紫马卡龙" },
+  { backgroundColor: "#f1dce8", tone: "樱花牛奶" },
+  { backgroundColor: "#f6dfc7", tone: "杏仁奶糖" },
+] as const;
+
+const ART_PLACEMENTS = [
+  { objectPosition: "50% 50%", transform: "scale(1.01)" },
+  { objectPosition: "48% 50%", transform: "scale(1.035)" },
+  { objectPosition: "52% 49%", transform: "scale(1.02)" },
+  { objectPosition: "50% 52%", transform: "scale(1.045)" },
+] as const;
+
+const ART_VARIANT_BY_ID = createBundledArtVariants();
+
+export function getChecklistItemArtPresentation(item: ItemArtInput) {
+  const artKey = getChecklistItemArtKey(item);
+  const variant = ART_VARIANT_BY_ID.get(item.id) ?? stableHash(item.id);
+  const artKeyOffset = CHECKLIST_ITEM_ART_KEYS.indexOf(artKey);
+  const palette =
+    MACARON_ART_PALETTE[
+      (Math.max(artKeyOffset, 0) + variant) % MACARON_ART_PALETTE.length
+    ];
+  const placement = ART_PLACEMENTS[variant % ART_PLACEMENTS.length];
+
+  return {
+    ...palette,
+    ...placement,
+    variant,
+  };
+}
 
 export function getChecklistItemArtKey(
   item: ItemArtInput,
@@ -165,16 +221,39 @@ export function getChecklistItemArtKey(
     return item.id as ChecklistItemArtKey;
   }
 
-  const bundledAlias = BUNDLED_ART_ALIASES[item.id];
-  if (bundledAlias) {
-    return bundledAlias;
-  }
-
   return inferChecklistItemArtKey(item);
 }
 
 export function getChecklistItemArtSrc(item: ItemArtInput) {
   return `/item-art/${getChecklistItemArtKey(item)}.webp`;
+}
+
+function createBundledArtVariants() {
+  const variants = new Map<string, number>();
+  const nextVariant = new Map<ChecklistItemArtKey, number>();
+
+  for (const key of CHECKLIST_ITEM_ART_KEYS) {
+    variants.set(key, 0);
+    nextVariant.set(key, 1);
+  }
+
+  for (const [itemId, artKey] of Object.entries(BUNDLED_ART_ALIASES)) {
+    const variant = nextVariant.get(artKey) ?? 1;
+    variants.set(itemId, variant);
+    nextVariant.set(artKey, variant + 1);
+  }
+
+  return variants;
+}
+
+function stableHash(value: string) {
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+
+  return hash;
 }
 
 function inferChecklistItemArtKey(
