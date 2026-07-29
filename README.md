@@ -86,7 +86,7 @@ AAB 只保存为 30 天的私有 Actions Artifact。
 
 ## Docker 部署
 
-生产环境至少设置：
+容器仅绑定本机地址，通过 HTTPS 反向代理公开。生产环境至少设置：
 
 ```dotenv
 DADKIT_BIND_ADDRESS=127.0.0.1
