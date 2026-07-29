@@ -188,7 +188,7 @@ describe("release endpoints and product surface", () => {
   it("pre-caches the v2.1.1 checklist, growth and settings shell", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.1-pwa-r13"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.1-pwa-r14"');
     expect(sw).toContain("const REQUIRED_ROUTES = CORE_ROUTES.slice(0, -2)");
     expect(sw).toContain("const OPTIONAL_ROUTES = CORE_ROUTES.slice(-2)");
     for (const route of [
@@ -259,6 +259,7 @@ describe("release endpoints and product surface", () => {
       "dadkit-v2.1.0-pwa-r10",
       "dadkit-v2.1.0-pwa-r11",
       "dadkit-v2.1.0-pwa-r12",
+      "dadkit-v2.1.1-pwa-r13",
     ]);
   });
 

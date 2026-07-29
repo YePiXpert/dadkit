@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v2.1.1-pwa-r13";
+const CACHE_NAME = "dadkit-v2.1.1-pwa-r14";
 const CORE_ROUTES = [
   "/",
   "/settings",
@@ -101,7 +101,9 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (shouldCacheAsset(url)) {
-    event.respondWith(networkFirst(event.request, false));
+    // 静态构建产物与物品/孕周插画是发布版本不变的资源：
+    // 缓存命中直接返回，后台静默更新，滚动时不再等待网络。
+    event.respondWith(staleWhileRevalidate(event.request));
   }
 });
 
@@ -198,30 +200,30 @@ function extractBuildAssets(html) {
   return Array.from(assets);
 }
 
-async function networkFirst(request, fallbackToHome) {
+async function staleWhileRevalidate(request) {
   const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
 
-  try {
-    const response = await fetch(request);
+  const networkUpdate = fetch(request)
+    .then((response) => {
+      if (isCacheable(response)) {
+        return cache.put(request, response.clone()).then(() => response);
+      }
+      return response;
+    })
+    .catch(() => null);
 
-    if (isCacheable(response)) {
-      await cache.put(request, response.clone());
-    }
-
-    return response;
-  } catch {
-    const cached = await cache.match(request, { ignoreSearch: fallbackToHome });
-
-    if (cached) {
-      return cached;
-    }
-
-    if (fallbackToHome) {
-      return cache.match("/");
-    }
-
-    throw new Error("No cached response available.");
+  if (cached) {
+    return cached;
   }
+
+  const response = await networkUpdate;
+
+  if (response) {
+    return response;
+  }
+
+  throw new Error("No cached response available.");
 }
 
 function isCacheable(response) {

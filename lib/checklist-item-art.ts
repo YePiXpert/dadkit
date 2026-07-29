@@ -173,47 +173,6 @@ const ART_KEY_SET = new Set<string>(CHECKLIST_ITEM_ART_KEYS);
 
 type ItemArtInput = Pick<ChecklistItem, "category" | "id" | "name">;
 
-const MACARON_ART_PALETTE = [
-  { backgroundColor: "#f8dfe3", tone: "草莓奶霜" },
-  { backgroundColor: "#f9e3d2", tone: "蜜桃奶油" },
-  { backgroundColor: "#f5ebc9", tone: "柠檬曲奇" },
-  { backgroundColor: "#e5efd1", tone: "青提奶绿" },
-  { backgroundColor: "#dcebd8", tone: "开心果绿" },
-  { backgroundColor: "#d9ece7", tone: "薄荷牛乳" },
-  { backgroundColor: "#dcecf4", tone: "苏打浅蓝" },
-  { backgroundColor: "#dfe5f5", tone: "云朵蓝莓" },
-  { backgroundColor: "#e5e0f3", tone: "香芋奶昔" },
-  { backgroundColor: "#ecddf0", tone: "淡紫马卡龙" },
-  { backgroundColor: "#f1dce8", tone: "樱花牛奶" },
-  { backgroundColor: "#f6dfc7", tone: "杏仁奶糖" },
-] as const;
-
-const ART_PLACEMENTS = [
-  { objectPosition: "50% 50%", transform: "scale(1.01)" },
-  { objectPosition: "48% 50%", transform: "scale(1.035)" },
-  { objectPosition: "52% 49%", transform: "scale(1.02)" },
-  { objectPosition: "50% 52%", transform: "scale(1.045)" },
-] as const;
-
-const ART_VARIANT_BY_ID = createBundledArtVariants();
-
-export function getChecklistItemArtPresentation(item: ItemArtInput) {
-  const artKey = getChecklistItemArtKey(item);
-  const variant = ART_VARIANT_BY_ID.get(item.id) ?? stableHash(item.id);
-  const artKeyOffset = CHECKLIST_ITEM_ART_KEYS.indexOf(artKey);
-  const palette =
-    MACARON_ART_PALETTE[
-      (Math.max(artKeyOffset, 0) + variant) % MACARON_ART_PALETTE.length
-    ];
-  const placement = ART_PLACEMENTS[variant % ART_PLACEMENTS.length];
-
-  return {
-    ...palette,
-    ...placement,
-    variant,
-  };
-}
-
 export function getChecklistItemArtKey(
   item: ItemArtInput,
 ): ChecklistItemArtKey {
@@ -226,34 +185,6 @@ export function getChecklistItemArtKey(
 
 export function getChecklistItemArtSrc(item: ItemArtInput) {
   return `/item-art/${getChecklistItemArtKey(item)}.webp`;
-}
-
-function createBundledArtVariants() {
-  const variants = new Map<string, number>();
-  const nextVariant = new Map<ChecklistItemArtKey, number>();
-
-  for (const key of CHECKLIST_ITEM_ART_KEYS) {
-    variants.set(key, 0);
-    nextVariant.set(key, 1);
-  }
-
-  for (const [itemId, artKey] of Object.entries(BUNDLED_ART_ALIASES)) {
-    const variant = nextVariant.get(artKey) ?? 1;
-    variants.set(itemId, variant);
-    nextVariant.set(artKey, variant + 1);
-  }
-
-  return variants;
-}
-
-function stableHash(value: string) {
-  let hash = 0;
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
-  }
-
-  return hash;
 }
 
 function inferChecklistItemArtKey(

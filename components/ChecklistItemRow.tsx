@@ -35,6 +35,39 @@ const STATE_ICONS = {
   not_needed: Ban,
 } satisfies Record<ChecklistItemState, typeof Circle>;
 
+// 所有卡片共享一个 IntersectionObserver，避免整页清单为每行各建一个实例。
+const visibilityCallbacks = new Map<Element, (visible: boolean) => void>();
+let sharedVisibilityObserver: IntersectionObserver | undefined;
+
+function observeRowVisibility(
+  element: Element,
+  callback: (visible: boolean) => void,
+) {
+  if (typeof IntersectionObserver === "undefined") {
+    callback(true);
+    return () => {};
+  }
+
+  if (!sharedVisibilityObserver) {
+    sharedVisibilityObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          visibilityCallbacks.get(entry.target)?.(entry.isIntersecting);
+        }
+      },
+      { rootMargin: "600px 0px" },
+    );
+  }
+
+  visibilityCallbacks.set(element, callback);
+  sharedVisibilityObserver.observe(element);
+
+  return () => {
+    visibilityCallbacks.delete(element);
+    sharedVisibilityObserver?.unobserve(element);
+  };
+}
+
 type ChecklistItemRowProps = {
   item: ChecklistItem;
   onOpenDetails: (itemId: string) => void;
@@ -69,18 +102,14 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   useEffect(() => {
     const element = articleRef.current;
 
-    if (!element || typeof IntersectionObserver === "undefined") {
+    if (!element) {
       setMediaEnabled(true);
       return;
     }
 
-    const observer = new IntersectionObserver(
-      ([entry]) => setMediaEnabled(Boolean(entry?.isIntersecting)),
-      { rootMargin: "600px 0px" },
+    return observeRowVisibility(element, (visible) =>
+      setMediaEnabled(visible),
     );
-
-    observer.observe(element);
-    return () => observer.disconnect();
   }, []);
 
   return (
