@@ -13,6 +13,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DadKitExportData } from "@/lib/data/format";
 import {
+  createInvite,
+  createSpace,
   joinSpace,
   leaveSpace,
   pullSpace,
@@ -78,6 +80,89 @@ afterEach(() => {
 });
 
 describe("async sync server store", () => {
+  it("creates a family with an 8-character one-time invite", async () => {
+    const created = await createSpace("口令家庭");
+
+    expect(created?.invite.code).toMatch(
+      /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/,
+    );
+    expect(Date.parse(created!.invite.expiresAt)).toBeGreaterThan(Date.now());
+
+    const joined = await joinSpace(
+      "口令家庭",
+      created!.invite.code.toLowerCase().replace("-", " "),
+      true,
+    );
+
+    expect(joined?.token).toBeTruthy();
+    await expect(
+      joinSpace("口令家庭", created!.invite.code, true),
+    ).resolves.toBeUndefined();
+  });
+
+  it("keeps existing devices while retiring the legacy code after an invite is used", async () => {
+    const original = await joinSpace("现有家庭", "原来的同步码");
+    const second = await joinSpace("现有家庭", "原来的同步码");
+    const invite = await createInvite(original!.token, "现有家庭");
+
+    expect(invite).toBeTruthy();
+    await expect(
+      joinSpace("现有家庭", invite!.code, true),
+    ).resolves.toMatchObject({ version: 0 });
+    await expect(
+      joinSpace("现有家庭", "原来的同步码", true),
+    ).resolves.toBeUndefined();
+    await expect(pullSpace(original!.token)).resolves.toMatchObject({
+      version: 0,
+    });
+    await expect(pullSpace(second!.token)).resolves.toMatchObject({
+      version: 0,
+    });
+  });
+
+  it("requires the exact family name and replaces older unused invites", async () => {
+    const created = await createSpace("名称校验家庭");
+
+    await expect(
+      createInvite(created!.token, "别的家庭"),
+    ).resolves.toBeNull();
+
+    const replacement = await createInvite(
+      created!.token,
+      "名称校验家庭",
+    );
+
+    expect(replacement?.code).not.toBe(created!.invite.code);
+    await expect(
+      joinSpace("名称校验家庭", created!.invite.code, true),
+    ).resolves.toBeUndefined();
+    await expect(
+      joinSpace("名称校验家庭", replacement!.code, true),
+    ).resolves.toBeTruthy();
+  });
+
+  it("rejects an invite after its 10-minute expiry", async () => {
+    const created = await createSpace("过期口令家庭");
+    const file = path.join(dir, readdirSync(dir)[0]!);
+    const stored = JSON.parse(readFileSync(file, "utf8")) as {
+      invite: { expiresAt: string };
+    };
+
+    stored.invite.expiresAt = new Date(Date.now() - 1).toISOString();
+    writeFileSync(file, JSON.stringify(stored), "utf8");
+
+    await expect(
+      joinSpace("过期口令家庭", created!.invite.code, true),
+    ).resolves.toBeUndefined();
+  });
+
+  it("does not create a missing family when joining from the new client", async () => {
+    await expect(
+      joinSpace("不存在的家庭", "7K9M-3XQF", true),
+    ).resolves.toBeUndefined();
+    expect(readdirSync(dir)).toEqual([]);
+  });
+
   it("creates and rejoins a space with the same code", async () => {
     const first = await joinSpace("测试家庭", "家庭同步码-1");
     const second = await joinSpace("测试家庭", "家庭同步码-1");

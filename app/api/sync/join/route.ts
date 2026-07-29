@@ -5,17 +5,19 @@ import {
 } from "@/lib/sync/server-store";
 import { readLimitedRequestText } from "@/lib/http/request-body";
 import {
-  clientKeyFromHeaders as proxyClientKey,
-  createRateLimiter as createWebDavProxyRateLimiter,
+  clientKeyFromHeaders,
+  createRateLimiter,
 } from "@/lib/http/rate-limit";
 
 export const runtime = "nodejs";
 
 const MAX_JOIN_BYTES = 8 * 1024;
-const joinRateLimiter = createWebDavProxyRateLimiter(10, 60_000);
+const joinRateLimiter = createRateLimiter(10, 60_000);
 
 export async function POST(request: Request) {
-  const rateLimit = joinRateLimiter.consume(proxyClientKey(request.headers));
+  const rateLimit = joinRateLimiter.consume(
+    clientKeyFromHeaders(request.headers),
+  );
 
   if (!rateLimit.allowed) {
     return syncError("操作过于频繁，请稍后再试。", 429, {
@@ -23,11 +25,19 @@ export async function POST(request: Request) {
     });
   }
 
-  let payload: { name?: unknown; code?: unknown };
+  let payload: {
+    name?: unknown;
+    code?: unknown;
+    existingOnly?: unknown;
+  };
 
   try {
     const raw = await readLimitedRequestText(request, MAX_JOIN_BYTES, 10_000);
-    payload = JSON.parse(raw) as { name?: unknown; code?: unknown };
+    payload = JSON.parse(raw) as {
+      name?: unknown;
+      code?: unknown;
+      existingOnly?: unknown;
+    };
   } catch {
     return syncError("请求格式不正确。", 400);
   }
@@ -51,10 +61,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await joinSpace(name, code);
+    const result = await joinSpace(name, code, payload.existingOnly === true);
 
     if (!result) {
-      return syncError("同步码不正确。", 401);
+      return syncError("加入口令不正确、已失效，或家庭不存在。", 401);
     }
 
     return syncJson(result);

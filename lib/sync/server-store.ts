@@ -26,6 +26,8 @@ import { mergeExportData } from "@/lib/sync/merge";
 
 const SESSION_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 const SESSION_RENEW_THROTTLE_MS = 60 * 60 * 1000;
+const INVITE_TTL_MS = 10 * 60 * 1000;
+const INVITE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const scrypt = promisify(scryptCallback) as (
   password: string,
   salt: string,
@@ -45,9 +47,17 @@ type SpaceSession = {
   lastSeenAt: string;
 };
 
+type SpaceInvite = {
+  codeSalt: string;
+  codeHash: string;
+  expiresAt: string;
+};
+
 type SpaceFile = {
   codeSalt: string;
   codeHash: string;
+  legacyJoinEnabled?: boolean;
+  invite?: SpaceInvite;
   version: number;
   updatedAt: string;
   data: DadKitImportData | null;
@@ -62,6 +72,15 @@ export type SyncSpaceSnapshot = {
 
 export type SyncJoinResult = SyncSpaceSnapshot & {
   token: string;
+};
+
+export type SyncInvite = {
+  code: string;
+  expiresAt: string;
+};
+
+export type SyncCreateResult = SyncJoinResult & {
+  invite: SyncInvite;
 };
 
 function dataDir() {
@@ -94,14 +113,40 @@ function isSpaceSession(value: unknown): value is SpaceSession {
   );
 }
 
-function isSpaceFile(value: unknown): value is SpaceFile {
+function isSpaceInvite(value: unknown): value is SpaceInvite {
   return (
     isRecord(value) &&
-    Object.keys(value).length === 6 &&
+    Object.keys(value).length === 3 &&
     typeof value.codeSalt === "string" &&
     /^[0-9a-f]{32}$/.test(value.codeSalt) &&
     typeof value.codeHash === "string" &&
     /^[0-9a-f]{64}$/.test(value.codeHash) &&
+    isValidDateString(value.expiresAt)
+  );
+}
+
+function isSpaceFile(value: unknown): value is SpaceFile {
+  const allowedKeys = new Set([
+    "codeSalt",
+    "codeHash",
+    "legacyJoinEnabled",
+    "invite",
+    "version",
+    "updatedAt",
+    "data",
+    "sessions",
+  ]);
+
+  return (
+    isRecord(value) &&
+    Object.keys(value).every((key) => allowedKeys.has(key)) &&
+    typeof value.codeSalt === "string" &&
+    /^[0-9a-f]{32}$/.test(value.codeSalt) &&
+    typeof value.codeHash === "string" &&
+    /^[0-9a-f]{64}$/.test(value.codeHash) &&
+    (value.legacyJoinEnabled === undefined ||
+      typeof value.legacyJoinEnabled === "boolean") &&
+    (value.invite === undefined || isSpaceInvite(value.invite)) &&
     Number.isInteger(value.version) &&
     (value.version as number) >= 0 &&
     isValidDateString(value.updatedAt) &&
@@ -193,6 +238,43 @@ function snapshotOf(space: SpaceFile): SyncSpaceSnapshot {
   };
 }
 
+function issueSession(spaceKey: string, space: SpaceFile, now: string) {
+  const secret = randomBytes(24).toString("hex");
+  space.sessions[sha256(secret)] = { createdAt: now, lastSeenAt: now };
+  return `${spaceKey}.${secret}`;
+}
+
+function generateInviteCode() {
+  const bytes = randomBytes(8);
+  const code = Array.from(
+    bytes,
+    (byte) => INVITE_ALPHABET[byte % INVITE_ALPHABET.length],
+  ).join("");
+  return `${code.slice(0, 4)}-${code.slice(4)}`;
+}
+
+function normalizeInviteCode(code: string) {
+  const normalized = code.toUpperCase().replace(/[\s-]/g, "");
+  return new RegExp(`^[${INVITE_ALPHABET}]{8}$`).test(normalized)
+    ? normalized
+    : undefined;
+}
+
+async function setInvite(space: SpaceFile): Promise<SyncInvite> {
+  const code = generateInviteCode();
+  const normalized = normalizeInviteCode(code)!;
+  const codeSalt = randomBytes(16).toString("hex");
+  const expiresAt = new Date(Date.now() + INVITE_TTL_MS).toISOString();
+
+  space.invite = {
+    codeSalt,
+    codeHash: await hashCode(normalized, codeSalt),
+    expiresAt,
+  };
+
+  return { code, expiresAt };
+}
+
 function pruneExpiredSessions(space: SpaceFile, now: number) {
   for (const [key, session] of Object.entries(space.sessions)) {
     if (now - Date.parse(session.lastSeenAt) > SESSION_TTL_MS) {
@@ -256,6 +338,7 @@ async function authenticateLocked(
 export async function joinSpace(
   name: string,
   code: string,
+  existingOnly = false,
 ): Promise<SyncJoinResult | undefined> {
   const normalizedName = name.trim();
   const normalizedCode = code.trim();
@@ -266,24 +349,54 @@ export async function joinSpace(
     let space = await readSpace(spaceKey);
 
     if (space) {
-      const candidate = await hashCode(normalizedCode, space.codeSalt);
-      const expected = Buffer.from(space.codeHash, "hex");
-      const actual = Buffer.from(candidate, "hex");
+      let authenticated = false;
+      const inviteCode = normalizeInviteCode(normalizedCode);
 
       if (
-        expected.length !== actual.length ||
-        !timingSafeEqual(expected, actual)
+        inviteCode &&
+        space.invite &&
+        Date.parse(space.invite.expiresAt) > Date.now()
       ) {
+        const candidate = await hashCode(inviteCode, space.invite.codeSalt);
+        const expected = Buffer.from(space.invite.codeHash, "hex");
+        const actual = Buffer.from(candidate, "hex");
+
+        authenticated =
+          expected.length === actual.length &&
+          timingSafeEqual(expected, actual);
+
+        if (authenticated) {
+          delete space.invite;
+          space.legacyJoinEnabled = false;
+        }
+      }
+
+      if (!authenticated && space.legacyJoinEnabled !== false) {
+        const candidate = await hashCode(normalizedCode, space.codeSalt);
+        const expected = Buffer.from(space.codeHash, "hex");
+        const actual = Buffer.from(candidate, "hex");
+
+        authenticated =
+          expected.length === actual.length &&
+          timingSafeEqual(expected, actual);
+      }
+
+      if (!authenticated) {
         return undefined;
       }
 
       pruneExpiredSessions(space, Date.now());
     } else {
+      if (existingOnly) {
+        return undefined;
+      }
+
       const codeSalt = randomBytes(16).toString("hex");
 
       space = {
         codeSalt,
         codeHash: await hashCode(normalizedCode, codeSalt),
+        legacyJoinEnabled: true,
         version: 0,
         updatedAt: now,
         data: null,
@@ -291,12 +404,67 @@ export async function joinSpace(
       };
     }
 
-    const secret = randomBytes(24).toString("hex");
-
-    space.sessions[sha256(secret)] = { createdAt: now, lastSeenAt: now };
+    const token = issueSession(spaceKey, space, now);
     await writeSpace(spaceKey, space);
 
-    return { token: `${spaceKey}.${secret}`, ...snapshotOf(space) };
+    return { token, ...snapshotOf(space) };
+  });
+}
+
+export async function createSpace(
+  name: string,
+): Promise<SyncCreateResult | undefined> {
+  const normalizedName = name.trim();
+  const spaceKey = sha256(normalizedName);
+
+  return withSpaceLock(spaceKey, async () => {
+    if (await readSpace(spaceKey)) {
+      return undefined;
+    }
+
+    const now = new Date().toISOString();
+    const codeSalt = randomBytes(16).toString("hex");
+    const retiredLegacyCode = randomBytes(32).toString("hex");
+    const space: SpaceFile = {
+      codeSalt,
+      codeHash: await hashCode(retiredLegacyCode, codeSalt),
+      legacyJoinEnabled: false,
+      version: 0,
+      updatedAt: now,
+      data: null,
+      sessions: {},
+    };
+    const invite = await setInvite(space);
+    const token = issueSession(spaceKey, space, now);
+
+    await writeSpace(spaceKey, space);
+    return { token, invite, ...snapshotOf(space) };
+  });
+}
+
+export async function createInvite(
+  token: string,
+  name: string,
+): Promise<SyncInvite | null | undefined> {
+  const parsed = parseToken(token);
+
+  if (!parsed) {
+    return undefined;
+  }
+  if (sha256(name.trim()) !== parsed.spaceKey) {
+    return null;
+  }
+
+  return withSpaceLock(parsed.spaceKey, async () => {
+    const auth = await authenticateLocked(parsed.spaceKey, parsed.secret);
+
+    if (!auth) {
+      return undefined;
+    }
+
+    const invite = await setInvite(auth.space);
+    await writeSpace(auth.spaceKey, auth.space);
+    return invite;
   });
 }
 

@@ -32,6 +32,15 @@ export type SyncOutcome = {
   message?: string;
 };
 
+export type SyncInvite = {
+  code: string;
+  expiresAt: string;
+};
+
+export type SyncInviteOutcome = SyncOutcome & {
+  invite?: SyncInvite;
+};
+
 type SyncStatus = {
   joined: boolean;
   syncing: boolean;
@@ -382,10 +391,12 @@ export async function joinSpace(
   name: string,
   code: string,
 ): Promise<SyncOutcome> {
+  const spaceName = name.trim();
+
   try {
     const result = await apiRequest<{ token: string }>("/api/sync/join", {
       method: "POST",
-      body: JSON.stringify({ name, code }),
+      body: JSON.stringify({ name: spaceName, code, existingOnly: true }),
     });
 
     if (!result.data?.token) {
@@ -397,6 +408,7 @@ export async function joinSpace(
     saveSyncSession({
       token: result.data.token,
       joinedAt: new Date().toISOString(),
+      spaceName,
     });
     useSyncStatusStore.setState({ joined: true });
 
@@ -409,6 +421,98 @@ export async function joinSpace(
           ? error.message
           : "加入家庭同步失败。",
     };
+  }
+}
+
+export async function createSpace(
+  name: string,
+): Promise<SyncInviteOutcome> {
+  const spaceName = name.trim();
+
+  try {
+    const result = await apiRequest<{
+      token: string;
+      invite: SyncInvite;
+    }>("/api/sync/create", {
+      method: "POST",
+      body: JSON.stringify({ name: spaceName }),
+    });
+
+    if (!result.data?.token || !result.data.invite) {
+      throw new SyncApiError("同步服务没有返回有效会话。", 502);
+    }
+
+    clearRetrySchedule();
+    saveSyncClientState({});
+    saveSyncSession({
+      token: result.data.token,
+      joinedAt: new Date().toISOString(),
+      spaceName,
+    });
+    useSyncStatusStore.setState({ joined: true });
+
+    const synced = await syncNow();
+
+    return {
+      ok: true,
+      invite: result.data.invite,
+      message: synced.ok ? undefined : synced.message,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error && error.message
+          ? error.message
+          : "创建家庭同步失败。",
+    };
+  }
+}
+
+export async function createInvite(
+  name: string,
+): Promise<SyncInviteOutcome> {
+  const session = loadSyncSession();
+  const spaceName = name.trim();
+
+  if (!session) {
+    return { ok: false, message: "请先加入家庭同步。" };
+  }
+
+  try {
+    const result = await apiRequest<SyncInvite>(
+      "/api/sync/invite",
+      {
+        method: "POST",
+        body: JSON.stringify({ name: spaceName }),
+      },
+      session.token,
+    );
+
+    if (!result.data?.code || !result.data.expiresAt) {
+      throw new SyncApiError("同步服务没有返回有效口令。", 502);
+    }
+
+    saveSyncSession({ ...session, spaceName });
+    return { ok: true, invite: result.data };
+  } catch (error) {
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : "生成加入口令失败。";
+
+    if (error instanceof SyncApiError && error.status === 401) {
+      clearRetrySchedule();
+      saveSyncSession(undefined);
+      saveSyncClientState({ lastError: message });
+      useSyncStatusStore.setState({
+        joined: false,
+        syncing: false,
+        lastError: message,
+      });
+    }
+
+    return { ok: false, message };
   }
 }
 

@@ -123,6 +123,7 @@ export type DadKitImportData =
 export type SyncSession = {
   token: string;
   joinedAt: string;
+  spaceName?: string;
 };
 
 export type SyncClientState = {
@@ -571,7 +572,18 @@ export function loadSyncSession(): SyncSession | undefined {
     value.token.length > 0 &&
     typeof value.joinedAt === "string"
   ) {
-    return { token: value.token, joinedAt: value.joinedAt };
+    const spaceName =
+      typeof value.spaceName === "string" &&
+      value.spaceName.length >= 2 &&
+      value.spaceName.length <= 32
+        ? value.spaceName
+        : undefined;
+
+    return {
+      token: value.token,
+      joinedAt: value.joinedAt,
+      ...(spaceName ? { spaceName } : {}),
+    };
   }
 
   return undefined;

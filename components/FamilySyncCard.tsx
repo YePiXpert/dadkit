@@ -1,40 +1,84 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { Users } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Check, Copy, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Feedback } from "@/components/ui/feedback";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { loadSyncSession } from "@/lib/data/settings-repository";
 import {
+  createInvite,
+  createSpace,
   joinSpace,
   leaveSpace,
   syncNow,
+  type SyncInvite,
   useSyncStatusStore,
 } from "@/lib/sync/client";
 
 export function FamilySyncCard() {
   const syncStatus = useSyncStatusStore();
+  const [mode, setMode] = useState<"create" | "join">("create");
   const [syncName, setSyncName] = useState("");
   const [syncCode, setSyncCode] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [invite, setInvite] = useState<SyncInvite>();
+  const [copied, setCopied] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [syncMessageOk, setSyncMessageOk] = useState<boolean>();
   const [syncBusy, setSyncBusy] = useState(false);
 
-  async function startFamilySync() {
+  useEffect(() => {
+    setInviteName(loadSyncSession()?.spaceName ?? "");
+  }, [syncStatus.joined]);
+
+  function validateName(name: string) {
+    if (name.length < 2 || name.length > 32) {
+      setSyncMessage("家庭名称需要 2 到 32 个字符。");
+      setSyncMessageOk(false);
+      return false;
+    }
+
+    return true;
+  }
+
+  async function createFamily() {
+    const name = syncName.trim();
+
+    if (!validateName(name)) {
+      return;
+    }
+
+    setSyncBusy(true);
+    setSyncMessage("");
+    const outcome = await createSpace(name);
+    setSyncBusy(false);
+
+    if (outcome.ok && outcome.invite) {
+      setInviteName(name);
+      setInvite(outcome.invite);
+      setSyncMessage("家庭已创建。把下面的一次性口令发给另一台设备即可。");
+      setSyncMessageOk(true);
+      return;
+    }
+
+    setSyncMessage(outcome.message ?? "创建家庭同步失败。");
+    setSyncMessageOk(false);
+  }
+
+  async function joinFamily() {
     const name = syncName.trim();
     const code = syncCode.trim();
 
-    if (name.length < 2 || name.length > 32) {
-      setSyncMessage("空间名需要 2 到 32 个字符。");
-      setSyncMessageOk(false);
+    if (!validateName(name)) {
       return;
     }
 
     if (code.length < 6 || code.length > 64) {
-      setSyncMessage("同步码需要 6 到 64 个字符。");
+      setSyncMessage("请输入 8 位加入口令；现有家庭也可以继续输入旧同步码。");
       setSyncMessageOk(false);
       return;
     }
@@ -46,13 +90,52 @@ export function FamilySyncCard() {
 
     setSyncMessage(
       outcome.ok
-        ? "已加入家庭同步，之后两台设备会自动保持一致。"
+        ? "已加入家庭同步，之后各台设备会自动保持一致。"
         : (outcome.message ?? "加入家庭同步失败。"),
     );
     setSyncMessageOk(outcome.ok);
 
     if (outcome.ok) {
       setSyncCode("");
+    }
+  }
+
+  async function generateInvite() {
+    const name = inviteName.trim();
+
+    if (!validateName(name)) {
+      return;
+    }
+
+    setSyncBusy(true);
+    setSyncMessage("");
+    const outcome = await createInvite(name);
+    setSyncBusy(false);
+
+    if (outcome.ok && outcome.invite) {
+      setInvite(outcome.invite);
+      setCopied(false);
+      setSyncMessage("新的加入口令已生成。");
+      setSyncMessageOk(true);
+      return;
+    }
+
+    setSyncMessage(outcome.message ?? "生成加入口令失败。");
+    setSyncMessageOk(false);
+  }
+
+  async function copyInvite() {
+    if (!invite) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(invite.code);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setSyncMessage(`请手动复制口令：${invite.code}`);
+      setSyncMessageOk(false);
     }
   }
 
@@ -80,6 +163,8 @@ export function FamilySyncCard() {
     setSyncBusy(true);
     await leaveSpace();
     setSyncBusy(false);
+    setInvite(undefined);
+    setInviteName("");
     setSyncMessage("已退出家庭同步。");
     setSyncMessageOk(true);
   }
@@ -98,7 +183,7 @@ export function FamilySyncCard() {
         {syncStatus.joined ? (
           <>
             <p className="text-sm leading-6 text-muted-foreground">
-              已连接。这台设备的勾选、新增和删除会在几秒内同步给另一台设备；数据只保存在你们自己的服务器上。
+              已连接。这台设备的勾选、新增和删除会在几秒内同步给其他设备。
             </p>
             <div className="grid gap-1 text-xs leading-5 text-muted-foreground sm:grid-cols-2">
               <span>
@@ -119,14 +204,82 @@ export function FamilySyncCard() {
                 退出同步
               </Button>
             </div>
+            <div className="grid gap-3 rounded-2xl border border-border bg-muted/35 p-3">
+              <Field label="家庭名称" htmlFor="sync-invite-name">
+                <Input
+                  autoComplete="off"
+                  id="sync-invite-name"
+                  placeholder="创建或加入时使用的家庭名称"
+                  value={inviteName}
+                  onChange={(event) => setInviteName(event.target.value)}
+                />
+              </Field>
+              <Button
+                className="justify-self-start"
+                disabled={syncBusy}
+                variant="outline"
+                onClick={generateInvite}
+              >
+                {syncBusy ? "正在生成…" : "生成 8 位加入口令"}
+              </Button>
+              {invite ? (
+                <div className="grid gap-2 rounded-2xl bg-background p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <strong
+                      className="font-mono text-2xl tracking-[0.16em]"
+                      id="sync-invite-code"
+                    >
+                      {invite.code}
+                    </strong>
+                    <Button
+                      aria-label="复制加入口令"
+                      size="icon"
+                      type="button"
+                      variant="ghost"
+                      onClick={copyInvite}
+                    >
+                      {copied ? (
+                        <Check className="size-4" />
+                      ) : (
+                        <Copy className="size-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    10 分钟内有效，仅能成功加入一次，到期或生成新口令后自动失效。
+                  </p>
+                </div>
+              ) : null}
+              <p className="text-xs leading-5 text-muted-foreground">
+                已加入的设备不会受影响。现有家庭第一次使用新口令成功加入后，旧同步码将停止接纳新设备。
+              </p>
+            </div>
           </>
         ) : (
           <>
             <p className="text-sm leading-6 text-muted-foreground">
-              两台设备输入同一个空间名和同步码，就能共用同一份清单与成长记：谁勾选了物品，另一台几秒内就能看到。数据只保存在你们自己的服务器上。
+              创建家庭后会自动生成 8 位一次性口令。另一台设备输入相同的家庭名称和口令，即可共用清单与成长记。
             </p>
-            <div className="grid gap-3 rounded-2xl border border-border bg-muted/35 p-3 sm:grid-cols-2">
-              <Field label="空间名" htmlFor="sync-name">
+            <div className="flex gap-2">
+              <Button
+                aria-pressed={mode === "create"}
+                size="sm"
+                variant={mode === "create" ? "default" : "outline"}
+                onClick={() => setMode("create")}
+              >
+                创建家庭
+              </Button>
+              <Button
+                aria-pressed={mode === "join"}
+                size="sm"
+                variant={mode === "join" ? "default" : "outline"}
+                onClick={() => setMode("join")}
+              >
+                加入家庭
+              </Button>
+            </div>
+            <div className="grid gap-3 rounded-2xl border border-border bg-muted/35 p-3">
+              <Field label="家庭名称" htmlFor="sync-name">
                 <Input
                   autoComplete="off"
                   id="sync-name"
@@ -135,26 +288,37 @@ export function FamilySyncCard() {
                   onChange={(event) => setSyncName(event.target.value)}
                 />
               </Field>
-              <Field label="同步码" htmlFor="sync-code">
-                <Input
-                  autoComplete="new-password"
-                  id="sync-code"
-                  placeholder="6 位以上，只有你们知道的暗号"
-                  type="password"
-                  value={syncCode}
-                  onChange={(event) => setSyncCode(event.target.value)}
-                />
-              </Field>
+              {mode === "join" ? (
+                <Field label="加入口令或旧同步码" htmlFor="sync-code">
+                  <Input
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    id="sync-code"
+                    maxLength={64}
+                    placeholder="例如：7K9M-3XQF"
+                    value={syncCode}
+                    onChange={(event) => setSyncCode(event.target.value)}
+                  />
+                </Field>
+              ) : null}
             </div>
             <p className="text-xs leading-5 text-muted-foreground">
-              第一次输入会创建空间；另一台设备输入相同的空间名和同步码即可加入。同步码请妥善保管，泄露后他人可读写你们的数据。
+              {mode === "create"
+                ? "口令不含容易混淆的 0、O、1、I，10 分钟有效，并且只能成功加入一次。"
+                : "新家庭使用 8 位口令；现有家庭仍可在这里输入原同步码。连续尝试错误会被暂时限流。"}
             </p>
             <Button
               className="justify-self-start"
               disabled={syncBusy}
-              onClick={startFamilySync}
+              onClick={mode === "create" ? createFamily : joinFamily}
             >
-              {syncBusy ? "正在加入…" : "开始使用同步"}
+              {syncBusy
+                ? mode === "create"
+                  ? "正在创建…"
+                  : "正在加入…"
+                : mode === "create"
+                  ? "创建并生成口令"
+                  : "加入家庭同步"}
             </Button>
           </>
         )}

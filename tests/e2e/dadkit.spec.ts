@@ -58,7 +58,7 @@ test("照片保存在当前浏览器且备份页不再提供设备迁移", async
   await expect(page.getByText("加密设备迁移")).toHaveCount(0);
 });
 
-test("家庭同步可加入并手动完成一次同步", async ({ page }) => {
+test("家庭同步可创建口令并手动完成一次同步", async ({ page }) => {
   // FamilySyncCard intentionally loads after the backup shell. Give the
   // WebKit project enough time to fetch and hydrate that optional module.
   test.setTimeout(120_000);
@@ -69,9 +69,10 @@ test("家庭同步可加入并手动完成一次同步", async ({ page }) => {
   await page.goto("/settings/backup", { waitUntil: "domcontentloaded" });
   await expect(page.locator("#sync-name")).toBeVisible({ timeout: 60_000 });
   await page.locator("#sync-name").fill(`E2E ${suffix}`);
-  await page.locator("#sync-code").fill(`e2e-${suffix}`);
-  await page.getByRole("button", { name: "开始使用同步" }).click();
-  await expect(page.getByText("已加入家庭同步")).toBeVisible();
+  await page.getByRole("button", { name: "创建并生成口令" }).click();
+  await expect(page.locator("#sync-invite-code")).toHaveText(
+    /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/,
+  );
 
   await page.getByRole("button", { name: "立即同步" }).click();
   await expect(page.getByText("同步完成")).toBeVisible();

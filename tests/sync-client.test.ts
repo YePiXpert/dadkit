@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { installBrowserStorage } from "@/tests/helpers/browser-storage";
 import {
+  createInvite,
+  createSpace,
   joinSpace,
   leaveSpace,
   refreshSyncStatus,
@@ -109,12 +111,89 @@ describe("family sync client", () => {
 
     expect(outcome.ok).toBe(true);
     expect(loadSyncSession()?.token).toBe("space.secret");
+    expect(loadSyncSession()?.spaceName).toBe("我们的家");
     expect(loadSyncClientState().lastSyncAt).toBeTruthy();
+    expect(requests[0]?.body).toContain('"existingOnly":true');
 
     const push = requests.find((request) => request.url === "/api/sync/push");
 
     expect(push?.body).toContain("seed");
     expect(useSyncStatusStore.getState().joined).toBe(true);
+  });
+
+  it("creates a family, stores its name and returns the first invite", async () => {
+    installBrowserStorage();
+    useDadKitStore.setState({ hydrated: true });
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/sync/create") {
+        expect(init?.body).toBe(JSON.stringify({ name: "新的家庭" }));
+        return jsonResponse(
+          {
+            token: "space.created",
+            invite: {
+              code: "7K9M-3XQF",
+              expiresAt: "2026-07-29T12:10:00.000Z",
+            },
+          },
+          201,
+        );
+      }
+      if (url === "/api/sync/pull") {
+        return jsonResponse({ version: 0, updatedAt: "", data: null });
+      }
+      if (url === "/api/sync/push") {
+        const payload = JSON.parse(init?.body as string) as { data: unknown };
+        return jsonResponse({ version: 1, updatedAt: "", data: payload.data });
+      }
+
+      throw new Error(`unexpected url ${url}`);
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const outcome = await createSpace(" 新的家庭 ");
+
+    expect(outcome).toMatchObject({
+      ok: true,
+      invite: { code: "7K9M-3XQF" },
+    });
+    expect(loadSyncSession()).toMatchObject({
+      token: "space.created",
+      spaceName: "新的家庭",
+    });
+    expect(useSyncStatusStore.getState().joined).toBe(true);
+  });
+
+  it("generates a replacement invite for an existing session", async () => {
+    const { localValues } = installBrowserStorage();
+    localValues.set(
+      "dadkit:v3:sync-session",
+      JSON.stringify({
+        token: "space.secret",
+        joinedAt: "2026-07-29T00:00:00.000Z",
+      }),
+    );
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      expect(url).toBe("/api/sync/invite");
+      expect(new Headers(init?.headers).get("authorization")).toBe(
+        "Bearer space.secret",
+      );
+      expect(init?.body).toBe(JSON.stringify({ name: "现有家庭" }));
+      return jsonResponse({
+        code: "ABCD-2345",
+        expiresAt: "2026-07-29T12:10:00.000Z",
+      });
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const outcome = await createInvite("现有家庭");
+
+    expect(outcome).toMatchObject({
+      ok: true,
+      invite: { code: "ABCD-2345" },
+    });
+    expect(loadSyncSession()?.spaceName).toBe("现有家庭");
   });
 
   it("rejects a wrong code without storing a session", async () => {
