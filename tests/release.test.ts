@@ -48,14 +48,16 @@ describe("release endpoints and product surface", () => {
       { name: "我的", short_name: "我的", url: "/settings" },
     ]);
     expect(readme).toContain("清单");
-    expect(readme).toContain("本地恢复快照");
+    expect(readme).toContain("恢复快照");
     expect(readme).toContain("WebDAV 备份");
     expect(readme).toContain("宝宝成长记");
-    expect(readme).toContain("全部、待购买、待装包、已装包");
+    expect(readme).toContain("全部、待购买、待装包和已装包");
     expect(readme).toContain("https://dadkit.505f.com/");
-    expect(readme).toContain("不再提供加密设备迁移功能");
-    expect(readme).toContain("本机照片不会随备份或同步转移");
-    expect(readme).toContain("Android 本地 APK");
+    expect(readme).toContain("public/og.png");
+    expect(readme).toContain("public/growth/week-20-banana.webp");
+    expect(readme).toContain("最新 Android APK");
+    expect(readme).toContain("Android APK 升级");
+    expect(readme).not.toContain("公开 APK、日志和仓库不得包含");
   });
 
   it("ships a bundled Android WebView shell without TWA dependencies", () => {
