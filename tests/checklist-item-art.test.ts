@@ -1,4 +1,5 @@
-import { existsSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 import { createElement } from "react";
@@ -16,6 +17,7 @@ import { generalTemplate } from "@/lib/templates/general";
 describe("checklist item artwork", () => {
   it("gives all 144 bundled items their own reviewed WebP illustration", () => {
     const usedKeys = new Set<string>();
+    const usedHashes = new Set<string>();
     const usedSources = new Set<string>();
 
     expect(generalTemplate).toHaveLength(144);
@@ -24,6 +26,7 @@ describe("checklist item artwork", () => {
     for (const item of generalTemplate) {
       const key = getChecklistItemArtKey(item);
       const src = getChecklistItemArtSrc(item);
+      const assetPath = join(process.cwd(), "public", src);
 
       expect(CHECKLIST_ITEM_ART_KEYS).toContain(key);
       expect(src).toBe(`/item-art/${key}.webp`);
@@ -31,14 +34,23 @@ describe("checklist item artwork", () => {
         false,
       );
       expect(
-        existsSync(join(process.cwd(), "public", src)),
+        existsSync(assetPath),
         `缺少物品插画: ${src}`,
       ).toBe(true);
+      const assetHash = createHash("sha256")
+        .update(readFileSync(assetPath))
+        .digest("hex");
+      expect(
+        usedHashes.has(assetHash),
+        `重复的物品插画内容: ${item.id}`,
+      ).toBe(false);
       usedKeys.add(key);
+      usedHashes.add(assetHash);
       usedSources.add(src);
     }
 
     expect(usedKeys).toEqual(new Set(CHECKLIST_ITEM_ART_KEYS));
+    expect(usedHashes).toHaveLength(generalTemplate.length);
     expect(usedSources).toHaveLength(generalTemplate.length);
   });
 

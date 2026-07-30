@@ -101,6 +101,50 @@ describe("fixed checklist generation", () => {
     ).toBe("packed");
   });
 
+  it("migrates previous template text without overwriting user edits", () => {
+    const initial = generateChecklist();
+    const diapers = initial.find(
+      (item) => item.id === "general-confinement-baby-diapers-stock",
+    );
+    const formula = initial.find(
+      (item) => item.id === "general-confinement-baby-formula",
+    );
+    expect(diapers).toBeDefined();
+    expect(formula).toBeDefined();
+
+    const regenerated = generateChecklist({
+      currentItems: [
+        {
+          ...diapers!,
+          status: "bought",
+          quantity: "NB 约 200 片 + S 码 1 包",
+          note: "用于月子里每天约十至十二片；预估八斤以上可直接囤 S 码，建议先囤试用装锁定适合的品牌。常见品牌：大王光羽、好奇小森林、露安适、bbc。",
+        },
+        {
+          ...formula!,
+          quantity: "用户自定义数量",
+          note: "用户自定义说明",
+        },
+      ],
+    });
+    const migratedDiapers = regenerated.find(
+      (item) => item.id === diapers!.id,
+    );
+    const preservedFormula = regenerated.find(
+      (item) => item.id === formula!.id,
+    );
+
+    expect(migratedDiapers).toMatchObject({
+      status: "bought",
+      quantity: "NB 试用装或小包 1-2 包，S 码暂不多囤",
+    });
+    expect(migratedDiapers?.note).toContain("先备试用装或一两小包");
+    expect(preservedFormula).toMatchObject({
+      quantity: "用户自定义数量",
+      note: "用户自定义说明",
+    });
+  });
+
   it("restores custom items and hidden template choices", () => {
     const hiddenId = "general-baby-nail-clipper";
     const item = customItem();

@@ -27,6 +27,43 @@ const PACK_TIER_WEIGHT: Record<PackTier, number> = {
   hidden: 1,
 };
 
+type TemplateTextDefaults = Partial<
+  Pick<ChecklistItem, "note" | "quantity">
+>;
+
+const PREVIOUS_TEMPLATE_TEXT_DEFAULTS = {
+  "general-confinement-mom-nursing-pads-stock": {
+    quantity: "1-2 盒，约 100 片",
+    note: "用于母乳量稳定前防止溢奶弄脏衣物；住院带的小包用完后按溢奶量补充。常见品牌：bbc、诺绵、嫚熙。",
+  },
+  "general-confinement-mom-milk-bags-stock": {
+    quantity: "1 盒，约 50 片",
+    note: "用于确有存奶需求时分装冷冻；建议小月龄选 100-120 毫升小袋，按宝宝食量补充。常见品牌：bbc、嫚熙。",
+  },
+  "general-confinement-baby-diapers-stock": {
+    quantity: "NB 约 200 片 + S 码 1 包",
+    note: "用于月子里每天约十至十二片；预估八斤以上可直接囤 S 码，建议先囤试用装锁定适合的品牌。常见品牌：大王光羽、好奇小森林、露安适、bbc。",
+  },
+  "general-confinement-baby-formula": {
+    note: "用于母乳不够时衔接；建议提前做功课选定，小宝宝肠胃脆弱不要随意转奶，母乳顺利可不开封。",
+  },
+  "general-confinement-baby-crib": {
+    note: "用于宝宝在家独立安睡；拼接床更实用，尽量与大床同高，建议提前一至两个月买好散味。",
+  },
+  "general-confinement-baby-stroller": {
+    note: "用于出月子后遛娃；月子里基本用不到，建议选可坐可躺的轻便款，之后再买。常见品牌：bebebus、好孩子、逸乐途。",
+  },
+  "general-partner-car-seat": {
+    note: "用于提前熟悉宝宝返家乘车安排；建议按座椅说明书和车辆条件完成后向安装，并练习一次固定与卡扣操作。",
+  },
+  "general-going-home-car-seat": {
+    note: "用于宝宝出院返程时提供合适约束；建议按座椅说明书后向安装，并在出院前复核固定状态和卡扣路径。",
+  },
+  "general-last-car-seat": {
+    note: "出门前按安全座椅说明书检查安装方向、固定状态和卡扣路径，发现松动先重新调整。",
+  },
+} as const satisfies Record<string, TemplateTextDefaults>;
+
 const TASK_KEYWORDS = [
   "确认",
   "保存",
@@ -269,11 +306,32 @@ function preserveCurrentItemState(
     return normalizeChecklistItem({
       ...item,
       status: previous.status,
-      quantity: previous.quantity ?? item.quantity,
-      note: previous.note ?? item.note,
+      quantity: preserveTemplateTextField(item, previous, "quantity"),
+      note: preserveTemplateTextField(item, previous, "note"),
       updatedAt: previous.updatedAt ?? item.updatedAt,
     });
   });
+}
+
+function preserveTemplateTextField(
+  item: ChecklistItem,
+  previous: ChecklistItem,
+  field: keyof TemplateTextDefaults,
+) {
+  const previousDefaults =
+    PREVIOUS_TEMPLATE_TEXT_DEFAULTS[
+      item.id as keyof typeof PREVIOUS_TEMPLATE_TEXT_DEFAULTS
+    ];
+  const previousDefault = (
+    previousDefaults as TemplateTextDefaults | undefined
+  )?.[field];
+  const previousValue = previous[field];
+
+  if (previousDefault !== undefined && previousValue === previousDefault) {
+    return item[field];
+  }
+
+  return previousValue ?? item[field];
 }
 
 function sortItems(items: ChecklistItem[]) {
