@@ -81,6 +81,8 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
 }: ChecklistItemRowProps) {
   const articleRef = useRef<HTMLElement | null>(null);
   const [mediaEnabled, setMediaEnabled] = useState(false);
+  const [justPacked, setJustPacked] = useState(false);
+  const previousItemStateRef = useRef<ChecklistItemState | undefined>(undefined);
   const advanceItem = useDadKitStore((state) => state.advanceItem);
   const itemState = getChecklistItemState(item);
   const actionLabel = getActionLabel(itemState);
@@ -91,7 +93,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   } as const;
   const displayName = formatChecklistDisplayText(item.name, displayOptions);
   const displayNote = formatChecklistDisplayText(
-    item.note || "按家庭和医院实际需要准备",
+    item.note || "按你们的实际需要慢慢准备，医院通知优先。",
     displayOptions,
   );
   const displayQuantity = formatChecklistDisplayText(
@@ -112,17 +114,31 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
     );
   }, []);
 
+  useEffect(() => {
+    const previous = previousItemStateRef.current;
+    previousItemStateRef.current = itemState;
+
+    if (previous === undefined || previous === itemState || itemState !== "packed") {
+      return;
+    }
+
+    setJustPacked(true);
+    const timeout = window.setTimeout(() => setJustPacked(false), 500);
+
+    return () => window.clearTimeout(timeout);
+  }, [itemState]);
+
   return (
     <article
       ref={articleRef}
       className={cn(
-        "flex min-w-0 flex-col overflow-hidden rounded-[1.75rem] border border-border/70 bg-card p-2.5 transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_26rem]",
+        "flex min-w-0 flex-col overflow-hidden rounded-card border border-border/70 bg-card p-2.5 transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_26rem]",
         itemState === "ready" && "border-primary/30 bg-secondary/35",
         itemState === "packed" && "border-primary/35 bg-secondary/55",
         itemState === "not_needed" && "border-border/60 bg-muted/50",
       )}
     >
-      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-[1.35rem] bg-muted/75">
+      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-inset bg-muted/75">
         {!mediaEnabled || itemPhoto.loading ? (
           <div
             aria-hidden="true"
@@ -145,11 +161,11 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
 
         <span
           className={cn(
-            "absolute right-2 top-2 inline-flex min-h-7 items-center gap-1 rounded-full border border-border/70 bg-card/95 px-2 text-[10px] font-semibold text-muted-foreground shadow-sm",
+            "absolute right-2 top-2 inline-flex min-h-7 items-center gap-1 rounded-full border border-border/70 bg-card/95 px-2 text-xs font-semibold text-muted-foreground shadow-sm",
             itemState === "ready" && "border-primary/20 text-primary",
             itemState === "packed" &&
               "border-primary bg-primary text-primary-foreground",
-            itemState === "not_needed" && "text-foreground/65",
+            itemState === "not_needed" && "text-muted-foreground",
           )}
         >
           <StateIcon className="size-3" strokeWidth={2.2} />
@@ -167,12 +183,12 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
           {displayName}
         </h3>
 
-        <p className="mt-1 text-[11px] font-medium leading-4 text-muted-foreground">
+        <p className="mt-1 text-xs font-medium leading-4 text-muted-foreground">
           建议 {displayQuantity}
         </p>
 
         {showFullDescription ? (
-          <p className="mt-2 min-h-10 whitespace-pre-wrap break-words rounded-xl bg-background/75 px-2 py-1.5 text-[11px] leading-[1.1rem] text-muted-foreground">
+          <p className="mt-2 min-h-10 whitespace-pre-wrap break-words rounded-xl bg-background/75 px-2 py-1.5 text-xs leading-[1.1rem] text-muted-foreground">
             {displayNote}
           </p>
         ) : null}
@@ -202,7 +218,10 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             onClick={() => advanceItem(item.id)}
           >
             {itemState === "packed" ? (
-              <Check className="size-5" strokeWidth={2.8} />
+              <Check
+                className={cn("size-5", justPacked && "sticker-pop")}
+                strokeWidth={2.8}
+              />
             ) : itemState === "ready" ? (
               <PackageCheck className="size-5" />
             ) : itemState === "not_needed" ? (

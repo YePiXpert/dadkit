@@ -1,16 +1,23 @@
 import {
   applyImportData,
   createSnapshot,
+  exportData,
   type DadKitExportData,
   type ImportResult,
   validateImportData,
 } from "@/lib/storage";
+import { mergeExportData } from "@/lib/sync/merge";
+import { calculateChecksum } from "@/lib/webdav/checksum";
 import type {
   DadKitWebDavBackup,
   WebDavConfig,
   WebDavConnectionTestResult,
   WebDavSyncResult,
 } from "@/lib/webdav/types";
+
+// calculateChecksum 已抽到 @/lib/webdav/checksum，供同步客户端独立引用；
+// 这里保持再导出以兼容既有调用方。
+export { calculateChecksum };
 
 const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
 const WEB_DAV_PROXY_PATH = "/api/webdav";
@@ -19,9 +26,13 @@ const PROXY_ERROR_HEADER = "x-dadkit-webdav-proxy-error";
 
 export type WebDavTransport = "browser-proxy" | "direct-fetch";
 
-type UploadOptions = {
-  deviceId?: string;
-  force?: boolean;
+type UploadOptions = { deviceId?: string };
+
+type WebDavDownloadResult = {
+  ok: boolean;
+  message: string;
+  backup?: DadKitWebDavBackup;
+  notFound?: boolean;
 };
 
 export function normalizeWebDavEndpoint(endpoint: string): string {
@@ -49,18 +60,6 @@ export function buildAuthHeader(username: string, secret: string): string {
   const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
 
   return `Basic ${btoa(binary)}`;
-}
-
-export function calculateChecksum(value: unknown): string {
-  const input = stableStringify(value);
-  let hash = 0x811c9dc5;
-
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193);
-  }
-
-  return `fnv1a32-${(hash >>> 0).toString(16).padStart(8, "0")}`;
 }
 
 export function buildDadKitWebDavBackup(
@@ -112,29 +111,24 @@ export async function uploadWebDavBackup(
     return validation;
   }
 
-  const backup = buildDadKitWebDavBackup(
-    data,
-    options.deviceId ?? "unknown-device",
-  );
-
   try {
     const remote = await downloadWebDavBackup(config, secret);
+    let mergedData = data;
 
     if (remote.ok && remote.backup) {
-      if (remote.backup.checksum === backup.checksum) {
+      if (remote.backup.checksum === calculateChecksum(data)) {
         return { ok: true, message: "远端已是最新" };
       }
 
-      if (!options.force) {
-        return {
-          ok: false,
-          message: "远端备份与当前本地数据不同。",
-          conflict: true,
-        };
-      }
-    } else if (remote.message !== "未找到远端备份。") {
+      mergedData = mergeExportData(data, remote.backup.data);
+    } else if (!remote.notFound) {
       return { ok: false, message: remote.message };
     }
+
+    const backup = buildDadKitWebDavBackup(
+      mergedData,
+      options.deviceId ?? "unknown-device",
+    );
 
     await ensureRemoteDir(config, secret);
     const response = await webDavFetch(backupUrl(config), {
@@ -147,10 +141,14 @@ export async function uploadWebDavBackup(
     });
 
     if (!response.ok) {
-      return { ok: false, message: `上传失败，WebDAV 返回 ${response.status}。` };
+      return { ok: false, message: webDavStatusMessage("上传备份", response.status) };
     }
 
-    return { ok: true, message: "上传成功" };
+    return {
+      ok: true,
+      message:
+        remote.ok && remote.backup ? "已合并本地与远端备份并上传" : "上传成功",
+    };
   } catch (error) {
     return { ok: false, message: webDavErrorMessage(error) };
   }
@@ -159,11 +157,7 @@ export async function uploadWebDavBackup(
 export async function downloadWebDavBackup(
   config: WebDavConfig,
   secret: string,
-): Promise<{
-  ok: boolean;
-  message: string;
-  backup?: DadKitWebDavBackup;
-}> {
+): Promise<WebDavDownloadResult> {
   const validation = validateWebDavInput(config, secret);
 
   if (!validation.ok) {
@@ -179,11 +173,18 @@ export async function downloadWebDavBackup(
     });
 
     if (response.status === 404) {
-      return { ok: false, message: "未找到远端备份。" };
+      return {
+        ok: false,
+        notFound: true,
+        message: webDavStatusMessage("下载远端备份", response.status),
+      };
     }
 
     if (!response.ok) {
-      return { ok: false, message: `下载失败，WebDAV 返回 ${response.status}。` };
+      return {
+        ok: false,
+        message: webDavStatusMessage("下载远端备份", response.status),
+      };
     }
 
     const text = await response.text();
@@ -241,7 +242,7 @@ export async function ensureRemoteDir(
     }
 
     if (propfind.status !== 404) {
-      throw new Error(`检查远端目录失败，WebDAV 返回 ${propfind.status}。`);
+      throw new Error(webDavStatusMessage("检查远端目录", propfind.status));
     }
 
     const mkcol = await webDavFetch(currentPath, {
@@ -252,7 +253,7 @@ export async function ensureRemoteDir(
     });
 
     if (!mkcol.ok && mkcol.status !== 405) {
-      throw new Error(`创建远端目录失败，WebDAV 返回 ${mkcol.status}。`);
+      throw new Error(webDavStatusMessage("创建远端目录", mkcol.status));
     }
   }
 }
@@ -266,7 +267,7 @@ export function importDadKitWebDavBackup(
     return { ok: false, message: webDavErrorMessage(error) };
   }
 
-  return applyImportData(backup.data);
+  return applyImportData(mergeExportData(exportData(), backup.data));
 }
 
 function validateWebDavInput(
@@ -314,9 +315,7 @@ async function webDavFetch(
     });
   } catch (error) {
     if (error instanceof TypeError) {
-      throw new Error(
-        "当前 WebDAV 服务未允许浏览器跨域访问。请改用支持 CORS 的 WebDAV 服务，或通过服务器配置 DadKit 同源代理。",
-      );
+      throw new Error("网络连接失败，请检查 WebDAV 地址、HTTPS 和网络后重试。");
     }
 
     throw error;
@@ -389,28 +388,6 @@ function backupId() {
   return `webdav-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function stableStringify(value: unknown): string {
-  if (value === undefined) {
-    return "undefined";
-  }
-
-  if (value === null || typeof value !== "object") {
-    return JSON.stringify(value) ?? "null";
-  }
-
-  if (Array.isArray(value)) {
-    return `[${value.map((entry) => stableStringify(entry)).join(",")}]`;
-  }
-
-  const record = value as Record<string, unknown>;
-  const entries = Object.keys(record)
-    .filter((key) => record[key] !== undefined)
-    .sort()
-    .map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`);
-
-  return `{${entries.join(",")}}`;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -433,9 +410,25 @@ function isDadKitWebDavBackup(value: unknown): value is DadKitWebDavBackup {
 }
 
 function webDavErrorMessage(error: unknown) {
+  if (error instanceof TypeError) {
+    return "网络连接失败，请检查 WebDAV 地址、HTTPS 和网络后重试。";
+  }
+
   if (error instanceof Error && error.message) {
     return error.message;
   }
 
   return "WebDAV 操作失败，请检查地址、凭据和服务权限。";
+}
+
+export function webDavStatusMessage(operation: string, status: number) {
+  if (status === 401 || status === 403) {
+    return `${operation}失败：身份验证未通过。请确认填写的是 WebDAV 应用专用密码，而不是网页登录密码。`;
+  }
+
+  if (status === 404) {
+    return `${operation}失败：未找到远端目录或备份文件，请检查 WebDAV 地址和远端目录。`;
+  }
+
+  return `${operation}失败：WebDAV 返回 ${status}。请检查地址、账号权限和远端目录后重试。`;
 }

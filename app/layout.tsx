@@ -1,9 +1,13 @@
 import type { Metadata, Viewport } from "next";
 
 import { AppHeader } from "@/components/AppHeader";
+import { AppToast } from "@/components/AppToast";
 import { BackgroundTasks } from "@/components/BackgroundTasks";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { MobileNav } from "@/components/MobileNav";
 import { PersistenceWarning } from "@/components/PersistenceWarning";
+import { SyncSessionWarning } from "@/components/SyncSessionWarning";
+import { THEME_STORAGE_KEY } from "@/lib/theme";
 import "./globals.css";
 
 function getMetadataBase() {
@@ -27,7 +31,7 @@ export const metadata: Metadata = {
       { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/maskable-icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
   appleWebApp: {
@@ -58,7 +62,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
+    // 与 app/globals.css 的浅色 --background: 40 43% 97% 保持一致。
     { media: "(prefers-color-scheme: light)", color: "#FBF8F2" },
+    // 与 app/globals.css 的深色 --background: 28 14% 9% 保持一致。
     { media: "(prefers-color-scheme: dark)", color: "#1A1714" },
   ],
   width: "device-width",
@@ -66,7 +72,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-const themeInitScript = `(function(){try{var p=window.localStorage.getItem("dadkit-theme");if(p!=="light"&&p!=="dark"){p=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.classList.toggle("dark",p==="dark");}catch(e){}})();`;
+// 构建期注入共享 key；对应值见 lib/theme.ts，避免客户端 hook 与首屏脚本漂移。
+const themeInitScript = `(function(){try{var p=window.localStorage.getItem("${THEME_STORAGE_KEY}");if(p!=="light"&&p!=="dark"){p=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.classList.toggle("dark",p==="dark");}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -79,8 +86,11 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <BackgroundTasks />
         <PersistenceWarning />
+        <SyncSessionWarning />
+        <AppToast />
         <AppHeader />
         <main>{children}</main>
+        <InstallPrompt />
         <MobileNav />
       </body>
     </html>

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 
@@ -31,9 +31,15 @@ describe("release endpoints and product surface", () => {
       name: string;
       description: string;
       shortcuts: Array<{ name: string; short_name: string; url: string }>;
+      screenshots?: Array<{
+        src: string;
+        sizes: string;
+        type: string;
+        form_factor?: string;
+      }>;
     };
 
-    expect(packageJson.version).toBe("2.1.1");
+    expect(packageJson.version).toBe("2.1.2");
     expect(manifest.name).toBe("DadKit 待产包清单");
     expect(manifest.description).toContain("待产包");
     expect(manifest.description).toContain("备份");
@@ -47,6 +53,22 @@ describe("release endpoints and product surface", () => {
       { name: "待产清单", short_name: "清单", url: "/" },
       { name: "我的", short_name: "我的", url: "/settings" },
     ]);
+    expect(manifest.screenshots).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          src: "/screenshot-home.png",
+          sizes: "390x844",
+          type: "image/png",
+          form_factor: "narrow",
+        }),
+        expect.objectContaining({
+          src: "/screenshot-checklist.png",
+          sizes: "390x844",
+          type: "image/png",
+          form_factor: "narrow",
+        }),
+      ]),
+    );
     expect(readme).toContain("清单");
     expect(readme).toContain("恢复快照");
     expect(readme).toContain("WebDAV 备份");
@@ -85,7 +107,7 @@ describe("release endpoints and product surface", () => {
     expect(manifest).not.toContain("trusted");
     expect(manifest).not.toContain("asset_statements");
     expect(activity).toContain('getAssets().open("www/" + assetPath)');
-    expect(activity).toContain("source=apk&appVersionCode=2");
+    expect(activity).toContain("source=apk&appVersionCode=3");
     expect(androidBundle).toContain('rm(path.join(staging, "app", "api")');
     expect(packageJson.devDependencies).not.toHaveProperty("@bubblewrap/cli");
   });
@@ -93,7 +115,7 @@ describe("release endpoints and product surface", () => {
   it("keeps the Android tag release strict and verifies the signed APK", () => {
     const workflow = readSource(".github", "workflows", "android-release.yml");
 
-    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v2.1.1"');
+    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v2.1.2"');
     expect(workflow).toContain(
       'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
     );
@@ -157,8 +179,13 @@ describe("release endpoints and product surface", () => {
       "maskable-icon-512.png",
       "apple-touch-icon.png",
       "og.png",
+      "og-growth.png",
+      "screenshot-home.png",
+      "screenshot-checklist.png",
     ]) {
-      expect(existsSync(join(process.cwd(), "public", asset))).toBe(true);
+      const pathname = join(process.cwd(), "public", asset);
+      expect(existsSync(pathname)).toBe(true);
+      expect(statSync(pathname).size).toBeLessThan(300 * 1024);
     }
   });
 
@@ -185,27 +212,12 @@ describe("release endpoints and product surface", () => {
     );
   });
 
-  it("pre-caches the v2.1.1 checklist, growth and settings shell", () => {
+  it("pre-caches only the minimal app shell during install", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.1-pwa-r14"');
-    expect(sw).toContain("const REQUIRED_ROUTES = CORE_ROUTES.slice(0, -2)");
-    expect(sw).toContain("const OPTIONAL_ROUTES = CORE_ROUTES.slice(-2)");
-    for (const route of [
-      "/settings/checklist",
-      "/settings/backup",
-      "/growth",
-      "/checklist/documents",
-      "/checklist/mom",
-      "/checklist/baby",
-      "/checklist/confinementMom",
-      "/checklist/confinementBaby",
-      "/checklist/partner",
-      "/checklist/home",
-      "/checklist/lastMinute",
-    ]) {
-      expect(sw).toContain(`"${route}"`);
-    }
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.2-pwa-r1"');
+    expect(sw).toContain('const APP_SHELL_ROUTE = "/"');
+    expect(sw).not.toContain("CORE_ROUTES");
 
     for (const route of REMOVED_PRODUCT_ROUTES) {
       expect(sw).not.toContain(`"/${route}"`);
@@ -213,6 +225,15 @@ describe("release endpoints and product surface", () => {
 
     expect(sw).toContain("precacheAppShell");
     expect(sw).not.toContain("/illustrations/");
+  });
+
+  it("caps runtime asset caches per path prefix", () => {
+    const sw = readSource("public", "sw.js");
+
+    expect(sw).toContain("RUNTIME_CACHE_LIMITS");
+    for (const prefix of ["/_next/static/", "/item-art/", "/growth/"]) {
+      expect(sw).toContain(`prefix: "${prefix}"`);
+    }
   });
 
   it("deletes previous app caches during activation", async () => {
@@ -237,6 +258,7 @@ describe("release endpoints and product surface", () => {
             "dadkit-v2.1.0-pwa-r11",
             "dadkit-v2.1.0-pwa-r12",
             "dadkit-v2.1.1-pwa-r13",
+            "dadkit-v2.1.1-pwa-r14",
           ];
         },
         async delete(key: string) {
@@ -260,6 +282,7 @@ describe("release endpoints and product surface", () => {
       "dadkit-v2.1.0-pwa-r11",
       "dadkit-v2.1.0-pwa-r12",
       "dadkit-v2.1.1-pwa-r13",
+      "dadkit-v2.1.1-pwa-r14",
     ]);
   });
 
@@ -287,7 +310,7 @@ describe("release endpoints and product surface", () => {
     expect(assets).toEqual(["/_next/static/css/app.css"]);
   });
 
-  it("caches both product pages while tolerating optional media failure", async () => {
+  it("pre-caches only the app shell while tolerating optional media failure", async () => {
     const sw = readSource("public", "sw.js");
     const cachedUrls: string[] = [];
     class FakeRequest {
@@ -340,16 +363,56 @@ describe("release endpoints and product surface", () => {
 
     await expect(precacheAppShell()).resolves.toBeUndefined();
     expect(cachedUrls).toContain("/");
-    expect(cachedUrls).toContain("/settings");
-    expect(cachedUrls).toContain("/growth");
-    expect(cachedUrls).toContain("/settings/checklist");
-    expect(cachedUrls).toContain("/settings/backup");
-    expect(cachedUrls).toContain("/checklist/mom");
     expect(cachedUrls).toContain("/_next/static/chunks/root.js");
+    expect(cachedUrls).toContain("/icon-192.png");
     expect(cachedUrls).not.toContain("/manifest.webmanifest");
+    expect(cachedUrls).not.toContain("/settings");
+    expect(cachedUrls).not.toContain("/growth");
+    expect(cachedUrls).not.toContain("/checklist/mom");
 
     for (const route of REMOVED_PRODUCT_ROUTES) {
       expect(cachedUrls).not.toContain(`/${route}`);
     }
+  });
+
+  it("evicts the oldest runtime cache entries beyond the per-prefix cap", async () => {
+    const sw = readSource("public", "sw.js");
+    const deleted: string[] = [];
+    const keys = [
+      ...Array.from({ length: 201 }, (_, index) => ({
+        url: `https://dadkit.example/item-art/${index}.webp`,
+      })),
+      { url: "https://dadkit.example/manifest.webmanifest" },
+    ];
+    const cache = {
+      async keys() {
+        return keys;
+      },
+      async delete(request: { url: string }) {
+        deleted.push(request.url);
+        return true;
+      },
+    };
+    const context = {
+      self: {
+        addEventListener: () => undefined,
+        location: { origin: "https://dadkit.example" },
+      },
+    } as Record<string, unknown>;
+
+    runInNewContext(
+      `${sw}\n;globalThis.__trimRuntimeCache = trimRuntimeCache;`,
+      context,
+    );
+    const trimRuntimeCache = context.__trimRuntimeCache as (
+      cache: unknown,
+      pathname: string,
+    ) => Promise<void>;
+
+    await trimRuntimeCache(cache, "/item-art/200.webp");
+    expect(deleted).toEqual(["https://dadkit.example/item-art/0.webp"]);
+
+    await trimRuntimeCache(cache, "/manifest.webmanifest");
+    expect(deleted).toEqual(["https://dadkit.example/item-art/0.webp"]);
   });
 });

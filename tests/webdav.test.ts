@@ -27,6 +27,8 @@ import {
   normalizeWebDavEndpoint,
   selectWebDavTransport,
   testWebDavConnection,
+  uploadWebDavBackup,
+  webDavStatusMessage,
 } from "@/lib/webdav/client";
 import { DEFAULT_WEBDAV_CONFIG } from "@/lib/webdav/types";
 
@@ -115,6 +117,12 @@ describe("webdav helpers", () => {
     expect(buildAuthHeader("dad", "secret")).toBe(
       `Basic ${Buffer.from("dad:secret", "utf-8").toString("base64")}`,
     );
+  });
+
+  it("turns common WebDAV status codes into actionable Chinese guidance", () => {
+    expect(webDavStatusMessage("上传备份", 401)).toContain("应用专用密码");
+    expect(webDavStatusMessage("下载远端备份", 404)).toContain("远端目录");
+    expect(webDavStatusMessage("上传备份", 500)).toContain("500");
   });
 
   it("builds a DadKit WebDAV backup envelope", () => {
@@ -275,6 +283,53 @@ describe("webdav helpers", () => {
     expect(result.ok).toBe(true);
     expect(snapshots[0]?.reason).toBe("导入 WebDAV 备份前");
     expect(snapshots[0]?.data.checklist).toEqual([testItem("local-before-webdav")]);
+  });
+
+  it("merges the remote backup into local data before uploading", async () => {
+    const local = {
+      ...exportData(),
+      checklist: [testItem("local", { updatedAt: 100 })],
+      customItems: [testItem("local", { updatedAt: 100 })],
+    };
+    const remote = buildDadKitWebDavBackup(
+      {
+        ...exportData(),
+        checklist: [testItem("remote", { updatedAt: 200 })],
+        customItems: [testItem("remote", { updatedAt: 200 })],
+      },
+      "remote-device",
+    );
+    let uploaded: unknown;
+    const fetchMock = vi.fn<typeof fetch>(async (_url, init) => {
+      if (init?.method === "GET") {
+        return new Response(JSON.stringify(remote), { status: 200 });
+      }
+      if (init?.method === "PROPFIND") {
+        return new Response(null, { status: 207 });
+      }
+      if (init?.method === "PUT") {
+        uploaded = JSON.parse(String(init.body));
+        return new Response(null, { status: 201 });
+      }
+      throw new Error("unexpected method");
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await uploadWebDavBackup(
+      { ...DEFAULT_WEBDAV_CONFIG, endpoint: "https://example.com/dav", username: "dad" },
+      "secret",
+      local,
+    );
+
+    expect(result).toEqual({ ok: true, message: "已合并本地与远端备份并上传" });
+    expect((uploaded as { data: { checklist: ChecklistItem[] } }).data.checklist)
+      .toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: "local" }),
+          expect.objectContaining({ id: "remote" }),
+        ]),
+      );
   });
 
   it("prefills the default WebDAV target without storing secrets", () => {

@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-import { exportData } from "@/lib/data/backup";
+import { applyImportData, exportData } from "@/lib/data/backup";
 import {
   isDadKitImportData,
   type DadKitExportData,
@@ -10,10 +10,6 @@ import {
 } from "@/lib/data/format";
 import {
   flushPendingChecklistStateSave,
-  saveChecklistState,
-  saveDeletedCustomItems,
-  saveGrowthUpdatedAt,
-  saveHiddenTemplateItemStamps,
 } from "@/lib/data/local-repository";
 import {
   loadSyncClientState,
@@ -21,11 +17,23 @@ import {
   saveSyncClientState,
   saveSyncSession,
 } from "@/lib/data/settings-repository";
-import { GROWTH_STORAGE_KEYS, useGrowthStore } from "@/lib/growth-store";
+import { useGrowthStore } from "@/lib/growth-store";
 import { generateChecklist } from "@/lib/rules";
+import {
+  estimateSyncClockOffset,
+  getSyncClockOffset,
+  getSyncClockTimelineInitialized,
+  saveSyncClockOffset,
+  saveSyncClockTimelineInitialized,
+} from "@/lib/sync-clock";
 import { mergeExportData } from "@/lib/sync/merge";
+import { normalizeSyncSpaceName } from "@/lib/sync/space-name";
+import {
+  clearSyncSessionExpired,
+  markSyncSessionExpired,
+} from "@/lib/sync-session-status";
 import { useDadKitStore } from "@/lib/store";
-import { calculateChecksum } from "@/lib/webdav/client";
+import { calculateChecksum } from "@/lib/webdav/checksum";
 
 export type SyncOutcome = {
   ok: boolean;
@@ -46,17 +54,21 @@ type SyncStatus = {
   syncing: boolean;
   lastSyncAt?: string;
   lastError?: string;
+  retryAt?: string;
+  retryAttempt?: number;
 };
 
 type SpaceSnapshotPayload = {
   version: number;
   updatedAt: string;
+  serverTime?: string;
   data: unknown;
 };
 
 type ApiResult<T> = {
   data?: T;
   etag?: string;
+  serverTime?: string;
   notModified: boolean;
 };
 
@@ -72,6 +84,13 @@ class SyncApiError extends Error {
 
 export const SYNC_REQUEST_TIMEOUT_MS = 15_000;
 export const SYNC_RETRY_DELAYS_MS = [5_000, 15_000, 30_000, 120_000, 300_000];
+
+export function getSyncRetryDelay(
+  baseDelay: number,
+  random = Math.random(),
+) {
+  return Math.round(baseDelay * (0.8 + Math.min(1, Math.max(0, random)) * 0.4));
+}
 
 export const useSyncStatusStore = create<SyncStatus>(() => ({
   joined: false,
@@ -95,6 +114,8 @@ export function refreshSyncStatus() {
     joined: Boolean(loadSyncSession()),
     lastSyncAt: state.lastSyncAt,
     lastError: state.lastError,
+    retryAt: state.retryAt,
+    retryAttempt: state.retryAttempt,
   });
 }
 
@@ -153,14 +174,18 @@ async function apiRequest<T>(
       signal: controller.signal,
     });
     const etag = response.headers.get("etag") ?? undefined;
+    const serverTime = response.headers.get("x-dadkit-server-time") ?? undefined;
 
     if (options.acceptNotModified && response.status === 304) {
-      return { etag, notModified: true };
+      return { etag, serverTime, notModified: true };
     }
 
+    const data = await parseApiResponse<T>(response);
+
     return {
-      data: await parseApiResponse<T>(response),
+      data,
       etag,
+      serverTime: serverTime ?? getPayloadServerTime(data),
       notModified: false,
     };
   } catch (error) {
@@ -183,6 +208,58 @@ function checksumOf(data: DadKitImportData) {
   return calculateChecksum({ ...data, exportedAt: "" });
 }
 
+function getPayloadServerTime(payload: unknown) {
+  return (
+    payload &&
+    typeof payload === "object" &&
+    "serverTime" in payload &&
+    typeof payload.serverTime === "string"
+      ? payload.serverTime
+      : undefined
+  );
+}
+
+function observeServerTime(serverTime: string | undefined) {
+  const offset = estimateSyncClockOffset(serverTime);
+
+  if (offset !== undefined) {
+    saveSyncClockOffset(offset);
+  }
+
+  return offset;
+}
+
+export function alignExportDataToServerTime(
+  data: DadKitExportData,
+  offset: number,
+): DadKitExportData {
+  const shiftTimestamp = (timestamp: number) =>
+    timestamp === 0 ? 0 : timestamp + offset;
+  const shiftItem = (item: (typeof data.checklist)[number]) =>
+    typeof item.updatedAt === "number"
+      ? { ...item, updatedAt: shiftTimestamp(item.updatedAt) }
+      : item;
+
+  return {
+    ...data,
+    checklist: data.checklist.map(shiftItem),
+    customItems: data.customItems.map(shiftItem),
+    hiddenTemplateItemStamps: Object.fromEntries(
+      Object.entries(data.hiddenTemplateItemStamps).map(([id, stamp]) => [
+        id,
+        { ...stamp, updatedAt: shiftTimestamp(stamp.updatedAt) },
+      ]),
+    ),
+    deletedCustomItems: Object.fromEntries(
+      Object.entries(data.deletedCustomItems).map(([id, timestamp]) => [
+        id,
+        shiftTimestamp(timestamp),
+      ]),
+    ),
+    growthUpdatedAt: shiftTimestamp(data.growthUpdatedAt),
+  };
+}
+
 function applyMerged(data: DadKitExportData) {
   const checklist = generateChecklist({
     currentItems: data.checklist,
@@ -193,24 +270,10 @@ function applyMerged(data: DadKitExportData) {
   applyingRemote = true;
 
   try {
-    saveChecklistState({
-      checklist,
-      customItems: data.customItems,
-      hiddenTemplateItemIds: data.hiddenTemplateItemIds,
-    });
-    saveHiddenTemplateItemStamps(data.hiddenTemplateItemStamps);
-    saveDeletedCustomItems(data.deletedCustomItems);
-    saveGrowthUpdatedAt(data.growthUpdatedAt);
+    const result = applyImportData(data);
 
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(
-        GROWTH_STORAGE_KEYS.profile,
-        JSON.stringify(data.growth.profile),
-      );
-      window.localStorage.setItem(
-        GROWTH_STORAGE_KEYS.progress,
-        JSON.stringify(data.growth.progress),
-      );
+    if (!result.ok) {
+      throw new Error(result.message);
     }
 
     useDadKitStore.setState({
@@ -240,12 +303,17 @@ function scheduleRetry() {
     return;
   }
 
-  const delay =
+  const baseDelay =
     SYNC_RETRY_DELAYS_MS[
       Math.min(retryAttempt, SYNC_RETRY_DELAYS_MS.length - 1)
     ]!;
+  const delay = getSyncRetryDelay(baseDelay);
 
   retryAttempt += 1;
+  const retryAt = new Date(Date.now() + delay).toISOString();
+  const state = loadSyncClientState();
+  saveSyncClientState({ ...state, retryAt, retryAttempt });
+  useSyncStatusStore.setState({ retryAt, retryAttempt });
   retryTimer = setTimeout(() => {
     retryTimer = undefined;
     void syncNow();
@@ -277,7 +345,19 @@ async function doSync(): Promise<SyncOutcome> {
       session.token,
       { acceptNotModified: true },
     );
-    const local = exportData();
+    const observedOffset = observeServerTime(
+      pulled.serverTime ?? pulled.data?.serverTime,
+    );
+    const localExport = exportData();
+    const shouldAlignTimeline =
+      !getSyncClockTimelineInitialized() &&
+      (observedOffset ?? getSyncClockOffset()) !== undefined;
+    const local = shouldAlignTimeline
+      ? alignExportDataToServerTime(
+          localExport,
+          observedOffset ?? getSyncClockOffset() ?? 0,
+        )
+      : localExport;
     let merged = local;
     let latestEtag = pulled.etag ?? previousState.lastEtag;
     let remoteData: DadKitImportData | undefined;
@@ -290,9 +370,17 @@ async function doSync(): Promise<SyncOutcome> {
       remoteData = pulled.data.data;
       merged = mergeExportData(local, remoteData);
 
-      if (checksumOf(merged) !== checksumOf(local)) {
+      if (shouldAlignTimeline || checksumOf(merged) !== checksumOf(local)) {
         applyMerged(merged);
       }
+    } else if (shouldAlignTimeline) {
+      // The first server-time observation may arrive with a 304 response. Apply
+      // the shifted local timeline before the next write is compared or pushed.
+      applyMerged(merged);
+    }
+
+    if (shouldAlignTimeline) {
+      saveSyncClockTimelineInitialized(true);
     }
 
     const mergedChecksum = checksumOf(merged);
@@ -308,6 +396,7 @@ async function doSync(): Promise<SyncOutcome> {
       );
 
       latestEtag = pushed.etag ?? latestEtag;
+      observeServerTime(pushed.serverTime ?? pushed.data?.serverTime);
 
       if (
         pushed.data?.data &&
@@ -332,6 +421,8 @@ async function doSync(): Promise<SyncOutcome> {
       syncing: false,
       lastSyncAt,
       lastError: undefined,
+      retryAt: undefined,
+      retryAttempt: undefined,
     });
     clearRetrySchedule();
 
@@ -343,11 +434,14 @@ async function doSync(): Promise<SyncOutcome> {
     if (error instanceof SyncApiError && error.status === 401) {
       clearRetrySchedule();
       saveSyncSession(undefined);
+      markSyncSessionExpired("家庭同步会话已失效，请重新加入后继续同步。");
       saveSyncClientState({ lastError: message });
       useSyncStatusStore.setState({
         joined: false,
         syncing: false,
         lastError: message,
+        retryAt: undefined,
+        retryAttempt: undefined,
       });
 
       return { ok: false, message };
@@ -391,7 +485,7 @@ export async function joinSpace(
   name: string,
   code: string,
 ): Promise<SyncOutcome> {
-  const spaceName = name.trim();
+  const spaceName = normalizeSyncSpaceName(name);
 
   try {
     const result = await apiRequest<{ token: string }>("/api/sync/join", {
@@ -411,6 +505,7 @@ export async function joinSpace(
       spaceName,
     });
     useSyncStatusStore.setState({ joined: true });
+    clearSyncSessionExpired();
 
     return await syncNow();
   } catch (error) {
@@ -427,7 +522,7 @@ export async function joinSpace(
 export async function createSpace(
   name: string,
 ): Promise<SyncInviteOutcome> {
-  const spaceName = name.trim();
+  const spaceName = normalizeSyncSpaceName(name);
 
   try {
     const result = await apiRequest<{
@@ -450,6 +545,7 @@ export async function createSpace(
       spaceName,
     });
     useSyncStatusStore.setState({ joined: true });
+    clearSyncSessionExpired();
 
     const synced = await syncNow();
 
@@ -473,7 +569,7 @@ export async function createInvite(
   name: string,
 ): Promise<SyncInviteOutcome> {
   const session = loadSyncSession();
-  const spaceName = name.trim();
+  const spaceName = normalizeSyncSpaceName(name);
 
   if (!session) {
     return { ok: false, message: "请先加入家庭同步。" };
@@ -504,11 +600,14 @@ export async function createInvite(
     if (error instanceof SyncApiError && error.status === 401) {
       clearRetrySchedule();
       saveSyncSession(undefined);
+      markSyncSessionExpired("家庭同步会话已失效，请重新加入后继续同步。");
       saveSyncClientState({ lastError: message });
       useSyncStatusStore.setState({
         joined: false,
         syncing: false,
         lastError: message,
+        retryAt: undefined,
+        retryAttempt: undefined,
       });
     }
 
@@ -520,6 +619,7 @@ export async function leaveSpace() {
   const session = loadSyncSession();
 
   clearRetrySchedule();
+  clearSyncSessionExpired();
   saveSyncSession(undefined);
   saveSyncClientState({});
   useSyncStatusStore.setState({
@@ -527,6 +627,8 @@ export async function leaveSpace() {
     syncing: false,
     lastSyncAt: undefined,
     lastError: undefined,
+    retryAt: undefined,
+    retryAttempt: undefined,
   });
 
   if (session) {

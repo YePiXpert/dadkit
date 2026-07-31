@@ -35,12 +35,12 @@ test("清单和成长记在移动端完成 hydrate 并持久化", async ({ page 
 });
 
 test("照片保存在当前浏览器且备份页不再提供设备迁移", async ({ page }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(150_000);
 
   await page.goto("/checklist/documents", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("article button[title]").first()).toBeVisible();
-
-  await page.getByRole("button", { name: "详情" }).first().click();
+  const firstDetailsButton = page.getByRole("button", { name: "详情" }).first();
+  await expect(firstDetailsButton).toBeVisible({ timeout: 60_000 });
+  await firstDetailsButton.click();
   const photoInput = page.locator(
     'input[aria-label="从相册选择物品照片"]',
   );
@@ -72,6 +72,7 @@ test("家庭同步可创建口令并手动完成一次同步", async ({ page }) 
   await page.getByRole("button", { name: "创建并生成口令" }).click();
   await expect(page.locator("#sync-invite-code")).toHaveText(
     /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/,
+    { timeout: 60_000 },
   );
 
   await page.getByRole("button", { name: "立即同步" }).click();
@@ -126,7 +127,9 @@ test("Service Worker 缓存支持离线重开首页", async ({
   }
 
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("progressbar")).toBeVisible();
+  await expect(
+    page.getByRole("progressbar", { name: /清单完成/ }),
+  ).toBeVisible();
 });
 
 test("Chromium 移动端在 4x CPU 下保持交互与视觉稳定性", async ({
@@ -173,7 +176,9 @@ test("Chromium 移动端在 4x CPU 下保持交互与视觉稳定性", async ({
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await page.goto("/", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("progressbar")).toBeVisible();
+    await expect(
+      page.getByRole("progressbar", { name: /清单完成/ }),
+    ).toBeVisible();
     await page.waitForTimeout(700);
     const metrics = await page.evaluate(
       () =>

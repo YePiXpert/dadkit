@@ -4,8 +4,14 @@ import { useEffect, useState } from "react";
 import { Download, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { getChecklistItemState } from "@/lib/checklist-v2";
+import {
+  INSTALL_PROMPT_DISMISS_KEY,
+  OPEN_INSTALL_PROMPT_EVENT,
+} from "@/lib/install-prompt";
+import { useDadKitStore } from "@/lib/store";
 
-const DISMISS_KEY = "dadkit-install-prompt-dismissed";
+const AUTO_PROMPT_COMPLETION_COUNT = 3;
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -27,18 +33,24 @@ function isStandaloneDisplay() {
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
-  const [dismissed, setDismissed] = useState(true);
+  const [showPrompt, setShowPrompt] = useState(false);
   const [showIosGuide, setShowIosGuide] = useState(false);
+  const hydrate = useDadKitStore((state) => state.hydrate);
+  const hydrated = useDadKitStore((state) => state.hydrated);
+  const checklist = useDadKitStore((state) => state.checklist);
+  const completedCount = checklist.filter(
+    (item) => getChecklistItemState(item) === "packed",
+  ).length;
 
   useEffect(() => {
-    if (
-      isStandaloneDisplay() ||
-      window.localStorage.getItem(DISMISS_KEY) === "1"
-    ) {
+    hydrate();
+  }, [hydrate]);
+
+  useEffect(() => {
+    if (isStandaloneDisplay()) {
       return;
     }
 
-    setDismissed(false);
     setShowIosGuide(isIosDevice());
 
     function handleBeforeInstallPrompt(event: Event) {
@@ -48,20 +60,41 @@ export function InstallPrompt() {
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
 
-    return () =>
+    function handleManualOpen() {
+      setShowPrompt(true);
+    }
+
+    window.addEventListener(OPEN_INSTALL_PROMPT_EVENT, handleManualOpen);
+
+    return () => {
       window.removeEventListener(
         "beforeinstallprompt",
         handleBeforeInstallPrompt,
       );
+      window.removeEventListener(OPEN_INSTALL_PROMPT_EVENT, handleManualOpen);
+    };
   }, []);
 
-  if (dismissed || (!deferredPrompt && !showIosGuide)) {
+  useEffect(() => {
+    if (
+      !hydrated ||
+      completedCount < AUTO_PROMPT_COMPLETION_COUNT ||
+      isStandaloneDisplay() ||
+      window.localStorage.getItem(INSTALL_PROMPT_DISMISS_KEY) === "1"
+    ) {
+      return;
+    }
+
+    setShowPrompt(true);
+  }, [completedCount, hydrated]);
+
+  if (!showPrompt || (!deferredPrompt && !showIosGuide)) {
     return null;
   }
 
   function handleDismiss() {
-    window.localStorage.setItem(DISMISS_KEY, "1");
-    setDismissed(true);
+    window.localStorage.setItem(INSTALL_PROMPT_DISMISS_KEY, "1");
+    setShowPrompt(false);
   }
 
   async function handleInstall() {
@@ -73,7 +106,7 @@ export function InstallPrompt() {
     const choice = await deferredPrompt.userChoice;
 
     if (choice.outcome === "accepted") {
-      setDismissed(true);
+      setShowPrompt(false);
     }
 
     setDeferredPrompt(null);

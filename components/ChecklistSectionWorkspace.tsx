@@ -1,10 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 
-import { AddItemDialog } from "@/components/AddItemDialog";
 import { ChecklistGroupTabs } from "@/components/ChecklistGroupTabs";
 import { ChecklistItemRow } from "@/components/ChecklistItemRow";
 import { EmptyState } from "@/components/EmptyState";
@@ -20,6 +20,12 @@ import { useDadKitStore } from "@/lib/store";
 import type { ChecklistCategory } from "@/lib/types";
 import { useChecklistDescriptionPreference } from "@/lib/use-checklist-description-preference";
 import { useChecklistViewQuery } from "@/lib/use-checklist-view-query";
+
+const AddItemDialog = dynamic(
+  () =>
+    import("@/components/AddItemDialog").then((module) => module.AddItemDialog),
+  { ssr: false },
+);
 
 const ChecklistItemDetailsDialog = dynamic(
   () =>
@@ -110,16 +116,31 @@ export function ChecklistSectionWorkspace({
         />
 
         {visibleItems.length === 0 ? (
-          <EmptyState
-            title={
-              view === "shopping"
-                ? "这个分类没有待购物品"
-                : view === "packed"
-                  ? "这个分类还没有已装包物品"
-                  : "这个分类暂时没有项目"
-            }
-            description="切换上方筛选查看其他状态，或添加自己的物品。"
-          />
+          <div className="grid gap-3">
+            <EmptyState
+              title={
+                view === "shopping"
+                  ? "这个分类没有待购物品"
+                  : view === "packed"
+                    ? "这个分类还没有已装包物品"
+                    : "这个分类暂时没有项目"
+              }
+              description="切换上方筛选查看其他状态，或添加自己的物品。"
+              illustrationId={
+                view === "shopping"
+                  ? "general-baby-formula-bottle"
+                  : view === "packed"
+                    ? "general-baby-hospital-clothes"
+                    : "general-baby-diapers"
+              }
+            />
+            <Link
+              className="justify-self-center rounded-full px-4 py-2 text-sm font-semibold text-primary underline decoration-primary/35 underline-offset-4 hover:bg-secondary/50"
+              href={getChecklistHomeHref("highlight=not-needed")}
+            >
+              查看已标记不需要的物品
+            </Link>
+          </div>
         ) : (
           <div className="item-card-grid">
             {visibleItems.map((item) => (
@@ -168,12 +189,12 @@ export function ChecklistSectionWorkspaceSkeleton() {
   return (
     <div className="page-shell" aria-label="正在准备分类清单">
       <section className="mobile-shell grid animate-pulse gap-3 lg:max-w-2xl">
-        <div className="h-20 rounded-[1.75rem] bg-muted" />
-        <div className="h-16 rounded-[1.75rem] bg-muted" />
-        <div className="h-20 rounded-[1.75rem] bg-muted" />
+        <div className="h-20 rounded-card bg-muted" />
+        <div className="h-16 rounded-card bg-muted" />
+        <div className="h-20 rounded-card bg-muted" />
         <div className="item-card-grid">
-          <div className="h-80 rounded-[1.75rem] bg-muted" />
-          <div className="h-80 rounded-[1.75rem] bg-muted" />
+          <div className="h-80 rounded-card bg-muted" />
+          <div className="h-80 rounded-card bg-muted" />
         </div>
       </section>
     </div>

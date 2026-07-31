@@ -1,9 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useState } from "react";
 import { Ban, Check, PackageCheck, Trash2 } from "lucide-react";
 
 import { ChecklistItemArt } from "@/components/ChecklistItemArt";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ItemPhotoField, useItemPhoto } from "@/components/ItemPhotoField";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,6 +55,7 @@ export function ChecklistItemDetailsDialog({
   const advanceItem = useDadKitStore((state) => state.advanceItem);
   const toggleItemSkipped = useDadKitStore((state) => state.toggleItemSkipped);
   const removeItem = useDadKitStore((state) => state.removeItem);
+  const [removalConfirmOpen, setRemovalConfirmOpen] = useState(false);
   const itemState = getChecklistItemState(item);
   const stateMeta = STATE_META[itemState];
   const displayOptions = {
@@ -60,7 +63,7 @@ export function ChecklistItemDetailsDialog({
   } as const;
   const displayName = formatChecklistDisplayText(item.name, displayOptions);
   const displayNote = formatChecklistDisplayText(
-    item.note || "暂无补充说明，可以按家庭和医院实际情况调整。",
+    item.note || "暂无补充说明，按你们的实际情况慢慢调整，医院通知优先。",
     displayOptions,
   );
   const displayQuantity = formatChecklistDisplayText(
@@ -68,18 +71,14 @@ export function ChecklistItemDetailsDialog({
     displayOptions,
   );
 
-  function confirmRemoval() {
-    if (!window.confirm(`从清单中删除“${displayName}”？`)) {
-      return;
-    }
-
+  function removeCurrentItem() {
     removeItem(item.id);
     onOpenChange(false);
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-4 rounded-[2rem] border border-border bg-background p-5 sm:max-w-md">
+      <DialogContent className="gap-4 rounded-card border border-border bg-background p-5 sm:max-w-md">
         <DialogHeader className="pr-8">
           <DialogTitle className="break-words text-xl leading-7">
             {displayName}
@@ -89,7 +88,7 @@ export function ChecklistItemDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <section className="rounded-[1.5rem] border border-border/70 bg-card p-4">
+        <section className="rounded-inset border border-border/70 bg-card p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold">当前状态</p>
@@ -118,7 +117,7 @@ export function ChecklistItemDetailsDialog({
           </Button>
         </section>
 
-        <section className="rounded-[1.5rem] border border-border/70 bg-card p-4">
+        <section className="rounded-inset border border-border/70 bg-card p-4">
           <p className="text-sm font-semibold">物品说明</p>
           <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
             {displayNote}
@@ -126,7 +125,7 @@ export function ChecklistItemDetailsDialog({
         </section>
 
         {!photoController.loading && !photoController.photoUrl ? (
-          <section className="rounded-[1.5rem] border border-border/70 bg-card p-4">
+          <section className="rounded-inset border border-border/70 bg-card p-4">
             <p className="text-sm font-semibold">物品示意</p>
             <div className="relative mt-2 aspect-[4/3] max-h-52 overflow-hidden rounded-xl bg-background">
               <ChecklistItemArt
@@ -142,7 +141,7 @@ export function ChecklistItemDetailsDialog({
 
         <ItemPhotoField controller={photoController} itemName={displayName} />
 
-        <section className="grid gap-2 rounded-[1.5rem] border border-border/70 bg-card p-3">
+        <section className="grid gap-2 rounded-inset border border-border/70 bg-card p-3">
           <div className="flex min-h-11 items-center justify-between gap-3 px-1">
             <div>
               <p className="text-sm font-semibold">编辑物品</p>
@@ -166,7 +165,7 @@ export function ChecklistItemDetailsDialog({
               className="justify-start text-destructive hover:text-destructive"
               type="button"
               variant="ghost"
-              onClick={confirmRemoval}
+              onClick={() => setRemovalConfirmOpen(true)}
             >
               <Trash2 className="size-4" />
               删除物品
@@ -174,6 +173,15 @@ export function ChecklistItemDetailsDialog({
           ) : null}
         </section>
       </DialogContent>
+      <ConfirmDialog
+        confirmLabel="删除物品"
+        description={`“${displayName}”会先隐藏 5 秒，期间可以撤销。`}
+        onConfirm={removeCurrentItem}
+        onOpenChange={setRemovalConfirmOpen}
+        open={removalConfirmOpen}
+        title="确认删除这件物品？"
+        variant="destructive"
+      />
     </Dialog>
   );
 }

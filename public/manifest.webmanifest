@@ -9,6 +9,22 @@
   "theme_color": "#FBF8F2",
   "lang": "zh-CN",
   "categories": ["lifestyle", "productivity"],
+  "screenshots": [
+    {
+      "src": "/screenshot-home.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "DadKit 待产包清单首页"
+    },
+    {
+      "src": "/screenshot-checklist.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "DadKit 分类清单页"
+    }
+  ],
   "shortcuts": [
     {
       "name": "待产清单",

@@ -2,8 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { installBrowserStorage } from "@/tests/helpers/browser-storage";
 import {
+  alignExportDataToServerTime,
   createInvite,
   createSpace,
+  getSyncRetryDelay,
   joinSpace,
   leaveSpace,
   refreshSyncStatus,
@@ -11,10 +13,14 @@ import {
   useSyncStatusStore,
 } from "@/lib/sync/client";
 import {
+  exportData,
   loadSyncClientState,
   loadSyncSession,
   saveChecklist,
+  STORAGE_KEYS,
 } from "@/lib/storage";
+import { mergeExportData } from "@/lib/sync/merge";
+import { getSyncClockTimelineInitialized } from "@/lib/sync-clock";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
 
@@ -38,10 +44,10 @@ function testItem(id: string, patch: Partial<ChecklistItem> = {}): ChecklistItem
   };
 }
 
-function jsonResponse(body: unknown, status = 200) {
+function jsonResponse(body: unknown, status = 200, headers: HeadersInit = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...headers },
   });
 }
 
@@ -68,6 +74,105 @@ afterEach(() => {
 });
 
 describe("family sync client", () => {
+  it("adds bounded jitter to retry delays", () => {
+    expect(getSyncRetryDelay(10_000, 0)).toBe(8_000);
+    expect(getSyncRetryDelay(10_000, 0.5)).toBe(10_000);
+    expect(getSyncRetryDelay(10_000, 1)).toBe(12_000);
+  });
+
+  it("aligns fast and slow device timestamps before item-wise merging", () => {
+    const remote = {
+      ...exportData(),
+      checklist: [testItem("shared", { status: "packed", updatedAt: 200 })],
+      customItems: [],
+    };
+    const fastClockLocal = {
+      ...exportData(),
+      checklist: [
+        testItem("shared", { status: "todo", updatedAt: 3_600_100 }),
+      ],
+      customItems: [],
+    };
+    const slowClockLocal = {
+      ...exportData(),
+      checklist: [
+        testItem("shared", { status: "todo", updatedAt: -3_599_700 }),
+      ],
+      customItems: [],
+    };
+
+    expect(
+      mergeExportData(
+        alignExportDataToServerTime(fastClockLocal, -3_600_000),
+        remote,
+      ).checklist[0]?.status,
+    ).toBe("packed");
+    expect(
+      mergeExportData(
+        alignExportDataToServerTime(slowClockLocal, 3_600_000),
+        remote,
+      ).checklist[0]?.status,
+    ).toBe("todo");
+    expect(alignExportDataToServerTime(remote, 3_600_000).growthUpdatedAt).toBe(
+      0,
+    );
+  });
+
+  it("persists the first server-time alignment before pushing local changes", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-30T00:00:00.000Z"));
+
+    try {
+      const { localValues } = installBrowserStorage();
+      localValues.set(
+        "dadkit:v3:sync-session",
+        JSON.stringify({ token: "space.clock", joinedAt: new Date().toISOString() }),
+      );
+      saveChecklist([
+        testItem("clocked", { updatedAt: Date.now() + 100 }),
+      ]);
+      useDadKitStore.setState({ hydrated: true });
+
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url: string, init?: RequestInit) => {
+          if (url === "/api/sync/pull") {
+            return jsonResponse(
+              { version: 0, updatedAt: "", data: null },
+              200,
+              {
+                "x-dadkit-server-time": new Date(
+                  Date.now() - 3_600_000,
+                ).toISOString(),
+              },
+            );
+          }
+          if (url === "/api/sync/push") {
+            return jsonResponse(
+              { version: 1, updatedAt: "", data: JSON.parse(String(init?.body)).data },
+              200,
+              {
+                "x-dadkit-server-time": new Date(
+                  Date.now() - 3_600_000,
+                ).toISOString(),
+              },
+            );
+          }
+          throw new Error("unexpected sync request");
+        }),
+      );
+
+      await expect(syncNow()).resolves.toMatchObject({ ok: true });
+
+      const persisted = JSON.parse(localValues.get(STORAGE_KEYS.checklist) ?? "[]") as ChecklistItem[];
+      expect(localValues.get("dadkit:v3:sync-clock-offset-ms")).toBe("-3600000");
+      expect(persisted[0]?.updatedAt).toBe(Date.now() - 3_600_000 + 100);
+      expect(getSyncClockTimelineInitialized()).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("is a no-op without a session", async () => {
     installBrowserStorage();
     const fetchMock = vi.fn();

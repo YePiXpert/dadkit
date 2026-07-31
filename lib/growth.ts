@@ -538,6 +538,21 @@ export function getCurrentGrowthWeekFromDueDate(
   return clampGrowthWeek(Math.floor((280 - daysUntilDue) / 7));
 }
 
+export function getDaysUntilDueDate(dueDate: string, today = new Date()) {
+  if (!isIsoCalendarDate(dueDate) || Number.isNaN(today.getTime())) {
+    return undefined;
+  }
+
+  const dueUtc = Date.parse(`${dueDate}T00:00:00Z`);
+  const todayUtc = Date.UTC(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+
+  return Math.round((dueUtc - todayUtc) / 86_400_000);
+}
+
 export function isIsoCalendarDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return false;

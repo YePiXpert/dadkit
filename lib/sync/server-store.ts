@@ -23,10 +23,15 @@ import {
   type DadKitImportData,
 } from "@/lib/data/format";
 import { mergeExportData } from "@/lib/sync/merge";
+import {
+  legacySyncSpaceName,
+  normalizeSyncSpaceName,
+} from "@/lib/sync/space-name";
 
 const SESSION_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 const SESSION_RENEW_THROTTLE_MS = 60 * 60 * 1000;
 const INVITE_TTL_MS = 10 * 60 * 1000;
+const SPACE_BACKUP_COUNT = 5;
 const INVITE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const scrypt = promisify(scryptCallback) as (
   password: string,
@@ -67,6 +72,7 @@ type SpaceFile = {
 export type SyncSpaceSnapshot = {
   version: number;
   updatedAt: string;
+  serverTime: string;
   data: DadKitImportData | null;
 };
 
@@ -193,6 +199,7 @@ async function writeSpace(spaceKey: string, space: SpaceFile) {
 
   try {
     await mkdir(directory, { recursive: true, mode: 0o700 });
+    await rotateSpaceBackups(filePath);
     await writeFile(tempPath, JSON.stringify(space), {
       encoding: "utf8",
       flag: "wx",
@@ -234,8 +241,31 @@ function snapshotOf(space: SpaceFile): SyncSpaceSnapshot {
   return {
     version: space.version,
     updatedAt: space.updatedAt,
+    serverTime: new Date().toISOString(),
     data: space.data,
   };
+}
+
+async function rotateSpaceBackups(filePath: string) {
+  for (let index = SPACE_BACKUP_COUNT; index >= 1; index -= 1) {
+    const source = index === 1 ? filePath : `${filePath}.bak.${index - 1}`;
+    const destination = `${filePath}.bak.${index}`;
+
+    try {
+      await writeFile(destination, await readFile(source), { mode: 0o600 });
+      await chmod(destination, 0o600);
+    } catch (error) {
+      if (
+        isRecord(error) &&
+        typeof error.code === "string" &&
+        error.code === "ENOENT"
+      ) {
+        continue;
+      }
+
+      throw error;
+    }
+  }
 }
 
 function issueSession(spaceKey: string, space: SpaceFile, now: string) {
@@ -340,13 +370,21 @@ export async function joinSpace(
   code: string,
   existingOnly = false,
 ): Promise<SyncJoinResult | undefined> {
-  const normalizedName = name.trim();
+  const normalizedName = normalizeSyncSpaceName(name);
+  const legacyName = legacySyncSpaceName(name);
   const normalizedCode = code.trim();
-  const spaceKey = sha256(normalizedName);
+  const normalizedSpaceKey = sha256(normalizedName);
+  const legacySpaceKey = sha256(legacyName);
 
-  return withSpaceLock(spaceKey, async () => {
+  return withSpaceLock(normalizedSpaceKey, async () => {
     const now = new Date().toISOString();
+    let spaceKey = normalizedSpaceKey;
     let space = await readSpace(spaceKey);
+
+    if (!space && legacySpaceKey !== normalizedSpaceKey) {
+      space = await readSpace(legacySpaceKey);
+      spaceKey = legacySpaceKey;
+    }
 
     if (space) {
       let authenticated = false;
@@ -414,11 +452,16 @@ export async function joinSpace(
 export async function createSpace(
   name: string,
 ): Promise<SyncCreateResult | undefined> {
-  const normalizedName = name.trim();
+  const normalizedName = normalizeSyncSpaceName(name);
+  const legacyName = legacySyncSpaceName(name);
   const spaceKey = sha256(normalizedName);
+  const legacySpaceKey = sha256(legacyName);
 
   return withSpaceLock(spaceKey, async () => {
-    if (await readSpace(spaceKey)) {
+    if (
+      (await readSpace(spaceKey)) ||
+      (legacySpaceKey !== spaceKey && (await readSpace(legacySpaceKey)))
+    ) {
       return undefined;
     }
 
@@ -451,7 +494,10 @@ export async function createInvite(
   if (!parsed) {
     return undefined;
   }
-  if (sha256(name.trim()) !== parsed.spaceKey) {
+  if (
+    sha256(normalizeSyncSpaceName(name)) !== parsed.spaceKey &&
+    sha256(legacySyncSpaceName(name)) !== parsed.spaceKey
+  ) {
     return null;
   }
 

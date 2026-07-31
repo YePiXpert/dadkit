@@ -52,6 +52,7 @@ export async function POST(request: Request) {
 
     return syncJson(snapshot, 200, {
       etag: `"dadkit-sync-${snapshot.version}"`,
+      "x-dadkit-server-time": snapshot.serverTime,
     });
   } catch (error) {
     if (error instanceof SyncStoreError) {

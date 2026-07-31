@@ -2,8 +2,8 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import type { ChangeEvent, ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Cloud,
   ChevronDown,
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -64,12 +65,6 @@ import {
   useSyncStatusStore,
 } from "@/lib/sync/client";
 import {
-  downloadWebDavBackup,
-  importDadKitWebDavBackup,
-  testWebDavConnection,
-  uploadWebDavBackup,
-} from "@/lib/webdav/client";
-import {
   DEFAULT_WEBDAV_CONFIG,
   type DadKitWebDavBackup,
   type WebDavConfig,
@@ -83,11 +78,17 @@ const FamilySyncCard = dynamic(
     ),
   {
     loading: () => (
-      <div className="h-28 animate-pulse rounded-[1.75rem] bg-muted" />
+      <div className="h-28 animate-pulse rounded-card bg-muted" />
     ),
     ssr: false,
   },
 );
+
+type BackupConfirmation =
+  | { type: "restoreSnapshot"; snapshotId: string }
+  | { type: "deleteSnapshots" }
+  | { type: "downloadRemote" }
+  | { type: "clearWebDav" };
 
 export default function BackupSettingsPage() {
   const clearAll = useDadKitStore((state) => state.clearAll);
@@ -110,9 +111,13 @@ export default function BackupSettingsPage() {
   const [webDavMessage, setWebDavMessage] = useState("");
   const [webDavMessageOk, setWebDavMessageOk] = useState<boolean>();
   const [webDavBusy, setWebDavBusy] = useState(false);
+  const [photoPackageBusy, setPhotoPackageBusy] = useState(false);
+  const [photoPackageMessage, setPhotoPackageMessage] = useState("");
+  const [photoPackageMessageOk, setPhotoPackageMessageOk] = useState<boolean>();
   const [pendingRemoteBackup, setPendingRemoteBackup] =
     useState<DadKitWebDavBackup>();
-  const [uploadConflict, setUploadConflict] = useState(false);
+  const [confirmation, setConfirmation] = useState<BackupConfirmation>();
+  const photoPackageInputRef = useRef<HTMLInputElement>(null);
   const syncStatus = useSyncStatusStore();
   const recentSnapshots = snapshots.slice(0, 2);
   const hasLocalData = checklist.length > 0 || customItems.length > 0;
@@ -131,7 +136,6 @@ export default function BackupSettingsPage() {
     setWebDavSecret(loadWebDavSecret(config.rememberSecret));
     setWebDavSyncState(loadWebDavSyncState());
     setPendingRemoteBackup(undefined);
-    setUploadConflict(false);
   }
 
   useEffect(() => {
@@ -142,10 +146,6 @@ export default function BackupSettingsPage() {
   }, [hydrate]);
 
   function restoreLocalSnapshot(id: string) {
-    if (!window.confirm("恢复此恢复点会替换当前清单。是否继续？")) {
-      return;
-    }
-
     const result = restoreSnapshot(id);
 
     if (result.ok) {
@@ -158,10 +158,6 @@ export default function BackupSettingsPage() {
   }
 
   function deleteAllSnapshots() {
-    if (!window.confirm("确认删除全部本机恢复点？")) {
-      return;
-    }
-
     clearSnapshots();
     refreshSnapshots();
     setSnapshotMessage("本机恢复点已删除。");
@@ -231,9 +227,16 @@ export default function BackupSettingsPage() {
 
     setWebDavBusy(true);
     setPendingRemoteBackup(undefined);
-    setUploadConflict(false);
+    const client = await loadWebDavClient();
 
-    const result = await testWebDavConnection(config, webDavSecret);
+    if (!client) {
+      setWebDavMessage(WEB_DAV_CLIENT_LOAD_ERROR);
+      setWebDavMessageOk(false);
+      setWebDavBusy(false);
+      return;
+    }
+
+    const result = await client.testWebDavConnection(config, webDavSecret);
 
     setWebDavMessage(result.message);
     setWebDavMessageOk(result.ok);
@@ -243,27 +246,25 @@ export default function BackupSettingsPage() {
     setWebDavBusy(false);
   }
 
-  async function uploadCurrentBackup(force = false) {
+  async function uploadCurrentBackup() {
     const config = prepareWebDavOperation();
     const currentData = exportData();
 
     setWebDavBusy(true);
     setPendingRemoteBackup(undefined);
 
-    const result = await uploadWebDavBackup(config, webDavSecret, currentData, {
-      deviceId: webDavSyncState.deviceId,
-      force,
-    });
+    const client = await loadWebDavClient();
 
-    if (result.conflict) {
-      setUploadConflict(true);
-      setWebDavMessage("远端备份与当前本地数据不同。");
+    if (!client) {
+      setWebDavMessage(WEB_DAV_CLIENT_LOAD_ERROR);
       setWebDavMessageOk(false);
       setWebDavBusy(false);
       return;
     }
 
-    setUploadConflict(false);
+    const result = await client.uploadWebDavBackup(config, webDavSecret, currentData, {
+      deviceId: webDavSyncState.deviceId,
+    });
     setWebDavMessage(result.message);
     setWebDavMessageOk(result.ok);
 
@@ -283,22 +284,21 @@ export default function BackupSettingsPage() {
   }
 
   async function downloadRemoteBackup() {
-    if (
-      hasLocalData &&
-      !window.confirm(
-        "检查远端备份后可以选择是否恢复。恢复前会先保存本机恢复点。是否继续？",
-      )
-    ) {
-      return;
-    }
-
     const config = prepareWebDavOperation();
 
     setWebDavBusy(true);
     setPendingRemoteBackup(undefined);
-    setUploadConflict(false);
 
-    const result = await downloadWebDavBackup(config, webDavSecret);
+    const client = await loadWebDavClient();
+
+    if (!client) {
+      setWebDavMessage(WEB_DAV_CLIENT_LOAD_ERROR);
+      setWebDavMessageOk(false);
+      setWebDavBusy(false);
+      return;
+    }
+
+    const result = await client.downloadWebDavBackup(config, webDavSecret);
 
     setWebDavMessage(result.message);
     setWebDavMessageOk(result.ok);
@@ -316,12 +316,20 @@ export default function BackupSettingsPage() {
     setWebDavBusy(false);
   }
 
-  function restoreRemoteBackup() {
+  async function restoreRemoteBackup() {
     if (!pendingRemoteBackup) {
       return;
     }
 
-    const result = importDadKitWebDavBackup(pendingRemoteBackup);
+    const client = await loadWebDavClient();
+
+    if (!client) {
+      setWebDavMessage(WEB_DAV_CLIENT_LOAD_ERROR);
+      setWebDavMessageOk(false);
+      return;
+    }
+
+    const result = client.importDadKitWebDavBackup(pendingRemoteBackup);
 
     if (result.ok) {
       const timestamp = new Date().toISOString();
@@ -342,14 +350,73 @@ export default function BackupSettingsPage() {
   }
 
   function clearWebDav() {
-    if (!window.confirm("确认清除 WebDAV 配置和本设备保存的凭据？")) {
-      return;
-    }
-
     clearWebDavSettings();
     refreshWebDavSettings();
     setWebDavMessage("WebDAV 配置已清除。");
     setWebDavMessageOk(true);
+  }
+
+  async function exportPhotoPackage() {
+    setPhotoPackageBusy(true);
+    setPhotoPackageMessage("");
+
+    try {
+      const { exportItemPhotos } = await import("@/lib/item-photos");
+      const backup = await exportItemPhotos();
+      downloadJsonFile(
+        backup,
+        `dadkit-photos-${backup.exportedAt.slice(0, 10)}.json`,
+      );
+      setPhotoPackageMessage(
+        backup.photos.length > 0
+          ? `已导出 ${backup.photos.length} 张物品照片。`
+          : "当前没有可导出的物品照片，已下载空照片备份包。",
+      );
+      setPhotoPackageMessageOk(true);
+    } catch (error) {
+      setPhotoPackageMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "导出照片备份包失败，请稍后重试。",
+      );
+      setPhotoPackageMessageOk(false);
+    } finally {
+      setPhotoPackageBusy(false);
+    }
+  }
+
+  async function importPhotoPackage(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+
+    input.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    setPhotoPackageBusy(true);
+    setPhotoPackageMessage("");
+
+    try {
+      const payload: unknown = JSON.parse(await file.text());
+      const { importItemPhotoBackup } = await import("@/lib/item-photos");
+      const imported = await importItemPhotoBackup(payload);
+
+      setPhotoPackageMessage(
+        imported > 0 ? `已导入 ${imported} 张物品照片。` : "照片备份包中没有照片。",
+      );
+      setPhotoPackageMessageOk(true);
+    } catch (error) {
+      setPhotoPackageMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "导入照片备份包失败，请确认文件完整后重试。",
+      );
+      setPhotoPackageMessageOk(false);
+    } finally {
+      setPhotoPackageBusy(false);
+    }
   }
 
   return (
@@ -400,7 +467,7 @@ export default function BackupSettingsPage() {
           </CardHeader>
           <CardContent className="grid gap-3">
             <p className="text-sm leading-6 text-muted-foreground">
-              恢复、清空或重建前自动保存清单，最多保留 5 份。恢复点只在当前浏览器中，不含照片和 WebDAV 配置。
+              恢复、清空或重建前自动保存清单，最多保留 2 份，以降低本地存储占用。恢复点只在当前浏览器中，不含照片和 WebDAV 配置。
             </p>
             {recentSnapshots.length === 0 ? (
               <p className="rounded-2xl bg-muted px-4 py-4 text-sm text-muted-foreground">
@@ -412,29 +479,18 @@ export default function BackupSettingsPage() {
                   <SnapshotRow
                     key={snapshot.id}
                     snapshot={snapshot}
-                    onRestore={restoreLocalSnapshot}
+                    onRestore={(snapshotId) =>
+                      setConfirmation({
+                        type: "restoreSnapshot",
+                        snapshotId,
+                      })
+                    }
                   />
                 ))}
               </div>
             )}
-            {snapshots.length > 2 ? (
-              <details className="rounded-2xl border border-border bg-muted/40 p-3">
-                <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold">
-                  查看全部 {snapshots.length} 份恢复点
-                </summary>
-                <div className="mt-3 grid gap-2">
-                  {snapshots.slice(2).map((snapshot) => (
-                    <SnapshotRow
-                      key={snapshot.id}
-                      snapshot={snapshot}
-                      onRestore={restoreLocalSnapshot}
-                    />
-                  ))}
-                </div>
-              </details>
-            ) : null}
             {snapshots.length > 0 ? (
-              <Button className="justify-self-start" size="sm" variant="ghost" onClick={deleteAllSnapshots}>
+              <Button className="justify-self-start" size="sm" variant="ghost" onClick={() => setConfirmation({ type: "deleteSnapshots" })}>
                 <Trash2 />
                 删除全部恢复点
               </Button>
@@ -443,7 +499,46 @@ export default function BackupSettingsPage() {
           </CardContent>
         </Card>
 
-        <details className="group overflow-hidden rounded-[1.75rem] border border-border bg-card">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
+                <Download className="size-4" />
+              </span>
+              <span className="text-base">照片备份包</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            <p className="text-sm leading-6 text-muted-foreground">
+              物品照片保存在设备的本地照片库，不会混入普通恢复点或 WebDAV 备份。换设备前可导出独立照片备份包，并在新设备导入。
+            </p>
+            <input
+              ref={photoPackageInputRef}
+              accept="application/json,.json"
+              aria-label="导入照片备份包"
+              className="sr-only"
+              type="file"
+              onChange={importPhotoPackage}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={photoPackageBusy} onClick={exportPhotoPackage}>
+                <Download />
+                导出照片包
+              </Button>
+              <Button
+                disabled={photoPackageBusy}
+                variant="outline"
+                onClick={() => photoPackageInputRef.current?.click()}
+              >
+                <Upload />
+                导入照片包
+              </Button>
+            </div>
+            <Feedback message={photoPackageMessage} ok={photoPackageMessageOk} />
+          </CardContent>
+        </Card>
+
+        <details className="group overflow-hidden rounded-card border border-border bg-card">
           <summary className="flex min-h-20 cursor-pointer list-none items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary">
               <Cloud className="size-4" />
@@ -456,22 +551,30 @@ export default function BackupSettingsPage() {
                   : "高级功能：跨设备手动上传或恢复备份"}
               </span>
             </span>
-            <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+            <span className="rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
               {webDavConfigured ? "已配置" : "未配置"}
             </span>
             <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </summary>
           <div className="grid gap-4 border-t border-border/70 p-5">
             <p className="text-sm leading-6 text-muted-foreground">
-              只在你主动操作时上传或下载清单备份，不会自动同步，也不上传照片或 WebDAV 凭据。地址必须使用 HTTPS。
+              只在你主动操作时上传或下载清单备份。上传与恢复都会按条目合并本地和远端数据，不会自动同步，也不上传照片或 WebDAV 凭据。地址必须使用 HTTPS。
             </p>
 
             <div className="flex flex-wrap gap-2">
-              <Button disabled={webDavBusy} onClick={() => uploadCurrentBackup()}>
+              <Button disabled={webDavBusy} onClick={uploadCurrentBackup}>
                 <Upload />
-                上传当前备份
+                合并并上传当前备份
               </Button>
-              <Button disabled={webDavBusy} variant="outline" onClick={downloadRemoteBackup}>
+              <Button
+                disabled={webDavBusy}
+                variant="outline"
+                onClick={() =>
+                  hasLocalData
+                    ? setConfirmation({ type: "downloadRemote" })
+                    : void downloadRemoteBackup()
+                }
+              >
                 <Download />
                 检查远端备份
               </Button>
@@ -487,12 +590,17 @@ export default function BackupSettingsPage() {
               onSubmit={(event) => event.preventDefault()}
             >
               <Field label="WebDAV 地址" htmlFor="webdav-endpoint">
-                <Input
-                  id="webdav-endpoint"
-                  type="url"
-                  value={webDavConfig.endpoint}
-                  onChange={(event) => updateWebDavConfig({ endpoint: event.target.value })}
-                />
+                <>
+                  <Input
+                    id="webdav-endpoint"
+                    type="url"
+                    value={webDavConfig.endpoint}
+                    onChange={(event) => updateWebDavConfig({ endpoint: event.target.value })}
+                  />
+                  <p className="text-xs leading-5 text-muted-foreground">
+                    默认地址适用于 123 云盘；其他服务请填写自己的 WebDAV 地址。
+                  </p>
+                </>
               </Field>
               <Field label="用户名" htmlFor="webdav-username">
                 <Input
@@ -545,7 +653,7 @@ export default function BackupSettingsPage() {
                 <div>
                   <Label htmlFor="webdav-remember-secret">记住密码在本设备</Label>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    默认只保留到当前浏览器会话结束。
+                    默认只保留到当前浏览器会话结束。开启后会明文保存在此设备的本地存储，仅在可信设备上使用。
                   </p>
                 </div>
                 <Switch
@@ -556,20 +664,6 @@ export default function BackupSettingsPage() {
               </div>
             </form>
 
-            {uploadConflict ? (
-              <div className="grid gap-2 rounded-xl border border-warning-foreground/25 bg-warning p-3 text-sm text-warning-foreground">
-                <p>远端备份与当前本地数据不同。确认后可用本地数据覆盖远端。</p>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" onClick={() => uploadCurrentBackup(true)}>
-                    用本地覆盖远端
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => setUploadConflict(false)}>
-                    取消
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-
             {pendingRemoteBackup ? (
               <div className="grid gap-3 rounded-xl border border-border bg-muted/35 p-3 text-sm">
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -577,7 +671,7 @@ export default function BackupSettingsPage() {
                   <StatusTile label="清单项目" value={`${pendingRemoteBackup.data.checklist.length} 项`} />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button onClick={restoreRemoteBackup}>恢复这个远端备份</Button>
+                  <Button onClick={restoreRemoteBackup}>合并这个远端备份</Button>
                   <Button variant="outline" onClick={() => setPendingRemoteBackup(undefined)}>
                     取消
                   </Button>
@@ -592,7 +686,7 @@ export default function BackupSettingsPage() {
               <span>上次下载：{formatOptionalTime(webDavSyncState.lastDownloadAt)}</span>
             </div>
 
-            <Button className="justify-self-start" size="sm" variant="ghost" onClick={clearWebDav}>
+            <Button className="justify-self-start" size="sm" variant="ghost" onClick={() => setConfirmation({ type: "clearWebDav" })}>
               清除 WebDAV 配置
             </Button>
           </div>
@@ -665,6 +759,59 @@ export default function BackupSettingsPage() {
           </DialogContent>
         </Dialog>
 
+        {confirmation ? (
+          <ConfirmDialog
+            confirmLabel={
+              confirmation.type === "restoreSnapshot"
+                ? "恢复恢复点"
+                : confirmation.type === "deleteSnapshots"
+                  ? "删除全部恢复点"
+                  : confirmation.type === "clearWebDav"
+                    ? "清除 WebDAV 配置"
+                    : "继续检查"
+            }
+            description={
+              confirmation.type === "restoreSnapshot"
+                ? "恢复此恢复点会替换当前清单。"
+                : confirmation.type === "deleteSnapshots"
+                  ? "全部本机恢复点将被永久删除。"
+                  : confirmation.type === "clearWebDav"
+                    ? "本设备保存的 WebDAV 配置和凭据会被清除。"
+                    : "检查远端备份后可以选择是否恢复。恢复前会先保存本机恢复点。"
+            }
+            onConfirm={() => {
+              if (confirmation.type === "restoreSnapshot") {
+                restoreLocalSnapshot(confirmation.snapshotId);
+              } else if (confirmation.type === "deleteSnapshots") {
+                deleteAllSnapshots();
+              } else if (confirmation.type === "clearWebDav") {
+                clearWebDav();
+              } else {
+                void downloadRemoteBackup();
+              }
+            }}
+            onOpenChange={(open) => {
+              if (!open) setConfirmation(undefined);
+            }}
+            open
+            title={
+              confirmation.type === "restoreSnapshot"
+                ? "确认恢复本机恢复点？"
+                : confirmation.type === "deleteSnapshots"
+                  ? "确认删除全部恢复点？"
+                  : confirmation.type === "clearWebDav"
+                    ? "确认清除 WebDAV 配置？"
+                    : "确认检查远端备份？"
+            }
+            variant={
+              confirmation.type === "deleteSnapshots" ||
+              confirmation.type === "clearWebDav"
+                ? "destructive"
+                : "default"
+            }
+          />
+        ) : null}
+
         <footer className="grid gap-2 px-3 pb-4 pt-1 text-center text-xs leading-5 text-muted-foreground">
           <p>数据默认保存在当前浏览器。</p>
           <p className="flex items-center justify-center gap-3">
@@ -702,6 +849,16 @@ function SnapshotRow({
   );
 }
 
+const WEB_DAV_CLIENT_LOAD_ERROR = "WebDAV 模块加载失败，请检查网络后重试。";
+
+async function loadWebDavClient() {
+  try {
+    return await import("@/lib/webdav/client");
+  } catch {
+    return undefined;
+  }
+}
+
 function normalizeWebDavConfig(config: WebDavConfig): WebDavConfig {
   return {
     ...config,
@@ -724,6 +881,19 @@ function formatSnapshotTime(value: string) {
 
 function formatOptionalTime(value?: string) {
   return value ? formatSnapshotTime(value) : "暂无";
+}
+
+function downloadJsonFile(payload: unknown, filename: string) {
+  const blob = new Blob([JSON.stringify(payload)], {
+    type: "application/json;charset=utf-8",
+  });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+
+  anchor.download = filename;
+  anchor.href = url;
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 function Field({

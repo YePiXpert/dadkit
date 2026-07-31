@@ -109,13 +109,7 @@ export function hasExactKeys(
   value: Record<string, unknown>,
   expected: readonly string[],
 ) {
-  const actual = Object.keys(value).sort();
-  const wanted = [...expected].sort();
-
-  return (
-    actual.length === wanted.length &&
-    actual.every((key, index) => key === wanted[index])
-  );
+  return expected.every((key) => key in value);
 }
 
 function isOneOf<T extends string>(
@@ -129,23 +123,12 @@ function hasOptionalString(value: Record<string, unknown>, key: string) {
   return !(key in value) || typeof value[key] === "string";
 }
 
-function hasOnlyKnownKeys(
-  value: Record<string, unknown>,
-  allowed: readonly string[],
-) {
-  const allowedKeys = new Set(allowed);
-  return Object.keys(value).every((key) => allowedKeys.has(key));
-}
-
 export function isChecklistItem(value: unknown): value is ChecklistItem {
   if (!isRecord(value)) {
     return false;
   }
 
-  if (
-    !hasOnlyKnownKeys(value, CHECKLIST_ITEM_KEYS) ||
-    !REQUIRED_CHECKLIST_ITEM_KEYS.every((key) => key in value)
-  ) {
+  if (!REQUIRED_CHECKLIST_ITEM_KEYS.every((key) => key in value)) {
     return false;
   }
 
@@ -223,6 +206,59 @@ export function isChecklistItem(value: unknown): value is ChecklistItem {
       (typeof value.updatedAt === "number" &&
         Number.isFinite(value.updatedAt)))
   );
+}
+
+function copyChecklistItem(item: ChecklistItem): ChecklistItem {
+  return Object.fromEntries(
+    CHECKLIST_ITEM_KEYS.filter((key) => key in item).map((key) => [
+      key,
+      item[key],
+    ]),
+  ) as ChecklistItem;
+}
+
+/** Drops fields a newer client may add before data enters this runtime. */
+export function sanitizeDadKitImportData(
+  data: DadKitImportData,
+): DadKitImportData {
+  const base = {
+    exportedAt: data.exportedAt,
+    checklistMode: data.checklistMode,
+    checklist: data.checklist.map(copyChecklistItem),
+    customItems: data.customItems.map(copyChecklistItem),
+    hiddenTemplateItemIds: [...data.hiddenTemplateItemIds],
+  };
+
+  if (data.version === 3) {
+    return { ...base, version: 3 };
+  }
+
+  const growth = {
+    version: 1 as const,
+    profile: {
+      nickname: data.growth.profile.nickname,
+      dueDate: data.growth.profile.dueDate,
+    },
+    progress: { completedTaskIds: [...data.growth.progress.completedTaskIds] },
+  };
+
+  if (data.version === 4) {
+    return { ...base, version: 4, growth };
+  }
+
+  return {
+    ...base,
+    version: 5,
+    growth,
+    hiddenTemplateItemStamps: Object.fromEntries(
+      Object.entries(data.hiddenTemplateItemStamps).map(([id, stamp]) => [
+        id,
+        { hidden: stamp.hidden, updatedAt: stamp.updatedAt },
+      ]),
+    ),
+    deletedCustomItems: { ...data.deletedCustomItems },
+    growthUpdatedAt: data.growthUpdatedAt,
+  };
 }
 
 export function isValidDateString(value: unknown): value is string {

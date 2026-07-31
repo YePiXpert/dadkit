@@ -14,27 +14,27 @@ export function HomeHeroIllustration({ className }: HomeHeroIllustrationProps) {
     >
       <defs>
         <linearGradient id="home-hero-board" x1="52" x2="98" y1="28" y2="94" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#ff7d92" />
-          <stop offset="1" stopColor="#f9536f" />
+          <stop offset="0" stopColor="hsl(var(--hero-board-start))" />
+          <stop offset="1" stopColor="hsl(var(--hero-board-end))" />
         </linearGradient>
         <linearGradient id="home-hero-milk" x1="28" x2="46" y1="52" y2="80" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#fff3d4" />
-          <stop offset="1" stopColor="#ffe3a8" />
+          <stop offset="0" stopColor="hsl(var(--hero-milk-start))" />
+          <stop offset="1" stopColor="hsl(var(--hero-milk-end))" />
         </linearGradient>
       </defs>
 
-      <circle cx="104" cy="22" r="4" fill="#ffd9e1" />
+      <circle cx="104" cy="22" r="4" fill="hsl(var(--hero-sparkle-soft))" />
       <path
         d="M14 20c1 4 2.6 5.5 6.5 6.5-3.9 1-5.5 2.6-6.5 6.5-1-4-2.6-5.5-6.5-6.5 3.9-1 5.5-2.6 6.5-6.5Z"
-        fill="#ffc94d"
+        fill="hsl(var(--hero-sparkle-strong))"
       />
 
       {/* 奶瓶 */}
       <g transform="rotate(-8 36 64)">
         <path
           d="M36 22c-5.5 0-8.5 4.6-6 9.7l3 6.4h6l3-6.4c2.5-5.1-.5-9.7-6-9.7Z"
-          fill="#ffd98e"
-          stroke="#e8a54b"
+          fill="hsl(var(--hero-nipple))"
+          stroke="hsl(var(--hero-warm-outline))"
           strokeLinejoin="round"
           strokeWidth="3"
         />
@@ -44,8 +44,8 @@ export function HomeHeroIllustration({ className }: HomeHeroIllustrationProps) {
           width="30"
           height="12"
           rx="6"
-          fill="#ff9fb2"
-          stroke="#e5708a"
+          fill="hsl(var(--hero-cap))"
+          stroke="hsl(var(--hero-cap-outline))"
           strokeWidth="3"
         />
         <rect
@@ -54,8 +54,8 @@ export function HomeHeroIllustration({ className }: HomeHeroIllustrationProps) {
           width="38"
           height="66"
           rx="10"
-          fill="#fffdf6"
-          stroke="#e8c9a3"
+          fill="hsl(var(--hero-bottle))"
+          stroke="hsl(var(--hero-bottle-outline))"
           strokeWidth="3"
         />
         <path
@@ -64,7 +64,7 @@ export function HomeHeroIllustration({ className }: HomeHeroIllustrationProps) {
         />
         <path
           d="M26 58h8M26 66h8M26 86h8"
-          stroke="#e8c9a3"
+          stroke="hsl(var(--hero-bottle-outline))"
           strokeLinecap="round"
           strokeWidth="3"
         />
@@ -79,7 +79,7 @@ export function HomeHeroIllustration({ className }: HomeHeroIllustrationProps) {
           height="72"
           rx="9"
           fill="url(#home-hero-board)"
-          stroke="#d94f68"
+          stroke="hsl(var(--hero-board-end))"
           strokeWidth="3.5"
         />
         <rect
@@ -88,52 +88,52 @@ export function HomeHeroIllustration({ className }: HomeHeroIllustrationProps) {
           width="26"
           height="13"
           rx="5.5"
-          fill="#ffc94d"
-          stroke="#e8a54b"
+          fill="hsl(var(--hero-sparkle-strong))"
+          stroke="hsl(var(--hero-warm-outline))"
           strokeWidth="3"
         />
-        <rect x="58" y="42" width="44" height="58" rx="6" fill="#fffdf8" />
+        <rect x="58" y="42" width="44" height="58" rx="6" fill="hsl(var(--hero-paper))" />
         <rect
           x="63"
           y="48"
           width="9"
           height="9"
           rx="2.5"
-          fill="#fff"
-          stroke="#f0b7c2"
+          fill="hsl(var(--hero-paper))"
+          stroke="hsl(var(--hero-paper-line))"
           strokeWidth="2"
         />
         <path
           d="m65 52.5 2.4 2.4 4-4.6"
           fill="none"
-          stroke="#4caf7d"
+          stroke="hsl(var(--hero-check))"
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="2.6"
         />
-        <path d="M76 53h21" stroke="#f3cdd4" strokeLinecap="round" strokeWidth="3.4" />
+        <path d="M76 53h21" stroke="hsl(var(--hero-paper-line))" strokeLinecap="round" strokeWidth="3.4" />
         <rect
           x="63"
           y="63"
           width="9"
           height="9"
           rx="2.5"
-          fill="#fff"
-          stroke="#f0b7c2"
+          fill="hsl(var(--hero-paper))"
+          stroke="hsl(var(--hero-paper-line))"
           strokeWidth="2"
         />
         <path
           d="m65 67.5 2.4 2.4 4-4.6"
           fill="none"
-          stroke="#4caf7d"
+          stroke="hsl(var(--hero-check))"
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="2.6"
         />
-        <path d="M76 68h15" stroke="#f3cdd4" strokeLinecap="round" strokeWidth="3.4" />
+        <path d="M76 68h15" stroke="hsl(var(--hero-paper-line))" strokeLinecap="round" strokeWidth="3.4" />
         <path
           d="M63 82h34M63 90h24"
-          stroke="#f7dfe4"
+          stroke="hsl(var(--hero-paper-line))"
           strokeLinecap="round"
           strokeWidth="3.4"
         />
@@ -141,8 +141,8 @@ export function HomeHeroIllustration({ className }: HomeHeroIllustrationProps) {
 
       <path
         d="M101 106c2.4-4.2 9-2.7 9 2.7 0 5.7-9 10.2-9 10.2s-9-4.5-9-10.2c0-5.4 6.6-6.9 9-2.7Z"
-        fill="#ff8fa3"
-        stroke="#e5708a"
+        fill="hsl(var(--hero-heart))"
+        stroke="hsl(var(--hero-cap-outline))"
         strokeLinejoin="round"
         strokeWidth="2.5"
       />

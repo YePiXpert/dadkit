@@ -5,6 +5,8 @@ const ITEM_PHOTO_STORE = "photos";
 export const ITEM_PHOTO_MAX_EDGE = 800;
 export const ITEM_PHOTO_JPEG_QUALITY = 0.8;
 export const ITEM_PHOTO_MAX_SOURCE_BYTES = 20 * 1024 * 1024;
+export const ITEM_PHOTO_READ_CACHE_LIMIT = 30;
+export const ITEM_PHOTO_ORPHAN_MIN_AGE_MS = 60_000;
 
 export type ItemPhotoDimensions = {
   height: number;
@@ -15,6 +17,19 @@ export type ItemPhotoRecord = ItemPhotoDimensions & {
   blob: Blob;
   itemId: string;
   updatedAt: string;
+};
+
+export type ItemPhotoBackupRecord = ItemPhotoDimensions & {
+  data: string;
+  itemId: string;
+  mimeType: string;
+  updatedAt: string;
+};
+
+export type ItemPhotoBackup = {
+  exportedAt: string;
+  photos: ItemPhotoBackupRecord[];
+  version: 1;
 };
 
 // WebKit's IndexedDB implementation can reject Blob/File structured clones.
@@ -169,12 +184,16 @@ export function getItemPhoto(itemId: string) {
   const existing = photoReadPromises.get(normalizedItemId);
 
   if (existing) {
+    // Refresh recency: re-insert at the Map tail so hot entries survive eviction.
+    photoReadPromises.delete(normalizedItemId);
+    photoReadPromises.set(normalizedItemId, existing);
     return existing;
   }
 
   const pending = readItemPhoto(normalizedItemId);
 
   photoReadPromises.set(normalizedItemId, pending);
+  trimPhotoReadPromises();
   void pending.catch(() => {
     if (photoReadPromises.get(normalizedItemId) === pending) {
       photoReadPromises.delete(normalizedItemId);
@@ -182,6 +201,22 @@ export function getItemPhoto(itemId: string) {
   });
 
   return pending;
+}
+
+// The read cache holds decoded Blobs (roughly 50-150 KB each), so cap it.
+// Map iteration order is insertion order, which getItemPhoto maintains as
+// least-to-most recently used. Eviction only drops the cached promise; any
+// object URL leased from it stays alive until its own refs reach zero.
+function trimPhotoReadPromises() {
+  while (photoReadPromises.size > ITEM_PHOTO_READ_CACHE_LIMIT) {
+    const oldestItemId = photoReadPromises.keys().next().value;
+
+    if (oldestItemId === undefined) {
+      return;
+    }
+
+    photoReadPromises.delete(oldestItemId);
+  }
 }
 
 async function readItemPhoto(normalizedItemId: string) {
@@ -202,6 +237,33 @@ async function readItemPhoto(normalizedItemId: string) {
   ]);
 
   return toItemPhotoRecord(result);
+}
+
+async function readAllStoredItemPhotoRecords(database: IDBDatabase) {
+  const transaction = database.transaction(ITEM_PHOTO_STORE, "readonly");
+  const completion = waitForTransaction(transaction);
+  const request = transaction.objectStore(ITEM_PHOTO_STORE).openCursor();
+  const records: unknown[] = [];
+
+  await new Promise<void>((resolve, reject) => {
+    request.onsuccess = () => {
+      const cursor = request.result;
+
+      if (!cursor) {
+        resolve();
+        return;
+      }
+
+      records.push(cursor.value);
+      cursor.continue();
+    };
+    request.onerror = () => {
+      reject(request.error ?? new Error("读取物品照片失败。"));
+    };
+  });
+  await completion;
+
+  return records;
 }
 
 export async function acquireItemPhotoUrl(
@@ -311,6 +373,125 @@ export async function clearItemPhotos() {
   emitItemPhotoChange();
 }
 
+/**
+ * Creates a portable, explicit photo package. Photos intentionally stay out of
+ * normal checklist/WebDAV backups, so this can be downloaded before moving to
+ * a new device without unexpectedly inflating every routine backup.
+ */
+export async function exportItemPhotos(): Promise<ItemPhotoBackup> {
+  const database = await requireItemPhotoDatabase();
+  const records = await readAllStoredItemPhotoRecords(database);
+  const photos = (
+    await Promise.all(
+      records.map(async (value) => {
+        const photo = toItemPhotoRecord(value);
+
+        if (!photo) {
+          return undefined;
+        }
+
+        return {
+          data: arrayBufferToBase64(await photo.blob.arrayBuffer()),
+          height: photo.height,
+          itemId: photo.itemId,
+          mimeType: photo.blob.type || "image/jpeg",
+          updatedAt: photo.updatedAt,
+          width: photo.width,
+        } satisfies ItemPhotoBackupRecord;
+      }),
+    )
+  ).filter((photo): photo is ItemPhotoBackupRecord => Boolean(photo));
+
+  return { version: 1, exportedAt: new Date().toISOString(), photos };
+}
+
+export async function importItemPhotoBackup(payload: unknown) {
+  if (!isItemPhotoBackup(payload)) {
+    throw new Error("照片备份包格式无效。");
+  }
+
+  const records = payload.photos.map((photo) => ({
+    bytes: base64ToArrayBuffer(photo.data),
+    height: photo.height,
+    itemId: normalizeItemId(photo.itemId),
+    mimeType: photo.mimeType,
+    updatedAt: photo.updatedAt,
+    width: photo.width,
+  } satisfies StoredBinaryItemPhotoRecord));
+
+  const database = await requireItemPhotoDatabase();
+  const transaction = database.transaction(ITEM_PHOTO_STORE, "readwrite");
+  const completion = waitForTransaction(transaction);
+  const store = transaction.objectStore(ITEM_PHOTO_STORE);
+
+  for (const record of records) {
+    store.put(record);
+  }
+
+  await completion;
+  emitItemPhotoChange();
+
+  return payload.photos.length;
+}
+
+// Photos whose item vanished (for example when the fire-and-forget delete in
+// removeItem failed) would occupy IndexedDB forever. Sweep them, but only once
+// a record is older than the grace period: an item added while the scan runs
+// may be missing from the caller's snapshot, and its fresh photo must survive.
+export async function pruneOrphanedPhotos(validItemIds: Iterable<string>) {
+  const database = await openItemPhotoDatabase();
+
+  if (!database) {
+    return 0;
+  }
+
+  const validIds = new Set(validItemIds);
+  const oldestKeptTimestamp = Date.now() - ITEM_PHOTO_ORPHAN_MIN_AGE_MS;
+  const transaction = database.transaction(ITEM_PHOTO_STORE, "readwrite");
+  const completion = waitForTransaction(transaction);
+  const store = transaction.objectStore(ITEM_PHOTO_STORE);
+  const removedItemIds: string[] = [];
+
+  await new Promise<void>((resolve, reject) => {
+    const request = store.openCursor();
+
+    request.onsuccess = () => {
+      const cursor = request.result;
+
+      if (!cursor) {
+        resolve();
+        return;
+      }
+
+      const itemId = String(cursor.key);
+      const { updatedAt } = cursor.value as { updatedAt?: unknown };
+      const updatedTimestamp =
+        typeof updatedAt === "string" ? Date.parse(updatedAt) : Number.NaN;
+
+      if (
+        !validIds.has(itemId) &&
+        Number.isFinite(updatedTimestamp) &&
+        updatedTimestamp < oldestKeptTimestamp
+      ) {
+        removedItemIds.push(itemId);
+        cursor.delete();
+      }
+
+      cursor.continue();
+    };
+    request.onerror = () => {
+      reject(request.error ?? new Error("扫描物品照片失败。"));
+    };
+  });
+  await completion;
+
+  for (const removedItemId of removedItemIds) {
+    emitItemPhotoChange(removedItemId);
+  }
+
+  return removedItemIds.length;
+}
+
 export function subscribeToItemPhotoChanges(listener: ItemPhotoChangeListener) {
   photoChangeListeners.add(listener);
 
@@ -376,6 +557,78 @@ function normalizeItemId(itemId: string) {
   }
 
   return normalized;
+}
+
+function isItemPhotoBackup(value: unknown): value is ItemPhotoBackup {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const backup = value as Partial<ItemPhotoBackup>;
+
+  return (
+    backup.version === 1 &&
+    typeof backup.exportedAt === "string" &&
+    Number.isFinite(Date.parse(backup.exportedAt)) &&
+    Array.isArray(backup.photos) &&
+    backup.photos.every(isItemPhotoBackupRecord)
+  );
+}
+
+function isItemPhotoBackupRecord(
+  value: unknown,
+): value is ItemPhotoBackupRecord {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const photo = value as Partial<ItemPhotoBackupRecord>;
+
+  return (
+    typeof photo.itemId === "string" &&
+    photo.itemId.trim().length > 0 &&
+    typeof photo.updatedAt === "string" &&
+    Number.isFinite(Date.parse(photo.updatedAt)) &&
+    Number.isInteger(photo.width) &&
+    (photo.width ?? 0) > 0 &&
+    Number.isInteger(photo.height) &&
+    (photo.height ?? 0) > 0 &&
+    typeof photo.mimeType === "string" &&
+    photo.mimeType.toLowerCase().startsWith("image/") &&
+    typeof photo.data === "string" &&
+    /^[A-Za-z0-9+/]+={0,2}$/.test(photo.data) &&
+    photo.data.length % 4 === 0
+  );
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  if (typeof btoa !== "function") {
+    throw new Error("当前浏览器无法导出照片备份包。");
+  }
+
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+
+  for (let start = 0; start < bytes.length; start += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(start, start + 0x8000));
+  }
+
+  return btoa(binary);
+}
+
+function base64ToArrayBuffer(value: string) {
+  if (typeof atob !== "function") {
+    throw new Error("当前浏览器无法导入照片备份包。");
+  }
+
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return bytes.buffer;
 }
 
 async function toStoredItemPhotoRecord(

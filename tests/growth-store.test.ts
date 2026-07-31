@@ -9,6 +9,7 @@ import {
   GROWTH_STORAGE_KEYS,
   applyGrowthPortableData,
   exportGrowthData,
+  flushPendingProfileWrite,
   resetGrowthData,
   useGrowthStore,
   validateGrowthPortableData,
@@ -130,7 +131,7 @@ describe("growth store", () => {
     ]);
   });
 
-  it("strictly validates portable data and rejects week-shaped legacy progress", () => {
+  it("validates portable fields while allowing future extension fields", () => {
     expect(validateGrowthPortableData(portableData())).toBe(true);
     expect(
       validateGrowthPortableData({
@@ -157,7 +158,7 @@ describe("growth store", () => {
         ...portableData(),
         unexpected: true,
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("applies portable profile and task progress without replacing the view", () => {
@@ -212,5 +213,52 @@ describe("growth store", () => {
       lastViewedWeek: DEFAULT_GROWTH_WEEK,
       hydrated: true,
     });
+  });
+
+  it("debounces nickname storage writes and persists the latest value", () => {
+    vi.useFakeTimers();
+
+    try {
+      const values = installLocalStorage();
+
+      useGrowthStore.getState().setNickname("小");
+      useGrowthStore.getState().setNickname("小栗子");
+
+      expect(useGrowthStore.getState().nickname).toBe("小栗子");
+      expect(values.has(GROWTH_STORAGE_KEYS.profile)).toBe(false);
+
+      vi.advanceTimersByTime(400);
+
+      expect(JSON.parse(values.get(GROWTH_STORAGE_KEYS.profile) ?? "{}")).toEqual({
+        nickname: "小栗子",
+        dueDate: "",
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("flushes a pending nickname write immediately on demand", () => {
+    const values = installLocalStorage();
+
+    useGrowthStore.getState().setNickname("小满");
+    flushPendingProfileWrite();
+
+    expect(JSON.parse(values.get(GROWTH_STORAGE_KEYS.profile) ?? "{}")).toEqual({
+      nickname: "小满",
+      dueDate: "",
+    });
+  });
+
+  it("exports the latest nickname before the debounced write lands", () => {
+    const values = installLocalStorage();
+    values.set(
+      GROWTH_STORAGE_KEYS.profile,
+      JSON.stringify({ nickname: "旧昵称", dueDate: "" }),
+    );
+
+    useGrowthStore.getState().setNickname("新昵称");
+
+    expect(exportGrowthData().profile.nickname).toBe("新昵称");
   });
 });

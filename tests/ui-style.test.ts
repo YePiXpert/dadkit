@@ -15,6 +15,7 @@ function readSource(...segments: string[]) {
 const globals = readSource("app", "globals.css");
 const layout = readSource("app", "layout.tsx");
 const homePage = readSource("app", "page.tsx");
+const growthPage = readSource("app", "growth", "page.tsx");
 const settingsPage = readSource("app", "settings", "page.tsx");
 const checklistSettingsPage = readSource(
   "app",
@@ -45,6 +46,7 @@ const pwaRegister = readSource("components", "PwaRegister.tsx");
 const button = readSource("components", "ui", "button.tsx");
 const card = readSource("components", "ui", "card.tsx");
 const nextConfig = readSource("next.config.ts");
+const tailwindConfig = readSource("tailwind.config.ts");
 const packageJson = JSON.parse(readSource("package.json")) as {
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
@@ -60,9 +62,9 @@ describe("V2 PWA visual and navigation contract", () => {
     expect(globals).toContain("--muted: 35 38% 92%");
     expect(globals).toContain("--border: 36 32% 86%");
     expect(globals).toContain("--radius: 1.75rem");
-    expect(globals).toContain("max-width: min(100%, 430px)");
-    expect(globals).toContain("@media (min-width: 360px)");
-    expect(globals).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
+    expect(globals).toContain("sm:max-w-[42rem]");
+    expect(globals).toContain("xs:grid-cols-2");
+    expect(tailwindConfig).toContain('xs: "360px"');
     expect(globals).toContain("overflow-x: hidden");
     expect(globals).toContain("touch-action: pan-x pan-y");
     expect(layout).toContain(
@@ -72,7 +74,7 @@ describe("V2 PWA visual and navigation contract", () => {
       '{ media: "(prefers-color-scheme: dark)", color: "#1A1714" }',
     );
     expect(layout).toContain(
-      '{ url: "/maskable-icon-512.png", sizes: "512x512", type: "image/png" }',
+      '{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }',
     );
     expect(layout).toContain('viewportFit: "cover"');
   });
@@ -81,8 +83,12 @@ describe("V2 PWA visual and navigation contract", () => {
     expect(globals).toContain(".dark {");
     expect(globals).toContain("--hero-from:");
     expect(globals).toContain("--warning:");
+    expect(globals).toContain("--surface-art:");
+    expect(globals).toContain("--confetti-coral:");
     expect(layout).toContain("suppressHydrationWarning");
     expect(layout).toContain("themeInitScript");
+    expect(growthPage).toContain('url: "/og-growth.png"');
+    expect(growthPage).toContain('images: ["/og-growth.png"]');
 
     for (const source of [
       settingsPage,
@@ -168,11 +174,10 @@ describe("V2 PWA visual and navigation contract", () => {
     expect(checklistCategoryCard).toContain("break-words text-sm font-semibold leading-5");
     expect(checklistCategoryCard).toContain("href={href}");
     expect(checklistSectionWorkspace).toContain('className="item-card-grid"');
-    expect(globals).toContain("@media (min-width: 360px)");
-    expect(globals).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
+    expect(globals).toContain("xs:grid-cols-2");
     expect(checklistItemRow).toContain("ChecklistItemArt");
     expect(button).toContain("rounded-full");
-    expect(card).toContain("rounded-[1.75rem]");
+    expect(card).toContain("rounded-card");
     expect(card).toContain("border border-border");
     expect(card).toContain("bg-card");
   });

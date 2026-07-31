@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   CalendarDays,
   Check,
@@ -11,6 +11,7 @@ import {
   Info,
   Ruler,
   Scale,
+  Share2,
   Sparkles,
   UserRound,
 } from "lucide-react";
@@ -32,7 +33,9 @@ import {
   getProjectedGrowthWeekDate,
   type GrowthTrimester,
 } from "@/lib/growth";
-import { useGrowthStore } from "@/lib/growth-store";
+import { flushPendingProfileWrite, useGrowthStore } from "@/lib/growth-store";
+import { getStoredPackingPercent } from "@/lib/packing-progress";
+import { formatGrowthShareText, shareText } from "@/lib/share";
 import { cn } from "@/lib/utils";
 
 const TIMELINE_GROUPS: readonly GrowthTrimester[] = [
@@ -54,6 +57,7 @@ export function GrowthWorkspace() {
   const toggleCompletedTask = useGrowthStore(
     (state) => state.toggleCompletedTask,
   );
+  const [packingPercent, setPackingPercent] = useState(0);
 
   useEffect(() => {
     hydrate();
@@ -65,6 +69,37 @@ export function GrowthWorkspace() {
   const currentTaskDone = completedTaskIds.includes(current.checkupTaskId);
   const projectedDate = getProjectedGrowthWeekDate(dueDate, current.week);
   const babyName = nickname.trim() || "宝宝";
+  const currentPregnancyWeek = dueDate
+    ? getCurrentGrowthWeekFromDueDate(dueDate)
+    : undefined;
+  useEffect(() => {
+    const refreshPackingPercent = () =>
+      setPackingPercent(getStoredPackingPercent());
+
+    refreshPackingPercent();
+    window.addEventListener("storage", refreshPackingPercent);
+    return () => window.removeEventListener("storage", refreshPackingPercent);
+  }, []);
+  const [currentWeekPopping, setCurrentWeekPopping] = useState(false);
+  const previousViewedWeekRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    const previousWeek = previousViewedWeekRef.current;
+    previousViewedWeekRef.current = current.week;
+
+    if (
+      previousWeek === undefined ||
+      previousWeek === current.week ||
+      current.week !== currentPregnancyWeek
+    ) {
+      return;
+    }
+
+    setCurrentWeekPopping(true);
+    const timeout = window.setTimeout(() => setCurrentWeekPopping(false), 500);
+
+    return () => window.clearTimeout(timeout);
+  }, [current.week, currentPregnancyWeek]);
 
   function updateDueDate(value: string) {
     setDueDate(value);
@@ -96,9 +131,9 @@ export function GrowthWorkspace() {
           title="宝宝成长记"
         />
 
-        <details className="group rounded-[1.75rem] border bg-card">
+        <details className="group rounded-card border bg-card">
           <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary">
+            <span className="icon-tile">
               <UserRound className="size-4" />
             </span>
             <span className="min-w-0 flex-1">
@@ -118,6 +153,7 @@ export function GrowthWorkspace() {
                 autoComplete="off"
                 id="growth-nickname"
                 maxLength={20}
+                onBlur={() => flushPendingProfileWrite()}
                 onInput={(event) => setNickname(event.currentTarget.value)}
                 placeholder="例如：小栗子"
                 value={nickname}
@@ -164,7 +200,7 @@ export function GrowthWorkspace() {
               </div>
               {projectedDate ? (
                 <div className="rounded-2xl border border-card/80 bg-card/75 px-3 py-2 text-right">
-                  <p className="text-[11px] text-muted-foreground">按预产期推算</p>
+                  <p className="text-xs text-muted-foreground">按预产期推算</p>
                   <p className="mt-0.5 text-sm font-semibold">
                     约 {formatFullDate(projectedDate)}
                   </p>
@@ -172,15 +208,34 @@ export function GrowthWorkspace() {
               ) : null}
             </div>
 
-            <div className="rounded-[1.75rem] border border-card/80 bg-card/70 p-3">
+            <div className="rounded-card border border-card/80 bg-card/70 p-3">
               <GrowthAnalogyIllustration
                 analogy={current.analogy}
+                className={currentWeekPopping ? "sticker-pop" : undefined}
                 week={current.week}
               />
               <p className="mt-1 text-center text-xs text-muted-foreground">
                 原创示意，仅帮助理解大致尺度，不按真实比例
               </p>
             </div>
+
+            <Button
+              className="justify-self-center"
+              onClick={() =>
+                void shareText(
+                  formatGrowthShareText(
+                    current.week,
+                    current.analogy,
+                    packingPercent,
+                  ),
+                )
+              }
+              size="sm"
+              variant="outline"
+            >
+              <Share2 />
+              分享本周
+            </Button>
 
             <div
               className={cn(
@@ -251,7 +306,7 @@ export function GrowthWorkspace() {
           </div>
         </section>
 
-        <section aria-label="切换孕周" className="rounded-[1.75rem] border bg-card p-4 sm:p-5">
+        <section aria-label="切换孕周" className="rounded-card border bg-card p-4 sm:p-5">
           <p aria-live="polite" className="sr-only">
             正在查看孕 {current.week} 周
           </p>
@@ -290,6 +345,17 @@ export function GrowthWorkspace() {
               <ChevronRight />
             </Button>
           </div>
+          {currentPregnancyWeek !== undefined &&
+          current.week !== currentPregnancyWeek ? (
+            <Button
+              className="mt-3 w-full"
+              onClick={() => selectWeek(currentPregnancyWeek, true)}
+              size="sm"
+              variant="secondary"
+            >
+              回到本周（孕 {currentPregnancyWeek} 周）
+            </Button>
+          ) : null}
           <label className="sr-only" htmlFor="growth-week-range">
             拖动选择孕周
           </label>
@@ -303,7 +369,7 @@ export function GrowthWorkspace() {
             type="range"
             value={current.week}
           />
-          <div aria-hidden="true" className="flex justify-between text-[11px] text-muted-foreground">
+          <div aria-hidden="true" className="flex justify-between text-xs text-muted-foreground">
             <span>8 周</span>
             <span>40 周</span>
           </div>
@@ -325,7 +391,7 @@ export function GrowthWorkspace() {
           {TIMELINE_GROUPS.map((trimester) => (
             <section
               aria-labelledby={`growth-${trimester}`}
-              className="overflow-hidden rounded-[1.75rem] border bg-card"
+              className="overflow-hidden rounded-card border bg-card"
               key={trimester}
             >
               <h3
@@ -408,7 +474,7 @@ export function GrowthWorkspace() {
           ))}
         </section>
 
-        <aside className="rounded-[1.75rem] border bg-card p-5" role="note">
+        <aside className="rounded-card border bg-card p-5" role="note">
           <div className="flex items-start gap-3">
             <Info className="mt-0.5 size-5 shrink-0 text-primary" />
             <p className="text-sm leading-6 text-muted-foreground">
@@ -417,7 +483,7 @@ export function GrowthWorkspace() {
           </div>
         </aside>
 
-        <section className="rounded-[1.75rem] border bg-card p-5">
+        <section className="rounded-card border bg-card p-5">
           <div className="flex items-center gap-2">
             <CalendarDays className="size-4 text-primary" />
             <h2 className="text-sm font-semibold">内容依据</h2>
@@ -459,7 +525,7 @@ function Metric({
 }) {
   return (
     <div className={cn("rounded-2xl border border-card/75 bg-card/75 p-3", className)}>
-      <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground [&_svg]:size-3.5">
+      <p className="flex items-center gap-1.5 text-xs text-muted-foreground [&_svg]:size-3.5">
         {icon}
         {label}
       </p>

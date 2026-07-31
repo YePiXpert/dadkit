@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   CHECKLIST_SECTIONS,
   CHECKLIST_VIEWS,
+  getDepartureItemCount,
   getChecklistItemState,
   getChecklistViewCounts,
   getChecklistViewItems,
@@ -123,5 +124,22 @@ describe("V2 checklist views", () => {
     }
 
     expect(counts).toEqual({ all: 5, shopping: 1, packing: 2, packed: 1 });
+  });
+
+  it("keeps departure and car items outside the completion celebration count", () => {
+    expect(
+      getDepartureItemCount([
+        {
+          ...checklistItem("car-ready", "todo", "pack_existing"),
+          bag: "car",
+        },
+        checklistItem("done", "packed", "pack_existing"),
+        checklistItem("skipped", "not_needed", "pack_existing"),
+        {
+          ...checklistItem("last-minute", "todo", "pack_existing"),
+          category: "last_minute",
+        },
+      ]),
+    ).toBe(2);
   });
 });

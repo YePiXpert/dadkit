@@ -254,10 +254,6 @@ describe("strict v3, v4 and v5 import boundary", () => {
       ),
     ],
     [
-      "extra field",
-      JSON.stringify({ ...backupData(), userProfile: null }),
-    ],
-    [
       "invalid exportedAt",
       JSON.stringify({ ...backupData(), exportedAt: "not-a-date" }),
     ],
@@ -312,6 +308,22 @@ describe("strict v3, v4 and v5 import boundary", () => {
 
     expect(result.ok).toBe(false);
     expect(currentDataSnapshot()).toEqual(before);
+  });
+
+  it("accepts future fields but strips them before saving the portable data", () => {
+    installBrowserStorage();
+    const raw = JSON.stringify({
+      ...backupData({
+        checklist: [
+          { ...testItem("future-item"), futureField: "discard me" },
+        ],
+      }),
+      futureBackupField: { supportedBy: "a newer DadKit" },
+    });
+
+    expect(importData(raw)).toEqual({ ok: true, message: "导入成功" });
+    expect(loadChecklist()[0]).not.toHaveProperty("futureField");
+    expect(exportData()).not.toHaveProperty("futureBackupField");
   });
 
   it("rolls back every checklist field when a write fails", () => {
@@ -374,7 +386,7 @@ describe("strict v3, v4 and v5 import boundary", () => {
 });
 
 describe("local recovery snapshots", () => {
-  it("keeps only the latest five snapshots", () => {
+  it("keeps only the latest two snapshots", () => {
     installBrowserStorage();
     saveChecklist([testItem("existing")]);
 
@@ -385,9 +397,6 @@ describe("local recovery snapshots", () => {
     expect(loadSnapshots().map((snapshot) => snapshot.reason)).toEqual([
       "恢复点 7",
       "恢复点 6",
-      "恢复点 5",
-      "恢复点 4",
-      "恢复点 3",
     ]);
   });
 

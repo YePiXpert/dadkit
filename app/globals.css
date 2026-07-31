@@ -33,6 +33,30 @@
     --hero-from: 11 71% 93%;
     --hero-via: 10 72% 95%;
     --hero-to: 38 45% 93%;
+    --surface-art: 45 60% 91%;
+    --surface-growth: 39 48% 93%;
+    --illustration-outline: 35 23% 32%;
+    --confetti-coral: 348 93% 64%;
+    --confetti-gold: 43 100% 65%;
+    --confetti-green: 142 38% 49%;
+    --confetti-blue: 211 61% 70%;
+    --confetti-pink: 348 100% 81%;
+    --hero-board-start: 350 100% 75%;
+    --hero-board-end: 348 93% 64%;
+    --hero-milk-start: 43 100% 92%;
+    --hero-milk-end: 39 100% 83%;
+    --hero-sparkle-soft: 340 100% 92%;
+    --hero-sparkle-strong: 43 100% 65%;
+    --hero-nipple: 42 100% 77%;
+    --hero-warm-outline: 35 76% 60%;
+    --hero-cap: 348 100% 81%;
+    --hero-cap-outline: 348 66% 67%;
+    --hero-bottle: 42 100% 98%;
+    --hero-bottle-outline: 35 56% 77%;
+    --hero-paper: 45 100% 98%;
+    --hero-paper-line: 348 68% 89%;
+    --hero-check: 142 38% 49%;
+    --hero-heart: 348 100% 78%;
     --tile-mom-bg: 348 85% 93%;
     --tile-mom-fg: 348 62% 48%;
     --tile-baby-bg: 32 90% 91%;
@@ -77,6 +101,30 @@
     --hero-from: 18 22% 18%;
     --hero-via: 24 16% 15%;
     --hero-to: 30 14% 14%;
+    --surface-art: 33 18% 19%;
+    --surface-growth: 31 17% 18%;
+    --illustration-outline: 35 25% 92%;
+    --confetti-coral: 348 70% 68%;
+    --confetti-gold: 43 82% 70%;
+    --confetti-green: 142 35% 61%;
+    --confetti-blue: 211 54% 72%;
+    --confetti-pink: 348 65% 76%;
+    --hero-board-start: 350 62% 61%;
+    --hero-board-end: 348 58% 54%;
+    --hero-milk-start: 43 55% 74%;
+    --hero-milk-end: 39 52% 61%;
+    --hero-sparkle-soft: 340 40% 47%;
+    --hero-sparkle-strong: 43 70% 67%;
+    --hero-nipple: 42 65% 65%;
+    --hero-warm-outline: 35 45% 52%;
+    --hero-cap: 348 62% 66%;
+    --hero-cap-outline: 348 48% 49%;
+    --hero-bottle: 40 25% 85%;
+    --hero-bottle-outline: 35 31% 58%;
+    --hero-paper: 40 22% 87%;
+    --hero-paper-line: 348 38% 65%;
+    --hero-check: 142 34% 55%;
+    --hero-heart: 348 60% 67%;
     --tile-mom-bg: 348 30% 20%;
     --tile-mom-fg: 348 55% 72%;
     --tile-baby-bg: 30 35% 19%;
@@ -143,17 +191,16 @@
   }
 
   .mobile-shell {
-    @apply mx-auto w-full;
-    max-width: min(100%, 430px);
+    @apply mx-auto w-full sm:max-w-[42rem];
     min-width: 0;
   }
 
   .item-card-grid {
-    @apply grid grid-cols-1 gap-3;
+    @apply grid grid-cols-1 gap-3 xs:grid-cols-2;
   }
 
   .hero-card {
-    @apply overflow-hidden rounded-[2rem] border border-primary/10 shadow-sm;
+    @apply overflow-hidden rounded-card border border-primary/10 shadow-sm;
     background-image: linear-gradient(
       135deg,
       hsl(var(--hero-from)) 0%,
@@ -171,7 +218,7 @@
   }
 
   .card-surface {
-    @apply rounded-[1.75rem] border border-border bg-card shadow-none;
+    @apply rounded-card border border-border bg-card shadow-none;
   }
 
   .icon-tile {
@@ -183,23 +230,13 @@
   }
 }
 
-@media (min-width: 360px) {
-  .item-card-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 640px) {
+@screen sm {
   .page-shell {
     padding-top: calc(1.5rem + env(safe-area-inset-top));
   }
 
   .page-shell-with-nav {
     padding-bottom: calc(3rem + env(safe-area-inset-bottom));
-  }
-
-  .mobile-shell {
-    max-width: min(100%, 672px);
   }
 
   .safe-bottom-fab {
@@ -280,19 +317,14 @@
   animation: sticker-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
-/* 清单插画的浅色光晕与外框按浅色背景设计;深色模式下压暗,
-   避免浅色椭圆和虚线框在深背景上显形。 */
-.dark .illustration-wash {
-  opacity: 0.16;
-}
-
-.dark .illustration-frame {
-  opacity: 0.34;
+.sticker-pop {
+  animation: sticker-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .celebration-confetti,
-  .celebration-card {
+  .celebration-card,
+  .sticker-pop {
     animation: none !important;
   }
 

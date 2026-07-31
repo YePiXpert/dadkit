@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Baby, ChevronRight, ClipboardCheck, Cloud } from "lucide-react";
 
 import { AppearanceCard } from "@/components/AppearanceCard";
+import { InstallPromptSettingsEntry } from "@/components/InstallPromptSettingsEntry";
 
 const SETTINGS_ENTRIES = [
   {
@@ -9,21 +10,21 @@ const SETTINGS_ENTRIES = [
     title: "宝宝成长记",
     description: "按孕周查看宝宝发育与常见产检参考。",
     icon: Baby,
-    accent: "bg-[hsl(var(--tile-baby-bg))] text-[hsl(var(--tile-baby-fg))]",
+    accent: "bg-tile-baby-bg text-tile-baby-fg",
   },
   {
     href: "/settings/checklist",
     title: "清单设置",
     description: "调整显示方式，并维护通用清单内容。",
     icon: ClipboardCheck,
-    accent: "bg-[hsl(var(--tile-docs-bg))] text-[hsl(var(--tile-docs-fg))]",
+    accent: "bg-tile-docs-bg text-tile-docs-fg",
   },
   {
     href: "/settings/backup",
     title: "备份与恢复",
     description: "管理本机恢复点和 WebDAV 备份。",
     icon: Cloud,
-    accent: "bg-[hsl(var(--tile-dad-bg))] text-[hsl(var(--tile-dad-fg))]",
+    accent: "bg-tile-dad-bg text-tile-dad-fg",
   },
 ] as const;
 
@@ -46,7 +47,7 @@ export default function SettingsPage() {
 
             return (
               <Link
-                className="group flex min-h-24 items-center gap-4 rounded-[1.75rem] border border-border bg-card p-4 shadow-sm transition-colors hover:bg-muted/35"
+                className="group flex min-h-24 items-center gap-4 rounded-card border border-border bg-card p-4 shadow-sm transition-colors hover:bg-muted/35"
                 href={entry.href}
                 key={entry.href}
               >
@@ -67,6 +68,7 @@ export default function SettingsPage() {
               </Link>
             );
           })}
+          <InstallPromptSettingsEntry />
         </div>
 
         <AppearanceCard />

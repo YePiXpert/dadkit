@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Check, Copy, Users } from "lucide-react";
+import { Check, Copy, Share2, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Feedback } from "@/components/ui/feedback";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loadSyncSession } from "@/lib/data/settings-repository";
+import { formatFamilyInviteShareText, shareText } from "@/lib/share";
 import {
   createInvite,
   createSpace,
@@ -30,6 +32,7 @@ export function FamilySyncCard() {
   const [syncMessage, setSyncMessage] = useState("");
   const [syncMessageOk, setSyncMessageOk] = useState<boolean>();
   const [syncBusy, setSyncBusy] = useState(false);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
 
   useEffect(() => {
     setInviteName(loadSyncSession()?.spaceName ?? "");
@@ -139,6 +142,14 @@ export function FamilySyncCard() {
     }
   }
 
+  async function shareInvite() {
+    if (!invite) {
+      return;
+    }
+
+    await shareText(formatFamilyInviteShareText(inviteName, invite.code));
+  }
+
   async function runFamilySyncNow() {
     setSyncBusy(true);
     const outcome = await syncNow();
@@ -152,14 +163,6 @@ export function FamilySyncCard() {
   }
 
   async function stopFamilySync() {
-    if (
-      !window.confirm(
-        "退出后这台设备不再自动同步；本机和服务器上的数据都会保留。确定退出家庭同步？",
-      )
-    ) {
-      return;
-    }
-
     setSyncBusy(true);
     await leaveSpace();
     setSyncBusy(false);
@@ -173,7 +176,7 @@ export function FamilySyncCard() {
     <Card className="overflow-hidden">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
-          <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
+          <span className="icon-tile">
             <Users className="size-4" />
           </span>
           <span className="text-base">家庭同步</span>
@@ -195,12 +198,15 @@ export function FamilySyncCard() {
               {syncStatus.lastError ? (
                 <span className="text-destructive">{syncStatus.lastError}</span>
               ) : null}
+              {syncStatus.retryAt ? (
+                <span>下次重试：{formatOptionalTime(syncStatus.retryAt)}</span>
+              ) : null}
             </div>
             <div className="flex flex-wrap gap-2">
               <Button disabled={syncBusy} variant="outline" onClick={runFamilySyncNow}>
                 立即同步
               </Button>
-              <Button disabled={syncBusy} variant="ghost" onClick={stopFamilySync}>
+              <Button disabled={syncBusy} variant="ghost" onClick={() => setLeaveConfirmOpen(true)}>
                 退出同步
               </Button>
             </div>
@@ -231,19 +237,30 @@ export function FamilySyncCard() {
                     >
                       {invite.code}
                     </strong>
-                    <Button
-                      aria-label="复制加入口令"
-                      size="icon"
-                      type="button"
-                      variant="ghost"
-                      onClick={copyInvite}
-                    >
-                      {copied ? (
-                        <Check className="size-4" />
-                      ) : (
-                        <Copy className="size-4" />
-                      )}
-                    </Button>
+                    <span className="flex shrink-0 gap-1">
+                      <Button
+                        aria-label="分享加入口令"
+                        size="icon"
+                        type="button"
+                        variant="ghost"
+                        onClick={() => void shareInvite()}
+                      >
+                        <Share2 className="size-4" />
+                      </Button>
+                      <Button
+                        aria-label="复制加入口令"
+                        size="icon"
+                        type="button"
+                        variant="ghost"
+                        onClick={copyInvite}
+                      >
+                        {copied ? (
+                          <Check className="size-4" />
+                        ) : (
+                          <Copy className="size-4" />
+                        )}
+                      </Button>
+                    </span>
                   </div>
                   <p className="text-xs leading-5 text-muted-foreground">
                     10 分钟内有效，仅能成功加入一次，到期或生成新口令后自动失效。
@@ -258,7 +275,7 @@ export function FamilySyncCard() {
         ) : (
           <>
             <p className="text-sm leading-6 text-muted-foreground">
-              创建家庭后会自动生成 8 位一次性口令。另一台设备输入相同的家庭名称和口令，即可共用清单与成长记。
+              创建家庭后会自动生成 8 位一次性口令。把它发给家人，另一台设备输入相同的家庭名称和口令，就能一起更新清单与成长记。
             </p>
             <div className="flex gap-2">
               <Button
@@ -323,6 +340,15 @@ export function FamilySyncCard() {
           </>
         )}
         <Feedback message={syncMessage} ok={syncMessageOk} />
+        <ConfirmDialog
+          confirmLabel="退出同步"
+          description="退出后这台设备不再自动同步；本机和服务器上的数据都会保留。"
+          onConfirm={() => void stopFamilySync()}
+          onOpenChange={setLeaveConfirmOpen}
+          open={leaveConfirmOpen}
+          title="确认退出家庭同步？"
+          variant="destructive"
+        />
       </CardContent>
     </Card>
   );

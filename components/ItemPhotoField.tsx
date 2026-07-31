@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   acquireItemPhotoUrl,
   deleteItemPhoto,
@@ -172,6 +173,7 @@ export function ItemPhotoField({
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const hasPhoto = Boolean(controller.photoUrl);
+  const [photoDeleteConfirmOpen, setPhotoDeleteConfirmOpen] = useState(false);
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
@@ -184,11 +186,7 @@ export function ItemPhotoField({
     }
   }
 
-  function confirmPhotoDeletion() {
-    if (!window.confirm(`删除“${itemName}”的照片？`)) {
-      return;
-    }
-
+  function deletePhoto() {
     void controller.removePhoto();
   }
 
@@ -200,7 +198,7 @@ export function ItemPhotoField({
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-semibold text-foreground">物品照片</p>
         {controller.loading || controller.busy ? (
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {controller.busy ? "处理中…" : "读取中…"}
           </span>
         ) : null}
@@ -264,22 +262,31 @@ export function ItemPhotoField({
             size="sm"
             type="button"
             variant="ghost"
-            onClick={confirmPhotoDeletion}
+            onClick={() => setPhotoDeleteConfirmOpen(true)}
           >
             删除照片
           </Button>
         ) : null}
       </div>
 
-      <p className="text-[10px] leading-4 text-muted-foreground">
+      <p className="text-xs leading-4 text-muted-foreground">
         最长边压缩为 800px，原图上限 20 MiB。照片不会进入普通恢复点或
-        WebDAV 备份，仅保存在当前浏览器；清除站点数据或卸载应用前请自行保存原图。
+        WebDAV 备份；可前往“设置 - 备份与恢复”导出或导入独立照片备份包。
       </p>
       {controller.error ? (
         <p aria-live="polite" className="text-xs text-destructive" role="alert">
           {controller.error}
         </p>
       ) : null}
+      <ConfirmDialog
+        confirmLabel="删除照片"
+        description={`删除后，“${itemName}”的照片无法恢复。`}
+        onConfirm={deletePhoto}
+        onOpenChange={setPhotoDeleteConfirmOpen}
+        open={photoDeleteConfirmOpen}
+        title="确认删除这张照片？"
+        variant="destructive"
+      />
     </section>
   );
 }

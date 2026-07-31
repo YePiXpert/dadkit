@@ -84,7 +84,7 @@ describe("checklist item artwork", () => {
     expect(markup).toContain('loading="lazy"');
     expect(markup).toContain('width="512"');
     expect(markup).toContain('height="384"');
-    expect(markup).toContain("bg-[#f8eeda]");
+    expect(markup).toContain("bg-surface-art");
     expect(markup).not.toContain("mix-blend-multiply");
     expect(markup).not.toContain("<svg");
   });

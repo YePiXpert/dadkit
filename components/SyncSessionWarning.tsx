@@ -1,0 +1,41 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+import {
+  getSyncSessionStatus,
+  SYNC_SESSION_STATUS_EVENT,
+  type SyncSessionStatus,
+} from "@/lib/sync-session-status";
+
+export function SyncSessionWarning() {
+  const [status, setStatus] = useState<SyncSessionStatus>();
+
+  useEffect(() => {
+    const refresh = () => setStatus(getSyncSessionStatus());
+
+    refresh();
+    window.addEventListener(SYNC_SESSION_STATUS_EVENT, refresh);
+    return () => window.removeEventListener(SYNC_SESSION_STATUS_EVENT, refresh);
+  }, []);
+
+  if (!status?.expired) {
+    return null;
+  }
+
+  return (
+    <aside
+      className="fixed inset-x-3 top-16 z-[69] mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl border border-warning-foreground/25 bg-warning p-3 text-xs text-warning-foreground shadow-md sm:top-24"
+      role="alert"
+    >
+      <span>{status.message ?? "家庭同步已断开，请重新加入后继续同步。"}</span>
+      <Link
+        className="min-h-10 shrink-0 rounded-full bg-primary px-3 py-2 font-semibold text-primary-foreground"
+        href="/settings"
+      >
+        重新加入
+      </Link>
+    </aside>
+  );
+}

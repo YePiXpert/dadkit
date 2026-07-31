@@ -1,5 +1,6 @@
 import {
   migrateHiddenStamps,
+  sanitizeDadKitImportData,
   type DadKitExportData,
   type DadKitImportData,
   type DeletedCustomItemStamps,
@@ -81,49 +82,51 @@ export function mergeExportData(
   local: DadKitExportData,
   remote: DadKitImportData,
 ): DadKitExportData {
+  const cleanLocal = sanitizeDadKitImportData(local) as DadKitExportData;
+  const cleanRemote = sanitizeDadKitImportData(remote);
   const remoteStamps =
-    remote.version === 5
-      ? remote.hiddenTemplateItemStamps
-      : migrateHiddenStamps(remote.hiddenTemplateItemIds, 0);
+    cleanRemote.version === 5
+      ? cleanRemote.hiddenTemplateItemStamps
+      : migrateHiddenStamps(cleanRemote.hiddenTemplateItemIds, 0);
   const remoteTombstones =
-    remote.version === 5 ? remote.deletedCustomItems : {};
-  const remoteGrowth = remote.version === 3 ? undefined : remote.growth;
+    cleanRemote.version === 5 ? cleanRemote.deletedCustomItems : {};
+  const remoteGrowth = cleanRemote.version === 3 ? undefined : cleanRemote.growth;
   const remoteGrowthUpdatedAt =
-    remote.version === 5 ? remote.growthUpdatedAt : 0;
+    cleanRemote.version === 5 ? cleanRemote.growthUpdatedAt : 0;
 
   const hiddenTemplateItemStamps = mergeHiddenStamps(
-    local.hiddenTemplateItemStamps,
+    cleanLocal.hiddenTemplateItemStamps,
     remoteStamps,
   );
   const deletedCustomItems = mergeTombstones(
-    local.deletedCustomItems,
+    cleanLocal.deletedCustomItems,
     remoteTombstones,
   );
-  const customItems = mergeItemLists(local.customItems, remote.customItems).filter(
+  const customItems = mergeItemLists(cleanLocal.customItems, cleanRemote.customItems).filter(
     (item) => keepsCustomItem(item, deletedCustomItems),
   );
-  const checklist = mergeItemLists(local.checklist, remote.checklist).filter(
+  const checklist = mergeItemLists(cleanLocal.checklist, cleanRemote.checklist).filter(
     (item) => item.source !== "user" || keepsCustomItem(item, deletedCustomItems),
   );
   const remoteGrowthWins =
-    remoteGrowth !== undefined && remoteGrowthUpdatedAt > local.growthUpdatedAt;
+    remoteGrowth !== undefined && remoteGrowthUpdatedAt > cleanLocal.growthUpdatedAt;
 
   return {
     version: 5,
     exportedAt: new Date().toISOString(),
     // 精简/完整模式是设备偏好,不随同步走。
-    checklistMode: local.checklistMode,
+    checklistMode: cleanLocal.checklistMode,
     checklist,
     customItems,
     hiddenTemplateItemIds: Object.entries(hiddenTemplateItemStamps)
       .filter(([, stamp]) => stamp.hidden)
       .map(([id]) => id)
       .sort(),
-    growth: remoteGrowthWins ? remoteGrowth : local.growth,
+    growth: remoteGrowthWins ? remoteGrowth : cleanLocal.growth,
     hiddenTemplateItemStamps,
     deletedCustomItems,
     growthUpdatedAt: remoteGrowthWins
       ? remoteGrowthUpdatedAt
-      : local.growthUpdatedAt,
+      : cleanLocal.growthUpdatedAt,
   };
 }

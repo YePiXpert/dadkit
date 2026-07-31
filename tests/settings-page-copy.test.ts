@@ -56,12 +56,14 @@ describe("settings information architecture", () => {
 
     expect(backupSettingsPage).toContain("备份与恢复");
     expect(backupSettingsPage).toContain("本机恢复点");
-    expect(backupSettingsPage).toContain("最多保留 5 份");
+    expect(backupSettingsPage).toContain("最多保留 2 份");
     expect(backupSettingsPage).toContain("WebDAV 备份");
+    expect(backupSettingsPage).toContain("照片备份包");
+    expect(backupSettingsPage).toContain("导出照片包");
+    expect(backupSettingsPage).toContain("导入照片包");
     expect(backupSettingsPage).not.toContain("复制 JSON");
     expect(backupSettingsPage).not.toContain("导入 JSON");
     expect(backupSettingsPage).not.toContain("手动备份");
-    expect(backupSettingsPage).not.toContain("JSON");
     expect(backupSettingsPage).not.toContain("应用密码 / 密码");
     expect(backupSettingsPage).not.toContain("exportJson");
     expect(backupSettingsPage).not.toContain("importJson");

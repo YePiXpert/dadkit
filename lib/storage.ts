@@ -25,11 +25,19 @@ import {
   validateGrowthPortableData,
   type GrowthPortableData,
 } from "@/lib/growth-portable";
+import { sanitizeDadKitImportData } from "@/lib/data/format";
 import {
   DEFAULT_WEBDAV_CONFIG,
   type WebDavConfig,
   type WebDavSyncState,
 } from "@/lib/webdav/types";
+import {
+  markChecklistStateDirty,
+  recordChecklistPersistenceError,
+  recordChecklistStatePersisted,
+  registerChecklistStateSaveRetryHandler,
+  resetChecklistPersistenceStatus,
+} from "@/lib/persistence-status";
 
 export const STORAGE_KEYS = {
   checklist: "dadkit:v3:checklist",
@@ -45,6 +53,8 @@ export const STORAGE_KEYS = {
   growthUpdatedAt: GROWTH_UPDATED_AT_STORAGE_KEY,
   syncSession: "dadkit:v3:sync-session",
   syncClientState: "dadkit:v3:sync-client-state",
+  syncClockOffset: "dadkit:v3:sync-clock-offset-ms",
+  syncClockTimelineInitialized: "dadkit:v3:sync-clock-timeline-initialized",
 } as const;
 
 export const WEBDAV_SESSION_SECRET_KEY = "dadkit:v3:webdav-session-secret";
@@ -62,6 +72,8 @@ const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.growthUpdatedAt,
   STORAGE_KEYS.syncSession,
   STORAGE_KEYS.syncClientState,
+  STORAGE_KEYS.syncClockOffset,
+  STORAGE_KEYS.syncClockTimelineInitialized,
   GROWTH_STORAGE_KEYS.profile,
   GROWTH_STORAGE_KEYS.progress,
   GROWTH_STORAGE_KEYS.view,
@@ -131,6 +143,8 @@ export type SyncClientState = {
   lastError?: string;
   lastEtag?: string;
   lastSyncedChecksum?: string;
+  retryAt?: string;
+  retryAttempt?: number;
 };
 
 export type ImportResult = {
@@ -222,13 +236,7 @@ function hasExactKeys(
   value: Record<string, unknown>,
   expected: readonly string[],
 ) {
-  const actual = Object.keys(value).sort();
-  const wanted = [...expected].sort();
-
-  return (
-    actual.length === wanted.length &&
-    actual.every((key, index) => key === wanted[index])
-  );
+  return expected.every((key) => key in value);
 }
 
 function isOneOf<T extends string>(
@@ -242,27 +250,6 @@ function hasOptionalString(value: Record<string, unknown>, key: string) {
   return !(key in value) || typeof value[key] === "string";
 }
 
-const CHECKLIST_ITEM_KEYS = [
-  "id",
-  "name",
-  "category",
-  "priority",
-  "quantity",
-  "note",
-  "status",
-  "source",
-  "sourceLabel",
-  "editable",
-  "removable",
-  "packTier",
-  "itemKind",
-  "preparationKind",
-  "bag",
-  "bulk",
-  "timing",
-  "updatedAt",
-] as const;
-
 const REQUIRED_CHECKLIST_ITEM_KEYS = [
   "id",
   "name",
@@ -275,23 +262,12 @@ const REQUIRED_CHECKLIST_ITEM_KEYS = [
   "timing",
 ] as const;
 
-function hasOnlyKnownKeys(
-  value: Record<string, unknown>,
-  allowed: readonly string[],
-) {
-  const allowedKeys = new Set(allowed);
-  return Object.keys(value).every((key) => allowedKeys.has(key));
-}
-
 function isChecklistItem(value: unknown): value is ChecklistItem {
   if (!isRecord(value)) {
     return false;
   }
 
-  if (
-    !hasOnlyKnownKeys(value, CHECKLIST_ITEM_KEYS) ||
-    !REQUIRED_CHECKLIST_ITEM_KEYS.every((key) => key in value)
-  ) {
+  if (!REQUIRED_CHECKLIST_ITEM_KEYS.every((key) => key in value)) {
     return false;
   }
 
@@ -620,6 +596,13 @@ export function loadSyncClientState(): SyncClientState {
       typeof value.lastSyncedChecksum === "string"
         ? value.lastSyncedChecksum
         : undefined,
+    retryAt: typeof value.retryAt === "string" ? value.retryAt : undefined,
+    retryAttempt:
+      typeof value.retryAttempt === "number" &&
+      Number.isInteger(value.retryAttempt) &&
+      value.retryAttempt >= 0
+        ? value.retryAttempt
+        : undefined,
   };
 }
 
@@ -633,23 +616,19 @@ export type ChecklistStatePayload = {
   hiddenTemplateItemIds: string[];
 };
 
-export type ChecklistPersistenceStatus = {
-  dirtyRevision: number;
-  persistedRevision: number;
-  lastError?: string;
-};
+export {
+  CHECKLIST_PERSISTENCE_EVENT,
+  getChecklistPersistenceStatus,
+  retryPendingChecklistStateSave,
+  type ChecklistPersistenceStatus,
+} from "@/lib/persistence-status";
 
 type PendingChecklistStateSave = {
   payload: ChecklistStatePayload;
   revision: number;
 };
 
-export const CHECKLIST_PERSISTENCE_EVENT = "dadkit:persistence-status";
-
 let latestChecklistState: ChecklistStatePayload | undefined;
-let checklistDirtyRevision = 0;
-let checklistPersistedRevision = 0;
-let checklistPersistenceError: string | undefined;
 
 function cloneChecklistState(
   payload: ChecklistStatePayload,
@@ -681,27 +660,6 @@ function captureChecklistState(
   };
 }
 
-function notifyChecklistPersistenceStatus() {
-  if (
-    typeof window !== "undefined" &&
-    typeof window.dispatchEvent === "function"
-  ) {
-    window.dispatchEvent(
-      new CustomEvent(CHECKLIST_PERSISTENCE_EVENT, {
-        detail: getChecklistPersistenceStatus(),
-      }),
-    );
-  }
-}
-
-export function getChecklistPersistenceStatus(): ChecklistPersistenceStatus {
-  return {
-    dirtyRevision: checklistDirtyRevision,
-    persistedRevision: checklistPersistedRevision,
-    lastError: checklistPersistenceError,
-  };
-}
-
 export function primeChecklistState(payload: ChecklistStatePayload) {
   latestChecklistState = cloneChecklistState(payload);
 }
@@ -728,23 +686,21 @@ export function saveChecklistState(payload: ChecklistStatePayload) {
     return;
   }
 
-  const revision = ++checklistDirtyRevision;
+  const revision = markChecklistStateDirty();
   const next = cloneChecklistState(payload);
 
   latestChecklistState = next;
 
   try {
     writeChecklistStateNow(next);
-    checklistPersistedRevision = revision;
-    checklistPersistenceError = undefined;
-    notifyChecklistPersistenceStatus();
+    recordChecklistStatePersisted(revision);
   } catch (error) {
     pendingChecklistStateSave = { payload: next, revision };
-    checklistPersistenceError =
+    recordChecklistPersistenceError(
       error instanceof Error && error.message
         ? error.message
-        : "本机存储写入失败。";
-    notifyChecklistPersistenceStatus();
+        : "本机存储写入失败。",
+    );
     throw error;
   }
 }
@@ -796,28 +752,23 @@ export function flushPendingChecklistStateSave() {
 
     writeChecklistStateNow(normalized);
     latestChecklistState = normalized;
-    checklistPersistedRevision = Math.max(
-      checklistPersistedRevision,
-      pending.revision,
-    );
-    checklistPersistenceError = undefined;
-    notifyChecklistPersistenceStatus();
+    recordChecklistStatePersisted(pending.revision);
     return true;
   } catch (error) {
     pendingChecklistStateSave = pending;
-    checklistPersistenceError =
+    recordChecklistPersistenceError(
       error instanceof Error && error.message
         ? error.message
-        : "本机存储空间不足，修改尚未写入磁盘。";
-    notifyChecklistPersistenceStatus();
+        : "本机存储空间不足，修改尚未写入磁盘。",
+    );
     // 写入失败（如存储已满）时保留内存状态，下一次变更会再次尝试持久化。
     return false;
   }
 }
 
-export function retryPendingChecklistStateSave() {
-  return flushPendingChecklistStateSave();
-}
+// Lets the lightweight persistence-status module trigger a retry without
+// importing this storage module.
+registerChecklistStateSaveRetryHandler(flushPendingChecklistStateSave);
 
 function cancelPendingChecklistStateSave() {
   if (pendingChecklistStateTimer !== undefined) {
@@ -835,7 +786,7 @@ export function saveChecklistStateSoon(payload: ChecklistStatePayload) {
     return;
   }
 
-  const revision = ++checklistDirtyRevision;
+  const revision = markChecklistStateDirty();
   const next = captureChecklistState(payload);
 
   latestChecklistState = next;
@@ -1022,9 +973,7 @@ export function resetAllData(initialChecklist?: ChecklistItem[]) {
           hiddenTemplateItemIds: [],
         }
       : undefined;
-    checklistDirtyRevision = 0;
-    checklistPersistedRevision = 0;
-    checklistPersistenceError = undefined;
+    resetChecklistPersistenceStatus();
     useGrowthStore.setState({
       ...DEFAULT_GROWTH_PROFILE,
       ...DEFAULT_GROWTH_PROGRESS,
@@ -1092,7 +1041,7 @@ export function validateImportData(rawJson: string): ImportValidationResult {
   if (!hasExactKeys(parsed, expectedKeys)) {
     return {
       ok: false,
-      message: "备份字段不完整或包含未知字段，未修改本地数据。",
+      message: "备份字段不完整，未修改本地数据。",
     };
   }
 
@@ -1103,7 +1052,7 @@ export function validateImportData(rawJson: string): ImportValidationResult {
   return {
     ok: true,
     message: "校验通过",
-    data: parsed as DadKitImportData,
+    data: sanitizeDadKitImportData(parsed as DadKitImportData),
   };
 }
 
@@ -1121,6 +1070,8 @@ export function applyImportData(data: DadKitImportData): ImportResult {
   if (!isDadKitImportData(data)) {
     return { ok: false, message: "备份内容无效，未修改本地数据。" };
   }
+
+  data = sanitizeDadKitImportData(data) as DadKitImportData;
 
   if (!canUseLocalStorage()) {
     return { ok: false, message: "当前环境无法访问本地存储，未修改本地数据。" };
@@ -1289,7 +1240,7 @@ function isSnapshot(value: unknown): value is DadKitSnapshot {
 
 export function loadSnapshots(): DadKitSnapshot[] {
   const snapshots = readJson<unknown>(STORAGE_KEYS.snapshots, []);
-  return Array.isArray(snapshots) ? snapshots.filter(isSnapshot).slice(0, 5) : [];
+  return Array.isArray(snapshots) ? snapshots.filter(isSnapshot).slice(0, 2) : [];
 }
 
 export function saveSnapshots(snapshots: DadKitSnapshot[]) {
@@ -1298,7 +1249,7 @@ export function saveSnapshots(snapshots: DadKitSnapshot[]) {
       return false;
     }
 
-    const serialized = JSON.stringify(snapshots.filter(isSnapshot).slice(0, 5));
+    const serialized = JSON.stringify(snapshots.filter(isSnapshot).slice(0, 2));
     window.localStorage.setItem(STORAGE_KEYS.snapshots, serialized);
 
     return window.localStorage.getItem(STORAGE_KEYS.snapshots) === serialized;

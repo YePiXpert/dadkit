@@ -39,6 +39,7 @@ export async function GET(request: Request) {
         headers: {
           "cache-control": "private, no-cache",
           etag,
+          "x-dadkit-server-time": snapshot.serverTime,
         },
       });
     }
@@ -46,6 +47,7 @@ export async function GET(request: Request) {
     return syncJson(snapshot, 200, {
       "cache-control": "private, no-cache",
       etag,
+      "x-dadkit-server-time": snapshot.serverTime,
     });
   } catch (error) {
     if (error instanceof SyncStoreError) {

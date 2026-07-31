@@ -31,7 +31,7 @@ export function AppearanceCard() {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
+          <span className="icon-tile">
             <SunMoon className="size-4" />
           </span>
           外观

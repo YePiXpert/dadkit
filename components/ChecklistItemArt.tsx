@@ -18,14 +18,14 @@ export function ChecklistItemArt({
   return (
     <span
       className={cn(
-        "block size-full overflow-hidden bg-[#f8eeda] dark:bg-[#241f18]",
+        "block size-full overflow-hidden bg-surface-art",
         className,
       )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         alt={alt}
-        className="size-full object-cover dark:brightness-[0.82] dark:saturate-[0.9]"
+        className="size-full object-cover"
         decoding="async"
         fetchPriority="low"
         height={384}

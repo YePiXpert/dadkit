@@ -89,7 +89,7 @@ export function PwaRegister() {
           });
         });
 
-        return registration.update();
+        // 浏览器自身会定期检查 Service Worker 更新，不再每次加载强制 update()。
       })
       .catch(() => {
         // PWA registration is best-effort.
@@ -105,7 +105,7 @@ export function PwaRegister() {
   }
 
   return (
-    <div className="safe-bottom-toast fixed inset-x-3 z-[60] mx-auto max-w-[430px] rounded-3xl border border-border bg-card p-4 text-sm shadow-md">
+    <div className="safe-bottom-toast fixed inset-x-3 z-[60] mx-auto max-w-md rounded-card border border-border bg-card p-4 text-sm shadow-md">
       <p className="font-semibold">DadKit 有新版本</p>
       <div className="mt-2 flex items-center justify-between gap-3">
         <p className="text-muted-foreground">刷新后使用最新页面。</p>

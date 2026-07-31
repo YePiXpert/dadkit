@@ -81,11 +81,5 @@ function hasExactKeys(
   value: Record<string, unknown>,
   expectedKeys: readonly string[],
 ) {
-  const actualKeys = Object.keys(value).sort();
-  const sortedExpectedKeys = [...expectedKeys].sort();
-
-  return (
-    actualKeys.length === sortedExpectedKeys.length &&
-    actualKeys.every((key, index) => key === sortedExpectedKeys[index])
-  );
+  return expectedKeys.every((key) => key in value);
 }

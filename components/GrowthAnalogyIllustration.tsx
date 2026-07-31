@@ -1,21 +1,29 @@
 import Image from "next/image";
 
 import { getGrowthIllustrationSrc } from "@/lib/growth-illustrations";
+import { cn } from "@/lib/utils";
 
 type GrowthAnalogyIllustrationProps = {
   analogy: string;
+  className?: string;
   week: number;
 };
 
 export function GrowthAnalogyIllustration({
   analogy,
+  className,
   week,
 }: GrowthAnalogyIllustrationProps) {
   return (
-    <div className="relative overflow-hidden rounded-[1.4rem] bg-[#f7f0e2] shadow-[inset_0_0_0_1px_rgba(102,82,50,0.08)]">
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-inset bg-surface-growth shadow-illustration",
+        className,
+      )}
+    >
       <Image
         alt={`${analogy}大小的水粉示意图`}
-        className="aspect-[4/3] h-auto w-full select-none object-cover dark:brightness-[0.82] dark:saturate-[0.9]"
+        className="aspect-[4/3] h-auto w-full select-none object-cover"
         draggable={false}
         height={720}
         priority={week === 36}

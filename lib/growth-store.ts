@@ -16,6 +16,8 @@ import {
   type GrowthProfileData,
   type GrowthProgressData,
 } from "@/lib/growth-portable";
+import { recordStorageWarning } from "@/lib/persistence-status";
+import { getSyncAdjustedNow } from "@/lib/sync-clock";
 
 export { validateGrowthPortableData } from "@/lib/growth-portable";
 export type {
@@ -91,9 +93,9 @@ export const useGrowthStore = create<GrowthStore>((set, get) => ({
       dueDate: get().dueDate,
     };
 
-    writeStorage(GROWTH_STORAGE_KEYS.profile, nextProfile);
-    markGrowthUpdated();
+    // 内存状态立即更新保证输入响应，落盘做防抖，避免每次按键都同步写 localStorage。
     set(nextProfile);
+    scheduleProfileWrite();
   },
 
   setDueDate: (dueDate) => {
@@ -106,8 +108,15 @@ export const useGrowthStore = create<GrowthStore>((set, get) => ({
       dueDate: normalizeDueDate(dueDate),
     };
 
-    writeStorage(GROWTH_STORAGE_KEYS.profile, nextProfile);
-    markGrowthUpdated();
+    try {
+      writeStorage(GROWTH_STORAGE_KEYS.profile, nextProfile);
+      markGrowthUpdated();
+    } catch (error) {
+      recordGrowthStorageFailure(error);
+      throw error;
+    }
+    // 本次写入已包含最新昵称，取消防抖中的 profile 落盘。
+    cancelPendingProfileWrite();
     set(nextProfile);
   },
 
@@ -118,7 +127,12 @@ export const useGrowthStore = create<GrowthStore>((set, get) => ({
 
     const nextView = { lastViewedWeek: clampGrowthWeek(week) };
 
-    writeStorage(GROWTH_STORAGE_KEYS.view, nextView);
+    try {
+      writeStorage(GROWTH_STORAGE_KEYS.view, nextView);
+    } catch (error) {
+      recordGrowthStorageFailure(error);
+      throw error;
+    }
     set(nextView);
   },
 
@@ -136,13 +150,21 @@ export const useGrowthStore = create<GrowthStore>((set, get) => ({
       : normalizeCompletedTaskIds([...get().completedTaskIds, taskId]);
     const nextProgress = { completedTaskIds };
 
-    writeStorage(GROWTH_STORAGE_KEYS.progress, nextProgress);
-    markGrowthUpdated();
+    try {
+      writeStorage(GROWTH_STORAGE_KEYS.progress, nextProgress);
+      markGrowthUpdated();
+    } catch (error) {
+      recordGrowthStorageFailure(error);
+      throw error;
+    }
     set(nextProgress);
   },
 }));
 
 export function exportGrowthData(): GrowthPortableData {
+  // 导出前先把防抖中的昵称落盘，保证备份与同步读到最新值。
+  flushPendingProfileWrite();
+
   const profile = readGrowthProfile();
   const progress = readGrowthProgress();
 
@@ -158,6 +180,9 @@ export function applyGrowthPortableData(data: GrowthPortableData): void {
     throw new Error("成长记备份格式无效，未导入任何数据。");
   }
 
+  // 导入会覆盖本地 profile，取消防抖中的旧值落盘。
+  cancelPendingProfileWrite();
+
   const profile: GrowthProfileData = {
     nickname: data.profile.nickname,
     dueDate: data.profile.dueDate,
@@ -171,6 +196,8 @@ export function applyGrowthPortableData(data: GrowthPortableData): void {
 }
 
 export function resetGrowthData(): void {
+  cancelPendingProfileWrite();
+
   if (hasBrowserStorage()) {
     window.localStorage.removeItem(GROWTH_STORAGE_KEYS.profile);
     window.localStorage.removeItem(GROWTH_STORAGE_KEYS.progress);
@@ -284,7 +311,95 @@ function writeStorage(key: string, value: unknown) {
 }
 
 function markGrowthUpdated() {
-  writeStorage(GROWTH_UPDATED_AT_STORAGE_KEY, Date.now());
+  writeStorage(GROWTH_UPDATED_AT_STORAGE_KEY, getSyncAdjustedNow());
+}
+
+// 昵称输入每次按键都会调用 setNickname：落盘做 400ms 防抖，
+// 并在 pagehide/页面隐藏时立即冲刷，避免丢最后一次输入。
+const PROFILE_WRITE_DEBOUNCE_MS = 400;
+
+let profileWritePending = false;
+let profileWriteTimer: ReturnType<typeof setTimeout> | undefined;
+let profileWriteListenersInstalled = false;
+
+function installProfileWriteListeners() {
+  if (profileWriteListenersInstalled) return;
+  profileWriteListenersInstalled = true;
+
+  if (
+    typeof window === "undefined" ||
+    typeof window.addEventListener !== "function"
+  ) {
+    return;
+  }
+
+  window.addEventListener("pagehide", flushPendingProfileWrite);
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        flushPendingProfileWrite();
+      }
+    });
+  }
+}
+
+function scheduleProfileWrite() {
+  if (!hasBrowserStorage()) {
+    return;
+  }
+
+  profileWritePending = true;
+  installProfileWriteListeners();
+
+  if (profileWriteTimer !== undefined) {
+    clearTimeout(profileWriteTimer);
+  }
+
+  profileWriteTimer = setTimeout(
+    flushPendingProfileWrite,
+    PROFILE_WRITE_DEBOUNCE_MS,
+  );
+}
+
+function cancelPendingProfileWrite() {
+  if (profileWriteTimer !== undefined) {
+    clearTimeout(profileWriteTimer);
+    profileWriteTimer = undefined;
+  }
+
+  profileWritePending = false;
+}
+
+export function flushPendingProfileWrite() {
+  if (profileWriteTimer !== undefined) {
+    clearTimeout(profileWriteTimer);
+    profileWriteTimer = undefined;
+  }
+
+  if (!profileWritePending) {
+    return;
+  }
+
+  profileWritePending = false;
+
+  const { nickname, dueDate } = useGrowthStore.getState();
+
+  try {
+    writeStorage(GROWTH_STORAGE_KEYS.profile, { nickname, dueDate });
+    markGrowthUpdated();
+  } catch (error) {
+    recordGrowthStorageFailure(error);
+    throw error;
+  }
+}
+
+function recordGrowthStorageFailure(error: unknown) {
+  recordStorageWarning(
+    error instanceof Error && error.message
+      ? `成长记尚未写入本机存储：${error.message}`
+      : "成长记尚未写入本机存储，请清理空间后重试。",
+  );
 }
 
 function hasBrowserStorage() {

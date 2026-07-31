@@ -87,6 +87,7 @@ describe("async sync server store", () => {
       /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/,
     );
     expect(Date.parse(created!.invite.expiresAt)).toBeGreaterThan(Date.now());
+    expect(Date.parse(created!.serverTime)).toBeGreaterThan(0);
 
     const joined = await joinSpace(
       "口令家庭",
@@ -139,6 +140,16 @@ describe("async sync server store", () => {
     await expect(
       joinSpace("名称校验家庭", replacement!.code, true),
     ).resolves.toBeTruthy();
+  });
+
+  it("normalizes visually equivalent family names without merging unrelated spaces", async () => {
+    const created = await createSpace("  家庭 Ａ  ");
+
+    await expect(
+      joinSpace("家庭 a", created!.invite.code, true),
+    ).resolves.toMatchObject({ version: 0 });
+    await expect(createSpace("家庭 A")).resolves.toBeUndefined();
+    await expect(createInvite(created!.token, "另一个家庭")).resolves.toBeNull();
   });
 
   it("rejects an invite after its 10-minute expiry", async () => {
@@ -237,6 +248,32 @@ describe("async sync server store", () => {
 
     expect(data.checklist.map((item) => item.id).sort()).toEqual(["a", "b"]);
     expect(data.customItems.map((item) => item.id)).toEqual(["custom-b"]);
+  });
+
+  it("keeps five rolling on-disk backups before replacing a space file", async () => {
+    const device = (await joinSpace("滚动备份家庭", "滚动备份同步码"))!;
+
+    for (let index = 1; index <= 6; index += 1) {
+      await pushSpace(
+        device.token,
+        exportData({ checklist: [testItem(`backup-${index}`, { updatedAt: index })] }),
+      );
+    }
+
+    const backups = readdirSync(dir).filter((entry) => entry.includes(".json.bak."));
+
+    expect(backups.sort()).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/\.bak\.1$/),
+        expect.stringMatching(/\.bak\.2$/),
+        expect.stringMatching(/\.bak\.3$/),
+        expect.stringMatching(/\.bak\.4$/),
+        expect.stringMatching(/\.bak\.5$/),
+      ]),
+    );
+    expect(backups).toHaveLength(5);
+    expect(readFileSync(path.join(dir, backups.find((entry) => entry.endsWith(".bak.1"))!), "utf8"))
+      .toContain("backup-5");
   });
 
   it("lets the newer side win and revokes sessions", async () => {

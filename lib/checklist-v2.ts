@@ -60,6 +60,16 @@ export function isChecklistItemSkipped(item: ChecklistItem) {
   return getChecklistItemState(item) === "not_needed";
 }
 
+export function getDepartureItemCount(items: ChecklistItem[]) {
+  return items.filter(
+    (item) =>
+      item.itemKind === "item" &&
+      (item.category === "last_minute" || item.bag === "car") &&
+      !isChecklistItemComplete(item) &&
+      !isChecklistItemSkipped(item),
+  ).length;
+}
+
 export function getChecklistItemState(
   item: ChecklistItem,
 ): ChecklistItemState {

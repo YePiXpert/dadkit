@@ -35,6 +35,7 @@ import {
   type ChecklistItem,
   type PreparationKind,
 } from "@/lib/types";
+import { CUSTOM_PREPARATION_OPTIONS } from "@/lib/custom-item-options";
 import { useDadKitStore } from "@/lib/store";
 
 type EditItemDialogProps = {
@@ -50,16 +51,6 @@ const CUSTOM_CATEGORIES: ChecklistCategory[] = [
   "partner",
   "going_home",
   "last_minute",
-];
-
-const CUSTOM_PREPARATION_OPTIONS: Array<{
-  label: string;
-  value: PreparationKind;
-}> = [
-  { label: "家里已有", value: "pack_existing" },
-  { label: "需要购买", value: "buy_and_pack" },
-  { label: "买了放家里", value: "buy_for_home" },
-  { label: "需要清洗", value: "wash_then_pack" },
 ];
 
 export function EditItemDialog({ item }: EditItemDialogProps) {
@@ -82,7 +73,9 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
   const [note, setNote] = useState(
     formatChecklistDisplayText(item.note, displayOptions),
   );
+  const [nameTouched, setNameTouched] = useState(false);
   const canEditPreparationKind = item.source === "user";
+  const nameError = nameTouched && !name.trim();
 
   useEffect(() => {
     if (!open) {
@@ -94,10 +87,12 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
     setPreparationKind(inferPreparationKind(item));
     setQuantity(formatChecklistDisplayText(item.quantity, displayOptions));
     setNote(formatChecklistDisplayText(item.note, displayOptions));
+    setNameTouched(false);
   }, [displayOptions, item, open]);
 
   function submit() {
     if (!name.trim()) {
+      setNameTouched(true);
       return;
     }
 
@@ -125,29 +120,29 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
         </Button>
       </DialogTrigger>
       <DialogContent
-        className="inset-0 left-0 top-0 flex h-[100dvh] max-h-none w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none bg-background p-0 shadow-none [@media(min-width:640px)_and_(min-height:640px)]:left-1/2 [@media(min-width:640px)_and_(min-height:640px)]:top-1/2 [@media(min-width:640px)_and_(min-height:640px)]:h-auto [@media(min-width:640px)_and_(min-height:640px)]:max-h-[90dvh] [@media(min-width:640px)_and_(min-height:640px)]:w-[calc(100%-2rem)] [@media(min-width:640px)_and_(min-height:640px)]:max-w-lg [@media(min-width:640px)_and_(min-height:640px)]:-translate-x-1/2 [@media(min-width:640px)_and_(min-height:640px)]:-translate-y-1/2 [@media(min-width:640px)_and_(min-height:640px)]:gap-5 [@media(min-width:640px)_and_(min-height:640px)]:overflow-y-auto [@media(min-width:640px)_and_(min-height:640px)]:rounded-[2rem] [@media(min-width:640px)_and_(min-height:640px)]:border [@media(min-width:640px)_and_(min-height:640px)]:border-border [@media(min-width:640px)_and_(min-height:640px)]:p-6 [@media(min-width:640px)_and_(min-height:640px)]:shadow-lg"
+        className="inset-0 left-0 top-0 flex h-[100dvh] max-h-none w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none bg-background p-0 shadow-none sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[90dvh] sm:w-[calc(100%-2rem)] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:gap-5 sm:overflow-y-auto sm:rounded-card sm:border sm:border-border sm:p-6 sm:shadow-lg"
         showCloseButton={false}
       >
-        <DialogHeader className="relative block min-h-[5.5rem] shrink-0 border-b border-border/60 px-16 pb-4 pt-[max(env(safe-area-inset-top),1rem)] text-center [@media(min-width:640px)_and_(min-height:640px)]:min-h-0 [@media(min-width:640px)_and_(min-height:640px)]:border-0 [@media(min-width:640px)_and_(min-height:640px)]:px-0 [@media(min-width:640px)_and_(min-height:640px)]:pb-0 [@media(min-width:640px)_and_(min-height:640px)]:pt-0">
+        <DialogHeader className="relative block min-h-[5.5rem] shrink-0 border-b border-border/60 px-16 pb-4 pt-[max(env(safe-area-inset-top),1rem)] text-center sm:min-h-0 sm:border-0 sm:px-0 sm:pb-0 sm:pt-0">
           <DialogClose asChild>
             <button
               aria-label="返回物品详情"
-              className="absolute bottom-3 left-3 flex size-12 items-center justify-center rounded-full text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [@media(min-width:640px)_and_(min-height:640px)]:hidden"
+              className="absolute bottom-3 left-3 flex size-12 items-center justify-center rounded-full text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:hidden"
               type="button"
             >
               <ArrowLeft className="size-6" />
             </button>
           </DialogClose>
-          <DialogTitle className="text-xl leading-10 [@media(min-width:640px)_and_(min-height:640px)]:text-2xl">
+          <DialogTitle className="text-xl leading-10 sm:text-2xl">
             编辑物品
           </DialogTitle>
           <DialogDescription className="sr-only">
             调整这项清单的归类、数量或备注。
           </DialogDescription>
         </DialogHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 pb-8 [@media(min-width:640px)_and_(min-height:640px)]:overflow-visible [@media(min-width:640px)_and_(min-height:640px)]:p-0">
-          <div className="mb-5 grid grid-cols-[6.75rem_1fr] items-center gap-5 [@media(min-width:640px)_and_(min-height:640px)]:grid-cols-[6rem_1fr]">
-            <div className="flex aspect-square items-center justify-center rounded-[1.75rem] bg-secondary/70 text-primary">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 pb-8 sm:overflow-visible sm:p-0">
+          <div className="mb-5 grid grid-cols-[6.75rem_1fr] items-center gap-5 sm:grid-cols-[6rem_1fr]">
+            <div className="flex aspect-square items-center justify-center rounded-card bg-secondary/70 text-primary">
               <PackageOpen className="size-12" strokeWidth={1.45} />
             </div>
             <div className="grid gap-3">
@@ -156,16 +151,31 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
             </div>
           </div>
           <div className="grid gap-4">
-            <div className="grid divide-y divide-border rounded-[1.75rem] border border-border bg-card px-5">
+            <div className="grid divide-y divide-border rounded-card border border-border bg-card px-5">
               <FormRow htmlFor={`edit-item-name-${item.id}`} label="物品名称">
                 <Input
                   id={`edit-item-name-${item.id}`}
                   className="min-w-0 border-0 bg-transparent px-0 text-right text-base shadow-none focus-visible:ring-0"
+                  aria-describedby={nameError ? `edit-item-name-error-${item.id}` : undefined}
+                  aria-invalid={nameError}
                   disabled={!item.editable}
                   value={name}
-                  onChange={(event) => setName(event.target.value)}
+                  onBlur={() => setNameTouched(true)}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    if (event.target.value.trim()) setNameTouched(false);
+                  }}
                 />
               </FormRow>
+              {nameError ? (
+                <p
+                  className="pb-3 text-right text-sm text-destructive"
+                  id={`edit-item-name-error-${item.id}`}
+                  role="alert"
+                >
+                  请填写物品名称后再保存。
+                </p>
+              ) : null}
               <FormRow label="分类">
                 <Select
                   disabled={!item.editable}
@@ -206,7 +216,7 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
                 </FormRow>
               ) : null}
             </div>
-            <div className="grid gap-3 rounded-[1.75rem] border border-border bg-card p-5">
+            <div className="grid gap-3 rounded-card border border-border bg-card p-5">
               <label className="text-sm font-semibold" htmlFor={`edit-item-note-${item.id}`}>
                 备注
               </label>
@@ -220,12 +230,17 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
             </div>
           </div>
         </div>
-        <DialogFooter className="grid shrink-0 gap-2 border-t border-border/60 bg-background/95 px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-3 backdrop-blur [@media(min-width:640px)_and_(min-height:640px)]:border-0 [@media(min-width:640px)_and_(min-height:640px)]:bg-transparent [@media(min-width:640px)_and_(min-height:640px)]:p-0">
-          <Button className="h-14 w-full text-base" size="lg" onClick={submit}>
+        <DialogFooter className="grid shrink-0 gap-2 border-t border-border/60 bg-background/95 px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-3 backdrop-blur sm:border-0 sm:bg-transparent sm:p-0">
+          <Button
+            className="h-14 w-full text-base"
+            disabled={!name.trim()}
+            size="lg"
+            onClick={submit}
+          >
             保存
           </Button>
           <DialogClose asChild>
-            <Button className="hidden w-full [@media(min-width:640px)_and_(min-height:640px)]:inline-flex" variant="ghost">
+            <Button className="hidden w-full sm:inline-flex" variant="ghost">
               取消
             </Button>
           </DialogClose>

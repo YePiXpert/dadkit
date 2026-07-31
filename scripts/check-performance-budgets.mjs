@@ -1,19 +1,56 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { gzipSync } from "node:zlib";
 
-const MAX_FIRST_LOAD_JS_BYTES = 200 * 1024;
-const routes = [
-  { label: "首页", manifestKey: "/page" },
-  { label: "清单页", manifestKey: "/checklist/[sectionId]/page" },
-  { label: "备份页", manifestKey: "/settings/backup/page" },
-];
+// 新路由未登记预算时的兜底值。
+const DEFAULT_FIRST_LOAD_JS_BYTES = 200 * 1024;
+// CSS 现状 8.4 KiB（gzip），按现状 +20% 余量向上取整。
+const MAX_CSS_BYTES = 11 * 1024;
+
+// 预算 = 当前构建实测 gzip 体积（含 polyfills chunk）+ 10%–15% 余量；
+// 备份页已濒临超限，仅按现状 +5%。
+const routeBudgets = new Map([
+  ["/page", 250 * 1024],
+  ["/checklist/[sectionId]/page", 255 * 1024],
+  ["/growth/page", 190 * 1024],
+  ["/settings/page", 170 * 1024],
+  ["/settings/checklist/page", 225 * 1024],
+  ["/settings/backup/page", 247 * 1024],
+  ["/privacy/page", 160 * 1024],
+  ["/support/page", 160 * 1024],
+]);
+
+const routeLabels = new Map([
+  ["/page", "首页"],
+  ["/checklist/[sectionId]/page", "清单页"],
+  ["/growth/page", "成长记页"],
+  ["/settings/page", "我的页"],
+  ["/settings/checklist/page", "清单设置页"],
+  ["/settings/backup/page", "备份页"],
+  ["/privacy/page", "隐私说明页"],
+  ["/support/page", "支持与反馈页"],
+]);
 
 function formatKiB(bytes) {
   return `${(bytes / 1024).toFixed(1)} KiB`;
 }
 
-async function readInitialJavaScriptBytes(manifest, manifestKey) {
+function routePath(manifestKey) {
+  return manifestKey === "/page" ? "/" : manifestKey.replace(/\/page$/, "");
+}
+
+async function gzipTotalBytes(files) {
+  const contents = await Promise.all(
+    files.map((file) => readFile(path.join(process.cwd(), ".next", file))),
+  );
+
+  // Next.js reports First Load JS as transfer size. The production proxy serves
+  // these immutable static chunks with content compression, so use gzip here
+  // rather than raw on-disk bytes to match the mobile network budget.
+  return contents.reduce((total, chunk) => total + gzipSync(chunk).byteLength, 0);
+}
+
+async function readInitialJavaScriptBytes(manifest, manifestKey, polyfillBytes) {
   const chunks = manifest.pages?.[manifestKey];
 
   if (!Array.isArray(chunks)) {
@@ -21,17 +58,21 @@ async function readInitialJavaScriptBytes(manifest, manifestKey) {
   }
 
   const files = [...new Set(chunks.filter((chunk) => chunk.endsWith(".js")))];
-  const contents = await Promise.all(
-    files.map((file) => readFile(path.join(process.cwd(), ".next", file))),
-  );
 
   return {
-    // Next.js reports First Load JS as transfer size. The production proxy serves
-    // these immutable static chunks with content compression, so use gzip here
-    // rather than raw on-disk bytes to match the mobile network budget.
-    bytes: contents.reduce((total, chunk) => total + gzipSync(chunk).byteLength, 0),
+    // polyfills chunk 随每页首屏加载，计入每条路由总量。
+    bytes: (await gzipTotalBytes(files)) + polyfillBytes,
     files,
   };
+}
+
+async function readTotalCssBytes() {
+  const cssDir = path.join(process.cwd(), ".next", "static", "css");
+  const files = (await readdir(cssDir))
+    .filter((file) => file.endsWith(".css"))
+    .map((file) => path.join("static", "css", file));
+
+  return { bytes: await gzipTotalBytes(files), files };
 }
 
 async function verifyIndexedDbReadGate() {
@@ -61,18 +102,50 @@ async function verifyIndexedDbReadGate() {
   }
 }
 
+function usagePercent(bytes, budget) {
+  return Math.round((bytes / budget) * 100);
+}
+
 const manifestPath = path.join(process.cwd(), ".next", "app-build-manifest.json");
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+const buildManifestPath = path.join(
+  process.cwd(),
+  ".next",
+  "build-manifest.json",
+);
+const buildManifest = JSON.parse(await readFile(buildManifestPath, "utf8"));
+const polyfillBytes = await gzipTotalBytes(buildManifest.polyfillFiles ?? []);
+
+// 动态枚举全部页面路由（排除 _not-found 等内部路由），避免新增页面漏测。
+const manifestKeys = Object.keys(manifest.pages ?? {})
+  .filter((key) => key.endsWith("/page") && !key.startsWith("/_"))
+  .sort((a, b) => (a === "/page" ? -1 : b === "/page" ? 1 : a.localeCompare(b)));
+
 let failed = false;
 
-for (const route of routes) {
-  const result = await readInitialJavaScriptBytes(manifest, route.manifestKey);
-  const passed = result.bytes <= MAX_FIRST_LOAD_JS_BYTES;
+for (const manifestKey of manifestKeys) {
+  const budget = routeBudgets.get(manifestKey) ?? DEFAULT_FIRST_LOAD_JS_BYTES;
+  const label = routeLabels.get(manifestKey) ?? routePath(manifestKey);
+  const result = await readInitialJavaScriptBytes(
+    manifest,
+    manifestKey,
+    polyfillBytes,
+  );
+  const passed = result.bytes <= budget;
+
   failed ||= !passed;
   console.log(
-    `${passed ? "PASS" : "FAIL"} ${route.label}: ${formatKiB(result.bytes)} / ${formatKiB(MAX_FIRST_LOAD_JS_BYTES)} (${result.files.length} chunks)`,
+    `${passed ? "PASS" : "FAIL"} ${label} (${routePath(manifestKey)}): ${formatKiB(result.bytes)} / ${formatKiB(budget)}，用量 ${usagePercent(result.bytes, budget)}%（${result.files.length} chunks + polyfills）`,
   );
 }
+
+const css = await readTotalCssBytes();
+const cssPassed = css.bytes <= MAX_CSS_BYTES;
+
+failed ||= !cssPassed;
+console.log(
+  `${cssPassed ? "PASS" : "FAIL"} CSS 总重: ${formatKiB(css.bytes)} / ${formatKiB(MAX_CSS_BYTES)}，用量 ${usagePercent(css.bytes, MAX_CSS_BYTES)}%（${css.files.length} files）`,
+);
 
 await verifyIndexedDbReadGate();
 console.log("PASS 照片 IndexedDB 读取、对象 URL 与 600px 预加载门禁");

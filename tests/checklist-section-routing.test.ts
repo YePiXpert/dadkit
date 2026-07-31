@@ -92,14 +92,14 @@ describe("checklist section routes", () => {
       "components",
       "ChecklistSectionWorkspace.tsx",
     );
+    const tailwindConfig = readSource("tailwind.config.ts");
 
     expect(workspace).toContain('className="item-card-grid"');
     expect(styles).toMatch(
       /\.item-card-grid\s*\{[\s\S]*?grid-cols-1[\s\S]*?\}/,
     );
-    expect(styles).toMatch(
-      /@media \(min-width: 360px\)[\s\S]*?\.item-card-grid\s*\{[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)/,
-    );
+    expect(styles).toContain("xs:grid-cols-2");
+    expect(tailwindConfig).toContain('xs: "360px"');
     expect(styles).not.toMatch(/\.item-card-grid[^}]*grid-cols-3/);
   });
 

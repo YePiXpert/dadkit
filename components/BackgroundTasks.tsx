@@ -36,6 +36,23 @@ export function BackgroundTasks() {
           startAutoSync();
         }
       });
+      void import("@/lib/persistence-status")
+        .then(({ checkStorageCapacity }) => checkStorageCapacity())
+        .catch(() => undefined);
+      void Promise.all([import("@/lib/item-photos"), import("@/lib/store")])
+        .then(([photoLibrary, storeModule]) => {
+          if (cancelled) return;
+
+          const state = storeModule.useDadKitStore.getState();
+
+          // 未水合(例如直接落在设置页)时没有可信的清单快照,本轮跳过清理。
+          if (!state.hydrated) return;
+
+          return photoLibrary.pruneOrphanedPhotos(
+            state.checklist.map((item) => item.id),
+          );
+        })
+        .catch(() => undefined);
     };
 
     if ("requestIdleCallback" in window) {

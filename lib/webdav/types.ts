@@ -40,7 +40,6 @@ export type WebDavConnectionTestResult = {
 export type WebDavSyncResult = {
   ok: boolean;
   message: string;
-  conflict?: boolean;
 };
 
 export const DEFAULT_WEBDAV_CONFIG: WebDavConfig = {

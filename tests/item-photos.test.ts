@@ -102,6 +102,10 @@ describe("item photo integration contract", () => {
     join(process.cwd(), "lib", "webdav", "client.ts"),
     "utf8",
   );
+  const backupPage = readFileSync(
+    join(process.cwd(), "app", "settings", "backup", "page.tsx"),
+    "utf8",
+  );
 
   it("uses native IndexedDB and canvas JPEG compression", () => {
     expect(photoLibrary).toContain("indexedDB.open");
@@ -137,11 +141,15 @@ describe("item photo integration contract", () => {
     expect(itemDetails).toContain("const EditItemDialog = dynamic");
   });
 
-  it("keeps photos local and out of portable backups", () => {
+  it("keeps photos out of routine backups while offering an explicit package", () => {
     expect(storage).not.toContain("@/lib/item-photos");
     expect(webDavClient).not.toContain("@/lib/item-photos");
     expect(photoField).toContain("WebDAV 备份");
-    expect(photoField).toContain("仅保存在当前浏览器");
+    expect(photoField).toContain("导出或导入独立照片备份包");
+    expect(photoLibrary).toContain("exportItemPhotos");
+    expect(photoLibrary).toContain("importItemPhotoBackup");
+    expect(backupPage).toContain("导出照片包");
+    expect(backupPage).toContain("导入照片包");
     expect(photoLibrary).toContain("ITEM_PHOTO_DATABASE_VERSION = 3");
     expect(photoLibrary).toContain("deleteObjectStore");
   });
@@ -153,6 +161,8 @@ describe("item photo integration contract", () => {
     expect(store).toContain("await clearItemPhotos()");
     expect(store).toContain("photosCleared = false");
     expect(store).toContain("清单与成长数据已清空");
-    expect(store).toContain("void deleteItemPhoto(id).catch(() => undefined)");
+    expect(store).toContain(
+      "void deleteItemPhoto(active.item.id).catch(() => undefined)",
+    );
   });
 });

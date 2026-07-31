@@ -11,6 +11,9 @@ type AndroidRelease = {
 };
 
 const ANDROID_VERSION_STORAGE_KEY = "dadkit:android-version-code";
+const ANDROID_UPDATE_CHECKED_AT_STORAGE_KEY = "dadkit:android-version-checked-at";
+// 距上次检查不足 6 小时则跳过 fetch，避免每次冷启动都请求版本接口。
+const ANDROID_UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 export function AndroidUpdatePrompt() {
   const [release, setRelease] = useState<AndroidRelease>();
@@ -38,6 +41,24 @@ export function AndroidUpdatePrompt() {
     if (!Number.isInteger(currentVersion) || currentVersion < 1) {
       return;
     }
+
+    const now = Date.now();
+    const lastCheckedAt = Number(
+      window.localStorage.getItem(ANDROID_UPDATE_CHECKED_AT_STORAGE_KEY),
+    );
+
+    if (
+      Number.isFinite(lastCheckedAt) &&
+      lastCheckedAt > 0 &&
+      now - lastCheckedAt < ANDROID_UPDATE_CHECK_INTERVAL_MS
+    ) {
+      return;
+    }
+
+    window.localStorage.setItem(
+      ANDROID_UPDATE_CHECKED_AT_STORAGE_KEY,
+      String(now),
+    );
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10_000);
@@ -78,7 +99,7 @@ export function AndroidUpdatePrompt() {
   return (
     <aside
       aria-live="polite"
-      className="safe-bottom-toast fixed inset-x-3 z-[61] mx-auto max-w-[430px] rounded-3xl border border-border bg-card p-4 text-sm shadow-md"
+      className="safe-bottom-toast fixed inset-x-3 z-[61] mx-auto max-w-md rounded-card border border-border bg-card p-4 text-sm shadow-md"
     >
       <p className="font-semibold">
         DadKit {release.versionName || release.versionCode} 可更新

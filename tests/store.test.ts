@@ -7,10 +7,12 @@ import {
 import { generateChecklist } from "@/lib/rules";
 import {
   loadChecklist,
+  loadDeletedCustomItems,
   loadSnapshots,
   resetAllData,
   saveChecklist,
   STORAGE_KEYS,
+  exportData,
 } from "@/lib/storage";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
@@ -174,7 +176,7 @@ describe("v3 checklist store", () => {
     }
   });
 
-  it("does not clobber a structural save with a pending debounced write", () => {
+  it("commits a pending deletion after its undo window without clobbering a debounced write", () => {
     vi.useFakeTimers();
 
     try {
@@ -187,12 +189,98 @@ describe("v3 checklist store", () => {
 
       vi.advanceTimersByTime(1000);
 
+      expect(loadChecklist().find((item) => item.id === drop.id)).toBeDefined();
+
+      vi.advanceTimersByTime(4000);
+
       const stored = loadChecklist();
       expect(stored.find((item) => item.id === keep.id)?.status).toBe("packed");
       expect(stored.find((item) => item.id === drop.id)).toBeUndefined();
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("restores a pending custom-item deletion before it is persisted", () => {
+    vi.useFakeTimers();
+
+    try {
+      installBrowserStorage();
+      const custom = testItem("undo-custom", {
+        note: "保留自定义备注",
+        quantity: "2 件",
+      });
+      saveChecklist([custom]);
+      useDadKitStore.setState({
+        hydrated: true,
+        checklist: [custom],
+        customItems: [custom],
+        hiddenTemplateItemIds: [],
+        pendingRemovalIds: [],
+      });
+
+      useDadKitStore.getState().removeItem(custom.id);
+      expect(useDadKitStore.getState().checklist).toEqual([]);
+      expect(useDadKitStore.getState().pendingRemovalIds).toEqual([custom.id]);
+
+      useDadKitStore.getState().undoRemoveItem(custom.id);
+
+      expect(useDadKitStore.getState().checklist).toEqual([custom]);
+      expect(useDadKitStore.getState().customItems).toEqual([custom]);
+      expect(useDadKitStore.getState().pendingRemovalIds).toEqual([]);
+      expect(loadChecklist()).toEqual([custom]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("writes a tombstone only after the undo window expires", () => {
+    vi.useFakeTimers();
+
+    try {
+      installBrowserStorage();
+      const custom = testItem("expired-custom");
+      saveChecklist([custom]);
+      useDadKitStore.setState({
+        hydrated: true,
+        checklist: [custom],
+        customItems: [custom],
+        hiddenTemplateItemIds: [],
+        pendingRemovalIds: [],
+      });
+
+      useDadKitStore.getState().removeItem(custom.id);
+      expect(loadDeletedCustomItems()).not.toHaveProperty(custom.id);
+
+      vi.advanceTimersByTime(5000);
+
+      expect(loadChecklist()).toEqual([]);
+      expect(loadDeletedCustomItems()[custom.id]).toBeDefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("marks a batch as packed in one persisted export state", () => {
+    installBrowserStorage();
+    const first = testItem("batch-first");
+    const second = testItem("batch-second", { status: "bought" });
+    saveChecklist([first, second]);
+    useDadKitStore.setState({
+      hydrated: true,
+      checklist: [first, second],
+      customItems: [first, second],
+      hiddenTemplateItemIds: [],
+      pendingRemovalIds: [],
+    });
+
+    expect(
+      useDadKitStore.getState().markItemsPacked([first.id, second.id]),
+    ).toBe(2);
+    expect(exportData().checklist.map((item) => item.status)).toEqual([
+      "packed",
+      "packed",
+    ]);
   });
 
   it("clears checklist data only after saving a recovery snapshot", async () => {
