@@ -315,7 +315,10 @@ describe("strict v3, v4 and v5 import boundary", () => {
     const raw = JSON.stringify({
       ...backupData({
         checklist: [
-          { ...testItem("future-item"), futureField: "discard me" },
+          {
+            ...testItem("future-item"),
+            futureField: "discard me",
+          } as ChecklistItem,
         ],
       }),
       futureBackupField: { supportedBy: "a newer DadKit" },

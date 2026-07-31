@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { PartyPopper, Share2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,9 +31,7 @@ const CONFETTI_PIECES = [
   { left: "52%", delay: "0.55s", duration: "3.1s", color: "hsl(var(--confetti-blue))", size: 10 },
 ] as const;
 
-const AUTO_CLOSE_MS = 3200;
-
-/** 装包进度首次达到 100% 时的庆祝遮罩：奖章贴纸卡 + 彩带，自动关闭。 */
+/** 装包进度首次达到 100% 时的庆祝遮罩：奖章贴纸卡 + 彩带。 */
 export function CelebrationOverlay({
   departureItemCount = 0,
   packingPercent = 100,
@@ -46,15 +43,6 @@ export function CelebrationOverlay({
   open: boolean;
   onClose: () => void;
 }) {
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    const timer = window.setTimeout(onClose, AUTO_CLOSE_MS);
-    return () => window.clearTimeout(timer);
-  }, [open, onClose]);
-
   if (!open) {
     return null;
   }

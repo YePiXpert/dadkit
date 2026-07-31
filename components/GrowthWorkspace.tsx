@@ -33,7 +33,10 @@ import {
   getProjectedGrowthWeekDate,
   type GrowthTrimester,
 } from "@/lib/growth";
-import { flushPendingProfileWrite, useGrowthStore } from "@/lib/growth-store";
+import {
+  flushPendingProfileWriteSafely,
+  useGrowthStore,
+} from "@/lib/growth-store";
 import { getStoredPackingPercent } from "@/lib/packing-progress";
 import { formatGrowthShareText, shareText } from "@/lib/share";
 import { cn } from "@/lib/utils";
@@ -153,7 +156,7 @@ export function GrowthWorkspace() {
                 autoComplete="off"
                 id="growth-nickname"
                 maxLength={20}
-                onBlur={() => flushPendingProfileWrite()}
+                onBlur={flushPendingProfileWriteSafely}
                 onInput={(event) => setNickname(event.currentTarget.value)}
                 placeholder="例如：小栗子"
                 value={nickname}

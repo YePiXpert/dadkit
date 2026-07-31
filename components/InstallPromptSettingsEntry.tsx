@@ -6,6 +6,7 @@ import { Download } from "lucide-react";
 import {
   INSTALL_STATUS_CHANGED_EVENT,
   isBundledAndroidApp,
+  isPwaInstallAvailable,
   isPwaInstalled,
   isStandaloneDisplay,
   markPwaInstalled,
@@ -19,7 +20,11 @@ export function InstallPromptSettingsEntry() {
     const displayMode = window.matchMedia("(display-mode: standalone)");
 
     function syncInstallEntry() {
-      setShowInstallEntry(!isBundledAndroidApp() && !isPwaInstalled());
+      setShowInstallEntry(
+        !isBundledAndroidApp() &&
+          !isPwaInstalled() &&
+          isPwaInstallAvailable(),
+      );
     }
 
     function handleInstalled() {

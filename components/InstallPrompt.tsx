@@ -10,10 +10,13 @@ import {
   INSTALL_PROMPT_DISMISS_KEY,
   INSTALL_STATUS_CHANGED_EVENT,
   isBundledAndroidApp,
+  isIosInstallGuideAvailable,
+  isPwaInstallAvailable,
   isPwaInstalled,
   isStandaloneDisplay,
   markPwaInstalled,
   OPEN_INSTALL_PROMPT_EVENT,
+  setPwaInstallPromptAvailable,
 } from "@/lib/install-prompt";
 import { useDadKitStore } from "@/lib/store";
 
@@ -23,14 +26,6 @@ type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
-
-function isIosDevice() {
-  const navigator = window.navigator;
-  return (
-    /iphone|ipad|ipod/i.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
-  );
-}
 
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] =
@@ -51,6 +46,7 @@ export function InstallPrompt() {
 
   useEffect(() => {
     if (isBundledAndroidApp()) {
+      setPwaInstallPromptAvailable(false);
       setDeferredPrompt(null);
       setShowIosGuide(false);
       setShowPrompt(false);
@@ -61,16 +57,18 @@ export function InstallPrompt() {
       markPwaInstalled();
     }
 
-    setShowIosGuide(!isPwaInstalled() && isIosDevice());
+    setShowIosGuide(!isPwaInstalled() && isIosInstallGuideAvailable());
 
     function handleBeforeInstallPrompt(event: Event) {
       event.preventDefault();
       clearPwaInstalledSession();
       setDeferredPrompt(event as BeforeInstallPromptEvent);
       setShowIosGuide(false);
+      setPwaInstallPromptAvailable(true);
     }
 
     function handleInstalled() {
+      setPwaInstallPromptAvailable(false);
       markPwaInstalled();
       setDeferredPrompt(null);
       setShowIosGuide(false);
@@ -88,11 +86,16 @@ export function InstallPrompt() {
     }
 
     function handleManualOpen() {
-      if (isBundledAndroidApp() || isPwaInstalled()) {
+      if (
+        isBundledAndroidApp() ||
+        isPwaInstalled() ||
+        !isPwaInstallAvailable()
+      ) {
         return;
       }
 
-      setShowIosGuide(isIosDevice());
+      const showGuide = isIosInstallGuideAvailable();
+      setShowIosGuide(showGuide);
       setShowPrompt(true);
     }
 
@@ -155,6 +158,7 @@ export function InstallPrompt() {
     }
 
     setDeferredPrompt(null);
+    setPwaInstallPromptAvailable(false);
   }
 
   return (

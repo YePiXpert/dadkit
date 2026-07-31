@@ -68,6 +68,8 @@ type SpaceSnapshotPayload = {
 type ApiResult<T> = {
   data?: T;
   etag?: string;
+  receivedAt: number;
+  requestStartedAt: number;
   serverTime?: string;
   notModified: boolean;
 };
@@ -167,17 +169,26 @@ async function apiRequest<T>(
     }
   }
 
+  const requestStartedAt = Date.now();
+
   try {
     const response = await fetch(path, {
       ...init,
       headers,
       signal: controller.signal,
     });
+    const receivedAt = Date.now();
     const etag = response.headers.get("etag") ?? undefined;
     const serverTime = response.headers.get("x-dadkit-server-time") ?? undefined;
 
     if (options.acceptNotModified && response.status === 304) {
-      return { etag, serverTime, notModified: true };
+      return {
+        etag,
+        receivedAt,
+        requestStartedAt,
+        serverTime,
+        notModified: true,
+      };
     }
 
     const data = await parseApiResponse<T>(response);
@@ -185,6 +196,8 @@ async function apiRequest<T>(
     return {
       data,
       etag,
+      receivedAt,
+      requestStartedAt,
       serverTime: serverTime ?? getPayloadServerTime(data),
       notModified: false,
     };
@@ -219,8 +232,16 @@ function getPayloadServerTime(payload: unknown) {
   );
 }
 
-function observeServerTime(serverTime: string | undefined) {
-  const offset = estimateSyncClockOffset(serverTime);
+function observeServerTime(
+  serverTime: string | undefined,
+  requestStartedAt: number,
+  receivedAt: number,
+) {
+  const offset = estimateSyncClockOffset(
+    serverTime,
+    receivedAt,
+    requestStartedAt,
+  );
 
   if (offset !== undefined) {
     saveSyncClockOffset(offset);
@@ -347,6 +368,8 @@ async function doSync(): Promise<SyncOutcome> {
     );
     const observedOffset = observeServerTime(
       pulled.serverTime ?? pulled.data?.serverTime,
+      pulled.requestStartedAt,
+      pulled.receivedAt,
     );
     const localExport = exportData();
     const shouldAlignTimeline =
@@ -396,7 +419,11 @@ async function doSync(): Promise<SyncOutcome> {
       );
 
       latestEtag = pushed.etag ?? latestEtag;
-      observeServerTime(pushed.serverTime ?? pushed.data?.serverTime);
+      observeServerTime(
+        pushed.serverTime ?? pushed.data?.serverTime,
+        pushed.requestStartedAt,
+        pushed.receivedAt,
+      );
 
       if (
         pushed.data?.data &&

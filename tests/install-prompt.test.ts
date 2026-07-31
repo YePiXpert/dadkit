@@ -6,9 +6,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearPwaInstalledSession,
   isBundledAndroidApp,
+  isPwaInstallAvailable,
   isPwaInstalled,
   markPwaInstalled,
   resolvePwaInstalled,
+  setPwaInstallPromptAvailable,
 } from "@/lib/install-prompt";
 
 function readSource(...segments: string[]) {
@@ -46,9 +48,11 @@ function stubWindow(userAgent = "Test Browser") {
 beforeEach(() => {
   stubWindow();
   clearPwaInstalledSession();
+  setPwaInstallPromptAvailable(false);
 });
 
 afterEach(() => {
+  setPwaInstallPromptAvailable(false);
   clearPwaInstalledSession();
   vi.unstubAllGlobals();
 });
@@ -97,9 +101,21 @@ describe("PWA install status", () => {
     expect(isBundledAndroidApp()).toBe(true);
   });
 
+  it("only exposes an install action when the browser can fulfill it", () => {
+    expect(isPwaInstallAvailable()).toBe(false);
+
+    setPwaInstallPromptAvailable(true);
+    expect(isPwaInstallAvailable()).toBe(true);
+
+    setPwaInstallPromptAvailable(false);
+    stubWindow("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)");
+    expect(isPwaInstallAvailable()).toBe(true);
+  });
+
   it("hides the settings entry after standalone or app installation", () => {
     expect(settingsEntry).toContain("isStandaloneDisplay()");
     expect(settingsEntry).toContain("!isPwaInstalled()");
+    expect(settingsEntry).toContain("isPwaInstallAvailable()");
     expect(settingsEntry).toContain('addEventListener("appinstalled"');
     expect(settingsEntry).toContain("!isBundledAndroidApp()");
     expect(settingsEntry).toContain("if (!showInstallEntry)");

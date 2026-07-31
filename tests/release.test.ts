@@ -216,7 +216,7 @@ describe("release endpoints and product surface", () => {
   it("pre-caches only the minimal app shell during install", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.3-pwa-r1"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.3-pwa-r2"');
     expect(sw).toContain('const APP_SHELL_ROUTE = "/"');
     expect(sw).not.toContain("CORE_ROUTES");
 

@@ -1,12 +1,29 @@
 import path from "node:path";
 
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const SAMPLE_IMAGE_PATH = path.join(process.cwd(), "public", "icon-192.png");
 
+async function signalPwaInstallAvailability(page: Page) {
+  await expect
+    .poll(async () => {
+      await page.evaluate(() => {
+        const event = new Event("beforeinstallprompt");
+        Object.assign(event, {
+          prompt: async () => undefined,
+          userChoice: Promise.resolve({ outcome: "dismissed" as const }),
+        });
+        window.dispatchEvent(event);
+      });
+
+      return page.getByRole("button", { name: /安装到桌面/ }).count();
+    })
+    .toBe(1);
+}
+
 test.describe.configure({ timeout: 120_000 });
 
-test("移动端输入保持 16px，已安装 PWA 不再显示安装入口", async ({ page }) => {
+test("移动端输入保持 16px，安装入口仅在可用时显示", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
 
   const search = page.locator("#checklist-search");
@@ -17,6 +34,8 @@ test("移动端输入保持 16px，已安装 PWA 不再显示安装入口", asyn
 
   await page.goto("/settings", { waitUntil: "domcontentloaded" });
   const installEntry = page.getByRole("button", { name: /安装到桌面/ });
+  await expect(installEntry).toHaveCount(0);
+  await signalPwaInstallAvailability(page);
   await expect(installEntry).toBeVisible();
 
   await page.addInitScript(() => {
@@ -49,6 +68,7 @@ test("移动端输入保持 16px，已安装 PWA 不再显示安装入口", asyn
 test("Android APK WebView 不显示 PWA 安装入口", async ({ page }) => {
   await page.goto("/settings", { waitUntil: "domcontentloaded" });
   const installEntry = page.getByRole("button", { name: /安装到桌面/ });
+  await signalPwaInstallAvailability(page);
   await expect(installEntry).toBeVisible();
 
   await page.addInitScript(() => {

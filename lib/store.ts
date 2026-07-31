@@ -75,6 +75,7 @@ type PendingRemoval = {
 
 const pendingRemovals = new Map<string, PendingRemoval>();
 const REMOVE_UNDO_MS = 5_000;
+let pendingRemovalListenerTarget: Window | undefined;
 
 function itemId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -144,21 +145,16 @@ function removePendingItemFromState(
   state: Pick<DadKitState, "checklist" | "customItems" | "hiddenTemplateItemIds">,
   pending: PendingRemoval,
 ) {
-  const normalizedName = comparableItemName(pending.item.name);
   const customIds = new Set(pending.customItems.map(({ item }) => item.id));
 
   return {
     checklist: state.checklist.filter(
       (candidate) =>
-        candidate.id !== pending.id &&
-        !customIds.has(candidate.id) &&
-        comparableItemName(candidate.name) !== normalizedName,
+        candidate.id !== pending.id && !customIds.has(candidate.id),
     ),
     customItems: state.customItems.filter(
       (candidate) =>
-        candidate.id !== pending.id &&
-        !customIds.has(candidate.id) &&
-        comparableItemName(candidate.name) !== normalizedName,
+        candidate.id !== pending.id && !customIds.has(candidate.id),
     ),
     hiddenTemplateItemIds:
       pending.item.source === "general"
@@ -178,6 +174,80 @@ function clearPendingRemovalTimer(pending: PendingRemoval) {
 function clearAllPendingRemovals() {
   pendingRemovals.forEach(clearPendingRemovalTimer);
   pendingRemovals.clear();
+}
+
+function commitPendingRemoval(id: string) {
+  const active = pendingRemovals.get(id);
+
+  if (!active) {
+    return;
+  }
+
+  clearPendingRemovalTimer(active);
+  const current = useDadKitStore.getState();
+  const committed = removePendingItemFromState(current, active);
+
+  try {
+    saveChecklistState(committed);
+
+    // 删除要参与多端合并:模板条目写隐藏时间戳,自定义物品写删除墓碑。
+    const now = getSyncAdjustedNow();
+    if (active.item.source === "general") {
+      saveHiddenTemplateItemStamps({
+        ...loadHiddenTemplateItemStamps(),
+        [active.item.id]: { hidden: true, updatedAt: now },
+      });
+    }
+    if (active.customItems.length > 0) {
+      const tombstones = { ...loadDeletedCustomItems() };
+      for (const removed of active.customItems) {
+        tombstones[removed.item.id] = now;
+      }
+      saveDeletedCustomItems(tombstones);
+    }
+
+    void deleteItemPhoto(active.item.id).catch(() => undefined);
+    pendingRemovals.delete(id);
+    useDadKitStore.setState({
+      ...committed,
+      pendingRemovalIds: current.pendingRemovalIds.filter(
+        (candidate) => candidate !== id,
+      ),
+    });
+  } catch {
+    useDadKitStore.getState().undoRemoveItem(id);
+    showAppToast({
+      message: "删除暂未保存，物品已恢复。",
+      tone: "warning",
+    });
+  }
+}
+
+function flushPendingRemovals() {
+  for (const id of Array.from(pendingRemovals.keys())) {
+    commitPendingRemoval(id);
+  }
+}
+
+function installPendingRemovalListeners() {
+  if (
+    typeof window === "undefined" ||
+    typeof window.addEventListener !== "function" ||
+    pendingRemovalListenerTarget === window
+  ) {
+    return;
+  }
+
+  pendingRemovalListenerTarget = window;
+  window.addEventListener("pagehide", flushPendingRemovals);
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        flushPendingRemovals();
+      }
+    });
+  }
 }
 
 export const useDadKitStore = create<DadKitState>((set, get) => ({
@@ -416,7 +486,10 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       return patchChecklistItem(item, { status: "packed" });
     });
     const customItems = state.customItems.map((item) =>
-      itemIds.has(item.id) && item.status !== "packed"
+      itemIds.has(item.id) &&
+      item.itemKind === "item" &&
+      item.status !== "packed" &&
+      item.status !== "not_needed"
         ? patchChecklistItem(item, { status: "packed" })
         : item,
     );
@@ -457,53 +530,10 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     const next = removePendingItemFromState(state, pending);
 
     clearPendingRemovalTimer(pendingRemovals.get(id) ?? pending);
-    pending.timer = setTimeout(() => {
-      const active = pendingRemovals.get(id);
-
-      if (!active) {
-        return;
-      }
-
-      const current = get();
-      const committed = removePendingItemFromState(current, active);
-
-      try {
-        saveChecklistState(committed);
-
-        // 删除要参与多端合并:模板条目写隐藏时间戳,自定义物品写删除墓碑。
-        const now = getSyncAdjustedNow();
-        if (active.item.source === "general") {
-          saveHiddenTemplateItemStamps({
-            ...loadHiddenTemplateItemStamps(),
-            [active.item.id]: { hidden: true, updatedAt: now },
-          });
-        }
-        if (active.customItems.length > 0) {
-          const tombstones = { ...loadDeletedCustomItems() };
-          for (const removed of active.customItems) {
-            tombstones[removed.item.id] = now;
-          }
-          saveDeletedCustomItems(tombstones);
-        }
-
-        void deleteItemPhoto(active.item.id).catch(() => undefined);
-        pendingRemovals.delete(id);
-        set({
-          ...committed,
-          pendingRemovalIds: current.pendingRemovalIds.filter(
-            (candidate) => candidate !== id,
-          ),
-        });
-      } catch {
-        get().undoRemoveItem(id);
-        showAppToast({
-          message: "删除暂未保存，物品已恢复。",
-          tone: "warning",
-        });
-      }
-    }, REMOVE_UNDO_MS);
+    pending.timer = setTimeout(() => commitPendingRemoval(id), REMOVE_UNDO_MS);
 
     pendingRemovals.set(id, pending);
+    installPendingRemovalListeners();
     set({
       ...next,
       pendingRemovalIds: [...state.pendingRemovalIds, id],
@@ -528,7 +558,14 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     const state = get();
     const customItems = [...state.customItems];
     for (const restored of pending.customItems) {
-      if (!customItems.some((item) => item.id === restored.item.id)) {
+      const restoredName = comparableItemName(restored.item.name);
+      if (
+        !customItems.some(
+          (item) =>
+            item.id === restored.item.id ||
+            comparableItemName(item.name) === restoredName,
+        )
+      ) {
         customItems.splice(
           Math.min(restored.index, customItems.length),
           0,
@@ -540,7 +577,14 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       (candidate) => candidate !== pending.item.id,
     );
     const checklist = [...state.checklist];
-    if (!checklist.some((item) => item.id === pending.item.id)) {
+    const pendingName = comparableItemName(pending.item.name);
+    if (
+      !checklist.some(
+        (item) =>
+          item.id === pending.item.id ||
+          comparableItemName(item.name) === pendingName,
+      )
+    ) {
       checklist.splice(
         Math.min(Math.max(pending.checklistIndex, 0), checklist.length),
         0,
@@ -548,14 +592,25 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       );
     }
 
-    set({
+    const restored = {
       checklist,
       customItems,
       hiddenTemplateItemIds,
       pendingRemovalIds: state.pendingRemovalIds.filter(
         (candidate) => candidate !== id,
       ),
-    });
+    };
+
+    try {
+      saveChecklistState(restored);
+    } catch {
+      showAppToast({
+        message: "撤销结果尚未保存，将继续自动重试。",
+        tone: "warning",
+      });
+    }
+
+    set(restored);
   },
   clearAll: async () => {
     requireSnapshotBeforeChange("清空本地数据前");

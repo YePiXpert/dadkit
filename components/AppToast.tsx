@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
+import { X } from "lucide-react";
 
 import {
   dismissAppToast,
@@ -64,7 +65,7 @@ export function AppToast() {
         onClick={() => dismissAppToast(toast.id)}
         type="button"
       >
-        ×
+        <X className="size-4" />
       </button>
     </div>
   );

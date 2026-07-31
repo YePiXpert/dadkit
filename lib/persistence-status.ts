@@ -71,7 +71,6 @@ export async function checkStorageCapacity() {
   }
 
   try {
-    await navigator.storage.persist?.();
     const estimate = await navigator.storage.estimate?.();
 
     if (

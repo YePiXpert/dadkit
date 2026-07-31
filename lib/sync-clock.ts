@@ -1,6 +1,7 @@
 const SYNC_CLOCK_OFFSET_KEY = "dadkit:v3:sync-clock-offset-ms";
 const SYNC_CLOCK_TIMELINE_INITIALIZED_KEY =
   "dadkit:v3:sync-clock-timeline-initialized";
+export const MAX_SYNC_CLOCK_OFFSET_MS = 24 * 60 * 60 * 1_000;
 
 function canUseLocalStorage() {
   return typeof window !== "undefined" && Boolean(window.localStorage);
@@ -71,10 +72,26 @@ export function saveSyncClockTimelineInitialized(initialized: boolean) {
 export function estimateSyncClockOffset(
   serverTime: string | undefined,
   receivedAt = Date.now(),
+  requestStartedAt = receivedAt,
 ) {
   const timestamp = serverTime ? Date.parse(serverTime) : Number.NaN;
 
-  return Number.isFinite(timestamp) ? timestamp - receivedAt : undefined;
+  if (
+    !Number.isFinite(timestamp) ||
+    !Number.isFinite(requestStartedAt) ||
+    !Number.isFinite(receivedAt) ||
+    requestStartedAt > receivedAt
+  ) {
+    return undefined;
+  }
+
+  const roundTripMidpoint = requestStartedAt + (receivedAt - requestStartedAt) / 2;
+  const offset = timestamp - roundTripMidpoint;
+
+  return Math.min(
+    MAX_SYNC_CLOCK_OFFSET_MS,
+    Math.max(-MAX_SYNC_CLOCK_OFFSET_MS, offset),
+  );
 }
 
 export function getSyncAdjustedNow(now = Date.now()) {

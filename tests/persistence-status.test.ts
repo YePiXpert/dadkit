@@ -21,7 +21,7 @@ describe("local persistence warnings", () => {
     await checkStorageCapacity();
 
     expect(getChecklistPersistenceStatus().storageWarning).toContain("存储空间已接近上限");
-    expect(persist).toHaveBeenCalledTimes(1);
+    expect(persist).not.toHaveBeenCalled();
 
     estimate.mockResolvedValueOnce({ usage: 40, quota: 100 });
     await checkStorageCapacity();

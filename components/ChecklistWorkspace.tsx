@@ -89,7 +89,12 @@ export function ChecklistWorkspace() {
     [checklist],
   );
   const bulkPackingIds = searchedVisibleItems
-    .filter((item) => item.itemKind === "item" && item.status !== "packed")
+    .filter(
+      (item) =>
+        item.itemKind === "item" &&
+        item.status !== "packed" &&
+        item.status !== "not_needed",
+    )
     .map((item) => item.id);
 
   // 只在“进行中 → 100%”的这一刻庆祝：首次加载就是 100% 时不打扰。

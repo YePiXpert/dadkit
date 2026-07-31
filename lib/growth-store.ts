@@ -333,12 +333,12 @@ function installProfileWriteListeners() {
     return;
   }
 
-  window.addEventListener("pagehide", flushPendingProfileWrite);
+  window.addEventListener("pagehide", flushPendingProfileWriteSafely);
 
   if (typeof document !== "undefined") {
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
-        flushPendingProfileWrite();
+        flushPendingProfileWriteSafely();
       }
     });
   }
@@ -357,7 +357,7 @@ function scheduleProfileWrite() {
   }
 
   profileWriteTimer = setTimeout(
-    flushPendingProfileWrite,
+    flushPendingProfileWriteSafely,
     PROFILE_WRITE_DEBOUNCE_MS,
   );
 }
@@ -389,8 +389,17 @@ export function flushPendingProfileWrite() {
     writeStorage(GROWTH_STORAGE_KEYS.profile, { nickname, dueDate });
     markGrowthUpdated();
   } catch (error) {
+    profileWritePending = true;
     recordGrowthStorageFailure(error);
     throw error;
+  }
+}
+
+export function flushPendingProfileWriteSafely() {
+  try {
+    flushPendingProfileWrite();
+  } catch {
+    // 页面生命周期事件不能恢复写入；保留 pending 状态供下次变更或导出重试。
   }
 }
 

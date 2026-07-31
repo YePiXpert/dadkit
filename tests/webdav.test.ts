@@ -53,7 +53,10 @@ function installStorage() {
   return { localStore, sessionStore };
 }
 
-function testItem(id = "item-1"): ChecklistItem {
+function testItem(
+  id = "item-1",
+  patch: Partial<ChecklistItem> = {},
+): ChecklistItem {
   return {
     id,
     name: "测试物品",
@@ -69,6 +72,7 @@ function testItem(id = "item-1"): ChecklistItem {
     bag: "mom_bag",
     bulk: "small",
     timing: "pack_now",
+    ...patch,
   };
 }
 

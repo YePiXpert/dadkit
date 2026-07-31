@@ -6,6 +6,7 @@ export const INSTALL_STATUS_CHANGED_EVENT =
   "dadkit:pwa-install-status-changed";
 
 let installedThisSession = false;
+let installPromptAvailableThisSession = false;
 
 export type PwaInstallSignals = {
   displayModeStandalone: boolean;
@@ -29,6 +30,37 @@ export function isBundledAndroidApp() {
   }
 
   return window.navigator.userAgent.includes("DadKitAndroid/");
+}
+
+export function isIosInstallGuideAvailable() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const navigator = window.navigator;
+  return (
+    /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
+export function isPwaInstallAvailable() {
+  return (
+    !isBundledAndroidApp() &&
+    (installPromptAvailableThisSession || isIosInstallGuideAvailable())
+  );
+}
+
+export function setPwaInstallPromptAvailable(available: boolean) {
+  if (installPromptAvailableThisSession === available) {
+    return;
+  }
+
+  installPromptAvailableThisSession = available;
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(INSTALL_STATUS_CHANGED_EVENT));
+  }
 }
 
 export function isStandaloneDisplay() {
