@@ -31,7 +31,7 @@ import java.util.Map;
 public class LauncherActivity extends Activity {
     private static final String APP_HOST = "dadkit.505f.com";
     private static final String START_URL =
-            "https://" + APP_HOST + "/?source=apk&appVersionCode=3";
+            "https://" + APP_HOST + "/?source=apk&appVersionCode=4";
     private static final int FILE_CHOOSER_REQUEST = 201;
 
     private WebView webView;
@@ -72,7 +72,7 @@ public class LauncherActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setSupportZoom(false);
         settings.setUserAgentString(
-                settings.getUserAgentString() + " DadKitAndroid/3"
+                settings.getUserAgentString() + " DadKitAndroid/4"
         );
 
         CookieManager.getInstance().setAcceptCookie(true);

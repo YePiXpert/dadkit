@@ -13,6 +13,7 @@ const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     ignores: [
+      ".android-static-build/**",
       ".next/**",
       "android/app/src/main/assets/www/**",
       "coverage/**",

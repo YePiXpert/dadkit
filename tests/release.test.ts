@@ -39,7 +39,7 @@ describe("release endpoints and product surface", () => {
       }>;
     };
 
-    expect(packageJson.version).toBe("2.1.2");
+    expect(packageJson.version).toBe("2.1.3");
     expect(manifest.name).toBe("DadKit 待产包清单");
     expect(manifest.description).toContain("待产包");
     expect(manifest.description).toContain("备份");
@@ -107,7 +107,8 @@ describe("release endpoints and product surface", () => {
     expect(manifest).not.toContain("trusted");
     expect(manifest).not.toContain("asset_statements");
     expect(activity).toContain('getAssets().open("www/" + assetPath)');
-    expect(activity).toContain("source=apk&appVersionCode=3");
+    expect(activity).toContain("source=apk&appVersionCode=4");
+    expect(activity).toContain("DadKitAndroid/4");
     expect(androidBundle).toContain('rm(path.join(staging, "app", "api")');
     expect(packageJson.devDependencies).not.toHaveProperty("@bubblewrap/cli");
   });
@@ -115,7 +116,7 @@ describe("release endpoints and product surface", () => {
   it("keeps the Android tag release strict and verifies the signed APK", () => {
     const workflow = readSource(".github", "workflows", "android-release.yml");
 
-    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v2.1.2"');
+    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v2.1.3"');
     expect(workflow).toContain(
       'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
     );
@@ -215,7 +216,7 @@ describe("release endpoints and product surface", () => {
   it("pre-caches only the minimal app shell during install", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.2-pwa-r1"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.1.3-pwa-r1"');
     expect(sw).toContain('const APP_SHELL_ROUTE = "/"');
     expect(sw).not.toContain("CORE_ROUTES");
 

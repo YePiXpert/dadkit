@@ -319,7 +319,7 @@ export function ChecklistWorkspace() {
           <div className="rounded-2xl border border-primary/30 bg-secondary/35 p-3">
             <p className="mb-2 text-sm font-medium">浏览器未授权复制，请手动复制以下内容：</p>
             <textarea
-              className="min-h-36 w-full rounded-xl border border-border bg-card p-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-ring"
+              className="min-h-36 w-full rounded-xl border border-border bg-card p-3 text-base leading-6 outline-none focus:ring-2 focus:ring-ring"
               id="checklist-copy-fallback"
               readOnly
               value={copyFallbackText}

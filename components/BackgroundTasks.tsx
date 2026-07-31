@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
+import { isBundledAndroidApp } from "@/lib/install-prompt";
+
 const AndroidUpdatePrompt = dynamic(
   () =>
     import("@/components/AndroidUpdatePrompt").then(
@@ -29,7 +31,7 @@ export function BackgroundTasks() {
 
     const start = () => {
       if (cancelled) return;
-      setBundledAndroid(navigator.userAgent.includes("DadKitAndroid/"));
+      setBundledAndroid(isBundledAndroidApp());
       setIdle(true);
       void import("@/lib/sync/auto-sync").then(({ startAutoSync }) => {
         if (!cancelled) {

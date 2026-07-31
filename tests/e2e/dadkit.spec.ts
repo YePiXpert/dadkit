@@ -6,6 +6,63 @@ const SAMPLE_IMAGE_PATH = path.join(process.cwd(), "public", "icon-192.png");
 
 test.describe.configure({ timeout: 120_000 });
 
+test("移动端输入保持 16px，已安装 PWA 不再显示安装入口", async ({ page }) => {
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  const search = page.locator("#checklist-search");
+  await expect(search).toBeVisible();
+  await expect
+    .poll(() => search.evaluate((element) => getComputedStyle(element).fontSize))
+    .toBe("16px");
+
+  await page.goto("/settings", { waitUntil: "domcontentloaded" });
+  const installEntry = page.getByRole("button", { name: /安装到桌面/ });
+  await expect(installEntry).toBeVisible();
+
+  await page.addInitScript(() => {
+    const nativeMatchMedia = window.matchMedia.bind(window);
+
+    window.matchMedia = ((query: string) => {
+      const result = nativeMatchMedia(query);
+
+      if (query !== "(display-mode: standalone)") {
+        return result;
+      }
+
+      return new Proxy(result, {
+        get(target, property) {
+          if (property === "matches") {
+            return true;
+          }
+
+          const value = Reflect.get(target, property, target);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+    }) as typeof window.matchMedia;
+  });
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(installEntry).toHaveCount(0);
+});
+
+test("Android APK WebView 不显示 PWA 安装入口", async ({ page }) => {
+  await page.goto("/settings", { waitUntil: "domcontentloaded" });
+  const installEntry = page.getByRole("button", { name: /安装到桌面/ });
+  await expect(installEntry).toBeVisible();
+
+  await page.addInitScript(() => {
+    const userAgent = `${window.navigator.userAgent} DadKitAndroid/4`;
+    Object.defineProperty(window.navigator, "userAgent", {
+      configurable: true,
+      get: () => userAgent,
+    });
+  });
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(installEntry).toHaveCount(0);
+});
+
 test("清单和成长记在移动端完成 hydrate 并持久化", async ({ page }) => {
   // Playwright WebKit on Windows can defer the first hydrated interaction
   // while its process warms up. This is a functional workflow, not a

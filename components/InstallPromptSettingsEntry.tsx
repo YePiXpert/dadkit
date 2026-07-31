@@ -1,10 +1,72 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 
-import { openInstallPrompt } from "@/lib/install-prompt";
+import {
+  INSTALL_STATUS_CHANGED_EVENT,
+  isBundledAndroidApp,
+  isPwaInstalled,
+  isStandaloneDisplay,
+  markPwaInstalled,
+  openInstallPrompt,
+} from "@/lib/install-prompt";
 
 export function InstallPromptSettingsEntry() {
+  const [showInstallEntry, setShowInstallEntry] = useState(false);
+
+  useEffect(() => {
+    const displayMode = window.matchMedia("(display-mode: standalone)");
+
+    function syncInstallEntry() {
+      setShowInstallEntry(!isBundledAndroidApp() && !isPwaInstalled());
+    }
+
+    function handleInstalled() {
+      markPwaInstalled();
+      setShowInstallEntry(false);
+    }
+
+    function handleDisplayModeChange() {
+      if (isStandaloneDisplay()) {
+        handleInstalled();
+        return;
+      }
+
+      syncInstallEntry();
+    }
+
+    if (isBundledAndroidApp()) {
+      setShowInstallEntry(false);
+      return;
+    }
+
+    if (isStandaloneDisplay()) {
+      markPwaInstalled();
+    }
+    syncInstallEntry();
+
+    window.addEventListener("appinstalled", handleInstalled);
+    window.addEventListener(
+      INSTALL_STATUS_CHANGED_EVENT,
+      syncInstallEntry,
+    );
+    displayMode.addEventListener("change", handleDisplayModeChange);
+
+    return () => {
+      window.removeEventListener("appinstalled", handleInstalled);
+      window.removeEventListener(
+        INSTALL_STATUS_CHANGED_EVENT,
+        syncInstallEntry,
+      );
+      displayMode.removeEventListener("change", handleDisplayModeChange);
+    };
+  }, []);
+
+  if (!showInstallEntry) {
+    return null;
+  }
+
   return (
     <button
       className="group flex min-h-24 w-full items-center gap-4 rounded-card border border-border bg-card p-4 text-left shadow-sm transition-colors hover:bg-muted/35"

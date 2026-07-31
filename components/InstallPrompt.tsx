@@ -6,7 +6,13 @@ import { Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getChecklistItemState } from "@/lib/checklist-v2";
 import {
+  clearPwaInstalledSession,
   INSTALL_PROMPT_DISMISS_KEY,
+  INSTALL_STATUS_CHANGED_EVENT,
+  isBundledAndroidApp,
+  isPwaInstalled,
+  isStandaloneDisplay,
+  markPwaInstalled,
   OPEN_INSTALL_PROMPT_EVENT,
 } from "@/lib/install-prompt";
 import { useDadKitStore } from "@/lib/store";
@@ -19,14 +25,10 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 function isIosDevice() {
-  return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
-}
-
-function isStandaloneDisplay() {
+  const navigator = window.navigator;
   return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (window.navigator as Navigator & { standalone?: boolean }).standalone ===
-      true
+    /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
   );
 }
 
@@ -35,6 +37,7 @@ export function InstallPrompt() {
     useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [showIosGuide, setShowIosGuide] = useState(false);
+  const [installStatusRevision, setInstallStatusRevision] = useState(0);
   const hydrate = useDadKitStore((state) => state.hydrate);
   const hydrated = useDadKitStore((state) => state.hydrated);
   const checklist = useDadKitStore((state) => state.checklist);
@@ -47,29 +50,69 @@ export function InstallPrompt() {
   }, [hydrate]);
 
   useEffect(() => {
-    if (isStandaloneDisplay()) {
+    if (isBundledAndroidApp()) {
+      setDeferredPrompt(null);
+      setShowIosGuide(false);
+      setShowPrompt(false);
       return;
     }
 
-    setShowIosGuide(isIosDevice());
+    if (isStandaloneDisplay()) {
+      markPwaInstalled();
+    }
+
+    setShowIosGuide(!isPwaInstalled() && isIosDevice());
 
     function handleBeforeInstallPrompt(event: Event) {
       event.preventDefault();
+      clearPwaInstalledSession();
       setDeferredPrompt(event as BeforeInstallPromptEvent);
+      setShowIosGuide(false);
     }
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    function handleInstalled() {
+      markPwaInstalled();
+      setDeferredPrompt(null);
+      setShowIosGuide(false);
+      setShowPrompt(false);
+    }
+
+    function handleInstallStatusChanged() {
+      setInstallStatusRevision((revision) => revision + 1);
+
+      if (isPwaInstalled()) {
+        setDeferredPrompt(null);
+        setShowIosGuide(false);
+        setShowPrompt(false);
+      }
+    }
 
     function handleManualOpen() {
+      if (isBundledAndroidApp() || isPwaInstalled()) {
+        return;
+      }
+
+      setShowIosGuide(isIosDevice());
       setShowPrompt(true);
     }
 
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleInstalled);
+    window.addEventListener(
+      INSTALL_STATUS_CHANGED_EVENT,
+      handleInstallStatusChanged,
+    );
     window.addEventListener(OPEN_INSTALL_PROMPT_EVENT, handleManualOpen);
 
     return () => {
       window.removeEventListener(
         "beforeinstallprompt",
         handleBeforeInstallPrompt,
+      );
+      window.removeEventListener("appinstalled", handleInstalled);
+      window.removeEventListener(
+        INSTALL_STATUS_CHANGED_EVENT,
+        handleInstallStatusChanged,
       );
       window.removeEventListener(OPEN_INSTALL_PROMPT_EVENT, handleManualOpen);
     };
@@ -79,14 +122,15 @@ export function InstallPrompt() {
     if (
       !hydrated ||
       completedCount < AUTO_PROMPT_COMPLETION_COUNT ||
-      isStandaloneDisplay() ||
+      isBundledAndroidApp() ||
+      isPwaInstalled() ||
       window.localStorage.getItem(INSTALL_PROMPT_DISMISS_KEY) === "1"
     ) {
       return;
     }
 
     setShowPrompt(true);
-  }, [completedCount, hydrated]);
+  }, [completedCount, hydrated, installStatusRevision]);
 
   if (!showPrompt || (!deferredPrompt && !showIosGuide)) {
     return null;
@@ -106,6 +150,7 @@ export function InstallPrompt() {
     const choice = await deferredPrompt.userChoice;
 
     if (choice.outcome === "accepted") {
+      markPwaInstalled();
       setShowPrompt(false);
     }
 

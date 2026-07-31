@@ -323,7 +323,7 @@ export function GrowthWorkspace() {
             <label className="grid gap-1 text-center text-xs text-muted-foreground" htmlFor="growth-week-select">
               逐周切换
               <select
-                className="h-11 w-full rounded-xl border border-input bg-card px-3 text-center text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-11 w-full rounded-xl border border-input bg-card px-3 text-center text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 id="growth-week-select"
                 onChange={(event) => selectWeek(Number(event.target.value))}
                 value={current.week}

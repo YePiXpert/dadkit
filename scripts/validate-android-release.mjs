@@ -3,9 +3,9 @@ import path from "node:path";
 
 const root = process.cwd();
 const expected = {
-  tag: "v2.1.2",
-  versionName: "2.1.2",
-  versionCode: 3,
+  tag: "v2.1.3",
+  versionName: "2.1.3",
+  versionCode: 4,
   packageId: "com.dadkit.mobile",
   host: "dadkit.505f.com",
 };
@@ -50,6 +50,10 @@ assert(activity.includes(`APP_HOST = "${expected.host}"`), "production API host"
 assert(
   activity.includes(`source=apk&appVersionCode=${expected.versionCode}`),
   "bundled APK start URL",
+);
+assert(
+  activity.includes(`DadKitAndroid/${expected.versionCode}`),
+  "bundled APK user agent version",
 );
 assert(
   activity.includes('getAssets().open("www/" + assetPath)'),

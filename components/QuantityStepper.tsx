@@ -86,7 +86,7 @@ export function QuantityStepper({
         <span className="sr-only">数量</span>
         <Input
           aria-label="数量"
-          className="h-10 min-w-0 max-w-14 border-0 bg-transparent px-1 text-center text-sm font-semibold tabular-nums shadow-none focus-visible:ring-1"
+          className="h-10 min-w-0 max-w-14 border-0 bg-transparent px-1 text-center text-base font-semibold tabular-nums shadow-none focus-visible:ring-1"
           disabled={disabled}
           inputMode="numeric"
           onBlur={commitDraft}
