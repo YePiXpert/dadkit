@@ -336,6 +336,31 @@ describe("webdav helpers", () => {
       );
   });
 
+  it("treats a remote backup as current when only exportedAt differs", async () => {
+    const remoteData = { ...exportData(), checklist: [testItem()] };
+    const remote = buildDadKitWebDavBackup(remoteData, "remote-device");
+    const localData = {
+      ...remoteData,
+      exportedAt: new Date(Date.now() + 60_000).toISOString(),
+    };
+    const fetchMock = vi.fn<typeof fetch>(async (_url, init) => {
+      if (init?.method === "GET") {
+        return new Response(JSON.stringify(remote), { status: 200 });
+      }
+      throw new Error("unexpected WebDAV method");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await uploadWebDavBackup(
+      { ...DEFAULT_WEBDAV_CONFIG, endpoint: "https://example.com/dav", username: "dad" },
+      "secret",
+      localData,
+    );
+
+    expect(result).toEqual({ ok: true, message: "远端已是最新" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("prefills the default WebDAV target without storing secrets", () => {
     expect(DEFAULT_WEBDAV_CONFIG.endpoint).toBe("https://webdav.123pan.cn/webdav");
     expect(DEFAULT_WEBDAV_CONFIG.remoteDir).toBe("/DadKit");

@@ -19,6 +19,11 @@ import type {
 // 这里保持再导出以兼容既有调用方。
 export { calculateChecksum };
 
+// 比较备份内容时忽略每次导出都会变化的 exportedAt。
+function dadKitContentChecksum(data: { exportedAt: string }) {
+  return calculateChecksum({ ...data, exportedAt: "" });
+}
+
 const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
 const WEB_DAV_PROXY_PATH = "/api/webdav";
 const PROXY_HEADER = "x-dadkit-webdav-proxy";
@@ -116,7 +121,10 @@ export async function uploadWebDavBackup(
     let mergedData = data;
 
     if (remote.ok && remote.backup) {
-      if (remote.backup.checksum === calculateChecksum(data)) {
+      if (
+        dadKitContentChecksum(remote.backup.data) ===
+        dadKitContentChecksum(data)
+      ) {
         return { ok: true, message: "远端已是最新" };
       }
 

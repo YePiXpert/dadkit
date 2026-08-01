@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 const SAMPLE_IMAGE_PATH = path.join(process.cwd(), "public", "icon-192.png");
 
@@ -23,13 +23,13 @@ async function signalPwaInstallAvailability(page: Page) {
 
 test.describe.configure({ timeout: 120_000 });
 
-test("移动端输入保持 16px，安装入口仅在可用时显示", async ({ page }) => {
+test("移动端输入保持 16px，安装入口仅在可用时显示", async ({ page }: { page: Page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
 
   const search = page.locator("#checklist-search");
   await expect(search).toBeVisible();
   await expect
-    .poll(() => search.evaluate((element) => getComputedStyle(element).fontSize))
+    .poll(() => search.evaluate((element: HTMLElement) => getComputedStyle(element).fontSize))
     .toBe("16px");
 
   await page.goto("/settings", { waitUntil: "domcontentloaded" });
@@ -65,7 +65,7 @@ test("移动端输入保持 16px，安装入口仅在可用时显示", async ({ 
   await expect(installEntry).toHaveCount(0);
 });
 
-test("Android APK WebView 不显示 PWA 安装入口", async ({ page }) => {
+test("Android APK WebView 不显示 PWA 安装入口", async ({ page }: { page: Page }) => {
   await page.goto("/settings", { waitUntil: "domcontentloaded" });
   const installEntry = page.getByRole("button", { name: /安装到桌面/ });
   await signalPwaInstallAvailability(page);
@@ -83,7 +83,7 @@ test("Android APK WebView 不显示 PWA 安装入口", async ({ page }) => {
   await expect(installEntry).toHaveCount(0);
 });
 
-test("清单和成长记在移动端完成 hydrate 并持久化", async ({ page }) => {
+test("清单和成长记在移动端完成 hydrate 并持久化", async ({ page }: { page: Page }) => {
   // Playwright WebKit on Windows can defer the first hydrated interaction
   // while its process warms up. This is a functional workflow, not a
   // performance assertion (the Chromium test below owns that budget).
@@ -111,7 +111,7 @@ test("清单和成长记在移动端完成 hydrate 并持久化", async ({ page 
   await expect(page.locator("#growth-nickname")).toHaveValue(nickname);
 });
 
-test("照片保存在当前浏览器且备份页不再提供设备迁移", async ({ page }) => {
+test("照片保存在当前浏览器且备份页不再提供设备迁移", async ({ page }: { page: Page }) => {
   test.setTimeout(150_000);
 
   await page.goto("/checklist/documents", { waitUntil: "domcontentloaded" });
@@ -135,7 +135,7 @@ test("照片保存在当前浏览器且备份页不再提供设备迁移", async
   await expect(page.getByText("加密设备迁移")).toHaveCount(0);
 });
 
-test("家庭同步可创建口令并手动完成一次同步", async ({ page }) => {
+test("家庭同步可创建口令并手动完成一次同步", async ({ page }: { page: Page }) => {
   // FamilySyncCard intentionally loads after the backup shell. Give the
   // WebKit project enough time to fetch and hydrate that optional module.
   test.setTimeout(120_000);
@@ -160,6 +160,10 @@ test("Service Worker 缓存支持离线重开首页", async ({
   browserName,
   context,
   page,
+}: {
+  browserName: string;
+  context: BrowserContext;
+  page: Page;
 }) => {
   test.setTimeout(100_000);
 
@@ -212,6 +216,9 @@ test("Service Worker 缓存支持离线重开首页", async ({
 test("Chromium 移动端在 4x CPU 下保持交互与视觉稳定性", async ({
   browserName,
   page,
+}: {
+  browserName: string;
+  page: Page;
 }) => {
   test.skip(browserName !== "chromium", "CPU 和 Core Web Vitals 门禁使用 CDP。");
 
@@ -269,14 +276,14 @@ test("Chromium 移动端在 4x CPU 下保持交互与视觉稳定性", async ({
     lcpSamples.push(metrics?.lcp ?? Number.POSITIVE_INFINITY);
   }
 
-  const medianLcp = lcpSamples.sort((left, right) => left - right)[1];
+  const medianLcp = lcpSamples.sort((left: number, right: number) => left - right)[1];
   expect(medianLcp).toBeLessThanOrEqual(2_500);
 
   await page.goto("/checklist/documents", { waitUntil: "domcontentloaded" });
   const action = page.locator("article button[title]").first();
   await expect(action).toBeVisible();
 
-  const interactionSamples = await action.evaluate(async (button) => {
+  const interactionSamples = await action.evaluate(async (button: HTMLElement) => {
     const nextFrame = () =>
       new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     const samples: number[] = [];
@@ -296,7 +303,7 @@ test("Chromium 移动端在 4x CPU 下保持交互与视觉稳定性", async ({
 
     return samples;
   });
-  const p95 = interactionSamples.sort((left, right) => left - right)[
+  const p95 = interactionSamples.sort((left: number, right: number) => left - right)[
     Math.ceil(interactionSamples.length * 0.95) - 1
   ];
   expect(p95).toBeLessThanOrEqual(200);

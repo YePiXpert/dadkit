@@ -14,6 +14,7 @@ import {
 } from "@/lib/sync/client";
 import {
   exportData,
+  loadSnapshots,
   loadSyncClientState,
   loadSyncSession,
   saveChecklist,
@@ -57,6 +58,7 @@ function resetStores() {
     checklist: [],
     checklistMode: "lean",
     customItems: [],
+    pendingRemovalIds: [],
     hiddenTemplateItemIds: [],
   });
   useSyncStatusStore.setState({
@@ -167,6 +169,7 @@ describe("family sync client", () => {
       const persisted = JSON.parse(localValues.get(STORAGE_KEYS.checklist) ?? "[]") as ChecklistItem[];
       expect(localValues.get("dadkit:v3:sync-clock-offset-ms")).toBe("-3600000");
       expect(persisted[0]?.updatedAt).toBe(Date.now() - 3_600_000 + 100);
+      expect(loadSnapshots()[0]?.reason).toBe("首次同步时间校准前");
       expect(getSyncClockTimelineInitialized()).toBe(true);
     } finally {
       vi.useRealTimers();
@@ -183,6 +186,90 @@ describe("family sync client", () => {
 
     expect(outcome.ok).toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("defers sync while a removal is waiting for undo confirmation", async () => {
+    installBrowserStorage({
+      "dadkit:v3:sync-session": JSON.stringify({
+        token: "space.pending",
+        joinedAt: "2026-07-26T00:00:00.000Z",
+      }),
+    });
+    useDadKitStore.setState({
+      hydrated: true,
+      checklist: [],
+      customItems: [],
+      hiddenTemplateItemIds: [],
+      pendingRemovalIds: ["item-1"],
+    });
+    useSyncStatusStore.setState({ joined: true });
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ version: 0, updatedAt: "", data: null }, 200),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const outcome = await syncNow();
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.deferred).toBe(true);
+    expect(outcome.message).toContain("撤销窗口");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("joins a space while a removal is waiting and treats deferred sync as success", async () => {
+    installBrowserStorage();
+    useDadKitStore.setState({
+      hydrated: true,
+      checklist: [],
+      customItems: [],
+      hiddenTemplateItemIds: [],
+      pendingRemovalIds: ["item-1"],
+    });
+
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === "/api/sync/join") {
+        return jsonResponse({ token: "space.deferred" });
+      }
+      throw new Error(`unexpected url ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const outcome = await joinSpace("我们的家", "家庭暗号-1");
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.message).toBeUndefined();
+    expect(loadSyncSession()?.token).toBe("space.deferred");
+    expect(useSyncStatusStore.getState().joined).toBe(true);
+  });
+
+  it("creates a space while a removal is waiting and treats deferred sync as success", async () => {
+    installBrowserStorage();
+    useDadKitStore.setState({
+      hydrated: true,
+      checklist: [],
+      customItems: [],
+      hiddenTemplateItemIds: [],
+      pendingRemovalIds: ["item-1"],
+    });
+
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === "/api/sync/create") {
+        return jsonResponse({
+          token: "space.deferred",
+          invite: { code: "7K9M-3XQF", expiresAt: "2026-07-29T12:10:00.000Z" },
+        });
+      }
+      throw new Error(`unexpected url ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const outcome = await createSpace("新的家庭");
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.message).toBeUndefined();
+    expect(outcome.invite).toMatchObject({ code: "7K9M-3XQF" });
+    expect(loadSyncSession()?.token).toBe("space.deferred");
+    expect(useSyncStatusStore.getState().joined).toBe(true);
   });
 
   it("joins a space, seeds local data and records sync state", async () => {

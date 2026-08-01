@@ -21,7 +21,9 @@ function scheduleSync() {
 
   debounceTimer = setTimeout(() => {
     debounceTimer = undefined;
-    void syncNow();
+    if (useDadKitStore.getState().pendingRemovalIds.length === 0) {
+      void syncNow();
+    }
   }, SYNC_DEBOUNCE_MS);
 }
 
@@ -40,10 +42,17 @@ export function startAutoSync() {
       return;
     }
 
-    if (
+    const pendingRemovalSettled =
+      previous.pendingRemovalIds.length > 0 &&
+      state.pendingRemovalIds.length === 0;
+    const dataChanged =
       state.checklist !== previous.checklist ||
       state.customItems !== previous.customItems ||
-      state.hiddenTemplateItemIds !== previous.hiddenTemplateItemIds
+      state.hiddenTemplateItemIds !== previous.hiddenTemplateItemIds;
+
+    if (
+      pendingRemovalSettled ||
+      (state.pendingRemovalIds.length === 0 && dataChanged)
     ) {
       scheduleSync();
     }

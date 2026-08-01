@@ -2,7 +2,11 @@
 
 import { create } from "zustand";
 
-import { applyImportData, exportData } from "@/lib/data/backup";
+import {
+  applyImportData,
+  createSnapshot,
+  exportData,
+} from "@/lib/data/backup";
 import {
   isDadKitImportData,
   type DadKitExportData,
@@ -38,6 +42,7 @@ import { calculateChecksum } from "@/lib/webdav/checksum";
 export type SyncOutcome = {
   ok: boolean;
   message?: string;
+  deferred?: boolean;
 };
 
 export type SyncInvite = {
@@ -349,6 +354,14 @@ async function doSync(): Promise<SyncOutcome> {
     return { ok: false };
   }
 
+  if (useDadKitStore.getState().pendingRemovalIds.length > 0) {
+    return {
+      ok: false,
+      message: "删除撤销窗口尚未结束，稍后自动同步。",
+      deferred: true,
+    };
+  }
+
   useSyncStatusStore.setState({ syncing: true });
 
   try {
@@ -382,6 +395,14 @@ async function doSync(): Promise<SyncOutcome> {
         )
       : localExport;
     let merged = local;
+
+    if (shouldAlignTimeline) {
+      try {
+        createSnapshot("首次同步时间校准前");
+      } catch {
+        // 快照是尽力而为的保护，失败不阻断同步。
+      }
+    }
     let latestEtag = pulled.etag ?? previousState.lastEtag;
     let remoteData: DadKitImportData | undefined;
 
@@ -534,7 +555,9 @@ export async function joinSpace(
     useSyncStatusStore.setState({ joined: true });
     clearSyncSessionExpired();
 
-    return await syncNow();
+    const synced = await syncNow();
+
+    return synced.deferred ? { ok: true } : synced;
   } catch (error) {
     return {
       ok: false,
@@ -579,7 +602,7 @@ export async function createSpace(
     return {
       ok: true,
       invite: result.data.invite,
-      message: synced.ok ? undefined : synced.message,
+      message: synced.ok || synced.deferred ? undefined : synced.message,
     };
   } catch (error) {
     return {

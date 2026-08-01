@@ -26,7 +26,7 @@
 5. `components/PwaRegister.tsx` 移除每次加载的强制 `registration.update()`。
 6. `components/AndroidUpdatePrompt.tsx` 更新检查加 6h 最小间隔，时间戳 key 为 `dadkit:android-version-checked-at`（有意不用 v3 前缀，属设备本地状态）。
 7. `lib/growth-store.ts` 昵称防抖：setNickname 立即更新内存、400ms 防抖落盘，pagehide/visibilitychange 自动 flush，导出前强制 flush；`GrowthWorkspace` 昵称 Input blur 时 `flushPendingProfileWrite()`。**已知小边界**：`lib/sync/client.ts` 直接读 localStorage 的 growth key，防抖窗口内主动同步可能读到旧昵称（可接受，也可在阶段 5 顺手修）。
-8. `public/sw.js` 重写预缓存：install 只预缓存 `/` + 其构建产物 + 图标/manifest（`precacheAppShell`），其余路由首访时写缓存；`/_next/static`、`/item-art/`、`/growth/` 运行时缓存加 FIFO 上限（120/200/60 条，`trimRuntimeCache`）；**CACHE_NAME 有意未改**（保住老用户已有缓存）。
+8. `public/sw.js` 重写预缓存：install 只预缓存 `/` + 其构建产物 + 图标/manifest（`precacheAppShell`），其余路由首访时写缓存；`/_next/static`、`/item-art/`、`/growth/` 运行时缓存加 FIFO 上限（120/200/60 条，`trimRuntimeCache`）；**CACHE_NAME 已升级为 `dadkit-v2.1.3-pwa-r2`**，activate 会清理旧缓存。
 9. `public/og.png` 887KB→185KB；`public/growth/` 6 张 >85KB 的 webp 重压缩到 ~60KB（week-11/16/31/33/34/37）。
 10. `lib/templates/general.ts` 紧凑化：2141 行→225 行元组格式（源 -36%），运行时产物与旧版逐字段深度相等（已用 git show HEAD 对比验证）。**改模板内容时按新元组格式来**，文件头有列含义注释。
 11. `lib/item-photos.ts`：读缓存加 LRU 上限 30 条（Map 插入序实现，驱逐不碰 refs>0 的对象 URL）；新增 `pruneOrphanedPhotos(validItemIds)`（60s 宽限期防竞态）；`components/BackgroundTasks.tsx` 空闲时执行孤儿清理（未 hydrated 跳过）。
