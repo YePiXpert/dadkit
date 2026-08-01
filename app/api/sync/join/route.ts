@@ -8,6 +8,10 @@ import {
   clientKeyFromHeaders,
   createRateLimiter,
 } from "@/lib/http/rate-limit";
+import {
+  getRequestedDataVersion,
+  syncDataVersionResponseHeaders,
+} from "@/lib/sync/data-version";
 
 export const runtime = "nodejs";
 
@@ -61,13 +65,23 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await joinSpace(name, code, payload.existingOnly === true);
+    const dataVersion = getRequestedDataVersion(request.headers);
+    const result = await joinSpace(
+      name,
+      code,
+      payload.existingOnly === true,
+      dataVersion,
+    );
 
     if (!result) {
       return syncError("加入口令不正确、已失效，或家庭不存在。", 401);
     }
 
-    return syncJson(result);
+    return syncJson(
+      result,
+      200,
+      syncDataVersionResponseHeaders(result.version, dataVersion),
+    );
   } catch (error) {
     if (error instanceof SyncStoreError) {
       return syncError("同步服务暂时不可用，请稍后再试。", 500);

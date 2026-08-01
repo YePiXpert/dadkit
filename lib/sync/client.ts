@@ -31,6 +31,7 @@ import {
   saveSyncClockTimelineInitialized,
 } from "@/lib/sync-clock";
 import { mergeExportData } from "@/lib/sync/merge";
+import { DADKIT_DATA_VERSION_HEADER } from "@/lib/sync/data-version";
 import { normalizeSyncSpaceName } from "@/lib/sync/space-name";
 import {
   clearSyncSessionExpired,
@@ -162,6 +163,7 @@ async function apiRequest<T>(
   if (token) {
     headers.set("authorization", `Bearer ${token}`);
   }
+  headers.set(DADKIT_DATA_VERSION_HEADER, "6");
 
   const parentSignal = init.signal;
   const abortFromParent = () => controller.abort(parentSignal?.reason);
@@ -283,6 +285,15 @@ export function alignExportDataToServerTime(
       ]),
     ),
     growthUpdatedAt: shiftTimestamp(data.growthUpdatedAt),
+    hospital: {
+      version: 1,
+      fields: Object.fromEntries(
+        Object.entries(data.hospital.fields).map(([key, field]) => [
+          key,
+          { ...field, updatedAt: shiftTimestamp(field.updatedAt) },
+        ]),
+      ) as DadKitExportData["hospital"]["fields"],
+    },
   };
 }
 
@@ -449,10 +460,12 @@ async function doSync(): Promise<SyncOutcome> {
       if (
         pushed.data?.data &&
         isDadKitImportData(pushed.data.data) &&
-        pushed.data.data.version === 5 &&
         checksumOf(pushed.data.data) !== mergedChecksum
       ) {
-        merged = pushed.data.data;
+        // A legacy-compatible server response may be v5 and therefore cannot
+        // express hospital data. Merge it into the current canonical document
+        // instead of treating the missing field as a request to clear it.
+        merged = mergeExportData(merged, pushed.data.data);
         applyMerged(merged);
       }
     }

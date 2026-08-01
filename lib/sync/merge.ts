@@ -1,11 +1,11 @@
 import {
-  migrateHiddenStamps,
-  sanitizeDadKitImportData,
+  upgradeExportDataToLatest,
   type DadKitExportData,
   type DadKitImportData,
   type DeletedCustomItemStamps,
   type HiddenTemplateItemStamps,
 } from "@/lib/data/format";
+import { mergeHospitalProfiles } from "@/lib/hospital/merge";
 import type { ChecklistItem } from "@/lib/types";
 
 // 多端条目级合并:同一对象(updatedAt 新者胜),删除墓碑优先于更旧的数据。
@@ -82,25 +82,16 @@ export function mergeExportData(
   local: DadKitExportData,
   remote: DadKitImportData,
 ): DadKitExportData {
-  const cleanLocal = sanitizeDadKitImportData(local) as DadKitExportData;
-  const cleanRemote = sanitizeDadKitImportData(remote);
-  const remoteStamps =
-    cleanRemote.version === 5
-      ? cleanRemote.hiddenTemplateItemStamps
-      : migrateHiddenStamps(cleanRemote.hiddenTemplateItemIds, 0);
-  const remoteTombstones =
-    cleanRemote.version === 5 ? cleanRemote.deletedCustomItems : {};
-  const remoteGrowth = cleanRemote.version === 3 ? undefined : cleanRemote.growth;
-  const remoteGrowthUpdatedAt =
-    cleanRemote.version === 5 ? cleanRemote.growthUpdatedAt : 0;
+  const cleanLocal = upgradeExportDataToLatest(local);
+  const cleanRemote = upgradeExportDataToLatest(remote);
 
   const hiddenTemplateItemStamps = mergeHiddenStamps(
     cleanLocal.hiddenTemplateItemStamps,
-    remoteStamps,
+    cleanRemote.hiddenTemplateItemStamps,
   );
   const deletedCustomItems = mergeTombstones(
     cleanLocal.deletedCustomItems,
-    remoteTombstones,
+    cleanRemote.deletedCustomItems,
   );
   const customItems = mergeItemLists(cleanLocal.customItems, cleanRemote.customItems).filter(
     (item) => keepsCustomItem(item, deletedCustomItems),
@@ -109,10 +100,10 @@ export function mergeExportData(
     (item) => item.source !== "user" || keepsCustomItem(item, deletedCustomItems),
   );
   const remoteGrowthWins =
-    remoteGrowth !== undefined && remoteGrowthUpdatedAt > cleanLocal.growthUpdatedAt;
+    cleanRemote.growthUpdatedAt > cleanLocal.growthUpdatedAt;
 
   return {
-    version: 5,
+    version: 6,
     exportedAt: new Date().toISOString(),
     // 精简/完整模式是设备偏好,不随同步走。
     checklistMode: cleanLocal.checklistMode,
@@ -122,11 +113,14 @@ export function mergeExportData(
       .filter(([, stamp]) => stamp.hidden)
       .map(([id]) => id)
       .sort(),
-    growth: remoteGrowthWins ? remoteGrowth : cleanLocal.growth,
+    growth: remoteGrowthWins ? cleanRemote.growth : cleanLocal.growth,
     hiddenTemplateItemStamps,
     deletedCustomItems,
     growthUpdatedAt: remoteGrowthWins
-      ? remoteGrowthUpdatedAt
+      ? cleanRemote.growthUpdatedAt
       : cleanLocal.growthUpdatedAt,
+    hospital: mergeHospitalProfiles(cleanLocal.hospital, cleanRemote.hospital),
   };
 }
+
+export const mergeCanonicalExportData = mergeExportData;

@@ -142,6 +142,7 @@ describe("V2 PWA visual and navigation contract", () => {
     expect(isPrimaryNavigationItemActive("/settings", mineNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/settings/backup", mineNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/growth", mineNav)).toBe(true);
+    expect(isPrimaryNavigationItemActive("/hospital", mineNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/privacy", mineNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/support", mineNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/timeline/today", mineNav)).toBe(false);
@@ -196,6 +197,7 @@ describe("V2 PWA visual and navigation contract", () => {
 
   it("keeps 我的 as a simple entry surface with subordinate settings pages", () => {
     expect(settingsPage).toContain("我的");
+    expect(settingsPage).toContain('href: "/hospital"');
     expect(settingsPage).toContain('href: "/growth"');
     expect(settingsPage).toContain('href: "/settings/checklist"');
     expect(settingsPage).toContain('href: "/settings/backup"');
@@ -209,7 +211,6 @@ describe("V2 PWA visual and navigation contract", () => {
 
     for (const route of [
       "/setup",
-      "/hospital",
       "/timeline",
       "/contractions",
       "/go",

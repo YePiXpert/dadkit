@@ -21,7 +21,13 @@ export const PRIMARY_NAVIGATION_ITEMS = [
     href: "/settings",
     label: "我的",
     icon: UserRound,
-    ownedRoutes: ["/settings", "/growth", "/privacy", "/support"],
+    ownedRoutes: [
+      "/settings",
+      "/growth",
+      "/hospital",
+      "/privacy",
+      "/support",
+    ],
   },
 ] as const satisfies readonly PrimaryNavigationItem[];
 

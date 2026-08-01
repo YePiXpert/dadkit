@@ -19,8 +19,10 @@ import {
   isDadKitImportData,
   isRecord,
   isValidDateString,
-  type DadKitExportData,
+  projectExportDataForVersion,
+  upgradeExportDataToLatest,
   type DadKitImportData,
+  type DadKitSyncDataVersion,
 } from "@/lib/data/format";
 import { mergeExportData } from "@/lib/sync/merge";
 import {
@@ -237,12 +239,21 @@ async function withSpaceLock<T>(
   }
 }
 
-function snapshotOf(space: SpaceFile): SyncSpaceSnapshot {
+function snapshotOf(
+  space: SpaceFile,
+  targetVersion: DadKitSyncDataVersion,
+): SyncSpaceSnapshot {
   return {
     version: space.version,
     updatedAt: space.updatedAt,
     serverTime: new Date().toISOString(),
-    data: space.data,
+    data:
+      space.data === null
+        ? null
+        : projectExportDataForVersion(
+            upgradeExportDataToLatest(space.data),
+            targetVersion,
+          ),
   };
 }
 
@@ -369,6 +380,7 @@ export async function joinSpace(
   name: string,
   code: string,
   existingOnly = false,
+  targetVersion: DadKitSyncDataVersion = 6,
 ): Promise<SyncJoinResult | undefined> {
   const normalizedName = normalizeSyncSpaceName(name);
   const legacyName = legacySyncSpaceName(name);
@@ -445,12 +457,13 @@ export async function joinSpace(
     const token = issueSession(spaceKey, space, now);
     await writeSpace(spaceKey, space);
 
-    return { token, ...snapshotOf(space) };
+    return { token, ...snapshotOf(space, targetVersion) };
   });
 }
 
 export async function createSpace(
   name: string,
+  targetVersion: DadKitSyncDataVersion = 6,
 ): Promise<SyncCreateResult | undefined> {
   const normalizedName = normalizeSyncSpaceName(name);
   const legacyName = legacySyncSpaceName(name);
@@ -481,7 +494,7 @@ export async function createSpace(
     const token = issueSession(spaceKey, space, now);
 
     await writeSpace(spaceKey, space);
-    return { token, invite, ...snapshotOf(space) };
+    return { token, invite, ...snapshotOf(space, targetVersion) };
   });
 }
 
@@ -516,6 +529,7 @@ export async function createInvite(
 
 export async function pullSpace(
   token: string,
+  targetVersion: DadKitSyncDataVersion = 6,
 ): Promise<SyncSpaceSnapshot | undefined> {
   const parsed = parseToken(token);
 
@@ -525,13 +539,14 @@ export async function pullSpace(
 
   return withSpaceLock(parsed.spaceKey, async () => {
     const auth = await authenticateLocked(parsed.spaceKey, parsed.secret);
-    return auth ? snapshotOf(auth.space) : undefined;
+    return auth ? snapshotOf(auth.space, targetVersion) : undefined;
   });
 }
 
 export async function pushSpace(
   token: string,
-  incoming: DadKitExportData,
+  incoming: DadKitImportData,
+  targetVersion: DadKitSyncDataVersion = 6,
 ): Promise<SyncSpaceSnapshot | undefined> {
   const parsed = parseToken(token);
 
@@ -548,17 +563,18 @@ export async function pushSpace(
 
     const { spaceKey, space } = auth;
     const stored = space.data;
+    const incomingLatest = upgradeExportDataToLatest(incoming);
     const merged =
-      stored === null || stored.version !== 5
-        ? incoming
-        : mergeExportData(stored, incoming);
+      stored === null
+        ? incomingLatest
+        : mergeExportData(upgradeExportDataToLatest(stored), incomingLatest);
 
     space.data = merged;
     space.version += 1;
     space.updatedAt = new Date().toISOString();
     await writeSpace(spaceKey, space);
 
-    return snapshotOf(space);
+    return snapshotOf(space, targetVersion);
   });
 }
 

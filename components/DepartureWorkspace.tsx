@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChecklistItemRow } from "@/components/ChecklistItemRow";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
+import { HospitalSummaryCard } from "@/components/HospitalSummaryCard";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { showAppToast } from "@/lib/app-toast";
@@ -128,6 +129,8 @@ export function DepartureWorkspace() {
                 : "暂时没有需要出发确认的项目。"}
           </p>
         </section>
+
+        <HospitalSummaryCard />
 
         {progress.total > 0 && progress.remaining === 0 ? (
           <section className="flex items-start gap-3 rounded-card border border-primary/25 bg-secondary/45 p-4">

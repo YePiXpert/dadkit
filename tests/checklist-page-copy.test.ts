@@ -82,12 +82,11 @@ describe("V2 checklist experience", () => {
     expect(checklistItemRow).toContain("memo(function ChecklistItemRow");
   });
 
-  it("keeps every removed product route out of the checklist UI", () => {
+  it("keeps unrelated product routes out of the checklist UI", () => {
     const checklistSources = `${checklistWorkspace}\n${checklistItemRow}`;
 
     for (const route of [
       "/setup",
-      "/hospital",
       "/timeline",
       "/contractions",
       "/go",

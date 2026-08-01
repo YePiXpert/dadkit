@@ -10,6 +10,15 @@ import {
   STORAGE_KEYS,
   WEBDAV_SESSION_SECRET_KEY,
 } from "@/lib/storage";
+import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
+import {
+  hospitalValuesFromPortable,
+  updateHospitalProfile,
+} from "@/lib/hospital/portable";
+import {
+  loadHospitalProfile,
+  saveHospitalProfile,
+} from "@/lib/hospital/repository";
 import type { ChecklistItem } from "@/lib/types";
 import {
   isBlockedHostname,
@@ -76,6 +85,17 @@ function testItem(
   };
 }
 
+function hospitalProfile(
+  patch: Partial<Record<"hospitalName" | "address", string>>,
+  updatedAt: number,
+) {
+  const profile = createEmptyHospitalProfile();
+  const values = hospitalValuesFromPortable(profile);
+
+  Object.assign(values, patch);
+  return updateHospitalProfile(profile, values, updatedAt).profile;
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -132,16 +152,26 @@ describe("webdav helpers", () => {
   it("builds a DadKit WebDAV backup envelope", () => {
     installStorage();
     saveChecklist([testItem()]);
+    saveHospitalProfile(
+      hospitalProfile(
+        { hospitalName: "市妇幼保健院", address: "健康路 1 号" },
+        100,
+      ),
+    );
 
     const data = exportData();
     const backup = buildDadKitWebDavBackup(data, "device-1");
 
     expect(backup.schemaVersion).toBe(3);
-    expect(backup.data.version).toBe(5);
+    expect(backup.data.version).toBe(6);
     expect(backup.app).toBe("DadKit");
     expect(backup.deviceId).toBe("device-1");
     expect(backup.checksum).toBe(calculateChecksum(data));
     expect(backup.data).toEqual(data);
+    expect(backup.data).toHaveProperty(
+      "hospital.fields.hospitalName.value",
+      "市妇幼保健院",
+    );
   });
 
   it("creates stable checksums for equal data and different checksums for changes", () => {
@@ -359,6 +389,34 @@ describe("webdav helpers", () => {
 
     expect(result).toEqual({ ok: true, message: "远端已是最新" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("restores and merges hospital data from a v6 WebDAV backup", () => {
+    installStorage();
+    saveChecklist([testItem("local-hospital")]);
+    saveHospitalProfile(
+      hospitalProfile({ hospitalName: "本机医院", address: "旧地址" }, 100),
+    );
+    const remoteData = {
+      ...exportData(),
+      hospital: hospitalProfile(
+        { hospitalName: "本机医院", address: "远端新地址" },
+        300,
+      ),
+    };
+    const backup = buildDadKitWebDavBackup(remoteData, "remote-hospital");
+
+    const result = importDadKitWebDavBackup(backup);
+
+    expect(result.ok).toBe(true);
+    expect(loadHospitalProfile().fields.address).toEqual({
+      value: "远端新地址",
+      updatedAt: 300,
+    });
+    const rescueData = loadSnapshots()[0]?.data;
+    expect(rescueData?.version).toBe(6);
+    if (rescueData?.version !== 6) throw new Error("缺少 v6 恢复快照");
+    expect(rescueData.hospital.fields.address.value).toBe("旧地址");
   });
 
   it("prefills the default WebDAV target without storing secrets", () => {

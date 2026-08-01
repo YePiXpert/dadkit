@@ -31,6 +31,15 @@ import {
   exportGrowthData,
 } from "@/lib/growth-store";
 import type { ChecklistItem } from "@/lib/types";
+import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
+import {
+  hospitalValuesFromPortable,
+  updateHospitalProfile,
+} from "@/lib/hospital/portable";
+import {
+  loadHospitalProfile,
+  saveHospitalProfile,
+} from "@/lib/hospital/repository";
 
 function testItem(id = "item-1", patch: Partial<ChecklistItem> = {}): ChecklistItem {
   return {
@@ -56,7 +65,7 @@ function backupData(
   patch: Partial<DadKitExportData> = {},
 ): DadKitExportData {
   return {
-    version: 5,
+    version: 6,
     exportedAt: "2026-07-25T00:00:00.000Z",
     checklistMode: "full",
     checklist: [testItem("backup-item")],
@@ -70,6 +79,7 @@ function backupData(
     hiddenTemplateItemStamps: {},
     deletedCustomItems: {},
     growthUpdatedAt: 0,
+    hospital: createEmptyHospitalProfile(),
     ...patch,
   };
 }
@@ -87,6 +97,24 @@ function backupDataV4(patch: Record<string, unknown> = {}) {
     growth: current.growth,
     ...patch,
   };
+}
+
+function backupDataV5(patch: Record<string, unknown> = {}) {
+  const { hospital: _hospital, ...current } = backupData();
+  void _hospital;
+
+  return { ...current, version: 5 as const, ...patch };
+}
+
+function hospitalProfile(
+  patch: Partial<Record<"hospitalName" | "address" | "maternityPhone", string>>,
+  updatedAt = 100,
+) {
+  const profile = createEmptyHospitalProfile();
+  const values = hospitalValuesFromPortable(profile);
+
+  Object.assign(values, patch);
+  return updateHospitalProfile(profile, values, updatedAt).profile;
 }
 
 function backupDataV3(
@@ -120,7 +148,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("v5 portable backup with the existing local namespace", () => {
+describe("v6 portable backup with the existing local namespace", () => {
   it("owns only dadkit:v3 storage keys", () => {
     expect(Object.values(STORAGE_KEYS).length).toBeGreaterThan(0);
     expect(
@@ -137,6 +165,12 @@ describe("v5 portable backup with the existing local namespace", () => {
     saveChecklistMode("lean");
     saveCustomItems(customItems);
     saveHiddenTemplateItemIds(["hidden-template"]);
+    saveHospitalProfile(
+      hospitalProfile({
+        hospitalName: "市妇幼保健院",
+        address: "健康路 1 号",
+      }),
+    );
 
     const exported = exportData();
 
@@ -152,10 +186,11 @@ describe("v5 portable backup with the existing local namespace", () => {
         "hiddenTemplateItemStamps",
         "deletedCustomItems",
         "growthUpdatedAt",
+        "hospital",
       ].sort(),
     );
     expect(exported).toMatchObject({
-      version: 5,
+      version: 6,
       checklistMode: "lean",
       checklist,
       customItems,
@@ -170,11 +205,17 @@ describe("v5 portable backup with the existing local namespace", () => {
         profile: { nickname: "", dueDate: "" },
         progress: { completedTaskIds: [] },
       },
+      hospital: {
+        fields: {
+          hospitalName: { value: "市妇幼保健院", updatedAt: 100 },
+          address: { value: "健康路 1 号", updatedAt: 100 },
+        },
+      },
     });
     expect(Number.isNaN(Date.parse(exported.exportedAt))).toBe(false);
   });
 
-  it("round-trips a complete v5 backup", () => {
+  it("round-trips a complete v6 backup including hospital data", () => {
     installBrowserStorage();
     const payload = backupData({
       checklistMode: "lean",
@@ -186,6 +227,10 @@ describe("v5 portable backup with the existing local namespace", () => {
       },
       deletedCustomItems: { "gone-custom": 456 },
       growthUpdatedAt: 789,
+      hospital: hospitalProfile({
+        hospitalName: "中心医院",
+        maternityPhone: "+86 (010) 1234-5678",
+      }),
     });
 
     const result = importData(JSON.stringify(payload));
@@ -203,6 +248,32 @@ describe("v5 portable backup with the existing local namespace", () => {
     });
     expect(loadDeletedCustomItems()).toEqual({ "gone-custom": 456 });
     expect(loadGrowthUpdatedAt()).toBe(789);
+    expect(loadHospitalProfile()).toEqual(payload.hospital);
+    expect(exportData().version).toBe(6);
+  });
+
+  it.each([
+    ["v3", () => backupDataV3()],
+    ["v4", () => backupDataV4()],
+    ["v5", () => backupDataV5()],
+  ])("treats a manual %s import as a full restore and clears hospital data", (
+    label,
+    createLegacy,
+  ) => {
+    installBrowserStorage();
+    saveHospitalProfile(
+      hospitalProfile({
+        hospitalName: "导入前医院",
+        address: "导入前地址",
+      }),
+    );
+
+    const result = importData(JSON.stringify(createLegacy()));
+
+    expect(result.ok).toBe(true);
+    expect(result.message).toContain(`旧版 ${label}`);
+    expect(result.message).toContain("医院档案已清空");
+    expect(loadHospitalProfile()).toEqual(createEmptyHospitalProfile());
   });
 
   it("migrates merge metadata when importing a v4 backup", () => {
@@ -239,7 +310,7 @@ describe("v5 portable backup with the existing local namespace", () => {
   });
 });
 
-describe("strict v3, v4 and v5 import boundary", () => {
+describe("strict v3, v4, v5 and v6 import boundary", () => {
   it.each([
     ["invalid JSON", "{bad json"],
     ["old version", JSON.stringify({ ...backupData(), version: 2 })],
@@ -310,23 +381,41 @@ describe("strict v3, v4 and v5 import boundary", () => {
     expect(currentDataSnapshot()).toEqual(before);
   });
 
-  it("accepts future fields but strips them before saving the portable data", () => {
+  it("accepts future fields on legacy v5 data but strips them before saving", () => {
     installBrowserStorage();
+    const legacy = backupDataV5({
+      checklist: [
+        {
+          ...testItem("future-item"),
+          futureField: "discard me",
+        } as ChecklistItem,
+      ],
+    });
     const raw = JSON.stringify({
-      ...backupData({
-        checklist: [
-          {
-            ...testItem("future-item"),
-            futureField: "discard me",
-          } as ChecklistItem,
-        ],
-      }),
+      ...legacy,
       futureBackupField: { supportedBy: "a newer DadKit" },
     });
 
-    expect(importData(raw)).toEqual({ ok: true, message: "导入成功" });
+    expect(importData(raw)).toEqual({
+      ok: true,
+      message: "导入成功（旧版 v5 备份不包含医院档案，医院档案已清空）",
+    });
     expect(loadChecklist()[0]).not.toHaveProperty("futureField");
     expect(exportData()).not.toHaveProperty("futureBackupField");
+  });
+
+  it("rejects unknown top-level structures in a v6 backup", () => {
+    installBrowserStorage();
+
+    const result = importData(
+      JSON.stringify({
+        ...backupData(),
+        __protoPollutionAttempt: { polluted: true },
+      }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(exportData()).not.toHaveProperty("__protoPollutionAttempt");
   });
 
   it("rolls back every checklist field when a write fails", () => {
@@ -403,7 +492,7 @@ describe("local recovery snapshots", () => {
     ]);
   });
 
-  it("stores only the exact v5 portable payload", () => {
+  it("stores only the exact v6 portable payload", () => {
     installBrowserStorage();
     saveChecklist([testItem("snapshot")]);
 
@@ -422,6 +511,7 @@ describe("local recovery snapshots", () => {
         "hiddenTemplateItemStamps",
         "deletedCustomItems",
         "growthUpdatedAt",
+        "hospital",
       ].sort(),
     );
   });
@@ -438,6 +528,25 @@ describe("local recovery snapshots", () => {
     expect(loadChecklist()).toEqual([testItem("target")]);
     expect(loadSnapshots()[0]?.reason).toBe("恢复本地备份前");
     expect(loadSnapshots()[0]?.data.checklist).toEqual([testItem("current")]);
+  });
+
+  it("restores hospital data from a v6 local snapshot", () => {
+    installBrowserStorage();
+    saveChecklist([testItem("snapshot-hospital")]);
+    const targetHospital = hospitalProfile(
+      { hospitalName: "目标医院", address: "目标地址" },
+      200,
+    );
+    saveHospitalProfile(targetHospital);
+    const target = createSnapshot("医院档案恢复点");
+
+    saveHospitalProfile(
+      hospitalProfile({ hospitalName: "当前医院", address: "当前地址" }, 300),
+    );
+    const result = restoreSnapshot(target?.id ?? "");
+
+    expect(result.ok).toBe(true);
+    expect(loadHospitalProfile()).toEqual(targetHospital);
   });
 
   it("does not restore if the rescue snapshot cannot be saved", () => {

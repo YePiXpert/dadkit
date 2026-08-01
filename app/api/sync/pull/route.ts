@@ -4,6 +4,10 @@ import {
   clientKeyFromHeaders as proxyClientKey,
   createRateLimiter as createWebDavProxyRateLimiter,
 } from "@/lib/http/rate-limit";
+import {
+  getRequestedDataVersion,
+  syncDataVersionResponseHeaders,
+} from "@/lib/sync/data-version";
 
 export const runtime = "nodejs";
 
@@ -25,20 +29,25 @@ export async function GET(request: Request) {
   }
 
   try {
-    const snapshot = await pullSpace(token);
+    const dataVersion = getRequestedDataVersion(request.headers);
+    const snapshot = await pullSpace(token, dataVersion);
 
     if (!snapshot) {
       return syncError("同步会话已失效，请重新输入同步码。", 401);
     }
 
-    const etag = `"dadkit-sync-${snapshot.version}"`;
+    const versionedHeaders = syncDataVersionResponseHeaders(
+      snapshot.version,
+      dataVersion,
+    );
+    const etag = versionedHeaders.etag;
 
     if (request.headers.get("if-none-match") === etag) {
       return new Response(null, {
         status: 304,
         headers: {
           "cache-control": "private, no-cache",
-          etag,
+          ...versionedHeaders,
           "x-dadkit-server-time": snapshot.serverTime,
         },
       });
@@ -46,7 +55,7 @@ export async function GET(request: Request) {
 
     return syncJson(snapshot, 200, {
       "cache-control": "private, no-cache",
-      etag,
+      ...versionedHeaders,
       "x-dadkit-server-time": snapshot.serverTime,
     });
   } catch (error) {

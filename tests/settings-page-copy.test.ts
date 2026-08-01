@@ -38,8 +38,11 @@ describe("settings information architecture", () => {
     ]);
   });
 
-  it("keeps /settings as a focused three-card 我的 entry page", () => {
+  it("keeps /settings as a focused 我的 entry page", () => {
     expect(settingsPage).toContain("我的");
+    expect(settingsPage).toContain('href: "/hospital"');
+    expect(settingsPage).toContain("医院档案");
+    expect(settingsPage).toContain("集中保存医院地址、电话和入院要求");
     expect(settingsPage).toContain('href: "/growth"');
     expect(settingsPage).toContain("宝宝成长记");
     expect(settingsPage).toContain("按孕周查看宝宝发育与常见产检参考");

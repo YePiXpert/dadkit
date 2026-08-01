@@ -413,7 +413,8 @@ function isDadKitWebDavBackup(value: unknown): value is DadKitWebDavBackup {
     isRecord(value.data) &&
     (value.data.version === 3 ||
       value.data.version === 4 ||
-      value.data.version === 5)
+      value.data.version === 5 ||
+      value.data.version === 6)
   );
 }
 

@@ -2,6 +2,10 @@ import {
   validateGrowthPortableData,
   type GrowthPortableData,
 } from "@/lib/growth-portable";
+import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
+import { cloneHospitalProfile } from "@/lib/hospital/portable";
+import type { HospitalProfilePortableData } from "@/lib/hospital/types";
+import { isHospitalProfilePortableData } from "@/lib/hospital/validation";
 import type {
   ChecklistBag,
   ChecklistCategory,
@@ -38,17 +42,27 @@ export type DadKitExportDataV4 = Omit<DadKitExportDataV3, "version"> & {
   growth: GrowthPortableData;
 };
 
-export type DadKitExportData = Omit<DadKitExportDataV4, "version"> & {
+export type DadKitExportDataV5 = Omit<DadKitExportDataV4, "version"> & {
   version: 5;
   hiddenTemplateItemStamps: HiddenTemplateItemStamps;
   deletedCustomItems: DeletedCustomItemStamps;
   growthUpdatedAt: number;
 };
 
+export type DadKitExportData = Omit<DadKitExportDataV5, "version"> & {
+  version: 6;
+  hospital: HospitalProfilePortableData;
+};
+
 export type DadKitImportData =
   | DadKitExportDataV3
   | DadKitExportDataV4
+  | DadKitExportDataV5
   | DadKitExportData;
+
+export type DadKitSyncDataVersion = 5 | 6;
+
+export const LATEST_DATA_VERSION = 6 as const;
 
 export const V3_EXPORT_KEYS = [
   "version",
@@ -67,6 +81,8 @@ export const V5_EXPORT_KEYS = [
   "deletedCustomItems",
   "growthUpdatedAt",
 ] as const;
+
+export const V6_EXPORT_KEYS = [...V5_EXPORT_KEYS, "hospital"] as const;
 
 const CHECKLIST_ITEM_KEYS = [
   "id",
@@ -110,6 +126,23 @@ export function hasExactKeys(
   expected: readonly string[],
 ) {
   return expected.every((key) => key in value);
+}
+
+function hasOnlyKeys(
+  value: Record<string, unknown>,
+  expected: readonly string[],
+) {
+  const keys = Object.keys(value);
+  return (
+    keys.length === expected.length &&
+    keys.every((key) => expected.includes(key))
+  );
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (!isRecord(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 function isOneOf<T extends string>(
@@ -246,9 +279,8 @@ export function sanitizeDadKitImportData(
     return { ...base, version: 4, growth };
   }
 
-  return {
+  const v5 = {
     ...base,
-    version: 5,
     growth,
     hiddenTemplateItemStamps: Object.fromEntries(
       Object.entries(data.hiddenTemplateItemStamps).map(([id, stamp]) => [
@@ -259,6 +291,85 @@ export function sanitizeDadKitImportData(
     deletedCustomItems: { ...data.deletedCustomItems },
     growthUpdatedAt: data.growthUpdatedAt,
   };
+
+  if (data.version === 5) {
+    return { ...v5, version: 5 };
+  }
+
+  return {
+    ...v5,
+    version: 6,
+    hospital: cloneHospitalProfile(data.hospital),
+  };
+}
+
+export function upgradeExportDataToLatest(
+  data: DadKitImportData,
+): DadKitExportData {
+  const clean = sanitizeDadKitImportData(data);
+  const growth =
+    clean.version === 3
+      ? {
+          version: 1 as const,
+          profile: { nickname: "", dueDate: "" },
+          progress: { completedTaskIds: [] },
+        }
+      : clean.growth;
+  const hiddenTemplateItemStamps =
+    clean.version === 3 || clean.version === 4
+      ? migrateHiddenStamps(clean.hiddenTemplateItemIds, 0)
+      : clean.hiddenTemplateItemStamps;
+  const deletedCustomItems =
+    clean.version === 3 || clean.version === 4
+      ? {}
+      : clean.deletedCustomItems;
+  const growthUpdatedAt =
+    clean.version === 5 || clean.version === 6
+      ? clean.growthUpdatedAt
+      : 0;
+
+  return {
+    version: 6,
+    exportedAt: clean.exportedAt,
+    checklistMode: clean.checklistMode,
+    checklist: clean.checklist.map(copyChecklistItem),
+    customItems: clean.customItems.map(copyChecklistItem),
+    hiddenTemplateItemIds: [...clean.hiddenTemplateItemIds],
+    growth: {
+      version: 1,
+      profile: { ...growth.profile },
+      progress: {
+        completedTaskIds: [...growth.progress.completedTaskIds],
+      },
+    },
+    hiddenTemplateItemStamps: Object.fromEntries(
+      Object.entries(hiddenTemplateItemStamps).map(([id, stamp]) => [
+        id,
+        { ...stamp },
+      ]),
+    ),
+    deletedCustomItems: { ...deletedCustomItems },
+    growthUpdatedAt,
+    hospital:
+      clean.version === 6
+        ? cloneHospitalProfile(clean.hospital)
+        : createEmptyHospitalProfile(),
+  };
+}
+
+export function projectExportDataForVersion(
+  data: DadKitExportData,
+  targetVersion: DadKitSyncDataVersion,
+): DadKitExportData | DadKitExportDataV5 {
+  const latest = upgradeExportDataToLatest(data);
+
+  if (targetVersion === 6) {
+    return latest;
+  }
+
+  const { hospital: _hospital, ...v5 } = latest;
+  void _hospital;
+  return { ...v5, version: 5 };
 }
 
 export function isValidDateString(value: unknown): value is string {
@@ -359,14 +470,28 @@ export function isDadKitImportData(value: unknown): value is DadKitImportData {
     );
   }
 
+  if (value.version === 5) {
+    return (
+      hasExactKeys(value, V5_EXPORT_KEYS) &&
+      hasValidPortableChecklistData(value) &&
+      validateGrowthPortableData(value.growth) &&
+      isHiddenTemplateItemStamps(value.hiddenTemplateItemStamps) &&
+      isDeletedCustomItemStamps(value.deletedCustomItems) &&
+      typeof value.growthUpdatedAt === "number" &&
+      Number.isFinite(value.growthUpdatedAt)
+    );
+  }
+
   return (
-    value.version === 5 &&
-    hasExactKeys(value, V5_EXPORT_KEYS) &&
+    value.version === 6 &&
+    isPlainRecord(value) &&
+    hasOnlyKeys(value, V6_EXPORT_KEYS) &&
     hasValidPortableChecklistData(value) &&
     validateGrowthPortableData(value.growth) &&
     isHiddenTemplateItemStamps(value.hiddenTemplateItemStamps) &&
     isDeletedCustomItemStamps(value.deletedCustomItems) &&
     typeof value.growthUpdatedAt === "number" &&
-    Number.isFinite(value.growthUpdatedAt)
+    Number.isFinite(value.growthUpdatedAt) &&
+    isHospitalProfilePortableData(value.hospital)
   );
 }

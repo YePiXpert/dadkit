@@ -8,6 +8,10 @@ import {
   createSpace,
   SyncStoreError,
 } from "@/lib/sync/server-store";
+import {
+  getRequestedDataVersion,
+  syncDataVersionResponseHeaders,
+} from "@/lib/sync/data-version";
 
 export const runtime = "nodejs";
 
@@ -39,10 +43,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await createSpace(name);
+    const dataVersion = getRequestedDataVersion(request.headers);
+    const result = await createSpace(name, dataVersion);
 
     return result
-      ? syncJson(result, 201)
+      ? syncJson(
+          result,
+          201,
+          syncDataVersionResponseHeaders(result.version, dataVersion),
+        )
       : syncError("这个家庭名称已经存在，请改用“加入家庭”。", 409);
   } catch (error) {
     if (error instanceof SyncStoreError) {

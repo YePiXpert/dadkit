@@ -19,6 +19,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .tmp-dev*.log
+/debug.log
 
 # local env
 .env
@@ -47,6 +48,10 @@ android/local.properties
 android/*.keystore
 android/*.jks
 android/signing.properties
+/android/app-release*.apk
+/android/app-release*.aab
+/android/*.idsig
+/android/manifest-checksum.txt
 *.keystore
 *.jks
 .android-static-build/

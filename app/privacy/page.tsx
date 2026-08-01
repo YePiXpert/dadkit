@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 
 const localDataItems = [
   "待产清单进度、自定义项目、隐藏项和清单显示模式",
+  "用户自行填写的医院名称、地址、电话和入院要求",
   "可选的宝宝称呼、预产期和产检时间表完成状态",
   "自动创建的本地恢复快照",
   "仅存于当前设备 IndexedDB 的物品照片",
@@ -54,7 +55,7 @@ export default function PrivacyPage() {
           </CardHeader>
           <CardContent className="grid gap-2 text-sm leading-6 text-muted-foreground">
             <p>
-              本地恢复快照和 WebDAV 使用同一份便携备份数据，包括清单进度、自定义项目、隐藏项、清单显示模式，以及宝宝成长记中的可选资料和产检完成状态。
+              本地恢复快照和 WebDAV 使用同一份便携备份数据，包括清单进度、自定义项目、隐藏项、清单显示模式、医院档案，以及宝宝成长记中的可选资料和产检完成状态。
             </p>
             <p>
               这些备份不包含物品照片，也不包含 WebDAV 地址、用户名、备份路径、同步状态或密码等连接配置。

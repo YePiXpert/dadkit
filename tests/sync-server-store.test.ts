@@ -21,6 +21,7 @@ import {
   pushSpace,
 } from "@/lib/sync/server-store";
 import type { ChecklistItem } from "@/lib/types";
+import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
 
 let dir: string;
 
@@ -51,7 +52,7 @@ function exportData(
   patch: Partial<DadKitExportData> = {},
 ): DadKitExportData {
   return {
-    version: 5,
+    version: 6,
     exportedAt: "2026-07-26T00:00:00.000Z",
     checklistMode: "lean",
     checklist: [],
@@ -65,6 +66,7 @@ function exportData(
     hiddenTemplateItemStamps: {},
     deletedCustomItems: {},
     growthUpdatedAt: 0,
+    hospital: createEmptyHospitalProfile(),
     ...patch,
   };
 }

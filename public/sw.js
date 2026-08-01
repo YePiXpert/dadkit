@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v2.2.0-pwa-r1";
+const CACHE_NAME = "dadkit-v2.2.1-pwa-r1";
 const APP_SHELL_ROUTE = "/";
 const PWA_ASSETS = [
   "/manifest.webmanifest",
@@ -40,6 +40,27 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("message", (event) => {
   if (event.data === "SKIP_WAITING") {
     self.skipWaiting();
+    return;
+  }
+
+  if (
+    event.data?.type === "CACHE_ROUTE" &&
+    typeof event.data.url === "string"
+  ) {
+    const url = new URL(event.data.url, self.location.origin);
+
+    if (
+      url.origin === self.location.origin &&
+      url.pathname !== "/sw.js" &&
+      url.pathname !== "/api" &&
+      !url.pathname.startsWith("/api/")
+    ) {
+      event.waitUntil(
+        caches
+          .open(CACHE_NAME)
+          .then((cache) => fetchAndCacheRoute(cache, `${url.pathname}${url.search}`)),
+      );
+    }
   }
 });
 

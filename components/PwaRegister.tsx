@@ -67,7 +67,7 @@ export function PwaRegister() {
 
     navigator.serviceWorker
       .register("/sw.js")
-      .then((registration) => {
+      .then(async (registration) => {
         if (registration.waiting && hadController) {
           setWaitingWorker(registration.waiting);
         }
@@ -87,6 +87,12 @@ export function PwaRegister() {
               setWaitingWorker(worker);
             }
           });
+        });
+
+        const readyRegistration = await navigator.serviceWorker.ready;
+        readyRegistration.active?.postMessage({
+          type: "CACHE_ROUTE",
+          url: `${window.location.pathname}${window.location.search}`,
         });
 
         // 浏览器自身会定期检查 Service Worker 更新，不再每次加载强制 update()。
@@ -109,13 +115,22 @@ export function PwaRegister() {
       <p className="font-semibold">DadKit 有新版本</p>
       <div className="mt-2 flex items-center justify-between gap-3">
         <p className="text-muted-foreground">刷新后使用最新页面。</p>
-        <button
-          className="min-h-11 rounded-full bg-primary px-4 py-2 font-semibold text-primary-foreground shadow-sm"
-          onClick={() => waitingWorker.postMessage("SKIP_WAITING")}
-          type="button"
-        >
-          刷新
-        </button>
+        <div className="flex shrink-0 gap-2">
+          <button
+            className="min-h-11 rounded-full px-3 py-2 font-semibold text-muted-foreground hover:bg-secondary"
+            onClick={() => setWaitingWorker(undefined)}
+            type="button"
+          >
+            稍后
+          </button>
+          <button
+            className="min-h-11 rounded-full bg-primary px-4 py-2 font-semibold text-primary-foreground shadow-sm"
+            onClick={() => waitingWorker.postMessage("SKIP_WAITING")}
+            type="button"
+          >
+            刷新
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -6,6 +6,10 @@ import {
   clientKeyFromHeaders as proxyClientKey,
   createRateLimiter as createWebDavProxyRateLimiter,
 } from "@/lib/http/rate-limit";
+import {
+  getRequestedDataVersion,
+  syncDataVersionResponseHeaders,
+} from "@/lib/sync/data-version";
 
 export const runtime = "nodejs";
 
@@ -38,20 +42,25 @@ export async function POST(request: Request) {
 
   if (
     !isDadKitImportData(payload) ||
-    payload.version !== 5
+    (payload.version !== 5 && payload.version !== 6)
   ) {
     return syncError("同步数据格式无效。", 400);
   }
 
   try {
-    const snapshot = await pushSpace(token, payload);
+    const dataVersion = getRequestedDataVersion(request.headers);
+    const snapshot = await pushSpace(
+      token,
+      payload,
+      dataVersion,
+    );
 
     if (!snapshot) {
       return syncError("同步会话已失效，请重新输入同步码。", 401);
     }
 
     return syncJson(snapshot, 200, {
-      etag: `"dadkit-sync-${snapshot.version}"`,
+      ...syncDataVersionResponseHeaders(snapshot.version, dataVersion),
       "x-dadkit-server-time": snapshot.serverTime,
     });
   } catch (error) {

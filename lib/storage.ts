@@ -1,9 +1,9 @@
 import type {
+  ChecklistBag,
+  ChecklistCategory,
   ChecklistItem,
   ChecklistMode,
-  ChecklistCategory,
   ChecklistTiming,
-  ChecklistBag,
   ItemBulk,
   ItemKind,
   ItemSource,
@@ -21,11 +21,26 @@ import {
   exportGrowthData,
   useGrowthStore,
 } from "@/lib/growth-store";
+import { validateGrowthPortableData } from "@/lib/growth-portable";
 import {
-  validateGrowthPortableData,
-  type GrowthPortableData,
-} from "@/lib/growth-portable";
-import { sanitizeDadKitImportData } from "@/lib/data/format";
+  sanitizeDadKitImportData,
+  V3_EXPORT_KEYS,
+  V4_EXPORT_KEYS,
+  V5_EXPORT_KEYS,
+  V6_EXPORT_KEYS,
+  type DadKitExportData,
+  type DadKitImportData,
+  type DeletedCustomItemStamps,
+  type HiddenTemplateItemStamps,
+} from "@/lib/data/format";
+import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
+import {
+  HOSPITAL_STORAGE_KEY,
+  loadHospitalProfile,
+} from "@/lib/hospital/repository";
+import { isHospitalProfileConfigured } from "@/lib/hospital/selectors";
+import { useHospitalProfileStore } from "@/lib/hospital/store";
+import { isHospitalProfilePortableData } from "@/lib/hospital/validation";
 import {
   DEFAULT_WEBDAV_CONFIG,
   type WebDavConfig,
@@ -55,6 +70,7 @@ export const STORAGE_KEYS = {
   syncClientState: "dadkit:v3:sync-client-state",
   syncClockOffset: "dadkit:v3:sync-clock-offset-ms",
   syncClockTimelineInitialized: "dadkit:v3:sync-clock-timeline-initialized",
+  hospital: HOSPITAL_STORAGE_KEY,
 } as const;
 
 export const WEBDAV_SESSION_SECRET_KEY = "dadkit:v3:webdav-session-secret";
@@ -74,63 +90,21 @@ const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.syncClientState,
   STORAGE_KEYS.syncClockOffset,
   STORAGE_KEYS.syncClockTimelineInitialized,
+  STORAGE_KEYS.hospital,
   GROWTH_STORAGE_KEYS.profile,
   GROWTH_STORAGE_KEYS.progress,
   GROWTH_STORAGE_KEYS.view,
 ] as const;
 
-const V3_EXPORT_KEYS = [
-  "version",
-  "exportedAt",
-  "checklistMode",
-  "checklist",
-  "customItems",
-  "hiddenTemplateItemIds",
-] as const;
-
-const V4_EXPORT_KEYS = [...V3_EXPORT_KEYS, "growth"] as const;
-
-const V5_EXPORT_KEYS = [
-  ...V4_EXPORT_KEYS,
-  "hiddenTemplateItemStamps",
-  "deletedCustomItems",
-  "growthUpdatedAt",
-] as const;
-
-// 模板条目隐藏/恢复的时间戳记录;hidden:false 是“恢复”墓碑,参与多端合并。
-export type HiddenTemplateItemStamps = Record<
-  string,
-  { hidden: boolean; updatedAt: number }
->;
-
-// 自定义物品删除墓碑:id → 删除时间(epoch ms)。
-export type DeletedCustomItemStamps = Record<string, number>;
-
-export type DadKitExportDataV3 = {
-  version: 3;
-  exportedAt: string;
-  checklistMode: ChecklistMode;
-  checklist: ChecklistItem[];
-  customItems: ChecklistItem[];
-  hiddenTemplateItemIds: string[];
-};
-
-export type DadKitExportDataV4 = Omit<DadKitExportDataV3, "version"> & {
-  version: 4;
-  growth: GrowthPortableData;
-};
-
-export type DadKitExportData = Omit<DadKitExportDataV4, "version"> & {
-  version: 5;
-  hiddenTemplateItemStamps: HiddenTemplateItemStamps;
-  deletedCustomItems: DeletedCustomItemStamps;
-  growthUpdatedAt: number;
-};
-
-export type DadKitImportData =
-  | DadKitExportDataV3
-  | DadKitExportDataV4
-  | DadKitExportData;
+export type {
+  DadKitExportData,
+  DadKitExportDataV3,
+  DadKitExportDataV4,
+  DadKitExportDataV5,
+  DadKitImportData,
+  DeletedCustomItemStamps,
+  HiddenTemplateItemStamps,
+} from "@/lib/data/format";
 
 export type SyncSession = {
   token: string;
@@ -237,6 +211,23 @@ function hasExactKeys(
   expected: readonly string[],
 ) {
   return expected.every((key) => key in value);
+}
+
+function hasOnlyKeys(
+  value: Record<string, unknown>,
+  expected: readonly string[],
+) {
+  const keys = Object.keys(value);
+  return (
+    keys.length === expected.length &&
+    keys.every((key) => expected.includes(key))
+  );
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (!isRecord(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 function isOneOf<T extends string>(
@@ -442,15 +433,21 @@ export function isDadKitImportData(value: unknown): value is DadKitImportData {
     );
   }
 
+  if (value.version !== 5 && value.version !== 6) {
+    return false;
+  }
+
   return (
-    value.version === 5 &&
-    hasExactKeys(value, V5_EXPORT_KEYS) &&
+    (value.version === 6
+      ? isPlainRecord(value) && hasOnlyKeys(value, V6_EXPORT_KEYS)
+      : hasExactKeys(value, V5_EXPORT_KEYS)) &&
     hasValidPortableChecklistData(value) &&
     validateGrowthPortableData(value.growth) &&
     isHiddenTemplateItemStamps(value.hiddenTemplateItemStamps) &&
     isDeletedCustomItemStamps(value.deletedCustomItems) &&
     typeof value.growthUpdatedAt === "number" &&
-    Number.isFinite(value.growthUpdatedAt)
+    Number.isFinite(value.growthUpdatedAt) &&
+    (value.version === 5 || isHospitalProfilePortableData(value.hospital))
   );
 }
 
@@ -980,6 +977,10 @@ export function resetAllData(initialChecklist?: ChecklistItem[]) {
       ...DEFAULT_GROWTH_VIEW,
       hydrated: true,
     });
+    useHospitalProfileStore.setState({
+      hydrated: true,
+      profile: createEmptyHospitalProfile(),
+    });
   }
 
   let sessionSecretCleared = true;
@@ -1000,7 +1001,7 @@ export function exportData(): DadKitExportData {
   const latest = latestChecklistState;
 
   return {
-    version: 5,
+    version: 6,
     exportedAt: new Date().toISOString(),
     checklistMode: loadChecklistMode(),
     checklist: latest?.checklist ?? loadChecklist(),
@@ -1011,6 +1012,7 @@ export function exportData(): DadKitExportData {
     hiddenTemplateItemStamps: loadHiddenTemplateItemStamps(),
     deletedCustomItems: loadDeletedCustomItems(),
     growthUpdatedAt: loadGrowthUpdatedAt(),
+    hospital: loadHospitalProfile(),
   };
 }
 
@@ -1027,13 +1029,20 @@ export function validateImportData(rawJson: string): ImportValidationResult {
     return { ok: false, message: "内容不是 DadKit 备份，未修改本地数据。" };
   }
 
-  if (parsed.version !== 3 && parsed.version !== 4 && parsed.version !== 5) {
+  if (
+    parsed.version !== 3 &&
+    parsed.version !== 4 &&
+    parsed.version !== 5 &&
+    parsed.version !== 6
+  ) {
     return { ok: false, message: "不支持的备份版本，未修改本地数据。" };
   }
 
   const expectedKeys =
-    parsed.version === 5
-      ? V5_EXPORT_KEYS
+    parsed.version === 6
+      ? V6_EXPORT_KEYS
+      : parsed.version === 5
+        ? V5_EXPORT_KEYS
       : parsed.version === 4
         ? V4_EXPORT_KEYS
         : V3_EXPORT_KEYS;
@@ -1072,6 +1081,8 @@ export function applyImportData(data: DadKitImportData): ImportResult {
   }
 
   data = sanitizeDadKitImportData(data) as DadKitImportData;
+  const hospital =
+    data.version === 6 ? data.hospital : createEmptyHospitalProfile();
 
   if (!canUseLocalStorage()) {
     return { ok: false, message: "当前环境无法访问本地存储，未修改本地数据。" };
@@ -1090,9 +1101,10 @@ export function applyImportData(data: DadKitImportData): ImportResult {
       key: STORAGE_KEYS.checklistMode,
       value: JSON.stringify(data.checklistMode),
     },
+    { key: STORAGE_KEYS.hospital, value: JSON.stringify(hospital) },
   ];
 
-  if (data.version === 4 || data.version === 5) {
+  if (data.version !== 3) {
     mutations.push(
       {
         key: GROWTH_STORAGE_KEYS.profile,
@@ -1105,7 +1117,7 @@ export function applyImportData(data: DadKitImportData): ImportResult {
     );
   }
 
-  if (data.version === 5) {
+  if (data.version === 5 || data.version === 6) {
     mutations.push(
       {
         key: STORAGE_KEYS.hiddenTemplateStamps,
@@ -1139,14 +1151,21 @@ export function applyImportData(data: DadKitImportData): ImportResult {
       customItems: data.customItems,
       hiddenTemplateItemIds: data.hiddenTemplateItemIds,
     });
-    if (data.version === 4 || data.version === 5) {
+    if (data.version !== 3) {
       useGrowthStore.setState({
         ...data.growth.profile,
         ...data.growth.progress,
         hydrated: true,
       });
     }
-    return { ok: true, message: "导入成功" };
+    useHospitalProfileStore.setState({ hydrated: true, profile: hospital });
+    return {
+      ok: true,
+      message:
+        data.version === 6
+          ? "导入成功"
+          : `导入成功（旧版 v${data.version} 备份不包含医院档案，医院档案已清空）`,
+    };
   } catch (error) {
     if (error instanceof StorageTransactionError && !error.rollbackSucceeded) {
       return {
@@ -1218,7 +1237,8 @@ function hasSnapshotData(data: DadKitExportData) {
     data.hiddenTemplateItemIds.length > 0 ||
     data.growth.profile.nickname.length > 0 ||
     data.growth.profile.dueDate.length > 0 ||
-    data.growth.progress.completedTaskIds.length > 0
+    data.growth.progress.completedTaskIds.length > 0 ||
+    isHospitalProfileConfigured(data.hospital)
   );
 }
 

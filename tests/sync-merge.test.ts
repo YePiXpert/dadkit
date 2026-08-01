@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { mergeExportData } from "@/lib/sync/merge";
 import type { DadKitExportData } from "@/lib/storage";
 import type { ChecklistItem } from "@/lib/types";
+import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
 
 function testItem(
   id: string,
@@ -29,7 +30,7 @@ function testItem(
 
 function exportData(patch: Partial<DadKitExportData> = {}): DadKitExportData {
   return {
-    version: 5,
+    version: 6,
     exportedAt: "2026-07-26T00:00:00.000Z",
     checklistMode: "lean",
     checklist: [],
@@ -43,6 +44,7 @@ function exportData(patch: Partial<DadKitExportData> = {}): DadKitExportData {
     hiddenTemplateItemStamps: {},
     deletedCustomItems: {},
     growthUpdatedAt: 0,
+    hospital: createEmptyHospitalProfile(),
     ...patch,
   };
 }

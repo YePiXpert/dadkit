@@ -1,10 +1,23 @@
 import Link from "next/link";
-import { Baby, ChevronRight, ClipboardCheck, Cloud } from "lucide-react";
+import {
+  Baby,
+  Building2,
+  ChevronRight,
+  ClipboardCheck,
+  Cloud,
+} from "lucide-react";
 
 import { AppearanceCard } from "@/components/AppearanceCard";
 import { InstallPromptSettingsEntry } from "@/components/InstallPromptSettingsEntry";
 
 const SETTINGS_ENTRIES = [
+  {
+    href: "/hospital",
+    title: "医院档案",
+    description: "集中保存医院地址、电话和入院要求。",
+    icon: Building2,
+    accent: "bg-tile-mom-bg text-tile-mom-fg",
+  },
   {
     href: "/growth",
     title: "宝宝成长记",

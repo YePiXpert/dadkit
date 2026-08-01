@@ -24,6 +24,18 @@ import { mergeExportData } from "@/lib/sync/merge";
 import { getSyncClockTimelineInitialized } from "@/lib/sync-clock";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
+import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
+import {
+  hospitalValuesFromPortable,
+  updateHospitalProfile,
+} from "@/lib/hospital/portable";
+import {
+  loadHospitalProfile,
+  saveHospitalProfile,
+} from "@/lib/hospital/repository";
+import { useHospitalProfileStore } from "@/lib/hospital/store";
+import { DADKIT_DATA_VERSION_HEADER } from "@/lib/sync/data-version";
+import { portableV5 } from "@/tests/helpers/portable-data";
 
 function testItem(id: string, patch: Partial<ChecklistItem> = {}): ChecklistItem {
   return {
@@ -66,6 +78,10 @@ function resetStores() {
     syncing: false,
     lastSyncAt: undefined,
     lastError: undefined,
+  });
+  useHospitalProfileStore.setState({
+    hydrated: false,
+    profile: createEmptyHospitalProfile(),
   });
 }
 
@@ -311,6 +327,53 @@ describe("family sync client", () => {
 
     expect(push?.body).toContain("seed");
     expect(useSyncStatusStore.getState().joined).toBe(true);
+  });
+
+  it("sends version 6 on every request and preserves hospital on a v5 response", async () => {
+    const { localValues } = installBrowserStorage({
+      "dadkit:v3:sync-session": JSON.stringify({
+        token: "space.compat",
+        joinedAt: "2026-08-01T00:00:00.000Z",
+      }),
+    });
+    const hospital = createEmptyHospitalProfile();
+    const hospitalValues = hospitalValuesFromPortable(hospital);
+    hospitalValues.hospitalName = "市妇幼保健院";
+    hospitalValues.address = "健康路 1 号";
+    saveHospitalProfile(
+      updateHospitalProfile(hospital, hospitalValues, 100).profile,
+    );
+    useDadKitStore.setState({ hydrated: true });
+    const legacy = portableV5({
+      checklist: [testItem("legacy-server", { updatedAt: 200 })],
+    });
+    const requestVersions: string[] = [];
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        requestVersions.push(
+          new Headers(init?.headers).get(DADKIT_DATA_VERSION_HEADER) ?? "",
+        );
+
+        if (url === "/api/sync/pull") {
+          return jsonResponse({ version: 1, updatedAt: "", data: legacy });
+        }
+        if (url === "/api/sync/push") {
+          return jsonResponse({ version: 2, updatedAt: "", data: legacy });
+        }
+        throw new Error(`unexpected url ${url}`);
+      }),
+    );
+
+    await expect(syncNow()).resolves.toMatchObject({ ok: true });
+
+    expect(requestVersions).toEqual(["6", "6"]);
+    expect(loadHospitalProfile().fields.hospitalName.value).toBe(
+      "市妇幼保健院",
+    );
+    expect(loadHospitalProfile().fields.address.value).toBe("健康路 1 号");
+    expect(localValues.get(STORAGE_KEYS.hospital)).toBeTruthy();
   });
 
   it("creates a family, stores its name and returns the first invite", async () => {
