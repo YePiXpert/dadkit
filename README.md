@@ -5,6 +5,7 @@
 DadKit 是一个本地优先的待产包清单与宝宝成长记，支持网页、iPhone PWA 和内置资源的 Android APK。
 
 - 144 个待产与月子物品，支持全部、待购买、待装包和已装包状态
+- 准备出发模式，集中核对证件、临出门物品、随车准备和关键行李
 - 孕 8–40 周宝宝成长记
 - 本机照片、恢复快照、WebDAV 备份和家庭同步
 - 温暖马卡龙纸张、水粉与彩铅风格插画
@@ -21,6 +22,7 @@ DadKit 是一个本地优先的待产包清单与宝宝成长记，支持网页�
 - [正式站点](https://dadkit.505f.com/)
 - [宝宝成长记](https://dadkit.505f.com/growth)
 - [宝宝清单](https://dadkit.505f.com/checklist/baby)
+- [准备出发](https://dadkit.505f.com/departure)
 - [备份与同步](https://dadkit.505f.com/settings/backup)
 - [最新 Android APK](https://github.com/YePiXpert/dadkit/releases/latest)
 

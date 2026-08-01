@@ -475,7 +475,6 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     const checklist = state.checklist.map((item) => {
       if (
         !itemIds.has(item.id) ||
-        item.itemKind !== "item" ||
         item.status === "packed" ||
         item.status === "not_needed"
       ) {
@@ -487,7 +486,6 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     });
     const customItems = state.customItems.map((item) =>
       itemIds.has(item.id) &&
-      item.itemKind === "item" &&
       item.status !== "packed" &&
       item.status !== "not_needed"
         ? patchChecklistItem(item, { status: "packed" })

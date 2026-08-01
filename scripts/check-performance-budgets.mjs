@@ -12,6 +12,7 @@ const MAX_CSS_BYTES = 11 * 1024;
 const routeBudgets = new Map([
   ["/page", 250 * 1024],
   ["/checklist/[sectionId]/page", 255 * 1024],
+  ["/departure/page", 250 * 1024],
   ["/growth/page", 190 * 1024],
   ["/settings/page", 170 * 1024],
   ["/settings/checklist/page", 225 * 1024],
@@ -23,6 +24,7 @@ const routeBudgets = new Map([
 const routeLabels = new Map([
   ["/page", "首页"],
   ["/checklist/[sectionId]/page", "清单页"],
+  ["/departure/page", "准备出发页"],
   ["/growth/page", "成长记页"],
   ["/settings/page", "我的页"],
   ["/settings/checklist/page", "清单设置页"],

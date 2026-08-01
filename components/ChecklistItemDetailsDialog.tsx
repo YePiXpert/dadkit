@@ -43,16 +43,19 @@ const STATE_META: Record<
 };
 
 export function ChecklistItemDetailsDialog({
+  departureMode = false,
   item,
   onOpenChange,
   open,
 }: {
+  departureMode?: boolean;
   item: ChecklistItem;
   onOpenChange: (open: boolean) => void;
   open: boolean;
 }) {
   const photoController = useItemPhoto(item.id, open);
   const advanceItem = useDadKitStore((state) => state.advanceItem);
+  const updateItem = useDadKitStore((state) => state.updateItem);
   const toggleItemSkipped = useDadKitStore((state) => state.toggleItemSkipped);
   const removeItem = useDadKitStore((state) => state.removeItem);
   const [removalConfirmOpen, setRemovalConfirmOpen] = useState(false);
@@ -74,6 +77,20 @@ export function ChecklistItemDetailsDialog({
   function removeCurrentItem() {
     removeItem(item.id);
     onOpenChange(false);
+  }
+
+  function handlePrimaryAction() {
+    if (departureMode) {
+      updateItem(item.id, {
+        status:
+          itemState === "packed" || itemState === "not_needed"
+            ? "todo"
+            : "packed",
+      });
+      return;
+    }
+
+    advanceItem(item.id);
   }
 
   return (
@@ -107,13 +124,13 @@ export function ChecklistItemDetailsDialog({
               {stateMeta.label}
             </span>
           </div>
-          <Button className="mt-4 w-full" onClick={() => advanceItem(item.id)}>
+          <Button className="mt-4 w-full" onClick={handlePrimaryAction}>
             {itemState === "ready" ? (
               <Check className="size-4" />
             ) : (
               <PackageCheck className="size-4" />
             )}
-            {getAdvanceLabel(itemState)}
+            {getAdvanceLabel(itemState, departureMode)}
           </Button>
         </section>
 
@@ -186,7 +203,13 @@ export function ChecklistItemDetailsDialog({
   );
 }
 
-function getAdvanceLabel(state: ChecklistItemState) {
+function getAdvanceLabel(state: ChecklistItemState, departureMode: boolean) {
+  if (departureMode) {
+    return state === "packed" || state === "not_needed"
+      ? "恢复重新核对"
+      : "标记已确认";
+  }
+
   if (state === "todo") return "标记已备好";
   if (state === "ready") return "标记已装包";
   return "重新打开";

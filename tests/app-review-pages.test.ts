@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  DEPARTURE_PATH,
   getReviewPageHref,
   PUBLIC_PRIVACY_PATH,
   PUBLIC_SUPPORT_PATH,
@@ -15,6 +16,10 @@ const privacyPage = readFileSync(
 );
 const supportPage = readFileSync(
   join(process.cwd(), "app", "support", "page.tsx"),
+  "utf8",
+);
+const departurePage = readFileSync(
+  join(process.cwd(), "app", "departure", "page.tsx"),
   "utf8",
 );
 
@@ -46,6 +51,8 @@ describe("public PWA support pages", () => {
   });
 
   it("uses ordinary web routes for public pages", () => {
+    expect(DEPARTURE_PATH).toBe("/departure");
+    expect(departurePage).toContain("DepartureWorkspace");
     expect(PUBLIC_PRIVACY_PATH).toBe("/privacy");
     expect(PUBLIC_SUPPORT_PATH).toBe("/support");
     expect(getReviewPageHref(PUBLIC_PRIVACY_PATH)).toBe("/privacy");

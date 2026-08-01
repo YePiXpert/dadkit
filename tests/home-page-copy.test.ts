@@ -24,6 +24,9 @@ describe("checklist home page", () => {
     expect(checklistWorkspace).toContain("deriveChecklistView");
     expect(checklistWorkspace).toContain("visibleItems");
     expect(checklistWorkspace).toContain("counts");
+    expect(checklistWorkspace).toContain("准备出发");
+    expect(checklistWorkspace).toContain("getDepartureProgress");
+    expect(checklistWorkspace).toContain("DEPARTURE_PATH");
   });
 
   it("does not depend on optional profile or removed tools", () => {

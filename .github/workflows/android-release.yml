@@ -30,7 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$GITHUB_REF_NAME" = "v2.1.3"
+          test "$GITHUB_REF_NAME" = "v2.2.0"
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
@@ -104,15 +104,15 @@ jobs:
           test -f "$AAB"
           "$BUILD_TOOLS/zipalign" -c -v 4 "$APK"
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
-          cp "$APK" DadKit-2.1.3.apk
-          sha256sum DadKit-2.1.3.apk > DadKit-2.1.3.apk.sha256
-          cp "$AAB" DadKit-2.1.3.aab
+          cp "$APK" DadKit-2.2.0.apk
+          sha256sum DadKit-2.2.0.apk > DadKit-2.2.0.apk.sha256
+          cp "$AAB" DadKit-2.2.0.aab
 
       - name: Store AAB privately for 30 days
         uses: actions/upload-artifact@v4
         with:
-          name: DadKit-2.1.3-aab
-          path: DadKit-2.1.3.aab
+          name: DadKit-2.2.0-aab
+          path: DadKit-2.2.0.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -121,17 +121,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          DadKit 2.1.3
+          DadKit 2.2.0
 
-          - 修复 iOS 搜索框和表单聚焦时自动放大页面
-          - 已安装 PWA 中不再显示“安装到桌面”入口
-          - Android 包名为 com.dadkit.mobile，versionCode 为 4
+          - 新增“准备出发”模式，集中核对证件、临出门物品、随车准备和关键行李
+          - 出发页与首页、家庭同步和 v5 备份共用同一份清单状态
+          - Android 包名为 com.dadkit.mobile，versionCode 为 5
           - APK 内置完整界面、清单、成长图和物品图，断网可直接打开
           - 清单、成长记录和照片仍默认保存在应用本机沙箱；家庭同步与 WebDAV 为可选联网功能
           EOF
           gh release create "$GITHUB_REF_NAME" \
-            DadKit-2.1.3.apk \
-            DadKit-2.1.3.apk.sha256 \
+            DadKit-2.2.0.apk \
+            DadKit-2.2.0.apk.sha256 \
             --verify-tag \
-            --title "DadKit 2.1.3" \
+            --title "DadKit 2.2.0" \
             --notes-file release-notes.md

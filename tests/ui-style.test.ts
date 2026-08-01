@@ -137,6 +137,7 @@ describe("V2 PWA visual and navigation contract", () => {
     const mineNav = PRIMARY_NAVIGATION_ITEMS[1];
 
     expect(isPrimaryNavigationItemActive("/", checklistNav)).toBe(true);
+    expect(isPrimaryNavigationItemActive("/departure", checklistNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/settings", checklistNav)).toBe(false);
     expect(isPrimaryNavigationItemActive("/settings", mineNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/settings/backup", mineNav)).toBe(true);

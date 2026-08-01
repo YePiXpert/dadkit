@@ -3,9 +3,9 @@ import path from "node:path";
 
 const root = process.cwd();
 const expected = {
-  tag: "v2.1.3",
-  versionName: "2.1.3",
-  versionCode: 4,
+  tag: "v2.2.0",
+  versionName: "2.2.0",
+  versionCode: 5,
   packageId: "com.dadkit.mobile",
   host: "dadkit.505f.com",
 };
@@ -78,6 +78,7 @@ const bundledRoot = path.join(
   "www",
 );
 await access(path.join(bundledRoot, "index.html"));
+await access(path.join(bundledRoot, "departure", "index.html"));
 await access(path.join(bundledRoot, "growth", "index.html"));
 await access(path.join(bundledRoot, "checklist", "baby", "index.html"));
 

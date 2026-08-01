@@ -69,12 +69,14 @@ function observeRowVisibility(
 }
 
 type ChecklistItemRowProps = {
+  departureMode?: boolean;
   item: ChecklistItem;
   onOpenDetails: (itemId: string) => void;
   showFullDescription?: boolean;
 };
 
 export const ChecklistItemRow = memo(function ChecklistItemRow({
+  departureMode = false,
   item,
   onOpenDetails,
   showFullDescription = true,
@@ -84,8 +86,9 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   const [justPacked, setJustPacked] = useState(false);
   const previousItemStateRef = useRef<ChecklistItemState | undefined>(undefined);
   const advanceItem = useDadKitStore((state) => state.advanceItem);
+  const updateItem = useDadKitStore((state) => state.updateItem);
   const itemState = getChecklistItemState(item);
-  const actionLabel = getActionLabel(itemState);
+  const actionLabel = getActionLabel(itemState, departureMode);
   const itemPhoto = useItemPhoto(item.id, mediaEnabled);
   const StateIcon = STATE_ICONS[itemState];
   const displayOptions = {
@@ -127,6 +130,20 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
 
     return () => window.clearTimeout(timeout);
   }, [itemState]);
+
+  function handleAction() {
+    if (departureMode) {
+      updateItem(item.id, {
+        status:
+          itemState === "packed" || itemState === "not_needed"
+            ? "todo"
+            : "packed",
+      });
+      return;
+    }
+
+    advanceItem(item.id);
+  }
 
   return (
     <article
@@ -215,7 +232,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             )}
             title={actionLabel}
             type="button"
-            onClick={() => advanceItem(item.id)}
+            onClick={handleAction}
           >
             {itemState === "packed" ? (
               <Check
@@ -238,7 +255,13 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
 
 ChecklistItemRow.displayName = "ChecklistItemRow";
 
-function getActionLabel(state: ChecklistItemState) {
+function getActionLabel(state: ChecklistItemState, departureMode: boolean) {
+  if (departureMode) {
+    return state === "packed" || state === "not_needed"
+      ? "重新核对"
+      : "标记已确认";
+  }
+
   if (state === "ready") return "标记已装包";
   if (state === "packed" || state === "not_needed") return "重新打开";
   return "标记已备好";
