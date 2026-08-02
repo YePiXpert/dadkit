@@ -16,8 +16,8 @@ android {
         applicationId "com.dadkit.mobile"
         minSdkVersion 23
         targetSdkVersion 35
-        versionCode 11
-        versionName "3.3.0"
+        versionCode 12
+        versionName "3.3.1"
     }
 
     signingConfigs {

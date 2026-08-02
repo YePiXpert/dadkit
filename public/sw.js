@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v3.3.0-pwa-r1";
+const CACHE_NAME = "dadkit-v3.3.1-pwa-r1";
 const PRECACHE_ROUTES = ["/", "/checklist", "/onboarding", "/join", "/settings/family", "/settings/sync"];
 const PWA_ASSETS = [
   "/manifest.webmanifest",
