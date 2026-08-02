@@ -7,26 +7,28 @@ import { readLimitedRequestText } from "@/lib/http/request-body";
 import {
   clientKeyFromHeaders,
   createRateLimiter,
+  rateLimitHeaders,
 } from "@/lib/http/rate-limit";
 import {
   getRequestedDataVersion,
   syncDataVersionResponseHeaders,
 } from "@/lib/sync/data-version";
+import { rejectInvalidMutationOrigin } from "@/lib/sync/route-utils";
 
 export const runtime = "nodejs";
 
 const MAX_JOIN_BYTES = 8 * 1024;
-const joinRateLimiter = createRateLimiter(10, 60_000);
+const joinRateLimiter = createRateLimiter(20, 15 * 60_000);
 
 export async function POST(request: Request) {
+  const originError = rejectInvalidMutationOrigin(request);
+  if (originError) return originError;
   const rateLimit = joinRateLimiter.consume(
     clientKeyFromHeaders(request.headers),
   );
 
   if (!rateLimit.allowed) {
-    return syncError("操作过于频繁，请稍后再试。", 429, {
-      "retry-after": String(rateLimit.retryAfterSeconds),
-    });
+    return syncError("操作过于频繁，请稍后再试。", 429, rateLimitHeaders(rateLimit));
   }
 
   let payload: {

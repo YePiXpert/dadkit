@@ -2,6 +2,7 @@ import { readLimitedRequestText } from "@/lib/http/request-body";
 import {
   clientKeyFromHeaders,
   createRateLimiter,
+  rateLimitHeaders,
 } from "@/lib/http/rate-limit";
 import { syncError, syncJson } from "@/lib/sync/http";
 import {
@@ -12,19 +13,34 @@ import {
   getRequestedDataVersion,
   syncDataVersionResponseHeaders,
 } from "@/lib/sync/data-version";
+import { getSyncSpaceConfig } from "@/lib/sync/space-config";
+import { rejectInvalidMutationOrigin } from "@/lib/sync/route-utils";
+import { SYNC_ERROR_CODES } from "@/lib/sync/error-codes";
 
 export const runtime = "nodejs";
 
 const MAX_CREATE_BYTES = 4 * 1024;
-const createLimiter = createRateLimiter(5, 60_000);
+const createLimiter = createRateLimiter(3, 60 * 60_000);
 
 export async function POST(request: Request) {
+  const originError = rejectInvalidMutationOrigin(request);
+  if (originError) return originError;
+  try {
+    if (!getSyncSpaceConfig().legacyCreateEnabled) {
+      return syncError(
+        "当前服务器已关闭旧版家庭创建入口。",
+        403,
+        undefined,
+        SYNC_ERROR_CODES.registrationClosed,
+      );
+    }
+  } catch {
+    return syncError("同步服务配置无效。", 500);
+  }
   const rateLimit = createLimiter.consume(clientKeyFromHeaders(request.headers));
 
   if (!rateLimit.allowed) {
-    return syncError("操作过于频繁，请稍后再试。", 429, {
-      "retry-after": String(rateLimit.retryAfterSeconds),
-    });
+    return syncError("操作过于频繁，请稍后再试。", 429, rateLimitHeaders(rateLimit));
   }
 
   let payload: { name?: unknown };

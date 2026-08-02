@@ -21,6 +21,19 @@ describe("VPS Docker deployment", () => {
     expect(compose).toContain(
       'DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS: "${DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS:-}"',
     );
+    for (const variable of [
+      "DADKIT_SYNC_REGISTRATION_MODE",
+      "DADKIT_SYNC_LEGACY_CREATE_ENABLED",
+      "DADKIT_SYNC_MAX_SPACE_BYTES",
+      "DADKIT_SYNC_MAX_DEVICES",
+      "DADKIT_SYNC_MAX_ACTIVE_INVITES",
+      "DADKIT_SYNC_DEFAULT_INVITE_TTL_MINUTES",
+      "DADKIT_SYNC_MAX_INVITE_TTL_MINUTES",
+      "DADKIT_TRUST_PROXY_HOPS",
+      "DADKIT_SYNC_REQUIRE_HTTPS",
+    ]) {
+      expect(compose).toContain(`${variable}:`);
+    }
   });
 
   it("documents HTTPS ingress and the explicit WebDAV allowlist", () => {
@@ -38,6 +51,13 @@ describe("VPS Docker deployment", () => {
     expect(exampleEnv).toContain(
       "# Example: webdav.example.com,dav.example.com:8443",
     );
+    expect(exampleEnv).toContain("DADKIT_SYNC_REGISTRATION_MODE=open");
+    expect(exampleEnv).toContain("DADKIT_SYNC_MAX_SPACE_BYTES=25165824");
+    expect(exampleEnv).toContain("DADKIT_TRUST_PROXY_HOPS=1");
+    expect(exampleEnv).toContain("DADKIT_SYNC_REQUIRE_HTTPS=true");
+    expect(readme).toContain("单实例文件存储");
+    expect(readme).toContain("单实例内存限流");
+    expect(readme).toContain("不是端到端加密");
     expect(dockerIgnore).toMatch(/^\.env$/m);
     expect(dockerIgnore).toContain("!.env.example");
   });

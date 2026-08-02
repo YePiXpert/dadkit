@@ -16,10 +16,13 @@ import {
   flushPendingChecklistStateSave,
 } from "@/lib/data/local-repository";
 import {
+  isLegacySyncSession,
+  isSyncSessionV2,
   loadSyncClientState,
   loadSyncSession,
   saveSyncClientState,
   saveSyncSession,
+  type SyncSessionLocalV2,
 } from "@/lib/data/settings-repository";
 import { useGrowthStore } from "@/lib/growth-store";
 import { generateChecklist } from "@/lib/rules";
@@ -32,6 +35,10 @@ import {
 } from "@/lib/sync-clock";
 import { mergeExportData } from "@/lib/sync/merge";
 import { DADKIT_DATA_VERSION_HEADER } from "@/lib/sync/data-version";
+import {
+  DADKIT_SYNC_PROTOCOL_HEADER,
+  DADKIT_SYNC_PROTOCOL_VERSION,
+} from "@/lib/sync/protocol-version";
 import { normalizeSyncSpaceName } from "@/lib/sync/space-name";
 import {
   clearSyncSessionExpired,
@@ -80,10 +87,13 @@ type ApiResult<T> = {
   notModified: boolean;
 };
 
-class SyncApiError extends Error {
+export class SyncApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code?: string,
+    readonly details?: Record<string, unknown>,
+    readonly retryAfterSeconds?: number,
   ) {
     super(message);
     this.name = "SyncApiError";
@@ -130,6 +140,8 @@ export function refreshSyncStatus() {
 async function parseApiResponse<T>(response: Response): Promise<T> {
   const payload = (await response.json().catch(() => ({}))) as T & {
     error?: string;
+    code?: string;
+    details?: Record<string, unknown>;
   };
 
   if (!response.ok) {
@@ -138,13 +150,16 @@ async function parseApiResponse<T>(response: Response): Promise<T> {
         ? payload.error
         : "同步服务请求失败。",
       response.status,
+      payload.code,
+      payload.details,
+      Number(response.headers.get("retry-after")) || undefined,
     );
   }
 
   return payload;
 }
 
-async function apiRequest<T>(
+export async function apiRequest<T>(
   path: string,
   init: RequestInit = {},
   token?: string,
@@ -164,6 +179,7 @@ async function apiRequest<T>(
     headers.set("authorization", `Bearer ${token}`);
   }
   headers.set(DADKIT_DATA_VERSION_HEADER, "9");
+  headers.set(DADKIT_SYNC_PROTOCOL_HEADER, String(DADKIT_SYNC_PROTOCOL_VERSION));
 
   const parentSignal = init.signal;
   const abortFromParent = () => controller.abort(parentSignal?.reason);
@@ -181,6 +197,7 @@ async function apiRequest<T>(
   try {
     const response = await fetch(path, {
       ...init,
+      credentials: "same-origin",
       headers,
       signal: controller.signal,
     });
@@ -420,7 +437,7 @@ function clearRetrySchedule() {
   retryAttempt = 0;
 }
 
-function scheduleRetry() {
+function scheduleRetry(minimumDelayMs = 0) {
   if (retryTimer !== undefined || !loadSyncSession()) {
     return;
   }
@@ -429,7 +446,7 @@ function scheduleRetry() {
     SYNC_RETRY_DELAYS_MS[
       Math.min(retryAttempt, SYNC_RETRY_DELAYS_MS.length - 1)
     ]!;
-  const delay = getSyncRetryDelay(baseDelay);
+  const delay = Math.max(minimumDelayMs, getSyncRetryDelay(baseDelay));
 
   retryAttempt += 1;
   const retryAt = new Date(Date.now() + delay).toISOString();
@@ -472,7 +489,7 @@ async function doSync(): Promise<SyncOutcome> {
     const pulled = await apiRequest<SpaceSnapshotPayload>(
       "/api/sync/pull",
       { headers: pullHeaders },
-      session.token,
+      isLegacySyncSession(session) ? session.token : undefined,
       { acceptNotModified: true },
     );
     const observedOffset = observeServerTime(
@@ -532,7 +549,7 @@ async function doSync(): Promise<SyncOutcome> {
       const pushed = await apiRequest<SpaceSnapshotPayload>(
         "/api/sync/push",
         { method: "POST", body: JSON.stringify({ data: merged }) },
-        session.token,
+        isLegacySyncSession(session) ? session.token : undefined,
       );
 
       latestEtag = pushed.etag ?? latestEtag;
@@ -596,7 +613,13 @@ async function doSync(): Promise<SyncOutcome> {
 
     saveSyncClientState({ ...state, lastError: message });
     useSyncStatusStore.setState({ syncing: false, lastError: message });
-    scheduleRetry();
+    if (!(error instanceof SyncApiError && error.status === 413)) {
+      scheduleRetry(
+        error instanceof SyncApiError && error.status === 429
+          ? (error.retryAfterSeconds ?? 0) * 1000
+          : 0,
+      );
+    }
 
     return { ok: false, message };
   }
@@ -721,6 +744,9 @@ export async function createInvite(
   if (!session) {
     return { ok: false, message: "请先加入家庭同步。" };
   }
+  if (!isLegacySyncSession(session)) {
+    return { ok: false, message: "请在同步管理页生成邀请链接。" };
+  }
 
   try {
     const result = await apiRequest<SyncInvite>(
@@ -762,8 +788,22 @@ export async function createInvite(
   }
 }
 
-export async function leaveSpace() {
+export async function leaveSpace(): Promise<SyncOutcome> {
   const session = loadSyncSession();
+  if (session) {
+    try {
+      await apiRequest(
+        "/api/sync/leave",
+        { method: "POST" },
+        isLegacySyncSession(session) ? session.token : undefined,
+      );
+    } catch (error) {
+      return {
+        ok: false,
+        message: error instanceof Error ? error.message : "退出同步空间失败。",
+      };
+    }
+  }
 
   clearRetrySchedule();
   clearSyncSessionExpired();
@@ -777,12 +817,296 @@ export async function leaveSpace() {
     retryAt: undefined,
     retryAttempt: undefined,
   });
+  return { ok: true };
+}
 
-  if (session) {
-    try {
-      await apiRequest("/api/sync/leave", { method: "POST" }, session.token);
-    } catch {
-      // Local logout is authoritative; server revocation is best-effort.
+export type SyncSpaceRole = "owner" | "member";
+
+export type SyncSpaceUsage = {
+  dataBytes: number;
+  dataLimitBytes: number;
+  deviceCount: number;
+  deviceLimit: number;
+  activeInviteCount: number;
+  activeInviteLimit: number;
+};
+
+export type SyncSessionMetadata = {
+  id: string;
+  current: boolean;
+  createdAt: string;
+  lastSeenAt: string;
+  deviceName: string;
+  role: SyncSpaceRole;
+  protocolVersion: 1 | 2;
+};
+
+export type SyncSpaceMetadata = {
+  spaceId: string;
+  kind: "legacy-name" | "random";
+  displayName: string;
+  dataRevision: number;
+  metadataRevision: number;
+  dataUpdatedAt: string;
+  metadataUpdatedAt: string;
+  currentSession: SyncSessionMetadata;
+  usage: SyncSpaceUsage;
+};
+
+export type SyncInviteMetadata = {
+  id: string;
+  createdAt: string;
+  expiresAt: string;
+  createdBySessionId: string;
+  role: "member";
+  usedAt: string | null;
+  revokedAt: string | null;
+};
+
+export type SyncServiceInfo = {
+  syncProtocolVersion: 2;
+  supportedDataVersions: number[];
+  registrationMode: "open" | "closed";
+  maxSpaceBytes: number;
+  maxDevices: number;
+  maxActiveInvites: number;
+  inviteTtlOptions: number[];
+  secureTransport: boolean;
+  serverTime: string;
+};
+
+function localSessionFromSpace(
+  space: SyncSpaceMetadata,
+  joinedAt = new Date().toISOString(),
+): SyncSessionLocalV2 {
+  return {
+    version: 2,
+    protocolVersion: 2,
+    spaceId: space.spaceId,
+    displayName: space.displayName,
+    sessionId: space.currentSession.id,
+    deviceName: space.currentSession.deviceName,
+    role: space.currentSession.role,
+    joinedAt,
+  };
+}
+
+function messageOf(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
+export async function fetchSyncServiceInfo() {
+  try {
+    const result = await apiRequest<SyncServiceInfo>("/api/sync/service-info");
+    return { ok: true as const, data: result.data! };
+  } catch (error) {
+    return { ok: false as const, message: messageOf(error, "无法读取同步服务信息。") };
+  }
+}
+
+export async function fetchSyncSpaceMetadata() {
+  try {
+    const result = await apiRequest<{ space: SyncSpaceMetadata }>("/api/sync/v2/space");
+    if (!result.data?.space) throw new SyncApiError("同步空间信息不完整。", 502);
+    const existing = loadSyncSession();
+    saveSyncSession(localSessionFromSpace(result.data.space, existing?.joinedAt));
+    return { ok: true as const, space: result.data.space };
+  } catch (error) {
+    return { ok: false as const, message: messageOf(error, "无法读取同步空间信息。") };
+  }
+}
+
+export async function createRandomSyncSpace(displayName: string, deviceName: string) {
+  try {
+    const result = await apiRequest<{ space: SyncSpaceMetadata }>(
+      "/api/sync/v2/spaces",
+      { method: "POST", body: JSON.stringify({ displayName, deviceName }) },
+    );
+    if (!result.data?.space) throw new SyncApiError("同步服务没有返回空间信息。", 502);
+    clearRetrySchedule();
+    saveSyncClientState({});
+    saveSyncSession(localSessionFromSpace(result.data.space));
+    useSyncStatusStore.setState({ joined: true });
+    clearSyncSessionExpired();
+    const synced = await syncNow();
+    return {
+      ok: true as const,
+      space: result.data.space,
+      message: synced.ok || synced.deferred ? undefined : synced.message,
+    };
+  } catch (error) {
+    return { ok: false as const, message: messageOf(error, "创建家庭同步空间失败。") };
+  }
+}
+
+export async function joinSyncSpaceByInvite(inviteToken: string, deviceName: string) {
+  try {
+    await createSnapshotAsync("加入家庭同步前");
+    const existing = loadSyncSession();
+    const result = await apiRequest<{ space: SyncSpaceMetadata }>(
+      "/api/sync/v2/join",
+      { method: "POST", body: JSON.stringify({ inviteToken, deviceName }) },
+      isLegacySyncSession(existing) ? existing.token : undefined,
+    );
+    if (!result.data?.space) throw new SyncApiError("同步服务没有返回空间信息。", 502);
+    clearRetrySchedule();
+    saveSyncClientState({});
+    saveSyncSession(localSessionFromSpace(result.data.space));
+    useSyncStatusStore.setState({ joined: true });
+    clearSyncSessionExpired();
+    const synced = await syncNow();
+    return {
+      ok: true as const,
+      space: result.data.space,
+      message: synced.ok || synced.deferred ? undefined : synced.message,
+    };
+  } catch (error) {
+    return { ok: false as const, message: messageOf(error, "加入家庭同步失败。") };
+  }
+}
+
+export async function upgradeLegacySyncSession(deviceName = "这台设备") {
+  const legacy = loadSyncSession();
+  if (!isLegacySyncSession(legacy)) return { ok: false as const, message: "没有需要升级的旧同步会话。" };
+  try {
+    const upgraded = await apiRequest<{ space: SyncSpaceMetadata }>(
+      "/api/sync/v2/session/upgrade",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          displayName: legacy.spaceName ?? "家庭同步",
+          deviceName,
+        }),
+      },
+      legacy.token,
+    );
+    if (!upgraded.data?.space) throw new SyncApiError("同步会话升级响应不完整。", 502);
+
+    // 只有 Cookie 独立通过一次认证后，才删除本机原始 token。
+    const verified = await apiRequest<{ space: SyncSpaceMetadata }>("/api/sync/v2/space");
+    if (!verified.data?.space) throw new SyncApiError("Cookie 会话验证失败。", 401);
+    saveSyncSession(localSessionFromSpace(verified.data.space, legacy.joinedAt));
+    return { ok: true as const, space: verified.data.space };
+  } catch (error) {
+    // 保留旧 token；原有 pull/push 仍可继续使用。
+    return { ok: false as const, message: messageOf(error, "旧同步会话暂时无法升级。") };
+  }
+}
+
+export async function listSyncSessions() {
+  try {
+    const result = await apiRequest<{ sessions: SyncSessionMetadata[] }>("/api/sync/v2/sessions");
+    return { ok: true as const, sessions: result.data?.sessions ?? [] };
+  } catch (error) {
+    return { ok: false as const, message: messageOf(error, "无法读取设备列表。") };
+  }
+}
+
+export async function updateSyncSession(
+  sessionId: string,
+  patch: { deviceName?: string; role?: SyncSpaceRole },
+) {
+  try {
+    const result = await apiRequest<{ session: SyncSessionMetadata }>(
+      `/api/sync/v2/sessions/${encodeURIComponent(sessionId)}`,
+      { method: "PATCH", body: JSON.stringify(patch) },
+    );
+    if (result.data?.session.current) {
+      const local = loadSyncSession();
+      if (isSyncSessionV2(local)) {
+        saveSyncSession({
+          ...local,
+          deviceName: result.data.session.deviceName,
+          role: result.data.session.role,
+        });
+      }
     }
+    return { ok: true as const, session: result.data?.session };
+  } catch (error) {
+    return { ok: false as const, message: messageOf(error, "更新设备失败。") };
+  }
+}
+
+export async function revokeSyncSession(sessionId: string) {
+  try {
+    await apiRequest(`/api/sync/v2/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" });
+    return { ok: true as const };
+  } catch (error) {
+    return { ok: false as const, message: messageOf(error, "撤销设备失败。") };
+  }
+}
+
+export async function listSyncInvites() {
+  try {
+    const result = await apiRequest<{ invites: SyncInviteMetadata[] }>("/api/sync/v2/invites");
+    return { ok: true as const, invites: result.data?.invites ?? [] };
+  } catch (error) {
+    return { ok: false as const, message: messageOf(error, "无法读取邀请列表。") };
+  }
+}
+
+export async function createSyncInviteLink(ttlMinutes: number) {
+  try {
+    const result = await apiRequest<{
+      invite: { id: string; token: string; expiresAt: string };
+    }>("/api/sync/v2/invites", {
+      method: "POST",
+      body: JSON.stringify({ ttlMinutes }),
+    });
+    const invite = result.data?.invite;
+    if (!invite) throw new SyncApiError("同步服务没有返回邀请。", 502);
+    const origin = typeof window === "undefined" ? "http://localhost" : window.location.origin;
+    return {
+      ok: true as const,
+      invite: {
+        ...invite,
+        link: `${origin}/join#invite=${encodeURIComponent(invite.token)}`,
+      },
+    };
+  } catch (error) {
+    return { ok: false as const, message: messageOf(error, "生成邀请失败。") };
+  }
+}
+
+export async function revokeSyncInvite(inviteId: string) {
+  try {
+    await apiRequest(`/api/sync/v2/invites/${encodeURIComponent(inviteId)}`, { method: "DELETE" });
+    return { ok: true as const };
+  } catch (error) {
+    return { ok: false as const, message: messageOf(error, "撤销邀请失败。") };
+  }
+}
+
+export async function renameSyncSpace(displayName: string) {
+  try {
+    const result = await apiRequest<{ space: SyncSpaceMetadata }>("/api/sync/v2/space", {
+      method: "PATCH",
+      body: JSON.stringify({ displayName }),
+    });
+    if (result.data?.space) {
+      const local = loadSyncSession();
+      if (isSyncSessionV2(local)) saveSyncSession({ ...local, displayName: result.data.space.displayName });
+    }
+    return { ok: true as const, space: result.data?.space };
+  } catch (error) {
+    return { ok: false as const, message: messageOf(error, "重命名同步空间失败。") };
+  }
+}
+
+export async function deleteSyncSpacePermanently(confirmation: string) {
+  try {
+    await createSnapshotAsync("永久删除服务器同步空间前");
+    await apiRequest("/api/sync/v2/space", {
+      method: "DELETE",
+      body: JSON.stringify({ confirmation }),
+    });
+    clearRetrySchedule();
+    saveSyncSession(undefined);
+    saveSyncClientState({});
+    useSyncStatusStore.setState({ joined: false, syncing: false });
+    return { ok: true as const };
+  } catch (error) {
+    // 服务端确认删除前保留本机会话与全部业务数据。
+    return { ok: false as const, message: messageOf(error, "永久删除同步空间失败。") };
   }
 }

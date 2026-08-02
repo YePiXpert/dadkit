@@ -2,25 +2,27 @@ import { readLimitedRequestText } from "@/lib/http/request-body";
 import {
   clientKeyFromHeaders,
   createRateLimiter,
+  rateLimitHeaders,
 } from "@/lib/http/rate-limit";
 import { bearerToken, syncError, syncJson } from "@/lib/sync/http";
 import {
   createInvite,
   SyncStoreError,
 } from "@/lib/sync/server-store";
+import { rejectInvalidMutationOrigin, syncStoreErrorResponse } from "@/lib/sync/route-utils";
 
 export const runtime = "nodejs";
 
 const MAX_INVITE_BYTES = 4 * 1024;
-const inviteLimiter = createRateLimiter(10, 60_000);
+const inviteLimiter = createRateLimiter(20, 60 * 60_000);
 
 export async function POST(request: Request) {
+  const originError = rejectInvalidMutationOrigin(request);
+  if (originError) return originError;
   const rateLimit = inviteLimiter.consume(clientKeyFromHeaders(request.headers));
 
   if (!rateLimit.allowed) {
-    return syncError("操作过于频繁，请稍后再试。", 429, {
-      "retry-after": String(rateLimit.retryAfterSeconds),
-    });
+    return syncError("操作过于频繁，请稍后再试。", 429, rateLimitHeaders(rateLimit));
   }
 
   const token = bearerToken(request);
@@ -55,7 +57,7 @@ export async function POST(request: Request) {
     return syncJson(result);
   } catch (error) {
     if (error instanceof SyncStoreError) {
-      return syncError("同步服务暂时不可用，请稍后再试。", 500);
+      return syncStoreErrorResponse(error)!;
     }
     throw error;
   }

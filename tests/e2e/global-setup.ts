@@ -35,7 +35,7 @@ export default async function globalSetup() {
     env: {
       ...process.env,
       DADKIT_DATA_DIR: path.join(root, "data", "playwright"),
-      DADKIT_PUBLIC_ORIGIN: "https://dadkit.505f.com",
+      DADKIT_PUBLIC_ORIGIN: baseURL,
       HOSTNAME: "127.0.0.1",
       PORT: String(port),
     },

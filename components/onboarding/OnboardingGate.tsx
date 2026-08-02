@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { loadDeviceIdentity } from "@/lib/device-identity/repository";
 import { hasExistingDadKitData } from "@/lib/device-identity/onboarding";
 
-const BYPASS_PATHS = ["/onboarding", "/settings/backup", "/privacy", "/support"];
+const BYPASS_PATHS = ["/onboarding", "/join", "/settings/backup", "/settings/sync", "/privacy", "/support"];
 
 export function OnboardingGate() {
   const pathname = usePathname();

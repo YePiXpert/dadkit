@@ -1,9 +1,12 @@
-import { bearerToken, syncError, syncJson } from "@/lib/sync/http";
+import { syncError, syncJson } from "@/lib/sync/http";
 import { leaveSpace, SyncStoreError } from "@/lib/sync/server-store";
 import {
   clientKeyFromHeaders as proxyClientKey,
   createRateLimiter as createWebDavProxyRateLimiter,
 } from "@/lib/http/rate-limit";
+import { requestCredential } from "@/lib/sync/request-auth";
+import { rejectInvalidMutationOrigin, syncStoreErrorResponse } from "@/lib/sync/route-utils";
+import { clearSessionCookie } from "@/lib/sync/session-cookie";
 
 export const runtime = "nodejs";
 
@@ -18,18 +21,21 @@ export async function POST(request: Request) {
     });
   }
 
-  const token = bearerToken(request);
-
-  if (!token) {
-    return syncJson({ ok: true });
+  const credential = requestCredential(request);
+  if (!credential) {
+    return syncJson({ ok: true }, 200, { "set-cookie": clearSessionCookie(request) });
   }
+  const originError = rejectInvalidMutationOrigin(request, {
+    requireHeader: credential.source === "cookie",
+  });
+  if (originError) return originError;
 
   try {
-    await leaveSpace(token);
-    return syncJson({ ok: true });
+    await leaveSpace(credential.token);
+    return syncJson({ ok: true }, 200, { "set-cookie": clearSessionCookie(request) });
   } catch (error) {
     if (error instanceof SyncStoreError) {
-      return syncError("同步服务暂时不可用，请稍后再试。", 500);
+      return syncStoreErrorResponse(error)!;
     }
 
     throw error;

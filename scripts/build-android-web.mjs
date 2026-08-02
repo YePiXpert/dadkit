@@ -45,6 +45,10 @@ try {
     force: true,
     recursive: true,
   });
+  await rm(path.join(staging, "app", "healthz"), {
+    force: true,
+    recursive: true,
+  });
 
   await runNextExport();
 

@@ -35,15 +35,19 @@ test("全新安装进入引导并可跳过；已有数据不会被强制跳转",
   await existingContext.close();
 });
 
-test("引导可先进入导入备份或加入家庭", async ({ page }) => {
+test("引导可先进入导入备份、邀请加入或创建同步", async ({ page }) => {
   await page.goto("/onboarding", { waitUntil: "domcontentloaded" });
   await page.getByRole("link", { name: "导入备份" }).click();
   await expect(page).toHaveURL(/\/settings\/backup$/);
 
   await page.goto("/onboarding", { waitUntil: "domcontentloaded" });
   await page.getByRole("link", { name: "加入家庭" }).click();
-  await expect(page).toHaveURL(/\/settings\/backup#family-sync$/);
-  await expect(page.getByText("家庭同步", { exact: true }).first()).toBeVisible();
+  await expect(page).toHaveURL(/\/join$/);
+  await expect(page.getByRole("heading", { name: "加入家庭同步" })).toBeVisible();
+
+  await page.goto("/onboarding", { waitUntil: "domcontentloaded" });
+  await page.getByRole("link", { name: "创建同步" }).click();
+  await expect(page).toHaveURL(/\/settings\/sync$/);
 });
 
 test("完成待产引导会协调保存自定义成员和当前设备使用者", async ({ page }) => {

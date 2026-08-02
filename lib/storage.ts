@@ -142,11 +142,28 @@ export type {
   HiddenTemplateItemStamps,
 } from "@/lib/data/format";
 
-export type SyncSession = {
+export type LegacySyncSession = {
   token: string;
   joinedAt: string;
   spaceName?: string;
 };
+
+export type SyncSessionLocalV2 = {
+  version: 2;
+  protocolVersion: 2;
+  spaceId: string;
+  displayName: string;
+  sessionId: string;
+  deviceName: string;
+  role: "owner" | "member";
+  joinedAt: string;
+  /** Protocol 2 secrets live only in the HttpOnly cookie. */
+  token?: undefined;
+  /** Kept absent so old callers can feature-detect without exposing secrets. */
+  spaceName?: undefined;
+};
+
+export type SyncSession = LegacySyncSession | SyncSessionLocalV2;
 
 export type SyncClientState = {
   lastSyncAt?: string;
@@ -498,6 +515,35 @@ export function saveGrowthUpdatedAt(timestamp: number) {
 
 export function loadSyncSession(): SyncSession | undefined {
   const value = readJson<unknown>(STORAGE_KEYS.syncSession, undefined);
+
+  if (
+    isRecord(value) &&
+    value.version === 2 &&
+    value.protocolVersion === 2 &&
+    typeof value.spaceId === "string" &&
+    /^[0-9a-f]{64}$/.test(value.spaceId) &&
+    typeof value.displayName === "string" &&
+    value.displayName.length >= 1 &&
+    value.displayName.length <= 40 &&
+    typeof value.sessionId === "string" &&
+    /^[0-9a-f]{64}$/.test(value.sessionId) &&
+    typeof value.deviceName === "string" &&
+    value.deviceName.length >= 1 &&
+    value.deviceName.length <= 60 &&
+    (value.role === "owner" || value.role === "member") &&
+    typeof value.joinedAt === "string"
+  ) {
+    return {
+      version: 2,
+      protocolVersion: 2,
+      spaceId: value.spaceId,
+      displayName: value.displayName,
+      sessionId: value.sessionId,
+      deviceName: value.deviceName,
+      role: value.role,
+      joinedAt: value.joinedAt,
+    };
+  }
 
   if (
     isRecord(value) &&
@@ -995,6 +1041,18 @@ export function exportData(): DadKitExportData {
     baby: createEmptyBabyData(),
     household: loadHousehold(),
   };
+}
+
+export function isLegacySyncSession(
+  session: SyncSession | undefined,
+): session is LegacySyncSession {
+  return Boolean(session && "token" in session);
+}
+
+export function isSyncSessionV2(
+  session: SyncSession | undefined,
+): session is SyncSessionLocalV2 {
+  return Boolean(session && "protocolVersion" in session && session.protocolVersion === 2);
 }
 
 /** Builds the complete v9 document from localStorage plus IndexedDB baby data. */

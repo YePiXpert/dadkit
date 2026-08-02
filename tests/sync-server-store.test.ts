@@ -164,10 +164,10 @@ describe("async sync server store", () => {
     const created = await createSpace("过期口令家庭");
     const file = path.join(dir, readdirSync(dir)[0]!);
     const stored = JSON.parse(readFileSync(file, "utf8")) as {
-      invite: { expiresAt: string };
+      invites: Record<string, { expiresAt: string }>;
     };
 
-    stored.invite.expiresAt = new Date(Date.now() - 1).toISOString();
+    Object.values(stored.invites)[0]!.expiresAt = new Date(Date.now() - 1).toISOString();
     writeFileSync(file, JSON.stringify(stored), "utf8");
 
     await expect(
@@ -195,7 +195,7 @@ describe("async sync server store", () => {
     await expect(joinSpace("测试家庭", "错误的同步码")).resolves.toBeUndefined();
   });
 
-  it("never stores raw space names or codes and uses private permissions", async () => {
+  it("stores the display name but never the raw code and uses private permissions", async () => {
     await joinSpace("隐私家庭", "隐私同步码");
 
     const entries = readdirSync(dir);
@@ -204,7 +204,7 @@ describe("async sync server store", () => {
 
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatch(/^space-[0-9a-f]{64}\.json$/);
-    expect(stored).not.toContain("隐私家庭");
+    expect(stored).toContain('"displayName":"隐私家庭"');
     expect(stored).not.toContain("隐私同步码");
     if (process.platform !== "win32") {
       expect(statSync(file).mode & 0o777).toBe(0o600);

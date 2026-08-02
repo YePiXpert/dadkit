@@ -21,8 +21,18 @@ export function syncError(
   message: string,
   status: number,
   additionalHeaders?: HeadersInit,
+  code?: string,
+  details?: Record<string, unknown>,
 ) {
-  return syncJson({ error: message }, status, additionalHeaders);
+  return syncJson(
+    {
+      error: message,
+      ...(code ? { code } : {}),
+      ...(details ? { details } : {}),
+    },
+    status,
+    additionalHeaders,
+  );
 }
 
 export function bearerToken(request: Request) {

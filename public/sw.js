@@ -1,5 +1,5 @@
-const CACHE_NAME = "dadkit-v3.1.0-pwa-r1";
-const PRECACHE_ROUTES = ["/", "/onboarding", "/settings/family"];
+const CACHE_NAME = "dadkit-v3.2.0-pwa-r1";
+const PRECACHE_ROUTES = ["/", "/onboarding", "/join", "/settings/family", "/settings/sync"];
 const PWA_ASSETS = [
   "/manifest.webmanifest",
   "/icon.svg",
@@ -128,7 +128,7 @@ function shouldCacheAsset(url) {
 
 async function precacheAppShell() {
   const cache = await caches.open(CACHE_NAME);
-  // 首页、首次引导和家庭设置是离线启动及 v3.1 家庭配置的关键入口。
+  // 首页、首次引导、加入页和家庭设置是离线启动的关键入口。
   const routeHtml = await Promise.all(
     PRECACHE_ROUTES.map((route) => fetchAndCacheRoute(cache, route)),
   );

@@ -398,7 +398,7 @@ export default function BackupSettingsPage() {
     setJsonBackupMessage("");
     try {
       const data = await buildLatestPortableData();
-      downloadJsonFile(data, `dadkit-v8-${data.exportedAt.slice(0, 10)}.json`);
+      downloadJsonFile(data, `dadkit-backup-${data.exportedAt.slice(0, 10)}.json`);
       setJsonBackupMessage("完整 JSON 备份已导出，包含宝宝资料、照护事件和删除墓碑。");
       setJsonBackupMessageOk(true);
     } catch (error) {
@@ -522,7 +522,7 @@ export default function BackupSettingsPage() {
           </CardHeader>
           <CardContent className="grid gap-3">
             <p className="text-sm leading-6 text-muted-foreground">
-              恢复、清空或重建前自动保存完整便携数据，包含宝宝资料与照护记录，最多保留 2 份。v8 恢复点保存在 IndexedDB，不含照片和 WebDAV 配置。
+              恢复、清空或重建前自动保存完整便携数据，包含宝宝资料与照护记录，最多保留 2 份。恢复点保存在 IndexedDB，不含照片和 WebDAV 配置。
             </p>
             {recentSnapshots.length === 0 ? (
               <p className="rounded-2xl bg-muted px-4 py-4 text-sm text-muted-foreground">
@@ -562,7 +562,7 @@ export default function BackupSettingsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <p className="text-sm leading-6 text-muted-foreground">导出 v8 JSON 可携带清单、医院档案、家庭分工、宝宝资料、全部照护事件、活动计时和删除墓碑。导入属于完整恢复；v3–v7 旧备份不含宝宝数据，恢复时会安全清空本机宝宝记录。</p>
+            <p className="text-sm leading-6 text-muted-foreground">导出完整 JSON 可携带清单、医院档案、家庭分工、宝宝资料、全部照护事件、活动计时和删除墓碑。导入属于完整恢复；不含宝宝数据的旧备份会安全清空本机宝宝记录。</p>
             <input ref={jsonBackupInputRef} accept="application/json,.json" aria-label="选择 JSON 备份文件" className="sr-only" type="file" onChange={chooseJsonBackup} />
             <div className="flex flex-wrap gap-2">
               <Button disabled={jsonBackupBusy} onClick={() => void exportJsonBackup()}><Download />导出 JSON 备份</Button>
@@ -631,7 +631,7 @@ export default function BackupSettingsPage() {
           </summary>
           <div className="grid gap-4 border-t border-border/70 p-5">
             <p className="text-sm leading-6 text-muted-foreground">
-              只在你主动操作时上传或下载完整 v8 备份。上传与恢复会合并清单字段、宝宝资料字段和照护事件，不会自动同步，也不上传照片或 WebDAV 凭据。地址必须使用 HTTPS。
+              只在你主动操作时上传或下载完整备份。上传与恢复会合并清单字段、宝宝资料字段和照护事件，不会自动同步，也不上传照片或 WebDAV 凭据。地址必须使用 HTTPS。
             </p>
 
             <div className="flex flex-wrap gap-2">
@@ -845,7 +845,7 @@ export default function BackupSettingsPage() {
               confirmation.type === "restoreSnapshot"
                 ? "恢复此恢复点会完整替换当前便携数据，包括宝宝资料与照护记录。"
                 : confirmation.type === "restoreJson"
-                  ? "JSON 导入属于完整恢复。系统会先创建恢复点；v3–v7 备份会安全清空宝宝资料和照护记录。"
+                  ? "JSON 导入属于完整恢复。系统会先创建恢复点；不含宝宝数据的旧备份会安全清空宝宝资料和照护记录。"
                 : confirmation.type === "deleteSnapshots"
                   ? "全部本机恢复点将被永久删除。"
                   : confirmation.type === "clearWebDav"

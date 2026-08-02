@@ -138,25 +138,13 @@ test("照片保存在当前浏览器且备份页不再提供设备迁移", async
   await expect(page.getByText("加密设备迁移")).toHaveCount(0);
 });
 
-test("家庭同步可创建口令并手动完成一次同步", async ({ page }: { page: Page }) => {
-  // FamilySyncCard intentionally loads after the backup shell. Give the
-  // WebKit project enough time to fetch and hydrate that optional module.
-  test.setTimeout(120_000);
-
-  const project = test.info().project.name.startsWith("chromium") ? "c" : "w";
-  const suffix = `${project}${String(Date.now()).slice(-8)}`;
-
+test("家庭同步摘要提供新入口和旧同步码兼容入口", async ({ page }: { page: Page }) => {
   await page.goto("/settings/backup", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("#sync-name")).toBeVisible({ timeout: 60_000 });
-  await page.locator("#sync-name").fill(`E2E ${suffix}`);
-  await page.getByRole("button", { name: "创建并生成口令" }).click();
-  await expect(page.locator("#sync-invite-code")).toHaveText(
-    /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/,
-    { timeout: 60_000 },
-  );
-
-  await page.getByRole("button", { name: "立即同步" }).click();
-  await expect(page.getByText("同步完成")).toBeVisible();
+  await expect(page.getByRole("link", { name: "创建同步空间" })).toHaveAttribute("href", "/settings/sync");
+  await expect(page.getByRole("link", { name: "通过邀请加入" })).toHaveAttribute("href", "/join");
+  await page.getByText("使用旧同步码", { exact: true }).click();
+  await expect(page.locator("#legacy-sync-name")).toBeVisible();
+  await expect(page.locator("#legacy-sync-code")).toBeVisible();
 });
 
 test("Service Worker 缓存支持离线重开首页", async ({

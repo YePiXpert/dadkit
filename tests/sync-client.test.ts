@@ -500,7 +500,7 @@ describe("family sync client", () => {
     expect(useSyncStatusStore.getState().lastError).toContain("会话已失效");
   });
 
-  it("leaves the space locally even when the revoke request fails", async () => {
+  it("keeps the local session when the server cannot confirm leaving", async () => {
     installBrowserStorage();
     const { localValues } = installBrowserStorage();
     localValues.set(
@@ -515,9 +515,10 @@ describe("family sync client", () => {
       }),
     );
 
-    await leaveSpace();
+    const outcome = await leaveSpace();
 
-    expect(loadSyncSession()).toBeUndefined();
-    expect(useSyncStatusStore.getState().joined).toBe(false);
+    expect(outcome.ok).toBe(false);
+    expect(loadSyncSession()).toBeDefined();
+    expect(useSyncStatusStore.getState().joined).toBe(true);
   });
 });

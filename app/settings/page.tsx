@@ -5,6 +5,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   Cloud,
+  Share2,
   Users,
 } from "lucide-react";
 
@@ -13,6 +14,13 @@ import { InstallPromptSettingsEntry } from "@/components/InstallPromptSettingsEn
 import { FamilySetupPrompt } from "@/components/household/FamilySetupPrompt";
 
 const SETTINGS_ENTRIES = [
+  {
+    href: "/settings/sync",
+    title: "家庭同步",
+    description: "管理同步空间、邀请和已加入的设备。",
+    icon: Share2,
+    accent: "bg-tile-dad-bg text-tile-dad-fg",
+  },
   {
     href: "/settings/family",
     title: "家庭成员",
@@ -44,7 +52,7 @@ const SETTINGS_ENTRIES = [
   {
     href: "/settings/backup",
     title: "备份与恢复",
-    description: "管理本机恢复点和 WebDAV 备份。",
+    description: "管理本机恢复点、JSON 和 WebDAV 备份。",
     icon: Cloud,
     accent: "bg-tile-dad-bg text-tile-dad-fg",
   },

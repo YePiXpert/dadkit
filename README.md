@@ -14,7 +14,8 @@ DadKit 是一个本地优先的家庭待产与新生儿记录工具，支持网�
 - 孕 8–40 周宝宝成长记
 - 本机照片、恢复快照、WebDAV 备份和家庭同步
 - 温暖马卡龙纸张、水粉与彩铅风格插画
-- 离线可用，兼容既有 v3–v9 数据；v5/v6/v7/v8/v9 家庭设备可安全混合同步
+- 离线可用，兼容既有备份和旧版家庭同步设备
+- 随机家庭同步空间、同名家庭、私密邀请链接、设备角色与主动永久删除
 
 ![DadKit 应用预览](public/og.png)
 
@@ -31,6 +32,7 @@ DadKit 是一个本地优先的家庭待产与新生儿记录工具，支持网�
 - [医院档案](https://dadkit.505f.com/hospital)
 - [家庭分工与采购](https://dadkit.505f.com/planning)
 - [家庭成员设置](https://dadkit.505f.com/settings/family)
+- [家庭同步管理](https://dadkit.505f.com/settings/sync)
 - [宝宝记录](https://dadkit.505f.com/baby)
 - [备份与同步](https://dadkit.505f.com/settings/backup)
 - [最新 Android APK](https://github.com/YePiXpert/dadkit/releases/latest)
@@ -44,6 +46,12 @@ DADKIT_BIND_ADDRESS=127.0.0.1
 DADKIT_PORT=3333
 DADKIT_PUBLIC_ORIGIN=https://dadkit.505f.com
 DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS=
+DADKIT_SYNC_REGISTRATION_MODE=open
+DADKIT_SYNC_MAX_SPACE_BYTES=25165824
+DADKIT_SYNC_MAX_DEVICES=12
+DADKIT_SYNC_MAX_ACTIVE_INVITES=5
+DADKIT_TRUST_PROXY_HOPS=1
+DADKIT_SYNC_REQUIRE_HTTPS=true
 ```
 
 ```bash
@@ -53,13 +61,19 @@ docker compose up -d --build
 curl -fsS http://127.0.0.1:3333/healthz
 ```
 
-家庭同步的数据目录应挂载到持久化卷（可用 `DADKIT_DATA_DIR` 指定）。当前同步服务采用进程内文件锁，并在每次写入前保留最近 5 份空间文件滚动备份；因此家庭同步必须以**单实例**部署，不支持多个应用副本同时写同一个数据目录。
+家庭同步的数据目录必须挂载到持久化卷（可用 `DADKIT_DATA_DIR` 指定）。当前服务使用单实例文件存储、进程内空间锁和单实例内存限流，不支持多个应用副本同时写同一个数据目录，也不提供共享限流。多实例部署属于后续版本范围。
 
-最新可移植数据格式为 v9。新客户端通过 `X-DadKit-Data-Version: 9` 协商医院档案、家庭档案、多人负责人和带记录人的宝宝数据；v5/v6/v7/v8 客户端分别收到自己支持的合法投影，旧设备推送时会保留 canonical 中它不支持的新字段。v7/v8 只能显示固定旧角色，因此自定义负责人会降级投影成“其他家人”；相同时间戳的往返不会覆盖 v9 的真实自定义成员组合，旧客户端产生更新的时间戳时才视为一次真实改派。
+新建空间使用与家庭显示名称无关的随机标识，因此完全相同的家庭名称可以并存。邀请凭据只放在链接 fragment 中，默认单次使用；新会话保存在 HttpOnly Cookie 中，不写入 localStorage。已有名称型空间和旧设备可继续使用，读取时会无损升级服务端元数据，原 token 和业务数据保持有效。
 
-家庭显示名称、成员名称、关系、多人负责人以及事件记录人会进入 v9 JSON、IndexedDB 安全快照、WebDAV 和可选家庭同步；“当前设备使用者”只保存在当前设备，不作为独立设置进入任何备份或同步。手动完整恢复 v3–v8 旧备份会安全清空缺失的自定义家庭档案，并把实际使用过的旧负责人转换为确定性的兼容成员；家庭同步收到旧版本时则保留 canonical household 和记录人。
+同步空间的管理员可以创建或撤销邀请、管理设备、重命名和永久删除服务器空间；普通成员可以同步全部业务数据、查看用量并修改本设备名称。设备角色不等于家庭成员账号权限，也不会改变业务数据可见性。撤销设备不会删除它曾同步的清单或宝宝记录。
 
-宝宝资料与完整照护事件以 IndexedDB 为唯一持久层，v9 备份包含资料、活动计时、历史事件、记录人和删除墓碑。本版本仍只支持一个宝宝。家庭同步仍为完整 canonical 文档合并；事件增量同步属于后续性能优化方向。
+每个空间默认最多 24 MiB、12 台有效设备和 5 个有效邀请。超出数据配额的推送会在写盘前原子拒绝，不修改空间文件或滚动备份。运营者可通过 `.env.example` 中的变量调整合理上限，也可关闭新空间注册而不影响已有空间。
+
+正式公开部署必须使用 HTTPS。家庭同步当前不是端到端加密：服务器保存并可读取 canonical 同步数据，服务器运营者理论上能够读取内容。请勿公开邀请链接。`DADKIT_PUBLIC_ORIGIN` 应填写经过验证的正式 origin；单层 Nginx 可设置 `DADKIT_TRUST_PROXY_HOPS=1`，代码默认值为 0，不会无条件信任转发头。
+
+家庭显示名称、成员名称、关系、多人负责人以及事件记录人会进入 JSON、IndexedDB 安全快照、WebDAV 和可选家庭同步；“当前设备使用者”只保存在当前设备，不作为独立设置进入任何备份或同步。旧备份和旧同步客户端仍按其支持的合法表示读写，推送时会保留它们不认识的新字段。本次同步服务升级没有改变用户可移植数据格式。
+
+宝宝资料与完整照护事件以 IndexedDB 为唯一持久层，备份包含资料、活动计时、历史事件、记录人和删除墓碑。本版本仍只支持一个宝宝。家庭同步仍为完整 canonical 文档合并；事件增量同步属于后续性能优化方向。
 
 ## 升级方式
 

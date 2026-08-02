@@ -10,6 +10,7 @@ import {
   isApplyingRemote,
   refreshSyncStatus,
   syncNow,
+  upgradeLegacySyncSession,
 } from "@/lib/sync/client";
 
 const SYNC_DEBOUNCE_MS = 3_000;
@@ -40,6 +41,7 @@ export function startAutoSync() {
 
   started = true;
   refreshSyncStatus();
+  void upgradeLegacySyncSession().finally(() => refreshSyncStatus());
 
   useDadKitStore.subscribe((state, previous) => {
     if (isApplyingRemote() || !state.hydrated) {

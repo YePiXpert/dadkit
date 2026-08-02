@@ -1,36 +1,40 @@
-import { bearerToken, syncError, syncJson } from "@/lib/sync/http";
+import { syncError, syncJson } from "@/lib/sync/http";
 import { pullSpace, SyncStoreError } from "@/lib/sync/server-store";
 import {
   clientKeyFromHeaders as proxyClientKey,
   createRateLimiter as createWebDavProxyRateLimiter,
+  rateLimitHeaders,
 } from "@/lib/http/rate-limit";
 import {
   getRequestedDataVersion,
   syncDataVersionResponseHeaders,
 } from "@/lib/sync/data-version";
+import { requestCredentials } from "@/lib/sync/request-auth";
 
 export const runtime = "nodejs";
 
 const pullRateLimiter = createWebDavProxyRateLimiter(120, 60_000);
 
 export async function GET(request: Request) {
-  const rateLimit = pullRateLimiter.consume(proxyClientKey(request.headers));
+  const credentials = requestCredentials(request);
+  const sessionRateKey = credentials[0]?.token.split(".")[0];
+  const rateLimit = pullRateLimiter.consume(sessionRateKey ? `space:${sessionRateKey}` : proxyClientKey(request.headers));
 
   if (!rateLimit.allowed) {
-    return syncError("操作过于频繁，请稍后再试。", 429, {
-      "retry-after": String(rateLimit.retryAfterSeconds),
-    });
+    return syncError("操作过于频繁，请稍后再试。", 429, rateLimitHeaders(rateLimit));
   }
 
-  const token = bearerToken(request);
-
-  if (!token) {
+  if (!credentials.length) {
     return syncError("缺少同步会话。", 401);
   }
 
   try {
     const dataVersion = getRequestedDataVersion(request.headers);
-    const snapshot = await pullSpace(token, dataVersion);
+    let snapshot;
+    for (const credential of credentials) {
+      snapshot = await pullSpace(credential.token, dataVersion);
+      if (snapshot) break;
+    }
 
     if (!snapshot) {
       return syncError("同步会话已失效，请重新输入同步码。", 401);
