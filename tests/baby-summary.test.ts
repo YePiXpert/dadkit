@@ -19,13 +19,14 @@ describe("baby today summary", () => {
   });
 
   it("counts only the sleep overlap with today and active sleep up to now", () => {
+    const dayStart = new Date(2026, 7, 1).getTime();
     const events: CareEvent[] = [
-      { ...base("sleep", 1), type: "sleep", startAt: "2026-07-31T23:00:00.000Z", endAt: "2026-08-01T02:00:00.000Z" },
-      { ...base("active", 2), type: "sleep", startAt: "2026-08-01T10:00:00.000Z", endAt: null },
+      { ...base("sleep", 1), type: "sleep", startAt: new Date(dayStart - 3_600_000).toISOString(), endAt: new Date(dayStart + 3 * 3_600_000).toISOString() },
+      { ...base("active", 2), type: "sleep", startAt: new Date(dayStart + 10 * 3_600_000).toISOString(), endAt: null },
     ];
-    const summary = deriveTodayCareSummary(events, "2026-08-01", { now: Date.parse("2026-08-01T11:00:00.000Z") });
-    // Device-local Aug 1 includes three hours from the cross-midnight sleep
-    // plus one hour from the active sleep in Asia/Shanghai.
+    const summary = deriveTodayCareSummary(events, "2026-08-01", { now: dayStart + 11 * 3_600_000 });
+    // The device-local day includes three hours from the cross-midnight sleep
+    // plus one hour from the active sleep, regardless of the process timezone.
     expect(summary.sleepDurationMs).toBe(4 * 3_600_000);
     expect(summary.completedSleepCount).toBe(1);
     expect(summary.sleeping).toBe(true);
