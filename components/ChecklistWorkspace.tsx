@@ -3,15 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Clipboard,
-  PackageCheck,
-  Plus,
-  Search,
-  Settings2,
-  X,
-} from "lucide-react";
+import { Clipboard, PackageCheck, Plus, Search, Settings2, X } from "lucide-react";
 
 import { CelebrationOverlay } from "@/components/CelebrationOverlay";
 import { ChecklistCategoryCard } from "@/components/ChecklistCategoryCard";
@@ -38,11 +30,6 @@ import {
 } from "@/lib/checklist-milestones";
 import { matchesChecklistSearch } from "@/lib/checklist-search";
 import { showAppToast } from "@/lib/app-toast";
-import { DEPARTURE_PATH } from "@/lib/app-routes";
-import { PlanningSummaryCard } from "@/components/PlanningSummaryCard";
-import { BabyHomeCard } from "@/components/baby/BabyHomeCard";
-import { HouseholdFeaturePrompt } from "@/components/household/HouseholdFeaturePrompt";
-import { getDepartureProgress } from "@/lib/departure";
 import { useDadKitStore } from "@/lib/store";
 import { useChecklistViewQuery } from "@/lib/use-checklist-view-query";
 
@@ -100,10 +87,6 @@ export function ChecklistWorkspace() {
   );
   const departureItemCount = useMemo(
     () => getDepartureItemCount(checklist),
-    [checklist],
-  );
-  const departureProgress = useMemo(
-    () => getDepartureProgress(checklist),
     [checklist],
   );
   const bulkPackingIds = searchedVisibleItems
@@ -265,35 +248,6 @@ export function ChecklistWorkspace() {
           </span>
           <HomeGrowthHint />
         </section>
-
-        <Link
-          className="group flex min-h-24 items-center gap-3 rounded-card border border-primary/20 bg-card p-4 transition-colors hover:bg-secondary/35"
-          href={DEPARTURE_PATH}
-        >
-          <span className="icon-tile size-12">
-            <PackageCheck className="size-6" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <strong className="block text-base font-semibold">准备出发</strong>
-            <span className="mt-1 block break-words text-xs leading-5 text-muted-foreground">
-              {departureProgress.remaining > 0
-                ? `还有 ${departureProgress.remaining} 项出发前需要确认`
-                : departureProgress.total > 0
-                  ? "关键物品已经确认，可以安心出发"
-                  : "整理证件、随车物品和关键行李"}
-            </span>
-          </span>
-          <ArrowRight
-            aria-hidden="true"
-            className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
-          />
-        </Link>
-
-        <PlanningSummaryCard compact />
-
-        <BabyHomeCard />
-
-        <HouseholdFeaturePrompt />
 
         <ChecklistGroupTabs counts={counts} value={view} onChange={setView} />
 

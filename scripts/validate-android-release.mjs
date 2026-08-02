@@ -3,9 +3,9 @@ import path from "node:path";
 
 const root = process.cwd();
 const expected = {
-  tag: "v3.2.0",
-  versionName: "3.2.0",
-  versionCode: 10,
+  tag: "v3.3.0",
+  versionName: "3.3.0",
+  versionCode: 11,
   packageId: "com.dadkit.mobile",
   host: "dadkit.505f.com",
 };
@@ -88,6 +88,7 @@ await access(path.join(bundledRoot, "join", "index.html"));
 await access(path.join(bundledRoot, "settings", "sync", "index.html"));
 await access(path.join(bundledRoot, "settings", "family", "index.html"));
 await access(path.join(bundledRoot, "growth", "index.html"));
+await access(path.join(bundledRoot, "checklist", "index.html"));
 await access(path.join(bundledRoot, "checklist", "baby", "index.html"));
 
 const itemArt = await readdir(path.join(bundledRoot, "item-art"));

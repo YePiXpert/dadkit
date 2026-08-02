@@ -1,3 +1,4 @@
+export const CHECKLIST_PATH = "/checklist";
 export const DEPARTURE_PATH = "/departure";
 export const HOSPITAL_PATH = "/hospital";
 export const PLANNING_PATH = "/planning";

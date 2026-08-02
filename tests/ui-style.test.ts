@@ -15,6 +15,7 @@ function readSource(...segments: string[]) {
 const globals = readSource("app", "globals.css");
 const layout = readSource("app", "layout.tsx");
 const homePage = readSource("app", "page.tsx");
+const checklistPage = readSource("app", "checklist", "page.tsx");
 const growthPage = readSource("app", "growth", "page.tsx");
 const settingsPage = readSource("app", "settings", "page.tsx");
 const checklistSettingsPage = readSource(
@@ -137,7 +138,7 @@ describe("V2 PWA visual and navigation contract", () => {
     expect(
       PRIMARY_NAVIGATION_ITEMS.map(({ href, id, label }) => ({ href, id, label })),
     ).toEqual([
-      { href: "/", id: "checklist", label: "清单" },
+      { href: "/checklist", id: "checklist", label: "清单" },
       { href: "/baby", id: "baby", label: "宝宝" },
       { href: "/settings", id: "mine", label: "我的" },
     ]);
@@ -145,7 +146,8 @@ describe("V2 PWA visual and navigation contract", () => {
     const checklistNav = PRIMARY_NAVIGATION_ITEMS[0];
     const mineNav = PRIMARY_NAVIGATION_ITEMS.find((item) => item.id === "mine")!;
 
-    expect(isPrimaryNavigationItemActive("/", checklistNav)).toBe(true);
+    expect(isPrimaryNavigationItemActive("/checklist", checklistNav)).toBe(true);
+    expect(isPrimaryNavigationItemActive("/", checklistNav)).toBe(false);
     expect(isPrimaryNavigationItemActive("/departure", checklistNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/planning", checklistNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/settings", checklistNav)).toBe(false);
@@ -168,8 +170,9 @@ describe("V2 PWA visual and navigation contract", () => {
     expect(mobileNav).toContain("env(safe-area-inset-bottom)");
   });
 
-  it("renders the four-view checklist workspace at the root URL", () => {
-    expect(homePage).toContain("<ChecklistWorkspace />");
+  it("renders the four-view checklist workspace at the dedicated checklist URL", () => {
+    expect(checklistPage).toContain("<ChecklistWorkspace />");
+    expect(homePage).toContain("<HomeDashboard />");
     expect(checklistWorkspace).toContain("<ChecklistGroupTabs");
     expect(checklistWorkspace).toContain("deriveChecklistView");
     expect(checklistWorkspace).toContain("visibleItems");

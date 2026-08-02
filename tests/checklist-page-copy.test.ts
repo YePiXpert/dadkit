@@ -10,6 +10,7 @@ function readSource(...segments: string[]) {
 }
 
 const homePage = readSource("app", "page.tsx");
+const checklistPage = readSource("app", "checklist", "page.tsx");
 const checklistWorkspace = readSource("components", "ChecklistWorkspace.tsx");
 const checklistItemRow = readSource("components", "ChecklistItemRow.tsx");
 const checklistItemDetailsDialog = readSource(
@@ -33,10 +34,12 @@ const checklistSectionWorkspace = readSource(
 );
 
 describe("V2 checklist experience", () => {
-  it("uses the checklist workspace as the only home implementation", () => {
-    expect(homePage).toContain("<ChecklistWorkspace />");
-    expect(homePage).not.toContain("getBabySexLabel");
-    expect(homePage).not.toContain("ChecklistProgressCard");
+  it("uses the checklist workspace on the dedicated checklist page", () => {
+    expect(checklistPage).toContain("<ChecklistWorkspace />");
+    expect(homePage).toContain("<HomeDashboard />");
+    expect(homePage).not.toContain("ChecklistWorkspace");
+    expect(checklistPage).not.toContain("getBabySexLabel");
+    expect(checklistPage).not.toContain("ChecklistProgressCard");
   });
 
   it("shows exactly the four V2 views in a fixed mobile grid", () => {

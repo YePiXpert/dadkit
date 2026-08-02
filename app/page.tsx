@@ -1,14 +1,14 @@
 import { Suspense } from "react";
 
 import {
-  ChecklistWorkspace,
-  ChecklistWorkspaceSkeleton,
-} from "@/components/ChecklistWorkspace";
+  HomeDashboard,
+  HomeDashboardSkeleton,
+} from "@/components/HomeDashboard";
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<ChecklistWorkspaceSkeleton />}>
-      <ChecklistWorkspace />
+    <Suspense fallback={<HomeDashboardSkeleton />}>
+      <HomeDashboard />
     </Suspense>
   );
 }

@@ -33,7 +33,7 @@ describe("settings information architecture", () => {
         label,
       })),
     ).toEqual([
-      { href: "/", id: "checklist", label: "清单" },
+      { href: "/checklist", id: "checklist", label: "清单" },
       { href: "/baby", id: "baby", label: "宝宝" },
       { href: "/settings", id: "mine", label: "我的" },
     ]);

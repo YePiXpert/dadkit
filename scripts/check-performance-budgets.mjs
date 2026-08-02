@@ -10,7 +10,9 @@ const MAX_CSS_BYTES = 11 * 1024;
 // 预算 = 当前构建实测 gzip 体积（含 polyfills chunk）+ 10%–15% 余量；
 // 备份页已濒临超限，仅按现状 +5%。
 const routeBudgets = new Map([
-  ["/page", 250 * 1024],
+  // v3.3 首页改为仪表盘（进度卡 + 功能入口），实测约 217 KiB，留 10% 余量。
+  ["/page", 240 * 1024],
+  ["/checklist/page", 255 * 1024],
   ["/checklist/[sectionId]/page", 255 * 1024],
   ["/departure/page", 250 * 1024],
   ["/hospital/page", 225 * 1024],
@@ -34,8 +36,9 @@ const routeBudgets = new Map([
 ]);
 
 const routeLabels = new Map([
-  ["/page", "首页"],
-  ["/checklist/[sectionId]/page", "清单页"],
+  ["/page", "首页仪表盘"],
+  ["/checklist/page", "纯清单页"],
+  ["/checklist/[sectionId]/page", "清单分类页"],
   ["/departure/page", "准备出发页"],
   ["/hospital/page", "医院档案页"],
   ["/planning/page", "家庭分工与采购页"],

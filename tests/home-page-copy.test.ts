@@ -8,14 +8,18 @@ function readSource(...segments: string[]) {
 }
 
 const homePage = readSource("app", "page.tsx");
+const checklistPage = readSource("app", "checklist", "page.tsx");
+const homeDashboard = readSource("components", "HomeDashboard.tsx");
 const checklistWorkspace = readSource("components", "ChecklistWorkspace.tsx");
 
-describe("checklist home page", () => {
-  it("uses the checklist workspace at the root route", () => {
-    expect(homePage).toContain("ChecklistWorkspace,");
-    expect(homePage).toContain('from "@/components/ChecklistWorkspace"');
-    expect(homePage).toContain("<ChecklistWorkspace />");
-    expect(homePage).toContain("<Suspense");
+describe("checklist and home dashboard pages", () => {
+  it("uses the checklist workspace at the dedicated checklist route", () => {
+    expect(checklistPage).toContain("ChecklistWorkspace,");
+    expect(checklistPage).toContain('from "@/components/ChecklistWorkspace"');
+    expect(checklistPage).toContain("<ChecklistWorkspace />");
+    expect(checklistPage).toContain("<Suspense");
+    expect(homePage).toContain("<HomeDashboard />");
+    expect(homePage).not.toContain("ChecklistWorkspace");
   });
 
   it("opens directly into an actionable checklist", () => {
@@ -24,9 +28,15 @@ describe("checklist home page", () => {
     expect(checklistWorkspace).toContain("deriveChecklistView");
     expect(checklistWorkspace).toContain("visibleItems");
     expect(checklistWorkspace).toContain("counts");
-    expect(checklistWorkspace).toContain("准备出发");
-    expect(checklistWorkspace).toContain("getDepartureProgress");
-    expect(checklistWorkspace).toContain("DEPARTURE_PATH");
+  });
+
+  it("surfaces departure, planning, baby and household entries on the dashboard", () => {
+    expect(homeDashboard).toContain("准备出发");
+    expect(homeDashboard).toContain("getDepartureProgress");
+    expect(homeDashboard).toContain("DEPARTURE_PATH");
+    expect(homeDashboard).toContain("PlanningSummaryCard compact");
+    expect(homeDashboard).toContain("BabyHomeCard");
+    expect(homeDashboard).toContain("HouseholdFeaturePrompt");
   });
 
   it("does not depend on optional profile or removed tools", () => {

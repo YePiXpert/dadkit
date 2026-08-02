@@ -27,7 +27,7 @@ async function signalPwaInstallAvailability(page: Page) {
 test.describe.configure({ timeout: 120_000 });
 
 test("移动端输入保持 16px，安装入口仅在可用时显示", async ({ page }: { page: Page }) => {
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto("/checklist", { waitUntil: "domcontentloaded" });
 
   const search = page.locator("#checklist-search");
   await expect(search).toBeVisible();
@@ -95,7 +95,7 @@ test("清单和成长记在移动端完成 hydrate 并持久化", async ({ page 
   const itemName = `E2E 自定义物品 ${test.info().project.name}`;
   const nickname = `E2E-${test.info().project.name.slice(0, 8)}`;
 
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto("/checklist", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("button", { name: "新增物品" })).toBeVisible({
     timeout: 60_000,
   });
@@ -147,7 +147,7 @@ test("家庭同步摘要提供新入口和旧同步码兼容入口", async ({ pa
   await expect(page.locator("#legacy-sync-code")).toBeVisible();
 });
 
-test("Service Worker 缓存支持离线重开首页", async ({
+test("Service Worker 缓存支持离线重开清单页", async ({
   browserName,
   context,
   page,
@@ -158,7 +158,7 @@ test("Service Worker 缓存支持离线重开首页", async ({
 }) => {
   test.setTimeout(100_000);
 
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto("/checklist", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("button", { name: "新增物品" })).toBeVisible({
     timeout: 60_000,
   });
@@ -191,7 +191,7 @@ test("Service Worker 缓存支持离线重开首页", async ({
     // Inspecting the completed navigation cache still validates the offline app
     // shell that Safari will use without depending on that runner limitation.
     const hasCachedShell = await page.evaluate(async () => {
-      const cached = await caches.match("/", { ignoreSearch: true });
+      const cached = await caches.match("/checklist", { ignoreSearch: true });
       return Boolean(cached?.ok && (await cached.text()).includes("<html"));
     });
     expect(hasCachedShell).toBe(true);
@@ -250,7 +250,7 @@ test("Chromium 移动端在 4x CPU 下保持交互与视觉稳定性", async ({
   const lcpSamples: number[] = [];
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/checklist", { waitUntil: "domcontentloaded" });
     await expect(
       page.getByRole("progressbar", { name: /清单完成/ }),
     ).toBeVisible();

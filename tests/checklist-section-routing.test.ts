@@ -30,7 +30,9 @@ describe("checklist section routes", () => {
     expect(getChecklistSectionHref("documents", query)).toBe(
       "/checklist/documents?view=shopping&from=home",
     );
-    expect(getChecklistHomeHref(query)).toBe("/?view=shopping&from=home");
+    expect(getChecklistHomeHref(query)).toBe(
+      "/checklist?view=shopping&from=home",
+    );
     expect(setChecklistViewInQuery(query, "packing")).toBe(
       "view=packing&from=home",
     );

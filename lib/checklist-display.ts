@@ -46,7 +46,7 @@ export function getChecklistSectionHref(
 }
 
 export function getChecklistHomeHref(query = "") {
-  return appendQuery("/", query);
+  return appendQuery("/checklist", query);
 }
 
 export function setChecklistViewInQuery(query: string, view: ChecklistView) {

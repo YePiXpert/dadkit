@@ -13,12 +13,12 @@ const row = source("components/PlanningItemRow.tsx");
 const dialog = source("components/ItemPlanningDialog.tsx");
 const bulk = source("components/BulkPlanningDialog.tsx");
 const details = source("components/ChecklistItemDetailsDialog.tsx");
-const checklist = source("components/ChecklistWorkspace.tsx");
+const home = source("components/HomeDashboard.tsx");
 
 describe("planning product surface", () => {
   it("adds a compact home entry without replacing departure", () => {
-    expect(checklist).toContain("PlanningSummaryCard compact");
-    expect(checklist).toContain("DEPARTURE_PATH");
+    expect(home).toContain("PlanningSummaryCard compact");
+    expect(home).toContain("DEPARTURE_PATH");
     expect(summary).toContain("家庭分工与采购");
     expect(summary).toContain("已经超过完成期限");
   });

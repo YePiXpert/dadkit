@@ -5,6 +5,7 @@
 DadKit 是一个本地优先的家庭待产与新生儿记录工具，支持网页、iPhone PWA 和内置资源的 Android APK。
 
 - 144 个待产与月子物品，支持全部、待购买、待装包和已装包状态
+- 首页家庭仪表盘与独立纯清单页：进度、出发、分工和宝宝记录一屏总览，物品核对集中在清单页
 - 准备出发模式，集中核对证件、临出门物品、随车准备和关键行李
 - 医院档案，集中保存院区、地址、电话、入院入口、停车和医院要求
 - 首次使用引导和通用家庭档案，可自定义单亲、祖辈、月嫂等家庭成员或照护者，不强制使用“爸爸/妈妈”角色
@@ -28,6 +29,7 @@ DadKit 是一个本地优先的家庭待产与新生儿记录工具，支持网�
 
 - [正式站点](https://dadkit.505f.com/)
 - [宝宝成长记](https://dadkit.505f.com/growth)
+- [待产清单](https://dadkit.505f.com/checklist)
 - [宝宝清单](https://dadkit.505f.com/checklist/baby)
 - [准备出发](https://dadkit.505f.com/departure)
 - [医院档案](https://dadkit.505f.com/hospital)
