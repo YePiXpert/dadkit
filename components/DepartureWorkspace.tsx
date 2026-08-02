@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { HospitalSummaryCard } from "@/components/HospitalSummaryCard";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { showAppToast } from "@/lib/app-toast";
 import {
   deriveDepartureGroups,
@@ -248,14 +249,14 @@ export function DepartureWorkspaceSkeleton() {
       aria-label="正在准备出发清单"
       className="page-shell page-shell-with-nav"
     >
-      <section className="mobile-shell grid animate-pulse gap-4 lg:max-w-2xl">
-        <div className="h-20 rounded-card bg-muted" />
-        <div className="h-48 rounded-card bg-muted" />
+      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+        <Skeleton className="h-20 rounded-card" />
+        <Skeleton className="h-48 rounded-card" />
         <div className="grid gap-3">
-          <div className="h-12 rounded-inset bg-muted" />
+          <Skeleton className="h-12 rounded-inset" />
           <div className="item-card-grid">
-            <div className="h-80 rounded-card bg-muted" />
-            <div className="h-80 rounded-card bg-muted" />
+            <Skeleton className="h-80 rounded-card" />
+            <Skeleton className="h-80 rounded-card" />
           </div>
         </div>
       </section>

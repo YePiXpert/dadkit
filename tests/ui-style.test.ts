@@ -42,6 +42,12 @@ const checklistSectionWorkspace = readSource(
 );
 const mobileNav = readSource("components", "MobileNav.tsx");
 const appHeader = readSource("components", "AppHeader.tsx");
+const appToast = readSource("components", "AppToast.tsx");
+const babyQuickActionDialog = readSource(
+  "components",
+  "baby",
+  "BabyQuickActionDialog.tsx",
+);
 const pwaRegister = readSource("components", "PwaRegister.tsx");
 const button = readSource("components", "ui", "button.tsx");
 const card = readSource("components", "ui", "card.tsx");
@@ -96,6 +102,8 @@ describe("V2 PWA visual and navigation contract", () => {
       backupSettingsPage,
       checklistWorkspace,
       checklistSectionWorkspace,
+      appToast,
+      babyQuickActionDialog,
     ]) {
       expect(source).not.toContain("#eadfce");
       expect(source).not.toContain("#fbe3de");
@@ -238,5 +246,18 @@ describe("V2 PWA visual and navigation contract", () => {
       expect(source).not.toContain("/illustrations/");
       expect(source).not.toContain("buildPreparationSummary");
     }
+  });
+
+  it("ships the v3.2.1 design-system primitives", () => {
+    const badge = readSource("components", "ui", "badge.tsx");
+    const skeleton = readSource("components", "ui", "skeleton.tsx");
+    const dangerZone = readSource("components", "DangerZone.tsx");
+    const dialog = readSource("components", "ui", "dialog.tsx");
+
+    expect(badge).toContain("rounded-full");
+    expect(badge).toContain("primarySolid");
+    expect(skeleton).toContain("animate-pulse");
+    expect(dangerZone).toContain("border-destructive/25");
+    expect(dialog).toContain("mobileFullscreen");
   });
 });

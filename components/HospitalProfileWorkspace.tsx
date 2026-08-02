@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { showAppToast } from "@/lib/app-toast";
 import { hospitalValuesFromPortable } from "@/lib/hospital/portable";
@@ -199,10 +200,10 @@ export function HospitalProfileWorkspace() {
                     className="rounded-inset border border-border/70 bg-background/60 p-3"
                     key={key}
                   >
-                    <h3 className="text-xs font-semibold text-muted-foreground">
+                    <h3 className="text-xs text-muted-foreground">
                       {HOSPITAL_FIELD_LABELS[key]}
                     </h3>
-                    <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-6">
+                    <p className="mt-1 whitespace-pre-wrap break-words text-sm font-medium leading-6">
                       {values[key]}
                     </p>
                   </div>
@@ -262,14 +263,16 @@ export function HospitalProfileWorkspace() {
               </div>
             ) : null}
 
-            <Button
-              className="justify-self-start text-destructive hover:text-destructive"
-              onClick={() => setClearConfirmOpen(true)}
-              variant="ghost"
-            >
-              <Trash2 />
-              清空档案
-            </Button>
+            <div className="mt-1 border-t border-border/60 pt-3">
+              <Button
+                className="text-destructive hover:text-destructive"
+                onClick={() => setClearConfirmOpen(true)}
+                variant="ghost"
+              >
+                <Trash2 />
+                清空档案
+              </Button>
+            </div>
           </section>
         ) : (
           <section className="grid justify-items-center rounded-card border border-border bg-card p-8 text-center">
@@ -363,9 +366,9 @@ function HospitalDraftField({
 function HospitalProfileSkeleton() {
   return (
     <div className="page-shell page-shell-with-nav" aria-label="正在读取医院档案">
-      <section className="mobile-shell grid animate-pulse gap-4 lg:max-w-2xl">
-        <div className="h-20 rounded-card bg-muted" />
-        <div className="h-72 rounded-card bg-muted" />
+      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+        <Skeleton className="h-20 rounded-card" />
+        <Skeleton className="h-72 rounded-card" />
       </section>
     </div>
   );

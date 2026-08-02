@@ -16,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -120,7 +121,8 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
         </Button>
       </DialogTrigger>
       <DialogContent
-        className="inset-0 left-0 top-0 flex h-[100dvh] max-h-none w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none bg-background p-0 shadow-none sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[90dvh] sm:w-[calc(100%-2rem)] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:gap-5 sm:overflow-y-auto sm:rounded-card sm:border sm:border-border sm:p-6 sm:shadow-lg"
+        className="flex flex-col overflow-hidden sm:gap-5 sm:border sm:border-border sm:p-6"
+        mobileFullscreen
         showCloseButton={false}
       >
         <DialogHeader className="relative block min-h-[5.5rem] shrink-0 border-b border-border/60 px-16 pb-4 pt-[max(env(safe-area-inset-top),1rem)] text-center sm:min-h-0 sm:border-0 sm:px-0 sm:pb-0 sm:pt-0">
@@ -261,9 +263,9 @@ function FormRow({
 }) {
   return (
     <div className="flex min-h-20 items-center justify-between gap-3 py-2">
-      <label className="shrink-0 text-sm font-semibold" htmlFor={htmlFor}>
+      <Label className="shrink-0" htmlFor={htmlFor}>
         {label}
-      </label>
+      </Label>
       {children}
     </div>
   );

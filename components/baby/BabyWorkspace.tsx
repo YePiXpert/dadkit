@@ -6,9 +6,11 @@ import { useEffect, useState } from "react";
 import { BabyDashboard } from "@/components/baby/BabyDashboard";
 import { BabyProfileDialog } from "@/components/baby/BabyProfileDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { showAppToast } from "@/lib/app-toast";
 import { hasBabyMode } from "@/lib/baby/portable";
 import { useBabyStore } from "@/lib/baby/store";
@@ -39,7 +41,12 @@ export function BabyWorkspace() {
         ) : (
           <>
             <PageHeader kicker="出生后启用" subtitle="宝宝出生后，可以在这里记录喂养、尿布和睡眠。" title="宝宝记录" />
-            <Card><CardContent className="grid justify-items-center gap-4 p-7 text-center"><span className="flex size-16 items-center justify-center rounded-3xl bg-secondary text-primary"><Baby className="size-8" /></span><div><h2 className="text-lg font-bold">宝宝已出生？</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">填写出生日期即可开始记录；不会清空待产清单、医院档案、准备出发或家庭分工。</p></div><Button onClick={() => setProfileOpen(true)}>宝宝已出生，开始记录</Button></CardContent></Card>
+            <EmptyState
+              action={<Button onClick={() => setProfileOpen(true)}>宝宝已出生，开始记录</Button>}
+              description="填写出生日期即可开始记录；不会清空待产清单、医院档案、准备出发或家庭分工。"
+              icon={Baby}
+              title="宝宝已出生？"
+            />
           </>
         )}
 
@@ -62,5 +69,5 @@ export function BabyWorkspace() {
 }
 
 export function BabyWorkspaceSkeleton() {
-  return <div className="page-shell page-shell-with-nav" aria-label="正在读取宝宝资料和照护记录"><section className="mobile-shell grid animate-pulse gap-4 lg:max-w-2xl"><div className="h-32 rounded-card bg-muted" /><div className="h-20 rounded-card bg-muted" /><div className="h-64 rounded-card bg-muted" /></section></div>;
+  return <div className="page-shell page-shell-with-nav" aria-label="正在读取宝宝资料和照护记录"><section className="mobile-shell grid gap-4 lg:max-w-2xl"><Skeleton className="h-32 rounded-card" /><Skeleton className="h-20 rounded-card" /><Skeleton className="h-64 rounded-card" /></section></div>;
 }

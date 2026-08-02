@@ -1,10 +1,15 @@
+import type { ReactNode } from "react";
 import { PackageOpen, type LucideIcon } from "lucide-react";
+
+import { cn } from "@/lib/utils";
 
 type EmptyStateProps = {
   title: string;
-  description: string;
+  description?: string;
   illustrationId?: string;
-  icon?: LucideIcon;
+  icon?: LucideIcon | null;
+  variant?: "card" | "dashed";
+  action?: ReactNode;
 };
 
 export function EmptyState({
@@ -12,9 +17,18 @@ export function EmptyState({
   description,
   illustrationId,
   icon: Icon = PackageOpen,
+  variant = "card",
+  action,
 }: EmptyStateProps) {
   return (
-    <div className="flex min-h-[220px] flex-col items-center justify-center rounded-card border border-border bg-card p-8 text-center shadow-none">
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center rounded-card border text-center shadow-none",
+        variant === "dashed"
+          ? "min-h-[160px] border-dashed border-border bg-transparent p-6"
+          : "min-h-[220px] border-border bg-card p-8",
+      )}
+    >
       {illustrationId ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -24,15 +38,18 @@ export function EmptyState({
           loading="lazy"
           src={`/item-art/${illustrationId}.webp`}
         />
-      ) : (
+      ) : Icon ? (
         <span className="mb-4 flex size-16 shrink-0 items-center justify-center rounded-inset bg-secondary text-primary">
           <Icon className="size-7" />
         </span>
-      )}
+      ) : null}
       <h2 className="text-base font-semibold">{title}</h2>
-      <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-        {description}
-      </p>
+      {description ? (
+        <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+          {description}
+        </p>
+      ) : null}
+      {action ? <div className="mt-4">{action}</div> : null}
     </div>
   );
 }

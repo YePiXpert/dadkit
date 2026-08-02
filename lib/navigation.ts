@@ -52,3 +52,12 @@ function routeMatches(pathname: string, route: string) {
 
   return pathname === route || pathname.startsWith(`${route}/`);
 }
+
+export function showsMobileNavigation(pathname: string) {
+  return !(
+    pathname === "/onboarding" ||
+    pathname.startsWith("/checklist/") ||
+    pathname === "/growth" ||
+    pathname.startsWith("/settings/")
+  );
+}

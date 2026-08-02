@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Baby, BedDouble, Milk, Pencil, ShowerHead } from "lucide-react";
+import { Baby, BedDouble, Container, Droplets, Milk, Pencil } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { BabyQuickActionDialog } from "@/components/baby/BabyQuickActionDialog";
 import { CurrentDeviceMemberCard } from "@/components/household/CurrentDeviceMemberCard";
 import { CareEventRow } from "@/components/baby/CareEventRow";
+import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { birthDayNumber } from "@/lib/baby/date";
@@ -38,7 +39,7 @@ export function BabyDashboard({ onEditProfile }: { onEditProfile(): void }) {
     <>
       <header className="rounded-card border border-border bg-card p-4 shadow-sm">
         <div className="flex items-start justify-between gap-3">
-          <div><p className="text-sm font-semibold text-primary">宝宝记录</p><h1 className="mt-1 text-2xl font-bold break-words">{nickname}</h1><p className="mt-1 text-sm text-muted-foreground">{day ? `出生第 ${day} 天` : "出生日期待确认"}</p></div>
+          <div><p className="text-sm font-semibold text-primary">宝宝记录</p><h1 className="mt-1 text-xl font-bold break-words sm:text-2xl">{nickname}</h1><p className="mt-1 text-sm text-muted-foreground">{day ? `出生第 ${day} 天` : "出生日期待确认"}</p></div>
           <Button aria-label="编辑宝宝资料" onClick={onEditProfile} size="icon" variant="outline"><Pencil className="size-4" /></Button>
         </div>
         <p className="mt-4 rounded-xl bg-secondary p-3 text-sm">{lastFeeding ? `最近喂养：${formatCareRelativeTime(lastFeeding.type === "bottle" ? lastFeeding.occurredAt : lastFeeding.startAt, now)}` : "还没有喂养记录"}</p>
@@ -71,7 +72,7 @@ export function BabyDashboard({ onEditProfile }: { onEditProfile(): void }) {
       <section className="grid gap-3">
         <div className="flex items-center justify-between gap-3 px-1"><div><h2 className="font-semibold">最近 24 小时</h2><p className="text-xs text-muted-foreground">按发生时间显示最近记录</p></div><Button asChild size="sm" variant="outline"><Link href="/baby/timeline">查看全部记录</Link></Button></div>
         {recentEvents.filter((event) => careEventSortTime(event) >= now - 86_400_000 || activeEvents.some((active) => active.id === event.id)).slice(0, 12).map((event) => <CareEventRow event={event} key={event.id} now={now} />)}
-        {recentEvents.length === 0 ? <div className="rounded-card border border-dashed border-border p-6 text-center text-sm text-muted-foreground">记录会保存在本机 IndexedDB，断网时也能继续使用。</div> : null}
+        {recentEvents.length === 0 ? <EmptyState variant="dashed" icon={null} title="还没有记录" description="记录会保存在本机 IndexedDB，断网时也能继续使用。" /> : null}
       </section>
 
       <BabyQuickActionDialog action={action} onOpenChange={(open) => !open && setAction(undefined)} open={Boolean(action)} />
@@ -86,7 +87,7 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
 const QUICK_ACTIONS = [
   { type: "breastfeeding", label: "亲喂", Icon: Baby },
   { type: "bottle", label: "瓶喂", Icon: Milk },
-  { type: "pumping", label: "吸奶", Icon: Milk },
-  { type: "diaper", label: "尿布", Icon: ShowerHead },
+  { type: "pumping", label: "吸奶", Icon: Container },
+  { type: "diaper", label: "尿布", Icon: Droplets },
   { type: "sleep", label: "睡眠", Icon: BedDouble },
 ] as const;

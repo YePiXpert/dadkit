@@ -215,7 +215,7 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
           sleep ? (
             <div className="grid gap-4">
               <TimerLabel label="已睡时长" value={formatCareDuration(now - Date.parse(sleep.startAt))} />
-              {now - Date.parse(sleep.startAt) > 86_400_000 ? <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">计时已超过 24 小时，请确认是否忘记结束；DadKit 不会自动修改记录。</p> : null}
+              {now - Date.parse(sleep.startAt) > 86_400_000 ? <p className="rounded-lg border border-warning-foreground/25 bg-warning p-3 text-sm text-warning-foreground">计时已超过 24 小时，请确认是否忘记结束；DadKit 不会自动修改记录。</p> : null}
               <NoteField note={note} setNote={setNote} />
               <Button disabled={busy} onClick={() => void run(() => finishSleep(note), "睡眠记录已保存。")}>结束睡眠</Button>
               <Button disabled={busy} onClick={() => void run(() => deleteEvent(sleep.id), "错误睡眠记录已删除。") } variant="destructive">删除错误记录</Button>

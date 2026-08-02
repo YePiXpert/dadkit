@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CareEventDialog } from "@/components/baby/CareEventDialog";
 import { CareEventRow } from "@/components/baby/CareEventRow";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,7 +69,7 @@ export function CareTimelineWorkspace() {
 
         {activeVisible.length > 0 ? <section className="grid gap-3"><h2 className="px-1 text-sm font-semibold text-primary">进行中</h2>{activeVisible.map((event) => <CareEventRow event={event} key={event.id} onDelete={() => setDeleting(event)} />)}</section> : null}
         {[...groups.entries()].map(([date, events]) => <section className="grid gap-3" key={date}><h2 className="px-1 text-sm font-semibold text-muted-foreground">{date}</h2>{events.map((event) => <CareEventRow event={event} key={event.id} onDelete={() => setDeleting(event)} onEdit={() => setEditing(event)} />)}</section>)}
-        {visible.length === 0 ? <div className="rounded-card border border-dashed border-border p-8 text-center text-sm text-muted-foreground">当前范围没有符合条件的记录。</div> : null}
+        {visible.length === 0 ? <EmptyState variant="dashed" icon={null} title="当前范围没有符合条件的记录。" /> : null}
         <Button onClick={() => setDays((value) => Math.min(3650, value + 7))} variant="outline">继续加载更早 7 天</Button>
       </section>
 

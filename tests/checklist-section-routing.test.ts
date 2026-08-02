@@ -104,9 +104,11 @@ describe("checklist section routes", () => {
   });
 
   it("hides the mobile footer only on checklist detail routes", () => {
+    const navigation = readSource("lib", "navigation.ts");
     const mobileNav = readSource("components", "MobileNav.tsx");
 
-    expect(mobileNav).toContain('pathname.startsWith("/checklist/")');
+    expect(navigation).toContain('pathname.startsWith("/checklist/")');
+    expect(mobileNav).toContain("showsMobileNavigation");
     expect(mobileNav).toContain("return null");
   });
 });

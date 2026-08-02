@@ -17,6 +17,7 @@ import {
 
 import { PageHeader } from "@/components/PageHeader";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { DangerZone } from "@/components/DangerZone";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -761,31 +762,23 @@ export default function BackupSettingsPage() {
           </div>
         </details>
 
-        <Card className="border-destructive/25 bg-destructive/[0.025]">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">清空并重新开始</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            <p className="text-sm leading-6 text-muted-foreground">
-              清单、医院档案、家庭分工、宝宝记录、本机恢复点、WebDAV 设置、家庭同步登录状态和本机物品照片都会清除。请先导出 JSON 或 WebDAV 备份；本操作完成后无法从本机恢复点找回。
-            </p>
-            <Button
-              className="justify-self-start"
-              variant="destructive"
-              onClick={() => {
-                setClearMessage("");
-                setClearMessageOk(undefined);
-                setClearDialogOpen(true);
-              }}
-            >
-              <RotateCcw />
-              清空并生成新清单
-            </Button>
-            {!clearDialogOpen ? (
-              <Feedback message={clearMessage} ok={clearMessageOk} />
-            ) : null}
-          </CardContent>
-        </Card>
+        <DangerZone title="清空并重新开始" description="清单、医院档案、家庭分工、宝宝记录、本机恢复点、WebDAV 设置、家庭同步登录状态和本机物品照片都会清除。请先导出 JSON 或 WebDAV 备份；本操作完成后无法从本机恢复点找回。">
+          <Button
+            className="justify-self-start"
+            variant="destructive"
+            onClick={() => {
+              setClearMessage("");
+              setClearMessageOk(undefined);
+              setClearDialogOpen(true);
+            }}
+          >
+            <RotateCcw />
+            清空并生成新清单
+          </Button>
+          {!clearDialogOpen ? (
+            <Feedback message={clearMessage} ok={clearMessageOk} />
+          ) : null}
+        </DangerZone>
 
         <Dialog
           open={clearDialogOpen}

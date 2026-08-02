@@ -14,6 +14,7 @@ import {
   Moon,
 } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import {
   getChecklistItemState,
   type ChecklistSectionId,
@@ -129,13 +130,13 @@ export function ChecklistCategoryCard({
             </span>
           ) : null}
         </span>
-        <span className="shrink-0 whitespace-nowrap rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+        <Badge variant="muted" className="shrink-0 whitespace-nowrap">
           {items.length === 0
             ? "暂无项目"
             : remaining > 0
               ? `还差 ${remaining} 项`
               : (resolvedLabel ?? "已完成")}
-        </span>
+        </Badge>
         <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
       </Link>
     </section>

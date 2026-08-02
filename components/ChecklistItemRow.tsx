@@ -12,6 +12,7 @@ import {
 
 import { ChecklistItemArt } from "@/components/ChecklistItemArt";
 import { useItemPhoto } from "@/components/ItemPhotoField";
+import { Badge } from "@/components/ui/badge";
 import {
   getChecklistItemState,
   type ChecklistItemState,
@@ -176,18 +177,19 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
           />
         )}
 
-        <span
-          className={cn(
-            "absolute right-2 top-2 inline-flex min-h-7 items-center gap-1 rounded-full border border-border/70 bg-card/95 px-2 text-xs font-semibold text-muted-foreground shadow-sm",
-            itemState === "ready" && "border-primary/20 text-primary",
-            itemState === "packed" &&
-              "border-primary bg-primary text-primary-foreground",
-            itemState === "not_needed" && "text-muted-foreground",
-          )}
+        <Badge
+          className="absolute right-2 top-2 min-h-7 shadow-sm"
+          variant={
+            itemState === "ready"
+              ? "primaryOutline"
+              : itemState === "packed"
+                ? "primarySolid"
+                : "outline"
+          }
         >
           <StateIcon className="size-3" strokeWidth={2.2} />
           {STATE_LABELS[itemState]}
-        </span>
+        </Badge>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col px-1.5 pb-1 pt-3">

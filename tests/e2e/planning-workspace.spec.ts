@@ -9,6 +9,12 @@ async function chooseSelect(page: Page, label: string, option: string) {
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 
+async function expandFilters(page: Page) {
+  if (!(await page.getByLabel("分工筛选", { exact: true }).isVisible())) {
+    await page.locator("summary").filter({ hasText: /^筛选/ }).click();
+  }
+}
+
 async function openFirstPlanningItem(page: Page) {
   const button = page.getByRole("button", { name: /^编辑.+的分工与采购$/ }).first();
   const name = (await button.getAttribute("aria-label"))
@@ -82,6 +88,7 @@ test("物品详情入口和批量负责人、期限设置及清空可持久化",
   await page.getByRole("button", { name: "保存批量设置" }).click();
   await expect(page.getByText(/已更新 \d+ 项分工与采购信息/)).toBeVisible();
 
+  await expandFilters(page);
   await chooseSelect(page, "分工筛选", "未来 7 天");
   await expect(page.locator("article").first()).toContainText("2026-08-08");
   await chooseSelect(page, "负责人筛选", "奶奶");
@@ -91,6 +98,7 @@ test("物品详情入口和批量负责人、期限设置及清空可持久化",
   await chooseSelect(page, "完成期限处理方式", "清空");
   await page.getByRole("button", { name: "保存批量设置" }).click();
   await page.reload({ waitUntil: "domcontentloaded" });
+  await expandFilters(page);
   await chooseSelect(page, "负责人筛选", "奶奶");
   await expect(page.locator("article").first()).toContainText("奶奶");
   await expect(page.getByText("2026-08-08", { exact: true })).toHaveCount(0);

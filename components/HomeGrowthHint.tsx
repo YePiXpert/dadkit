@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import {
   getCurrentGrowthWeekFromDueDate,
   getDaysUntilDueDate,
@@ -49,12 +50,11 @@ export function HomeGrowthHint() {
         </Link>
       )}
       {hasPendingReminder ? (
-        <Link
-          className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive"
-          href="/growth"
-        >
-          <span className="size-1.5 rounded-full bg-destructive" />
-          本周产检提醒待确认
+        <Link href="/growth">
+          <Badge variant="destructive">
+            <span className="size-1.5 rounded-full bg-destructive" />
+            本周产检提醒待确认
+          </Badge>
         </Link>
       ) : null}
     </div>

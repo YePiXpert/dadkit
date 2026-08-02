@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/PageHeader";
 import { SettingToggleRow } from "@/components/SettingToggleRow";
+import { DangerZone } from "@/components/DangerZone";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -179,28 +180,20 @@ export default function ChecklistSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-destructive/25 bg-destructive/[0.025]">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">危险区</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            <p className="text-sm leading-6 text-muted-foreground">
-              重建会清除当前进度与自定义物品。执行前必须成功创建本机恢复点，否则操作会中止。
-            </p>
-            <Button
-              className="justify-self-start"
-              variant="destructive"
-              onClick={() => {
-                setMessage("");
-                setMessageOk(undefined);
-                setRebuildDialogOpen(true);
-              }}
-            >
-              <ListRestart />
-              重建通用清单
-            </Button>
-          </CardContent>
-        </Card>
+        <DangerZone title="危险区" description="重建会清除当前进度与自定义物品。执行前必须成功创建本机恢复点，否则操作会中止。">
+          <Button
+            className="justify-self-start"
+            variant="destructive"
+            onClick={() => {
+              setMessage("");
+              setMessageOk(undefined);
+              setRebuildDialogOpen(true);
+            }}
+          >
+            <ListRestart />
+            重建通用清单
+          </Button>
+        </DangerZone>
 
         {!rebuildDialogOpen ? (
           <Feedback message={message} ok={messageOk} />

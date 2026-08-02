@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, Coins, Users } from "lucide-react";
+import { CalendarClock, Users } from "lucide-react";
 import { useEffect, useMemo } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -69,7 +69,7 @@ export function PlanningSummaryCard({ compact = false }: { compact?: boolean }) 
         <div>
           <p className="section-kicker">当前安排</p>
           <h2 className="mt-1 text-lg font-semibold">分工与采购概览</h2>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          <p className="mt-1 text-xs leading-snug text-muted-foreground">
             金额按项目总价统计，不会乘以清单数量。
           </p>
         </div>
@@ -81,15 +81,13 @@ export function PlanningSummaryCard({ compact = false }: { compact?: boolean }) 
         <SummaryMetric label="未来 7 天" value={`${summary.dueSoonCount}`} />
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 border-t border-border/60 pt-3">
         <MoneyMetric
-          icon={<Coins className="size-4" />}
           label="预计总额"
           value={summary.estimatedCoverageCount > 0 ? formatPlanningMoney(summary.estimatedTotalFen) : "尚未记录"}
           coverage={summary.estimatedCoverageCount}
         />
         <MoneyMetric
-          icon={<Coins className="size-4" />}
           label="实际已记录总额"
           value={summary.actualCoverageCount > 0 ? formatPlanningMoney(summary.actualTotalFen) : "尚未记录"}
           coverage={summary.actualCoverageCount}
@@ -118,22 +116,18 @@ function SummaryMetric({
 
 function MoneyMetric({
   coverage,
-  icon,
   label,
   value,
 }: {
   coverage: number;
-  icon: React.ReactNode;
   label: string;
   value: string;
 }) {
   return (
-    <div className="rounded-inset border border-border/70 bg-background/60 p-3">
-      <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-        {icon}{label}
-      </p>
-      <p className="mt-1 text-lg font-semibold">{value}</p>
-      <p className="mt-1 text-xs text-muted-foreground">已覆盖 {coverage} 项</p>
+    <div>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-0.5 text-base font-semibold">{value}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">已覆盖 {coverage} 项</p>
     </div>
   );
 }

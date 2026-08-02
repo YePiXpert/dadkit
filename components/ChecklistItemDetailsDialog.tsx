@@ -7,6 +7,7 @@ import { Ban, Check, PackageCheck, ShoppingBag, Trash2 } from "lucide-react";
 import { ChecklistItemArt } from "@/components/ChecklistItemArt";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ItemPhotoField, useItemPhoto } from "@/components/ItemPhotoField";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,7 +26,6 @@ import { useHouseholdStore } from "@/lib/household/store";
 import { formatPlanningMoney, getItemPlanningValues, getPlanningAssigneeLabel } from "@/lib/planning/selectors";
 import { useItemPlanningStore } from "@/lib/planning/store";
 import type { ChecklistItem } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 const EditItemDialog = dynamic(
   () =>
@@ -136,16 +136,17 @@ export function ChecklistItemDetailsDialog({
                 {stateMeta.description}
               </p>
             </div>
-            <span
-              className={cn(
-                "rounded-full bg-muted px-3 py-1.5 text-xs font-semibold text-muted-foreground",
-                itemState === "ready" && "bg-secondary text-primary",
-                itemState === "packed" &&
-                  "bg-primary text-primary-foreground",
-              )}
+            <Badge
+              variant={
+                itemState === "ready"
+                  ? "primaryOutline"
+                  : itemState === "packed"
+                    ? "primarySolid"
+                    : "outline"
+              }
             >
               {stateMeta.label}
-            </span>
+            </Badge>
           </div>
           <Button className="mt-4 w-full" onClick={handlePrimaryAction}>
             {itemState === "ready" ? (

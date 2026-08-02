@@ -10,6 +10,8 @@ import { ChecklistItemRow } from "@/components/ChecklistItemRow";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { SettingToggleRow } from "@/components/SettingToggleRow";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   CHECKLIST_SECTIONS,
   deriveChecklistView,
@@ -97,12 +99,13 @@ export function ChecklistSectionWorkspace({
           backHref={getChecklistHomeHref(query)}
           backLabel="返回清单首页"
           aside={
-            <span
+            <Badge
               aria-label={`共 ${counts.all} 项`}
-              className="flex min-h-10 items-center justify-center rounded-full bg-muted px-2 text-xs font-semibold tabular-nums text-muted-foreground"
+              className="min-h-10 justify-center tabular-nums"
+              variant="muted"
             >
               {counts.all} 项
-            </span>
+            </Badge>
           }
         />
 
@@ -174,7 +177,7 @@ export function ChecklistSectionWorkspace({
         trigger={
           <button
             aria-label={`在${section.label}中新增物品`}
-            className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-4 z-40 flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform active:scale-95 sm:right-[max(1rem,calc(50%_-_21rem_-_5rem))]"
+            className="safe-bottom-fab-no-nav fixed right-4 z-40 flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform active:scale-95 sm:right-[max(1rem,calc(50%_-_21rem_-_5rem))]"
             type="button"
           >
             <Plus className="size-7" strokeWidth={2.2} />
@@ -188,13 +191,13 @@ export function ChecklistSectionWorkspace({
 export function ChecklistSectionWorkspaceSkeleton() {
   return (
     <div className="page-shell" aria-label="正在准备分类清单">
-      <section className="mobile-shell grid animate-pulse gap-3 lg:max-w-2xl">
-        <div className="h-20 rounded-card bg-muted" />
-        <div className="h-16 rounded-card bg-muted" />
-        <div className="h-20 rounded-card bg-muted" />
+      <section className="mobile-shell grid gap-3 lg:max-w-2xl">
+        <Skeleton className="h-20 rounded-card" />
+        <Skeleton className="h-16 rounded-card" />
+        <Skeleton className="h-20 rounded-card" />
         <div className="item-card-grid">
-          <div className="h-80 rounded-card bg-muted" />
-          <div className="h-80 rounded-card bg-muted" />
+          <Skeleton className="h-80 rounded-card" />
+          <Skeleton className="h-80 rounded-card" />
         </div>
       </section>
     </div>

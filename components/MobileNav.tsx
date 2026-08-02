@@ -6,18 +6,14 @@ import { usePathname } from "next/navigation";
 import {
   isPrimaryNavigationItemActive,
   PRIMARY_NAVIGATION_ITEMS,
+  showsMobileNavigation,
 } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
 export function MobileNav() {
   const pathname = usePathname();
 
-  if (
-    pathname === "/onboarding" ||
-    pathname.startsWith("/checklist/") ||
-    pathname === "/growth" ||
-    pathname.startsWith("/settings/")
-  ) {
+  if (!showsMobileNavigation(pathname)) {
     return null;
   }
 

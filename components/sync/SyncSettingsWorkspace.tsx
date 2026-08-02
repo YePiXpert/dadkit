@@ -10,12 +10,13 @@ import {
   RefreshCw,
   Share2,
   ShieldCheck,
-  Trash2,
   Users,
   WifiOff,
 } from "lucide-react";
 
+import { DangerZone } from "@/components/DangerZone";
 import { PageHeader } from "@/components/PageHeader";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Feedback } from "@/components/ui/feedback";
@@ -229,7 +230,7 @@ export function SyncSettingsWorkspace() {
           <>
             <Card>
               <CardHeader><CardTitle className="flex items-center gap-2"><ShieldCheck className="size-5" />同步空间</CardTitle></CardHeader>
-              <CardContent className="grid gap-3 text-sm"><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-lg font-semibold">{space.displayName}</span><span className="rounded-full bg-secondary px-3 py-1 font-medium text-primary">{roleLabel(space.currentSession.role)}</span></div><p className="font-mono text-xs text-muted-foreground">空间指纹：{space.spaceId.slice(0, 6)}…{space.spaceId.slice(-4)}</p><p className="text-muted-foreground">当前设备：{space.currentSession.deviceName}</p>{space.currentSession.role === "owner" ? <div className="grid gap-2 sm:grid-cols-[1fr_auto]"><Input aria-label="新的家庭显示名称" maxLength={40} onChange={(event) => setRename(event.target.value)} value={rename} /><Button disabled={busy || !online || !rename.trim()} onClick={() => void run(() => renameSyncSpace(rename.trim()), "家庭显示名称已更新。")}>重命名</Button></div> : null}</CardContent>
+              <CardContent className="grid gap-3 text-sm"><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-lg font-semibold">{space.displayName}</span><Badge variant="secondary">{roleLabel(space.currentSession.role)}</Badge></div><p className="font-mono text-xs text-muted-foreground">空间指纹：{space.spaceId.slice(0, 6)}…{space.spaceId.slice(-4)}</p><p className="text-muted-foreground">当前设备：{space.currentSession.deviceName}</p>{space.currentSession.role === "owner" ? <div className="grid gap-2 sm:grid-cols-[1fr_auto]"><Input aria-label="新的家庭显示名称" maxLength={40} onChange={(event) => setRename(event.target.value)} value={rename} /><Button disabled={busy || !online || !rename.trim()} onClick={() => void run(() => renameSyncSpace(rename.trim()), "家庭显示名称已更新。")}>重命名</Button></div> : null}</CardContent>
             </Card>
 
             <Card>
@@ -254,10 +255,9 @@ export function SyncSettingsWorkspace() {
               </Card>
             ) : null}
 
-            <Card className="border-destructive/30">
-              <CardHeader><CardTitle className="flex items-center gap-2 text-destructive"><Trash2 className="size-5" />危险操作</CardTitle></CardHeader>
-              <CardContent className="grid gap-4"><div className="grid gap-2"><p className="text-sm text-muted-foreground">退出只移除这台设备的同步会话，本机业务数据保持不变。最后一台管理员设备必须先转移权限。</p><Button disabled={busy || !online} onClick={() => void run(leaveSpace, "已退出家庭同步，本机数据保持不变。") } variant="outline">退出这台设备</Button></div>{space.currentSession.role === "owner" ? <div className="grid gap-3 border-t border-border pt-4"><p className="text-sm leading-6 text-destructive">永久删除会移除服务器主文件和全部滚动备份，无法恢复；本机清单、家庭资料和宝宝记录仍会保留，并先创建本地恢复点。</p><Label htmlFor="delete-space-confirmation">输入家庭显示名称或“永久删除”</Label><Input id="delete-space-confirmation" onChange={(event) => setDeleteConfirmation(event.target.value)} value={deleteConfirmation} /><Button disabled={busy || !online || (deleteConfirmation !== space.displayName && deleteConfirmation !== "永久删除")} onClick={() => void run(() => deleteSyncSpacePermanently(deleteConfirmation), "服务器同步空间已永久删除，本机数据保持不变。") } variant="destructive">永久删除服务器空间</Button></div> : null}</CardContent>
-            </Card>
+            <DangerZone title="危险操作" description="退出只移除这台设备的同步会话，本机业务数据保持不变。最后一台管理员设备必须先转移权限。">
+              <div className="grid gap-4"><Button disabled={busy || !online} onClick={() => void run(leaveSpace, "已退出家庭同步，本机数据保持不变。") } variant="outline">退出这台设备</Button>{space.currentSession.role === "owner" ? <div className="grid gap-3 border-t border-border pt-4"><p className="text-sm leading-6 text-destructive">永久删除会移除服务器主文件和全部滚动备份，无法恢复；本机清单、家庭资料和宝宝记录仍会保留，并先创建本地恢复点。</p><Label htmlFor="delete-space-confirmation">输入家庭显示名称或“永久删除”</Label><Input id="delete-space-confirmation" onChange={(event) => setDeleteConfirmation(event.target.value)} value={deleteConfirmation} /><Button disabled={busy || !online || (deleteConfirmation !== space.displayName && deleteConfirmation !== "永久删除")} onClick={() => void run(() => deleteSyncSpacePermanently(deleteConfirmation), "服务器同步空间已永久删除，本机数据保持不变。") } variant="destructive">永久删除服务器空间</Button></div> : null}</div>
+            </DangerZone>
           </>
         ) : null}
         {!online ? <WifiOff className="mx-auto size-5 text-muted-foreground" /> : null}

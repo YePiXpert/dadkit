@@ -1,10 +1,11 @@
 "use client";
 
-import { Search, SlidersHorizontal, Users, X } from "lucide-react";
+import { ChevronDown, Search, Users, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { BulkPlanningDialog } from "@/components/BulkPlanningDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { EmptyState } from "@/components/EmptyState";
 import { ItemPlanningDialog } from "@/components/ItemPlanningDialog";
 import { PageHeader } from "@/components/PageHeader";
 import { PlanningItemRow } from "@/components/PlanningItemRow";
@@ -19,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { showAppToast } from "@/lib/app-toast";
 import { getActiveHouseholdMembers, getRemovedHouseholdMembers } from "@/lib/household/selectors";
@@ -55,6 +57,7 @@ export function PlanningWorkspace() {
   const [filter, setFilter] = useState<PlanningListFilter>("all");
   const [assignee, setAssignee] = useState<string>("all");
   const [includeNotNeeded, setIncludeNotNeeded] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [activeItemId, setActiveItemId] = useState<string>();
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -75,6 +78,10 @@ export function PlanningWorkspace() {
   const selected = [...selectedIds].filter((itemId) =>
     checklist.some((item) => item.id === itemId),
   );
+  const activeFilterCount =
+    (filter !== "all" ? 1 : 0) +
+    (assignee !== "all" ? 1 : 0) +
+    (includeNotNeeded ? 1 : 0);
 
   useEffect(() => {
     hydrateChecklist();
@@ -122,7 +129,7 @@ export function PlanningWorkspace() {
 
         <PlanningSummaryCard />
 
-        <section className="grid gap-3 rounded-card border border-border bg-card p-3 sm:p-4">
+        <section className="grid gap-3 rounded-card border border-border bg-card p-3">
           <div className="flex items-center gap-2">
             <Search className="size-4 shrink-0 text-muted-foreground" />
             <Label className="sr-only" htmlFor="planning-search">搜索物品</Label>
@@ -141,28 +148,40 @@ export function PlanningWorkspace() {
             ) : null}
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2">
-            <Select value={filter} onValueChange={(value) => setFilter(value as PlanningListFilter)}>
-              <SelectTrigger aria-label="分工筛选"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {FILTER_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={assignee} onValueChange={setAssignee}>
-              <SelectTrigger aria-label="负责人筛选"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部负责人</SelectItem>
-                <SelectItem value="unassigned">未分工</SelectItem>
-                {getActiveHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}</SelectItem>)}
-                {getRemovedHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}（已移除）</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          <details
+            className="group"
+            onToggle={(event) => setFiltersOpen(event.currentTarget.open)}
+            open={filtersOpen || activeFilterCount > 0}
+          >
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+              <span>筛选{activeFilterCount > 0 ? ` · ${activeFilterCount} 项生效` : ""}</span>
+              <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="grid gap-3 pt-1">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Select value={filter} onValueChange={(value) => setFilter(value as PlanningListFilter)}>
+                  <SelectTrigger aria-label="分工筛选"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {FILTER_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={assignee} onValueChange={setAssignee}>
+                  <SelectTrigger aria-label="负责人筛选"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部负责人</SelectItem>
+                    <SelectItem value="unassigned">未分工</SelectItem>
+                    {getActiveHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}</SelectItem>)}
+                    {getRemovedHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}（已移除）</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex min-h-11 items-center justify-between gap-3">
-            <Label htmlFor="planning-include-not-needed">包括“不需要”的物品</Label>
-            <Switch checked={includeNotNeeded} id="planning-include-not-needed" onCheckedChange={setIncludeNotNeeded} />
-          </div>
+              <div className="flex min-h-11 items-center justify-between gap-3">
+                <Label htmlFor="planning-include-not-needed">包括“不需要”的物品</Label>
+                <Switch checked={includeNotNeeded} id="planning-include-not-needed" onCheckedChange={setIncludeNotNeeded} />
+              </div>
+            </div>
+          </details>
         </section>
 
         <div className="flex flex-wrap items-center justify-between gap-2 px-1">
@@ -192,11 +211,12 @@ export function PlanningWorkspace() {
             ))}
           </div>
         ) : (
-          <section className="rounded-card border border-dashed border-border p-8 text-center">
-            <SlidersHorizontal className="mx-auto size-8 text-muted-foreground" />
-            <h2 className="mt-3 text-base font-semibold">没有符合条件的物品</h2>
-            <p className="mt-1 text-sm text-muted-foreground">调整筛选或搜索词后再试。</p>
-          </section>
+          <EmptyState
+            description="调整筛选或搜索词后再试。"
+            icon={null}
+            title="没有符合条件的物品"
+            variant="dashed"
+          />
         )}
 
         <Button className="justify-self-start text-destructive hover:text-destructive" onClick={() => setClearAllOpen(true)} variant="ghost">
@@ -230,11 +250,11 @@ export function PlanningWorkspace() {
 export function PlanningWorkspaceSkeleton() {
   return (
     <div className="page-shell page-shell-with-nav" aria-label="正在读取家庭分工与采购信息">
-      <section className="mobile-shell grid animate-pulse gap-4 lg:max-w-2xl">
-        <div className="h-20 rounded-card bg-muted" />
-        <div className="h-64 rounded-card bg-muted" />
-        <div className="h-32 rounded-card bg-muted" />
-        <div className="h-36 rounded-card bg-muted" />
+      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+        <Skeleton className="h-20 rounded-card" />
+        <Skeleton className="h-64 rounded-card" />
+        <Skeleton className="h-32 rounded-card" />
+        <Skeleton className="h-36 rounded-card" />
       </section>
     </div>
   );

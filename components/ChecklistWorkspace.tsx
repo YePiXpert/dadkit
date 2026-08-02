@@ -22,6 +22,7 @@ import { HomeHeroIllustration } from "@/components/HomeHeroIllustration";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   CHECKLIST_VIEWS,
   deriveChecklistView,
@@ -512,35 +513,35 @@ function getViewCaption(view: ChecklistView, count: number) {
 export function ChecklistWorkspaceSkeleton() {
   return (
     <div className="page-shell page-shell-with-nav" aria-label="正在准备清单">
-      <section className="mobile-shell grid animate-pulse gap-4 lg:max-w-2xl">
+      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
         <div className="grid gap-2 px-1 py-2">
-          <div className="h-7 w-32 rounded-xl bg-muted" />
-          <div className="h-4 w-52 rounded-lg bg-muted" />
+          <Skeleton className="h-7 w-32 rounded-xl" />
+          <Skeleton className="h-4 w-52 rounded-lg" />
         </div>
         <div className="grid h-52 gap-4 rounded-card bg-muted p-5">
           <div className="flex items-start justify-between">
             <div className="grid gap-3">
-              <div className="h-4 w-20 rounded-lg bg-background/70" />
-              <div className="h-12 w-28 rounded-xl bg-background/70" />
+              <Skeleton className="h-4 w-20 rounded-lg bg-background/70" />
+              <Skeleton className="h-12 w-28 rounded-xl bg-background/70" />
             </div>
-            <div className="size-20 rounded-inset bg-background/70" />
+            <Skeleton className="size-20 rounded-inset bg-background/70" />
           </div>
-          <div className="h-2 rounded-full bg-background/70" />
+          <Skeleton className="h-2 rounded-full bg-background/70" />
           <div className="grid grid-cols-3 gap-2">
-            <div className="h-10 rounded-xl bg-background/70" />
-            <div className="h-10 rounded-xl bg-background/70" />
-            <div className="h-10 rounded-xl bg-background/70" />
+            <Skeleton className="h-10 rounded-xl bg-background/70" />
+            <Skeleton className="h-10 rounded-xl bg-background/70" />
+            <Skeleton className="h-10 rounded-xl bg-background/70" />
           </div>
         </div>
         <div className="grid h-16 grid-cols-4 gap-1 rounded-card bg-muted p-1.5">
-          <div className="rounded-inset bg-background/70" />
-          <div className="rounded-inset bg-background/70" />
-          <div className="rounded-inset bg-background/70" />
-          <div className="rounded-inset bg-background/70" />
+          <Skeleton className="rounded-inset bg-background/70" />
+          <Skeleton className="rounded-inset bg-background/70" />
+          <Skeleton className="rounded-inset bg-background/70" />
+          <Skeleton className="rounded-inset bg-background/70" />
         </div>
         <div className="grid gap-3">
-          <div className="h-28 rounded-card bg-muted" />
-          <div className="h-28 rounded-card bg-muted" />
+          <Skeleton className="h-28 rounded-card" />
+          <Skeleton className="h-28 rounded-card" />
         </div>
       </section>
     </div>

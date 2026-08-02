@@ -9,6 +9,12 @@ async function chooseSelect(page: Page, label: string, option: string) {
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 
+async function expandFilters(page: Page) {
+  if (!(await page.getByLabel("分工筛选", { exact: true }).isVisible())) {
+    await page.locator("summary").filter({ hasText: /^筛选/ }).click();
+  }
+}
+
 async function setupBaby(page: Page) {
   await page.goto("/baby", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "宝宝已出生，开始记录" }).click();
@@ -60,6 +66,7 @@ test("一个物品可由一个或多个自定义成员负责并持久化", async
   await expect(editedItem).toContainText("奶奶");
 
   await page.reload({ waitUntil: "domcontentloaded" });
+  await expandFilters(page);
   await chooseSelect(page, "负责人筛选", "小江");
   await expect(page.locator("article").first()).toContainText("奶奶");
 });
