@@ -22,9 +22,11 @@ import {
   saveChecklistMode,
   saveCustomItems,
   saveHiddenTemplateItemIds,
+  saveSnapshots,
   STORAGE_KEYS,
   type DadKitExportData,
   type DadKitExportDataV3,
+  type DadKitExportDataV6,
 } from "@/lib/storage";
 import {
   GROWTH_STORAGE_KEYS,
@@ -32,6 +34,7 @@ import {
 } from "@/lib/growth-store";
 import type { ChecklistItem } from "@/lib/types";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
+import { createEmptyItemPlanning, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
 import {
   hospitalValuesFromPortable,
   updateHospitalProfile,
@@ -40,6 +43,10 @@ import {
   loadHospitalProfile,
   saveHospitalProfile,
 } from "@/lib/hospital/repository";
+import {
+  loadItemPlanning,
+  saveItemPlanning,
+} from "@/lib/planning/repository";
 
 function testItem(id = "item-1", patch: Partial<ChecklistItem> = {}): ChecklistItem {
   return {
@@ -65,7 +72,7 @@ function backupData(
   patch: Partial<DadKitExportData> = {},
 ): DadKitExportData {
   return {
-    version: 6,
+    version: 7,
     exportedAt: "2026-07-25T00:00:00.000Z",
     checklistMode: "full",
     checklist: [testItem("backup-item")],
@@ -80,6 +87,7 @@ function backupData(
     deletedCustomItems: {},
     growthUpdatedAt: 0,
     hospital: createEmptyHospitalProfile(),
+    planning: createEmptyItemPlanning(),
     ...patch,
   };
 }
@@ -187,10 +195,11 @@ describe("v6 portable backup with the existing local namespace", () => {
         "deletedCustomItems",
         "growthUpdatedAt",
         "hospital",
+        "planning",
       ].sort(),
     );
     expect(exported).toMatchObject({
-      version: 6,
+      version: 7,
       checklistMode: "lean",
       checklist,
       customItems,
@@ -211,11 +220,12 @@ describe("v6 portable backup with the existing local namespace", () => {
           address: { value: "健康路 1 号", updatedAt: 100 },
         },
       },
+      planning: createEmptyItemPlanning(),
     });
     expect(Number.isNaN(Date.parse(exported.exportedAt))).toBe(false);
   });
 
-  it("round-trips a complete v6 backup including hospital data", () => {
+  it("round-trips a complete v7 backup including hospital and planning data", () => {
     installBrowserStorage();
     const payload = backupData({
       checklistMode: "lean",
@@ -249,7 +259,60 @@ describe("v6 portable backup with the existing local namespace", () => {
     expect(loadDeletedCustomItems()).toEqual({ "gone-custom": 456 });
     expect(loadGrowthUpdatedAt()).toBe(789);
     expect(loadHospitalProfile()).toEqual(payload.hospital);
-    expect(exportData().version).toBe(6);
+    expect(exportData().version).toBe(7);
+  });
+
+  it("keeps hospital but safely clears planning on a manual v6 restore", () => {
+    installBrowserStorage();
+    const currentPlanning = createEmptyItemPlanning();
+    const futureTimestamp = Date.now() + 10_000;
+    currentPlanning.items.bag = {
+      ...createEmptyItemPlanningRecord(),
+      assignee: { value: "dad", updatedAt: futureTimestamp },
+    };
+    saveItemPlanning(currentPlanning);
+    const latest = backupData({
+      hospital: hospitalProfile({ hospitalName: "v6 医院" }),
+    });
+    const { planning: _planning, ...withoutPlanning } = latest;
+    void _planning;
+    const v6 = { ...withoutPlanning, version: 6 as const };
+
+    const result = importData(JSON.stringify(v6));
+
+    expect(result).toEqual({
+      ok: true,
+      message: "导入成功（v6 备份不包含家庭分工与采购信息，相关信息已清空）",
+    });
+    expect(loadHospitalProfile().fields.hospitalName.value).toBe("v6 医院");
+    expect(loadItemPlanning().items).toEqual({});
+    expect(loadItemPlanning().clearedAt).toBeGreaterThan(futureTimestamp);
+  });
+
+  it("fully restores planning timestamps from a manual v7 backup", () => {
+    installBrowserStorage();
+    const planning = createEmptyItemPlanning();
+    planning.clearedAt = 50;
+    planning.items.bag = {
+      ...createEmptyItemPlanningRecord(50),
+      assignee: { value: "shared", updatedAt: 60 },
+      actualPriceFen: { value: 999, updatedAt: 70 },
+    };
+    const result = importData(JSON.stringify(backupData({ planning })));
+    expect(result).toEqual({ ok: true, message: "导入成功" });
+    expect(loadItemPlanning()).toEqual(planning);
+  });
+
+  it("rolls back every storage key if planning persistence fails", () => {
+    const storage = installBrowserStorage();
+    saveChecklist([testItem("before")]);
+    const before = new Map(storage.localValues);
+    failNextStorageWrite(STORAGE_KEYS.planning);
+
+    const result = importData(JSON.stringify(backupData({ checklist: [testItem("after")] })));
+
+    expect(result.ok).toBe(false);
+    expect(storage.localValues).toEqual(before);
   });
 
   it.each([
@@ -274,6 +337,8 @@ describe("v6 portable backup with the existing local namespace", () => {
     expect(result.message).toContain(`旧版 ${label}`);
     expect(result.message).toContain("医院档案已清空");
     expect(loadHospitalProfile()).toEqual(createEmptyHospitalProfile());
+    expect(loadItemPlanning().items).toEqual({});
+    expect(loadItemPlanning().clearedAt).toBeGreaterThan(0);
   });
 
   it("migrates merge metadata when importing a v4 backup", () => {
@@ -398,7 +463,7 @@ describe("strict v3, v4, v5 and v6 import boundary", () => {
 
     expect(importData(raw)).toEqual({
       ok: true,
-      message: "导入成功（旧版 v5 备份不包含医院档案，医院档案已清空）",
+      message: "导入成功（旧版 v5 备份不包含医院档案，医院档案已清空；不包含家庭分工与采购信息，相关信息已清空）",
     });
     expect(loadChecklist()[0]).not.toHaveProperty("futureField");
     expect(exportData()).not.toHaveProperty("futureBackupField");
@@ -492,7 +557,7 @@ describe("local recovery snapshots", () => {
     ]);
   });
 
-  it("stores only the exact v6 portable payload", () => {
+  it("stores only the exact v7 portable payload", () => {
     installBrowserStorage();
     saveChecklist([testItem("snapshot")]);
 
@@ -512,6 +577,7 @@ describe("local recovery snapshots", () => {
         "deletedCustomItems",
         "growthUpdatedAt",
         "hospital",
+        "planning",
       ].sort(),
     );
   });
@@ -530,7 +596,22 @@ describe("local recovery snapshots", () => {
     expect(loadSnapshots()[0]?.data.checklist).toEqual([testItem("current")]);
   });
 
-  it("restores hospital data from a v6 local snapshot", () => {
+  it("creates a snapshot when planning is the only meaningful data", () => {
+    installBrowserStorage();
+    const planning = createEmptyItemPlanning();
+    planning.items.bag = {
+      ...createEmptyItemPlanningRecord(),
+      storageLocation: { value: "车内", updatedAt: 10 },
+    };
+    saveItemPlanning(planning);
+
+    const snapshot = createSnapshot("只有 planning");
+    expect(snapshot?.data.version).toBe(7);
+    if (snapshot?.data.version !== 7) throw new Error("缺少 v7 planning 快照");
+    expect(snapshot.data.planning).toEqual(planning);
+  });
+
+  it("restores hospital and planning data from a v7 local snapshot", () => {
     installBrowserStorage();
     saveChecklist([testItem("snapshot-hospital")]);
     const targetHospital = hospitalProfile(
@@ -547,6 +628,39 @@ describe("local recovery snapshots", () => {
 
     expect(result.ok).toBe(true);
     expect(loadHospitalProfile()).toEqual(targetHospital);
+  });
+
+  it("restores a legacy v6 snapshot with hospital and a planning clear tombstone", () => {
+    installBrowserStorage();
+    const planning = createEmptyItemPlanning();
+    const futureTimestamp = Date.now() + 20_000;
+    planning.items.bag = {
+      ...createEmptyItemPlanningRecord(),
+      assignee: { value: "family", updatedAt: futureTimestamp },
+    };
+    saveItemPlanning(planning);
+    const latest = backupData({
+      hospital: hospitalProfile({ hospitalName: "快照医院" }),
+    });
+    const { planning: _planning, ...withoutPlanning } = latest;
+    void _planning;
+    const v6: DadKitExportDataV6 = { ...withoutPlanning, version: 6 };
+    saveSnapshots([
+      {
+        id: "legacy-v6-snapshot",
+        createdAt: "2026-08-01T00:00:00.000Z",
+        reason: "旧版 v6",
+        data: v6,
+      },
+    ]);
+
+    const result = restoreSnapshot("legacy-v6-snapshot", {
+      snapshotBeforeRestore: false,
+    });
+    expect(result.ok).toBe(true);
+    expect(loadHospitalProfile().fields.hospitalName.value).toBe("快照医院");
+    expect(loadItemPlanning().items).toEqual({});
+    expect(loadItemPlanning().clearedAt).toBeGreaterThan(futureTimestamp);
   });
 
   it("does not restore if the rescue snapshot cannot be saved", () => {

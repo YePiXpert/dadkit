@@ -22,5 +22,8 @@ export function syncDataVersionResponseHeaders(
 export function getRequestedDataVersion(
   headers: Pick<Headers, "get">,
 ): DadKitSyncDataVersion {
-  return headers.get(DADKIT_DATA_VERSION_HEADER) === "6" ? 6 : 5;
+  const requested = headers.get(DADKIT_DATA_VERSION_HEADER);
+  if (requested === "7") return 7;
+  if (requested === "6") return 6;
+  return 5;
 }

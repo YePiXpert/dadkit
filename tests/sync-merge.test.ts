@@ -4,6 +4,11 @@ import { mergeExportData } from "@/lib/sync/merge";
 import type { DadKitExportData } from "@/lib/storage";
 import type { ChecklistItem } from "@/lib/types";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
+import {
+  createEmptyItemPlanning,
+  createEmptyItemPlanningRecord,
+} from "@/lib/planning/defaults";
+import { portableV6 } from "@/tests/helpers/portable-data";
 
 function testItem(
   id: string,
@@ -30,7 +35,7 @@ function testItem(
 
 function exportData(patch: Partial<DadKitExportData> = {}): DadKitExportData {
   return {
-    version: 6,
+    version: 7,
     exportedAt: "2026-07-26T00:00:00.000Z",
     checklistMode: "lean",
     checklist: [],
@@ -45,6 +50,7 @@ function exportData(patch: Partial<DadKitExportData> = {}): DadKitExportData {
     deletedCustomItems: {},
     growthUpdatedAt: 0,
     hospital: createEmptyHospitalProfile(),
+    planning: createEmptyItemPlanning(),
     ...patch,
   };
 }
@@ -224,5 +230,15 @@ describe("mergeExportData", () => {
     expect(merged.hiddenTemplateItemIds).toEqual(["tpl-hidden"]);
     // v4 没有 growth 时间戳,本地 growth 不变
     expect(merged.growth.profile.nickname).toBe("");
+  });
+
+  it("keeps local planning when a new client receives a v6 document", () => {
+    const planning = createEmptyItemPlanning();
+    planning.items.bag = {
+      ...createEmptyItemPlanningRecord(),
+      assignee: { value: "dad", updatedAt: 100 },
+    };
+    const merged = mergeExportData(exportData({ planning }), portableV6());
+    expect(merged.planning).toEqual(planning);
   });
 });

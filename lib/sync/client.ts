@@ -163,7 +163,7 @@ async function apiRequest<T>(
   if (token) {
     headers.set("authorization", `Bearer ${token}`);
   }
-  headers.set(DADKIT_DATA_VERSION_HEADER, "6");
+  headers.set(DADKIT_DATA_VERSION_HEADER, "7");
 
   const parentSignal = init.signal;
   const abortFromParent = () => controller.abort(parentSignal?.reason);
@@ -293,6 +293,21 @@ export function alignExportDataToServerTime(
           { ...field, updatedAt: shiftTimestamp(field.updatedAt) },
         ]),
       ) as DadKitExportData["hospital"]["fields"],
+    },
+    planning: {
+      version: 1,
+      clearedAt: shiftTimestamp(data.planning.clearedAt),
+      items: Object.fromEntries(
+        Object.entries(data.planning.items).map(([itemId, record]) => [
+          itemId,
+          Object.fromEntries(
+            Object.entries(record).map(([key, field]) => [
+              key,
+              { ...field, updatedAt: shiftTimestamp(field.updatedAt) },
+            ]),
+          ),
+        ]),
+      ) as DadKitExportData["planning"]["items"],
     },
   };
 }
@@ -462,9 +477,8 @@ async function doSync(): Promise<SyncOutcome> {
         isDadKitImportData(pushed.data.data) &&
         checksumOf(pushed.data.data) !== mergedChecksum
       ) {
-        // A legacy-compatible server response may be v5 and therefore cannot
-        // express hospital data. Merge it into the current canonical document
-        // instead of treating the missing field as a request to clear it.
+        // A legacy-compatible response may omit hospital and/or planning.
+        // Merge its supported fields instead of treating absence as a clear.
         merged = mergeExportData(merged, pushed.data.data);
         applyMerged(merged);
       }

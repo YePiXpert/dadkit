@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 const localDataItems = [
   "待产清单进度、自定义项目、隐藏项和清单显示模式",
   "用户自行填写的医院名称、地址、电话和入院要求",
+  "按物品填写的负责人、完成期限、预计和实际价格、购买渠道与存放位置",
   "可选的宝宝称呼、预产期和产检时间表完成状态",
   "自动创建的本地恢复快照",
   "仅存于当前设备 IndexedDB 的物品照片",
@@ -34,7 +35,7 @@ export default function PrivacyPage() {
       <section className="mobile-shell grid gap-5 sm:max-w-[42rem]">
         <PageHeader
           kicker="DadKit"
-          subtitle="生效日期：2026-07-25"
+          subtitle="生效日期：2026-08-01"
           title="隐私政策"
         />
 
@@ -55,7 +56,7 @@ export default function PrivacyPage() {
           </CardHeader>
           <CardContent className="grid gap-2 text-sm leading-6 text-muted-foreground">
             <p>
-              本地恢复快照和 WebDAV 使用同一份便携备份数据，包括清单进度、自定义项目、隐藏项、清单显示模式、医院档案，以及宝宝成长记中的可选资料和产检完成状态。
+              本地恢复快照和 WebDAV 使用同一份便携备份数据，包括清单进度、自定义项目、隐藏项、清单显示模式、医院档案、家庭分工与采购中的负责人、期限、价格、渠道和存放位置，以及宝宝成长记中的可选资料和产检完成状态。
             </p>
             <p>
               这些备份不包含物品照片，也不包含 WebDAV 地址、用户名、备份路径、同步状态或密码等连接配置。
@@ -104,6 +105,20 @@ export default function PrivacyPage() {
             </p>
             <p>
               第三方网盘或 WebDAV 服务如何处理数据，取决于该服务自己的隐私政策和账号设置。
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>家庭同步</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 text-sm leading-6 text-muted-foreground">
+            <p>
+              加入家庭同步后，负责人、完成期限、预计和实际价格、购买渠道与存放位置会与同一家庭中的设备同步。不同设备对不同字段的修改会按字段时间戳合并。
+            </p>
+            <p>
+              这些信息可能包含家庭安排和消费信息，请只与信任的家庭成员共享同步码，并妥善保管 WebDAV 账号。
             </p>
           </CardContent>
         </Card>

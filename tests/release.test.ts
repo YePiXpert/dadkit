@@ -38,7 +38,7 @@ describe("release endpoints and product surface", () => {
       }>;
     };
 
-    expect(packageJson.version).toBe("2.2.1");
+    expect(packageJson.version).toBe("2.2.2");
     expect(manifest.name).toBe("DadKit 待产包清单");
     expect(manifest.description).toContain("待产包");
     expect(manifest.description).toContain("备份");
@@ -73,7 +73,7 @@ describe("release endpoints and product surface", () => {
     expect(readme).toContain("WebDAV 备份");
     expect(readme).toContain("宝宝成长记");
     expect(readme).toContain("医院档案");
-    expect(readme).toContain("v5/v6 家庭设备可安全混合同步");
+    expect(readme).toContain("v5/v6/v7 家庭设备可安全混合同步");
     expect(readme).toContain("全部、待购买、待装包和已装包");
     expect(readme).toContain("https://dadkit.505f.com/");
     expect(readme).toContain("public/og.png");
@@ -108,8 +108,8 @@ describe("release endpoints and product surface", () => {
     expect(manifest).not.toContain("trusted");
     expect(manifest).not.toContain("asset_statements");
     expect(activity).toContain('getAssets().open("www/" + assetPath)');
-    expect(activity).toContain("source=apk&appVersionCode=6");
-    expect(activity).toContain("DadKitAndroid/6");
+    expect(activity).toContain("source=apk&appVersionCode=7");
+    expect(activity).toContain("DadKitAndroid/7");
     expect(androidBundle).toContain('rm(path.join(staging, "app", "api")');
     expect(packageJson.devDependencies).not.toHaveProperty("@bubblewrap/cli");
   });
@@ -117,7 +117,7 @@ describe("release endpoints and product surface", () => {
   it("keeps the Android tag release strict and verifies the signed APK", () => {
     const workflow = readSource(".github", "workflows", "android-release.yml");
 
-    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v2.2.1"');
+    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v2.2.2"');
     expect(workflow).toContain(
       'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
     );
@@ -215,12 +215,15 @@ describe("release endpoints and product surface", () => {
     expect(existsSync(join(process.cwd(), "app", "hospital", "page.tsx"))).toBe(
       true,
     );
+    expect(existsSync(join(process.cwd(), "app", "planning", "page.tsx"))).toBe(
+      true,
+    );
   });
 
   it("pre-caches only the minimal app shell during install", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.2.1-pwa-r1"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v2.2.2-pwa-r1"');
     expect(sw).toContain('const APP_SHELL_ROUTE = "/"');
     expect(sw).not.toContain("CORE_ROUTES");
 
@@ -265,6 +268,7 @@ describe("release endpoints and product surface", () => {
             "dadkit-v2.1.1-pwa-r13",
             "dadkit-v2.1.1-pwa-r14",
             "dadkit-v2.2.0-pwa-r1",
+            "dadkit-v2.2.1-pwa-r1",
           ];
         },
         async delete(key: string) {
@@ -290,6 +294,7 @@ describe("release endpoints and product surface", () => {
       "dadkit-v2.1.1-pwa-r13",
       "dadkit-v2.1.1-pwa-r14",
       "dadkit-v2.2.0-pwa-r1",
+      "dadkit-v2.2.1-pwa-r1",
     ]);
   });
 

@@ -192,7 +192,7 @@ describe("v5/v6 family sync compatibility", () => {
     });
   });
 
-  it("upgrades a stored v5 space to canonical v6 on its next valid push", async () => {
+  it("upgrades a stored v5 space to canonical v7 on its next valid push", async () => {
     const { v6 } = await twoDevices("旧空间升级家庭");
     const file = currentSpacePath();
     const stored = JSON.parse(readFileSync(file, "utf8")) as {
@@ -223,7 +223,8 @@ describe("v5/v6 family sync compatibility", () => {
       data: DadKitExportData;
     };
 
-    expect(persisted.data.version).toBe(6);
+    expect(persisted.data.version).toBe(7);
+    expect(persisted.data.planning).toEqual({ version: 1, clearedAt: 0, items: {} });
     expect(persisted.data.checklist.map((item) => item.id).sort()).toEqual([
       "new-v6",
       "stored-v5",
@@ -242,6 +243,11 @@ describe("v5/v6 family sync compatibility", () => {
         new Headers({ "X-DadKit-Data-Version": "6" }),
       ),
     ).toBe(6);
+    expect(
+      getRequestedDataVersion(
+        new Headers({ "X-DadKit-Data-Version": "7" }),
+      ),
+    ).toBe(7);
     expect(
       getRequestedDataVersion(
         new Headers({ "X-DadKit-Data-Version": "999" }),

@@ -1,8 +1,10 @@
 import {
   type DadKitExportData,
   type DadKitExportDataV5,
+  type DadKitExportDataV6,
 } from "@/lib/data/format";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
+import { createEmptyItemPlanning } from "@/lib/planning/defaults";
 import type { ChecklistItem } from "@/lib/types";
 
 export function portableTestItem(
@@ -51,12 +53,23 @@ export function portableV5(
 }
 
 export function portableV6(
-  patch: Partial<DadKitExportData> = {},
-): DadKitExportData {
+  patch: Partial<DadKitExportDataV6> = {},
+): DadKitExportDataV6 {
   return {
     ...portableV5(),
     version: 6,
     hospital: createEmptyHospitalProfile(),
+    ...patch,
+  };
+}
+
+export function portableV7(
+  patch: Partial<DadKitExportData> = {},
+): DadKitExportData {
+  return {
+    ...portableV6(),
+    version: 7,
+    planning: createEmptyItemPlanning(),
     ...patch,
   };
 }

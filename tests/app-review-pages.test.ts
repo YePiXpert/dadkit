@@ -7,6 +7,7 @@ import {
   DEPARTURE_PATH,
   getReviewPageHref,
   HOSPITAL_PATH,
+  PLANNING_PATH,
   PUBLIC_PRIVACY_PATH,
   PUBLIC_SUPPORT_PATH,
 } from "@/lib/app-routes";
@@ -27,12 +28,17 @@ const hospitalPage = readFileSync(
   join(process.cwd(), "app", "hospital", "page.tsx"),
   "utf8",
 );
+const planningPage = readFileSync(
+  join(process.cwd(), "app", "planning", "page.tsx"),
+  "utf8",
+);
 
 describe("public PWA support pages", () => {
   it("describes checklist, growth and backup data", () => {
     expect(privacyPage).toContain("不要求注册账号");
     expect(privacyPage).toContain("待产清单");
     expect(privacyPage).toContain("医院名称、地址、电话和入院要求");
+    expect(privacyPage).toContain("负责人、完成期限、预计和实际价格");
     expect(privacyPage).toContain("产检时间表完成状态");
     expect(privacyPage).toContain("本地快照");
     expect(privacyPage).toContain("当前不使用广告 SDK");
@@ -61,6 +67,8 @@ describe("public PWA support pages", () => {
     expect(departurePage).toContain("DepartureWorkspace");
     expect(HOSPITAL_PATH).toBe("/hospital");
     expect(hospitalPage).toContain("HospitalProfileWorkspace");
+    expect(PLANNING_PATH).toBe("/planning");
+    expect(planningPage).toContain("PlanningWorkspace");
     expect(PUBLIC_PRIVACY_PATH).toBe("/privacy");
     expect(PUBLIC_SUPPORT_PATH).toBe("/support");
     expect(getReviewPageHref(PUBLIC_PRIVACY_PATH)).toBe("/privacy");

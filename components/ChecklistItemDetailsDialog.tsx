@@ -1,8 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
-import { Ban, Check, PackageCheck, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Ban, Check, PackageCheck, ShoppingBag, Trash2 } from "lucide-react";
 
 import { ChecklistItemArt } from "@/components/ChecklistItemArt";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -21,6 +21,8 @@ import {
 } from "@/lib/checklist-v2";
 import { formatChecklistDisplayText } from "@/lib/checklist-display";
 import { useDadKitStore } from "@/lib/store";
+import { formatPlanningMoney, getItemPlanningValues, getPlanningAssigneeLabel } from "@/lib/planning/selectors";
+import { useItemPlanningStore } from "@/lib/planning/store";
 import type { ChecklistItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +30,14 @@ const EditItemDialog = dynamic(
   () =>
     import("@/components/EditItemDialog").then(
       (module) => module.EditItemDialog,
+    ),
+  { ssr: false },
+);
+
+const ItemPlanningDialog = dynamic(
+  () =>
+    import("@/components/ItemPlanningDialog").then(
+      (module) => module.ItemPlanningDialog,
     ),
   { ssr: false },
 );
@@ -59,6 +69,10 @@ export function ChecklistItemDetailsDialog({
   const toggleItemSkipped = useDadKitStore((state) => state.toggleItemSkipped);
   const removeItem = useDadKitStore((state) => state.removeItem);
   const [removalConfirmOpen, setRemovalConfirmOpen] = useState(false);
+  const [planningOpen, setPlanningOpen] = useState(false);
+  const planning = useItemPlanningStore((state) => state.planning);
+  const hydratePlanning = useItemPlanningStore((state) => state.hydrate);
+  const planningValues = getItemPlanningValues(planning, item.id);
   const itemState = getChecklistItemState(item);
   const stateMeta = STATE_META[itemState];
   const displayOptions = {
@@ -73,6 +87,10 @@ export function ChecklistItemDetailsDialog({
     item.quantity || "1 件",
     displayOptions,
   );
+
+  useEffect(() => {
+    hydratePlanning();
+  }, [hydratePlanning]);
 
   function removeCurrentItem() {
     removeItem(item.id);
@@ -94,6 +112,7 @@ export function ChecklistItemDetailsDialog({
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="gap-4 rounded-card border border-border bg-background p-5 sm:max-w-md">
         <DialogHeader className="pr-8">
@@ -158,6 +177,22 @@ export function ChecklistItemDetailsDialog({
 
         <ItemPhotoField controller={photoController} itemName={displayName} />
 
+        <section className="grid gap-3 rounded-inset border border-border/70 bg-card p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-sm font-semibold">
+                <ShoppingBag className="size-4" />分工与采购
+              </p>
+              <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">
+                {planningSummary(planningValues)}
+              </p>
+            </div>
+            <Button onClick={() => setPlanningOpen(true)} size="sm" variant="outline">
+              编辑
+            </Button>
+          </div>
+        </section>
+
         <section className="grid gap-2 rounded-inset border border-border/70 bg-card p-3">
           <div className="flex min-h-11 items-center justify-between gap-3 px-1">
             <div>
@@ -200,7 +235,31 @@ export function ChecklistItemDetailsDialog({
         variant="destructive"
       />
     </Dialog>
+    <ItemPlanningDialog
+      item={item}
+      onOpenChange={setPlanningOpen}
+      open={planningOpen}
+    />
+    </>
   );
+}
+
+function planningSummary(values: ReturnType<typeof getItemPlanningValues>) {
+  const parts = [
+    values.assignee !== "unassigned"
+      ? getPlanningAssigneeLabel(values.assignee)
+      : "",
+    values.dueDate ? `期限 ${values.dueDate}` : "",
+    values.estimatedPriceFen !== null
+      ? `预计 ${formatPlanningMoney(values.estimatedPriceFen)}`
+      : "",
+    values.actualPriceFen !== null
+      ? `实际 ${formatPlanningMoney(values.actualPriceFen)}`
+      : "",
+    values.storageLocation ? `放在 ${values.storageLocation}` : "",
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(" · ") : "尚未填写分工与采购信息。";
 }
 
 function getAdvanceLabel(state: ChecklistItemState, departureMode: boolean) {

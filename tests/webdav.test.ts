@@ -40,6 +40,8 @@ import {
   webDavStatusMessage,
 } from "@/lib/webdav/client";
 import { DEFAULT_WEBDAV_CONFIG } from "@/lib/webdav/types";
+import { createEmptyItemPlanning, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
+import { loadItemPlanning, saveItemPlanning } from "@/lib/planning/repository";
 
 function installStorage() {
   const localStore = new Map<string, string>();
@@ -163,7 +165,7 @@ describe("webdav helpers", () => {
     const backup = buildDadKitWebDavBackup(data, "device-1");
 
     expect(backup.schemaVersion).toBe(3);
-    expect(backup.data.version).toBe(6);
+    expect(backup.data.version).toBe(7);
     expect(backup.app).toBe("DadKit");
     expect(backup.deviceId).toBe("device-1");
     expect(backup.checksum).toBe(calculateChecksum(data));
@@ -391,7 +393,7 @@ describe("webdav helpers", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("restores and merges hospital data from a v6 WebDAV backup", () => {
+  it("restores and merges hospital data from a v7 WebDAV backup", () => {
     installStorage();
     saveChecklist([testItem("local-hospital")]);
     saveHospitalProfile(
@@ -414,9 +416,33 @@ describe("webdav helpers", () => {
       updatedAt: 300,
     });
     const rescueData = loadSnapshots()[0]?.data;
-    expect(rescueData?.version).toBe(6);
-    if (rescueData?.version !== 6) throw new Error("缺少 v6 恢复快照");
+    expect(rescueData?.version).toBe(7);
+    if (rescueData?.version !== 7) throw new Error("缺少 v7 恢复快照");
     expect(rescueData.hospital.fields.address.value).toBe("旧地址");
+  });
+
+  it("restores and field-merges planning from a v7 WebDAV backup", () => {
+    installStorage();
+    saveChecklist([testItem("bag")]);
+    const local = createEmptyItemPlanning();
+    local.items.bag = {
+      ...createEmptyItemPlanningRecord(),
+      assignee: { value: "dad", updatedAt: 100 },
+    };
+    saveItemPlanning(local);
+    const remote = createEmptyItemPlanning();
+    remote.items.bag = {
+      ...createEmptyItemPlanningRecord(),
+      actualPriceFen: { value: 1_500, updatedAt: 200 },
+    };
+    const backup = buildDadKitWebDavBackup(
+      { ...exportData(), planning: remote },
+      "remote-planning",
+    );
+
+    expect(importDadKitWebDavBackup(backup).ok).toBe(true);
+    expect(loadItemPlanning().items.bag.assignee.value).toBe("dad");
+    expect(loadItemPlanning().items.bag.actualPriceFen.value).toBe(1_500);
   });
 
   it("prefills the default WebDAV target without storing secrets", () => {

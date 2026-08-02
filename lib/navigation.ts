@@ -14,7 +14,7 @@ export const PRIMARY_NAVIGATION_ITEMS = [
     href: "/",
     label: "清单",
     icon: ClipboardList,
-    ownedRoutes: ["/", "/checklist", "/departure"],
+    ownedRoutes: ["/", "/checklist", "/departure", "/planning"],
   },
   {
     id: "mine",

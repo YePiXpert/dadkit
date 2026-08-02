@@ -6,6 +6,7 @@ import {
   type HiddenTemplateItemStamps,
 } from "@/lib/data/format";
 import { mergeHospitalProfiles } from "@/lib/hospital/merge";
+import { mergeItemPlanning } from "@/lib/planning/merge";
 import type { ChecklistItem } from "@/lib/types";
 
 // 多端条目级合并:同一对象(updatedAt 新者胜),删除墓碑优先于更旧的数据。
@@ -103,7 +104,7 @@ export function mergeExportData(
     cleanRemote.growthUpdatedAt > cleanLocal.growthUpdatedAt;
 
   return {
-    version: 6,
+    version: 7,
     exportedAt: new Date().toISOString(),
     // 精简/完整模式是设备偏好,不随同步走。
     checklistMode: cleanLocal.checklistMode,
@@ -120,6 +121,7 @@ export function mergeExportData(
       ? cleanRemote.growthUpdatedAt
       : cleanLocal.growthUpdatedAt,
     hospital: mergeHospitalProfiles(cleanLocal.hospital, cleanRemote.hospital),
+    planning: mergeItemPlanning(cleanLocal.planning, cleanRemote.planning),
   };
 }
 

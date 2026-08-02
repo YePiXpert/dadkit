@@ -16,6 +16,9 @@ import {
 } from "@/lib/storage";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
+import { createEmptyItemPlanning, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
+import { loadItemPlanning, saveItemPlanning } from "@/lib/planning/repository";
+import { useItemPlanningStore } from "@/lib/planning/store";
 
 function testItem(id: string, patch: Partial<ChecklistItem> = {}): ChecklistItem {
   return {
@@ -108,12 +111,22 @@ describe("v3 checklist store", () => {
       index === 0 ? { ...item, status: "packed" as const } : item,
     );
     saveChecklist(before);
+    const planning = createEmptyItemPlanning();
+    planning.items[before[0].id] = {
+      ...createEmptyItemPlanningRecord(),
+      assignee: { value: "dad", updatedAt: 10 },
+    };
+    saveItemPlanning(planning);
+    useItemPlanningStore.setState({ hydrated: true, planning });
     useDadKitStore.getState().hydrate();
 
     useDadKitStore.getState().resetChecklist();
 
     expect(loadSnapshots()[0]?.reason).toBe("重建清单前");
     expect(loadSnapshots()[0]?.data.checklist).toEqual(before);
+    expect(loadSnapshots()[0]?.data.version).toBe(7);
+    expect(loadItemPlanning().items).toEqual({});
+    expect(loadItemPlanning().clearedAt).toBeGreaterThan(10);
     expect(useDadKitStore.getState().checklist).toEqual(generateChecklist());
   });
 
@@ -129,6 +142,27 @@ describe("v3 checklist store", () => {
     );
     expect(useDadKitStore.getState().checklist).toEqual(before);
     expect(loadChecklist()).toEqual(before);
+  });
+
+  it("rolls back checklist and planning together when planning clear fails", () => {
+    installBrowserStorage();
+    const before = [testItem("before-planning-failure", { status: "packed" })];
+    saveChecklist(before);
+    const planning = createEmptyItemPlanning();
+    planning.items[before[0].id] = {
+      ...createEmptyItemPlanningRecord(),
+      assignee: { value: "mom", updatedAt: 20 },
+    };
+    saveItemPlanning(planning);
+    useItemPlanningStore.setState({ hydrated: true, planning });
+    useDadKitStore.setState({ hydrated: true, checklist: before });
+    failNextStorageWrite(STORAGE_KEYS.planning);
+
+    expect(() => useDadKitStore.getState().resetChecklist()).toThrow(
+      "清单重建失败，原有清单已保留。",
+    );
+    expect(loadChecklist()).toEqual(before);
+    expect(loadItemPlanning()).toEqual(planning);
   });
 
   it("aborts rebuild when the recovery snapshot cannot be persisted", () => {

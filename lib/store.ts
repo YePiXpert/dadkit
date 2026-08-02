@@ -23,6 +23,7 @@ import {
   saveChecklist,
   saveChecklistMode,
   saveChecklistState,
+  saveChecklistStateAndClearPlanning,
   saveChecklistStateSoon,
   saveDeletedCustomItems,
   saveHiddenTemplateItemStamps,
@@ -296,7 +297,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     const state = get();
     const checklist = generateChecklist();
     try {
-      saveChecklistState({
+      saveChecklistStateAndClearPlanning({
         checklist,
         customItems: [],
         hiddenTemplateItemIds: [],
@@ -318,7 +319,6 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       tombstones[item.id] = now;
     }
     saveDeletedCustomItems(tombstones);
-
     clearChecklistMilestones();
     clearAllPendingRemovals();
     set({

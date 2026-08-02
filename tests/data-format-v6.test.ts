@@ -9,7 +9,7 @@ import {
   type DadKitExportDataV4,
 } from "@/lib/data/format";
 import { hospitalValuesFromPortable, updateHospitalProfile } from "@/lib/hospital/portable";
-import { portableTestItem, portableV5, portableV6 } from "@/tests/helpers/portable-data";
+import { portableTestItem, portableV5, portableV6, portableV7 } from "@/tests/helpers/portable-data";
 
 const v3: DadKitExportDataV3 = {
   version: 3,
@@ -30,7 +30,7 @@ const v4: DadKitExportDataV4 = {
   },
 };
 
-describe("DadKit v6 portable format", () => {
+describe("DadKit v6 compatibility inside the v7 portable format", () => {
   it.each([
     ["v3", v3],
     ["v4", v4],
@@ -38,11 +38,12 @@ describe("DadKit v6 portable format", () => {
   ])("upgrades %s data with an empty timestamp-zero hospital", (_, input) => {
     const upgraded = upgradeExportDataToLatest(input);
 
-    expect(upgraded.version).toBe(6);
+    expect(upgraded.version).toBe(7);
     expect(upgraded.hospital.fields.hospitalName).toEqual({
       value: "",
       updatedAt: 0,
     });
+    expect(upgraded.planning).toEqual({ version: 1, clearedAt: 0, items: {} });
     expect(isDadKitImportData(upgraded)).toBe(true);
   });
 
@@ -57,11 +58,15 @@ describe("DadKit v6 portable format", () => {
 
     expect(isDadKitImportData(data)).toBe(true);
     expect(sanitizeDadKitImportData(data)).toEqual(data);
-    expect(upgradeExportDataToLatest(data)).toEqual(data);
+    expect(upgradeExportDataToLatest(data)).toEqual({
+      ...data,
+      version: 7,
+      planning: { version: 1, clearedAt: 0, items: {} },
+    });
   });
 
   it("projects canonical v6 to a legal v5 payload without mutating canonical data", () => {
-    const data = portableV6();
+    const data = portableV7();
     const before = structuredClone(data);
     const projected = projectExportDataForVersion(data, 5);
 
@@ -75,7 +80,7 @@ describe("DadKit v6 portable format", () => {
     const base = portableV6();
     const values = hospitalValuesFromPortable(base.hospital);
     values.hospitalName = "市妇幼保健院";
-    const canonical = portableV6({
+    const canonical = portableV7({
       hospital: updateHospitalProfile(base.hospital, values, 99).profile,
     });
 
@@ -86,6 +91,7 @@ describe("DadKit v6 portable format", () => {
       "hospital.fields.hospitalName.value",
       "市妇幼保健院",
     );
+    expect(projected).not.toHaveProperty("planning");
   });
 
   it("rejects invalid or incomplete hospital structures", () => {

@@ -2,6 +2,7 @@
 
 import { useGrowthStore } from "@/lib/growth-store";
 import { useHospitalProfileStore } from "@/lib/hospital/store";
+import { useItemPlanningStore } from "@/lib/planning/store";
 import { useDadKitStore } from "@/lib/store";
 import {
   isApplyingRemote,
@@ -79,6 +80,16 @@ export function startAutoSync() {
     }
 
     if (state.profile !== previous.profile) {
+      scheduleSync();
+    }
+  });
+
+  useItemPlanningStore.subscribe((state, previous) => {
+    if (isApplyingRemote() || !state.hydrated) {
+      return;
+    }
+
+    if (state.planning !== previous.planning) {
       scheduleSync();
     }
   });

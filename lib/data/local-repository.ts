@@ -17,6 +17,7 @@ export {
   saveChecklist,
   saveChecklistMode,
   saveChecklistState,
+  saveChecklistStateAndClearPlanning,
   saveChecklistStateSoon,
   saveCustomItems,
   saveDeletedCustomItems,

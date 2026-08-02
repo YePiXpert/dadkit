@@ -34,6 +34,8 @@ import {
   saveHospitalProfile,
 } from "@/lib/hospital/repository";
 import { useHospitalProfileStore } from "@/lib/hospital/store";
+import { createEmptyItemPlanning, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
+import { loadItemPlanning, saveItemPlanning } from "@/lib/planning/repository";
 import { DADKIT_DATA_VERSION_HEADER } from "@/lib/sync/data-version";
 import { portableV5 } from "@/tests/helpers/portable-data";
 
@@ -329,7 +331,7 @@ describe("family sync client", () => {
     expect(useSyncStatusStore.getState().joined).toBe(true);
   });
 
-  it("sends version 6 on every request and preserves hospital on a v5 response", async () => {
+  it("sends version 7 and preserves hospital and planning on a v5 response", async () => {
     const { localValues } = installBrowserStorage({
       "dadkit:v3:sync-session": JSON.stringify({
         token: "space.compat",
@@ -343,6 +345,12 @@ describe("family sync client", () => {
     saveHospitalProfile(
       updateHospitalProfile(hospital, hospitalValues, 100).profile,
     );
+    const planning = createEmptyItemPlanning();
+    planning.items.seed = {
+      ...createEmptyItemPlanningRecord(),
+      assignee: { value: "dad", updatedAt: 101 },
+    };
+    saveItemPlanning(planning);
     useDadKitStore.setState({ hydrated: true });
     const legacy = portableV5({
       checklist: [testItem("legacy-server", { updatedAt: 200 })],
@@ -368,12 +376,13 @@ describe("family sync client", () => {
 
     await expect(syncNow()).resolves.toMatchObject({ ok: true });
 
-    expect(requestVersions).toEqual(["6", "6"]);
+    expect(requestVersions).toEqual(["7", "7"]);
     expect(loadHospitalProfile().fields.hospitalName.value).toBe(
       "市妇幼保健院",
     );
     expect(loadHospitalProfile().fields.address.value).toBe("健康路 1 号");
     expect(localValues.get(STORAGE_KEYS.hospital)).toBeTruthy();
+    expect(loadItemPlanning().items.seed.assignee.value).toBe("dad");
   });
 
   it("creates a family, stores its name and returns the first invite", async () => {

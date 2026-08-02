@@ -138,6 +138,7 @@ describe("V2 PWA visual and navigation contract", () => {
 
     expect(isPrimaryNavigationItemActive("/", checklistNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/departure", checklistNav)).toBe(true);
+    expect(isPrimaryNavigationItemActive("/planning", checklistNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/settings", checklistNav)).toBe(false);
     expect(isPrimaryNavigationItemActive("/settings", mineNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/settings/backup", mineNav)).toBe(true);
