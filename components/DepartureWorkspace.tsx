@@ -82,7 +82,7 @@ export function DepartureWorkspace() {
       <section className="mobile-shell grid gap-4 lg:max-w-2xl">
         <PageHeader
           backHref="/"
-          backLabel="返回清单首页"
+          backLabel="返回首页"
           kicker="临产核对"
           subtitle="只看现在要拿、要带、要确认的事项。"
           title="准备出发"

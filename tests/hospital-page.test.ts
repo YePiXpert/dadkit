@@ -16,7 +16,7 @@ const page = readSource("app", "hospital", "page.tsx");
 const workspace = readSource("components", "HospitalProfileWorkspace.tsx");
 const summary = readSource("components", "HospitalSummaryCard.tsx");
 const departure = readSource("components", "DepartureWorkspace.tsx");
-const settings = readSource("app", "settings", "page.tsx");
+const homeDashboard = readSource("components", "HomeDashboard.tsx");
 const pwaRegister = readSource("components", "PwaRegister.tsx");
 const serviceWorker = readSource("public", "sw.js");
 
@@ -24,8 +24,8 @@ describe("hospital profile page and entry points", () => {
   it("ships the route, metadata and both requested entry points", () => {
     expect(page).toContain("HospitalProfileWorkspace");
     expect(page).toContain("医院档案 | DadKit");
-    expect(settings).toContain('href: "/hospital"');
-    expect(settings).toContain("集中保存医院地址、电话和入院要求");
+    expect(homeDashboard).toContain("HOSPITAL_PATH");
+    expect(homeDashboard).toContain("医院档案");
     expect(departure).toContain("<HospitalSummaryCard />");
     expect(departure.indexOf("<HospitalSummaryCard />")).toBeGreaterThan(
       departure.indexOf('id="departure-remaining-count"'),

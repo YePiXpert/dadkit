@@ -121,7 +121,7 @@ export function PlanningWorkspace() {
       <section className="mobile-shell grid gap-4 lg:max-w-2xl">
         <PageHeader
           backHref="/"
-          backLabel="返回清单"
+          backLabel="返回首页"
           kicker="一起准备"
           subtitle="按物品分配负责人，记录期限、价格和实际存放位置。"
           title="家庭分工与采购"

@@ -118,8 +118,8 @@ test("从准备出发进入，保存后刷新并显示摘要、复制和拨号�
   ).toHaveAttribute("href", "tel:+8601012345678");
 });
 
-test("从我的进入，取消不保存且清空需要二次确认", async ({ page }) => {
-  await page.goto("/settings", { waitUntil: "domcontentloaded" });
+test("从首页快捷入口进入，取消不保存且清空需要二次确认", async ({ page }) => {
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.getByRole("link", { name: /医院档案/ }).click();
   await expect(page).toHaveURL(/\/hospital$/);
   await page.waitForTimeout(1_000);

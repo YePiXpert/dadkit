@@ -47,11 +47,11 @@ test("从首页进入后可单项和整组确认，刷新与返回首页保持�
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect.poll(() => remainingCount(page)).toBe(remainingAfterBatch);
 
-  await page.getByRole("link", { name: "返回清单首页" }).click();
+  await page.getByRole("link", { name: "返回首页" }).click();
   await expect(page.getByRole("link", { name: /准备出发/ })).toContainText(
     remainingAfterBatch > 0
-      ? `还有 ${remainingAfterBatch} 项出发前需要确认`
-      : "关键物品已经确认，可以安心出发",
+      ? `还有 ${remainingAfterBatch} 项待确认`
+      : "已全部确认",
   );
 });
 

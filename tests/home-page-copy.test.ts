@@ -34,9 +34,15 @@ describe("checklist and home dashboard pages", () => {
     expect(homeDashboard).toContain("准备出发");
     expect(homeDashboard).toContain("getDepartureProgress");
     expect(homeDashboard).toContain("DEPARTURE_PATH");
+    expect(homeDashboard).toContain("项待确认");
     expect(homeDashboard).toContain("PlanningSummaryCard compact");
     expect(homeDashboard).toContain("BabyHomeCard");
     expect(homeDashboard).toContain("HouseholdFeaturePrompt");
+    expect(homeDashboard).toContain("快捷入口");
+    expect(homeDashboard).toContain("医院档案");
+    expect(homeDashboard).toContain("宝宝成长记");
+    expect(homeDashboard).toContain("useHouseholdStore");
+    expect(homeDashboard).toContain("useGrowthStore");
   });
 
   it("does not depend on optional profile or removed tools", () => {

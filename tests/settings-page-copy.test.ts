@@ -33,6 +33,7 @@ describe("settings information architecture", () => {
         label,
       })),
     ).toEqual([
+      { href: "/", id: "home", label: "首页" },
       { href: "/checklist", id: "checklist", label: "清单" },
       { href: "/baby", id: "baby", label: "宝宝" },
       { href: "/settings", id: "mine", label: "我的" },
@@ -41,12 +42,10 @@ describe("settings information architecture", () => {
 
   it("keeps /settings as a focused 我的 entry page", () => {
     expect(settingsPage).toContain("我的");
-    expect(settingsPage).toContain('href: "/hospital"');
-    expect(settingsPage).toContain("医院档案");
-    expect(settingsPage).toContain("集中保存医院地址、电话和入院要求");
-    expect(settingsPage).toContain('href: "/growth"');
-    expect(settingsPage).toContain("宝宝成长记");
-    expect(settingsPage).toContain("按孕周查看宝宝发育与常见产检参考");
+    expect(settingsPage).not.toContain('href: "/hospital"');
+    expect(settingsPage).not.toContain('href: "/growth"');
+    expect(settingsPage).toContain('href: "/settings/sync"');
+    expect(settingsPage).toContain('href: "/settings/family"');
     expect(settingsPage).toContain('href: "/settings/checklist"');
     expect(settingsPage).toContain('href: "/settings/backup"');
     expect(settingsPage).not.toContain("登录");

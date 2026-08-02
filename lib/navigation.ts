@@ -1,14 +1,21 @@
-import { Baby, ClipboardList, UserRound, type LucideIcon } from "lucide-react";
+import { Baby, ClipboardList, House, UserRound, type LucideIcon } from "lucide-react";
 
 export type PrimaryNavigationItem = {
-  href: "/checklist" | "/baby" | "/settings";
+  href: "/" | "/checklist" | "/baby" | "/settings";
   icon: LucideIcon;
-  id: "checklist" | "baby" | "mine";
-  label: "清单" | "宝宝" | "我的";
+  id: "home" | "checklist" | "baby" | "mine";
+  label: "首页" | "清单" | "宝宝" | "我的";
   ownedRoutes: readonly string[];
 };
 
 export const PRIMARY_NAVIGATION_ITEMS = [
+  {
+    id: "home",
+    href: "/",
+    label: "首页",
+    icon: House,
+    ownedRoutes: ["/"],
+  },
   {
     id: "checklist",
     href: "/checklist",

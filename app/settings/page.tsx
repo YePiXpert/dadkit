@@ -1,7 +1,5 @@
 import Link from "next/link";
 import {
-  Baby,
-  Building2,
   ChevronRight,
   ClipboardCheck,
   Cloud,
@@ -29,20 +27,6 @@ const SETTINGS_ENTRIES = [
     accent: "bg-tile-baby-bg text-tile-baby-fg",
   },
   {
-    href: "/hospital",
-    title: "医院档案",
-    description: "集中保存医院地址、电话和入院要求。",
-    icon: Building2,
-    accent: "bg-tile-mom-bg text-tile-mom-fg",
-  },
-  {
-    href: "/growth",
-    title: "宝宝成长记",
-    description: "按孕周查看宝宝发育与常见产检参考。",
-    icon: Baby,
-    accent: "bg-tile-baby-bg text-tile-baby-fg",
-  },
-  {
     href: "/settings/checklist",
     title: "清单设置",
     description: "调整显示方式，并维护通用清单内容。",
@@ -67,7 +51,7 @@ export default function SettingsPage() {
             我的
           </h1>
           <p className="text-sm leading-6 text-muted-foreground">
-            查看成长参考，管理清单偏好与数据备份。
+            管理家庭同步、成员、清单偏好与数据备份。
           </p>
         </header>
 

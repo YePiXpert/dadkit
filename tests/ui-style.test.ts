@@ -138,14 +138,20 @@ describe("V2 PWA visual and navigation contract", () => {
     expect(
       PRIMARY_NAVIGATION_ITEMS.map(({ href, id, label }) => ({ href, id, label })),
     ).toEqual([
+      { href: "/", id: "home", label: "首页" },
       { href: "/checklist", id: "checklist", label: "清单" },
       { href: "/baby", id: "baby", label: "宝宝" },
       { href: "/settings", id: "mine", label: "我的" },
     ]);
 
-    const checklistNav = PRIMARY_NAVIGATION_ITEMS[0];
+    const homeNav = PRIMARY_NAVIGATION_ITEMS[0];
+    const checklistNav = PRIMARY_NAVIGATION_ITEMS.find(
+      (item) => item.id === "checklist",
+    )!;
     const mineNav = PRIMARY_NAVIGATION_ITEMS.find((item) => item.id === "mine")!;
 
+    expect(isPrimaryNavigationItemActive("/", homeNav)).toBe(true);
+    expect(isPrimaryNavigationItemActive("/checklist", homeNav)).toBe(false);
     expect(isPrimaryNavigationItemActive("/checklist", checklistNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/", checklistNav)).toBe(false);
     expect(isPrimaryNavigationItemActive("/departure", checklistNav)).toBe(true);
@@ -166,7 +172,7 @@ describe("V2 PWA visual and navigation contract", () => {
       expect(source).toContain('aria-current={active ? "page" : undefined}');
     }
 
-    expect(mobileNav).toContain("grid grid-cols-3");
+    expect(mobileNav).toContain("grid grid-cols-4");
     expect(mobileNav).toContain("env(safe-area-inset-bottom)");
   });
 
@@ -210,8 +216,8 @@ describe("V2 PWA visual and navigation contract", () => {
 
   it("keeps 我的 as a simple entry surface with subordinate settings pages", () => {
     expect(settingsPage).toContain("我的");
-    expect(settingsPage).toContain('href: "/hospital"');
-    expect(settingsPage).toContain('href: "/growth"');
+    expect(settingsPage).not.toContain('href: "/hospital"');
+    expect(settingsPage).not.toContain('href: "/growth"');
     expect(settingsPage).toContain('href: "/settings/checklist"');
     expect(settingsPage).toContain('href: "/settings/backup"');
     expect(checklistSettingsPage).toContain("显示物品说明");
