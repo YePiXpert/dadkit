@@ -2,6 +2,10 @@ import {
   validateGrowthPortableData,
   type GrowthPortableData,
 } from "@/lib/growth-portable";
+import { createEmptyBabyData } from "@/lib/baby/defaults";
+import { cloneBabyData } from "@/lib/baby/portable";
+import type { BabyPortableData } from "@/lib/baby/types";
+import { isBabyPortableData } from "@/lib/baby/validation";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
 import { cloneHospitalProfile } from "@/lib/hospital/portable";
 import type { HospitalProfilePortableData } from "@/lib/hospital/types";
@@ -63,18 +67,24 @@ export type DadKitExportDataV7 = Omit<DadKitExportDataV6, "version"> & {
   planning: ItemPlanningPortableData;
 };
 
-export type DadKitExportData = DadKitExportDataV7;
+export type DadKitExportDataV8 = Omit<DadKitExportDataV7, "version"> & {
+  version: 8;
+  baby: BabyPortableData;
+};
+
+export type DadKitExportData = DadKitExportDataV8;
 
 export type DadKitImportData =
   | DadKitExportDataV3
   | DadKitExportDataV4
   | DadKitExportDataV5
   | DadKitExportDataV6
-  | DadKitExportDataV7;
+  | DadKitExportDataV7
+  | DadKitExportDataV8;
 
-export type DadKitSyncDataVersion = 5 | 6 | 7;
+export type DadKitSyncDataVersion = 5 | 6 | 7 | 8;
 
-export const LATEST_DATA_VERSION = 7 as const;
+export const LATEST_DATA_VERSION = 8 as const;
 
 export const V3_EXPORT_KEYS = [
   "version",
@@ -97,6 +107,8 @@ export const V5_EXPORT_KEYS = [
 export const V6_EXPORT_KEYS = [...V5_EXPORT_KEYS, "hospital"] as const;
 
 export const V7_EXPORT_KEYS = [...V6_EXPORT_KEYS, "planning"] as const;
+
+export const V8_EXPORT_KEYS = [...V7_EXPORT_KEYS, "baby"] as const;
 
 const CHECKLIST_ITEM_KEYS = [
   "id",
@@ -320,10 +332,20 @@ export function sanitizeDadKitImportData(
     return v6;
   }
 
-  return {
+  const v7 = {
     ...v6,
     version: 7,
     planning: cloneItemPlanning(data.planning),
+  } as const;
+
+  if (data.version === 7) {
+    return v7;
+  }
+
+  return {
+    ...v7,
+    version: 8,
+    baby: cloneBabyData(data.baby),
   };
 }
 
@@ -348,12 +370,12 @@ export function upgradeExportDataToLatest(
       ? {}
       : clean.deletedCustomItems;
   const growthUpdatedAt =
-    clean.version === 5 || clean.version === 6 || clean.version === 7
+    clean.version === 5 || clean.version === 6 || clean.version === 7 || clean.version === 8
       ? clean.growthUpdatedAt
       : 0;
 
   return {
-    version: 7,
+    version: 8,
     exportedAt: clean.exportedAt,
     checklistMode: clean.checklistMode,
     checklist: clean.checklist.map(copyChecklistItem),
@@ -375,27 +397,35 @@ export function upgradeExportDataToLatest(
     deletedCustomItems: { ...deletedCustomItems },
     growthUpdatedAt,
     hospital:
-      clean.version === 6 || clean.version === 7
+      clean.version === 6 || clean.version === 7 || clean.version === 8
         ? cloneHospitalProfile(clean.hospital)
         : createEmptyHospitalProfile(),
     planning:
-      clean.version === 7
+      clean.version === 7 || clean.version === 8
         ? cloneItemPlanning(clean.planning)
         : createEmptyItemPlanning(),
+    baby: clean.version === 8 ? cloneBabyData(clean.baby) : createEmptyBabyData(),
   };
 }
 
 export function projectExportDataForVersion(
   data: DadKitImportData,
   targetVersion: DadKitSyncDataVersion,
-): DadKitExportData | DadKitExportDataV6 | DadKitExportDataV5 {
+): DadKitExportData | DadKitExportDataV7 | DadKitExportDataV6 | DadKitExportDataV5 {
   const latest = upgradeExportDataToLatest(data);
 
-  if (targetVersion === 7) {
+  if (targetVersion === 8) {
     return latest;
   }
 
-  const { planning: _planning, ...v6 } = latest;
+  const { baby: _baby, ...v7 } = latest;
+  void _baby;
+
+  if (targetVersion === 7) {
+    return { ...v7, version: 7 };
+  }
+
+  const { planning: _planning, ...v6 } = v7;
   void _planning;
 
   if (targetVersion === 6) {
@@ -531,8 +561,8 @@ export function isDadKitImportData(value: unknown): value is DadKitImportData {
     );
   }
 
-  return (
-    value.version === 7 &&
+  if (value.version === 7) {
+    return (
     isPlainRecord(value) &&
     hasOnlyKeys(value, V7_EXPORT_KEYS) &&
     hasValidPortableChecklistData(value) &&
@@ -543,5 +573,21 @@ export function isDadKitImportData(value: unknown): value is DadKitImportData {
     Number.isFinite(value.growthUpdatedAt) &&
     isHospitalProfilePortableData(value.hospital) &&
     isItemPlanningPortableData(value.planning)
+    );
+  }
+
+  return (
+    value.version === 8 &&
+    isPlainRecord(value) &&
+    hasOnlyKeys(value, V8_EXPORT_KEYS) &&
+    hasValidPortableChecklistData(value) &&
+    validateGrowthPortableData(value.growth) &&
+    isHiddenTemplateItemStamps(value.hiddenTemplateItemStamps) &&
+    isDeletedCustomItemStamps(value.deletedCustomItems) &&
+    typeof value.growthUpdatedAt === "number" &&
+    Number.isFinite(value.growthUpdatedAt) &&
+    isHospitalProfilePortableData(value.hospital) &&
+    isItemPlanningPortableData(value.planning) &&
+    isBabyPortableData(value.baby)
   );
 }

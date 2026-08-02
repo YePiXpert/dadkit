@@ -13,7 +13,7 @@ import {
 
 export const runtime = "nodejs";
 
-const MAX_PUSH_BYTES = 2 * 1024 * 1024;
+const MAX_PUSH_BYTES = 32 * 1024 * 1024;
 const pushRateLimiter = createWebDavProxyRateLimiter(120, 60_000);
 
 export async function POST(request: Request) {
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
   if (
     !isDadKitImportData(payload) ||
-    (payload.version !== 5 && payload.version !== 6 && payload.version !== 7)
+    (payload.version !== 5 && payload.version !== 6 && payload.version !== 7 && payload.version !== 8)
   ) {
     return syncError("同步数据格式无效。", 400);
   }

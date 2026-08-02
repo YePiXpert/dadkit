@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v2.2.2-pwa-r1";
+const CACHE_NAME = "dadkit-v3.0.0-pwa-r1";
 const APP_SHELL_ROUTE = "/";
 const PWA_ASSETS = [
   "/manifest.webmanifest",

@@ -380,7 +380,7 @@ export async function joinSpace(
   name: string,
   code: string,
   existingOnly = false,
-  targetVersion: DadKitSyncDataVersion = 6,
+  targetVersion: DadKitSyncDataVersion = 8,
 ): Promise<SyncJoinResult | undefined> {
   const normalizedName = normalizeSyncSpaceName(name);
   const legacyName = legacySyncSpaceName(name);
@@ -463,7 +463,7 @@ export async function joinSpace(
 
 export async function createSpace(
   name: string,
-  targetVersion: DadKitSyncDataVersion = 7,
+  targetVersion: DadKitSyncDataVersion = 8,
 ): Promise<SyncCreateResult | undefined> {
   const normalizedName = normalizeSyncSpaceName(name);
   const legacyName = legacySyncSpaceName(name);
@@ -529,7 +529,7 @@ export async function createInvite(
 
 export async function pullSpace(
   token: string,
-  targetVersion: DadKitSyncDataVersion = 7,
+  targetVersion: DadKitSyncDataVersion = 8,
 ): Promise<SyncSpaceSnapshot | undefined> {
   const parsed = parseToken(token);
 
@@ -546,7 +546,7 @@ export async function pullSpace(
 export async function pushSpace(
   token: string,
   incoming: DadKitImportData,
-  targetVersion: DadKitSyncDataVersion = 7,
+  targetVersion: DadKitSyncDataVersion = 8,
 ): Promise<SyncSpaceSnapshot | undefined> {
   const parsed = parseToken(token);
 

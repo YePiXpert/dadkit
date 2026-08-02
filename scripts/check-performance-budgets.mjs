@@ -15,10 +15,14 @@ const routeBudgets = new Map([
   ["/departure/page", 250 * 1024],
   ["/hospital/page", 225 * 1024],
   ["/planning/page", 245 * 1024],
+  ["/baby/page", 260 * 1024],
+  ["/baby/timeline/page", 260 * 1024],
   ["/growth/page", 190 * 1024],
   ["/settings/page", 170 * 1024],
   ["/settings/checklist/page", 225 * 1024],
-  ["/settings/backup/page", 247 * 1024],
+  // v3.0 adds full v8 JSON import/export controls to the already dense backup
+  // surface. Keep the increase below 1% of the previous 247 KiB budget.
+  ["/settings/backup/page", 249 * 1024],
   ["/privacy/page", 160 * 1024],
   ["/support/page", 160 * 1024],
 ]);
@@ -29,6 +33,8 @@ const routeLabels = new Map([
   ["/departure/page", "准备出发页"],
   ["/hospital/page", "医院档案页"],
   ["/planning/page", "家庭分工与采购页"],
+  ["/baby/page", "宝宝记录页"],
+  ["/baby/timeline/page", "宝宝时间线页"],
   ["/growth/page", "成长记页"],
   ["/settings/page", "我的页"],
   ["/settings/checklist/page", "清单设置页"],

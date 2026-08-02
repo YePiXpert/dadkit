@@ -9,7 +9,7 @@ import { generateChecklist, normalizeChecklistItem } from "@/lib/rules";
 import { getSyncAdjustedNow } from "@/lib/sync-clock";
 import {
   SnapshotPersistenceError,
-  createSnapshot,
+  createSnapshotAsync,
 } from "@/lib/data/backup";
 import {
   loadChecklist,
@@ -19,7 +19,7 @@ import {
   loadHiddenTemplateItemIds,
   loadHiddenTemplateItemStamps,
   primeChecklistState,
-  resetAllData,
+  resetAllDataAsync,
   saveChecklist,
   saveChecklistMode,
   saveChecklistState,
@@ -54,7 +54,7 @@ export type DadKitState = {
   pendingRemovalIds: string[];
   hydrate: () => void;
   setChecklistMode: (mode: ChecklistMode) => void;
-  resetChecklist: () => void;
+  resetChecklist: () => Promise<void>;
   restoreMissingTemplateItems: () => number;
   updateItem: (id: string, patch: Partial<ChecklistItem>) => void;
   advanceItem: (id: string) => void;
@@ -112,8 +112,8 @@ export function mergeChecklistQuantity(current?: string, added?: string) {
   return `${left}；另加 ${right}`;
 }
 
-function requireSnapshotBeforeChange(reason: string) {
-  const snapshot = createSnapshot(reason);
+async function requireSnapshotBeforeChange(reason: string) {
+  const snapshot = await createSnapshotAsync(reason);
 
   if (!snapshot) {
     throw new SnapshotPersistenceError();
@@ -291,8 +291,8 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     saveChecklistMode(mode);
     set({ checklistMode: mode });
   },
-  resetChecklist: () => {
-    requireSnapshotBeforeChange("重建清单前");
+  resetChecklist: async () => {
+    await requireSnapshotBeforeChange("重建清单前");
 
     const state = get();
     const checklist = generateChecklist();
@@ -611,13 +611,13 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     set(restored);
   },
   clearAll: async () => {
-    requireSnapshotBeforeChange("清空本地数据前");
+    await requireSnapshotBeforeChange("清空本地数据前");
 
     const checklist = generateChecklist();
     let sessionSecretCleared = true;
 
     try {
-      ({ sessionSecretCleared } = resetAllData(checklist));
+      ({ sessionSecretCleared } = await resetAllDataAsync(checklist));
     } catch {
       throw new Error("本机数据清空失败，原有数据已保留。");
     }

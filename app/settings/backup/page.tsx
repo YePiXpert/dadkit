@@ -45,14 +45,15 @@ import {
   PUBLIC_SUPPORT_PATH,
 } from "@/lib/app-routes";
 import {
-  clearSnapshots,
+  clearSnapshotsAsync,
   clearWebDavSettings,
-  exportData,
-  loadSnapshots,
+  buildLatestPortableData,
+  importDataAsync,
+  loadSnapshotsAsync,
   loadWebDavConfig,
   loadWebDavSecret,
   loadWebDavSyncState,
-  restoreSnapshot,
+  restoreSnapshotAsync,
   saveWebDavConfig,
   saveWebDavSecret,
   saveWebDavSyncState,
@@ -86,6 +87,7 @@ const FamilySyncCard = dynamic(
 
 type BackupConfirmation =
   | { type: "restoreSnapshot"; snapshotId: string }
+  | { type: "restoreJson" }
   | { type: "deleteSnapshots" }
   | { type: "downloadRemote" }
   | { type: "clearWebDav" };
@@ -93,8 +95,6 @@ type BackupConfirmation =
 export default function BackupSettingsPage() {
   const clearAll = useDadKitStore((state) => state.clearAll);
   const hydrate = useDadKitStore((state) => state.hydrate);
-  const checklist = useDadKitStore((state) => state.checklist);
-  const customItems = useDadKitStore((state) => state.customItems);
   const [snapshotMessage, setSnapshotMessage] = useState("");
   const [snapshotMessageOk, setSnapshotMessageOk] = useState<boolean>();
   const [clearMessage, setClearMessage] = useState("");
@@ -118,15 +118,23 @@ export default function BackupSettingsPage() {
     useState<DadKitWebDavBackup>();
   const [confirmation, setConfirmation] = useState<BackupConfirmation>();
   const photoPackageInputRef = useRef<HTMLInputElement>(null);
+  const jsonBackupInputRef = useRef<HTMLInputElement>(null);
+  const [jsonBackupBusy, setJsonBackupBusy] = useState(false);
+  const [jsonBackupMessage, setJsonBackupMessage] = useState("");
+  const [jsonBackupMessageOk, setJsonBackupMessageOk] = useState<boolean>();
+  const [pendingJsonBackup, setPendingJsonBackup] = useState<string>();
   const syncStatus = useSyncStatusStore();
   const recentSnapshots = snapshots.slice(0, 2);
-  const hasLocalData = checklist.length > 0 || customItems.length > 0;
   const webDavConfigured = Boolean(
     webDavConfig.endpoint.trim() && webDavConfig.username.trim(),
   );
 
-  function refreshSnapshots() {
-    setSnapshots(loadSnapshots());
+  async function refreshSnapshots() {
+    try {
+      setSnapshots(await loadSnapshotsAsync());
+    } catch {
+      setSnapshots([]);
+    }
   }
 
   function refreshWebDavSettings() {
@@ -140,26 +148,26 @@ export default function BackupSettingsPage() {
 
   useEffect(() => {
     hydrate();
-    refreshSnapshots();
+    void refreshSnapshots();
     refreshWebDavSettings();
     refreshSyncStatus();
   }, [hydrate]);
 
-  function restoreLocalSnapshot(id: string) {
-    const result = restoreSnapshot(id);
+  async function restoreLocalSnapshot(id: string) {
+    const result = await restoreSnapshotAsync(id);
 
     if (result.ok) {
       hydrate();
     }
 
-    refreshSnapshots();
+    await refreshSnapshots();
     setSnapshotMessage(result.message);
     setSnapshotMessageOk(result.ok);
   }
 
-  function deleteAllSnapshots() {
-    clearSnapshots();
-    refreshSnapshots();
+  async function deleteAllSnapshots() {
+    await clearSnapshotsAsync();
+    await refreshSnapshots();
     setSnapshotMessage("本机恢复点已删除。");
     setSnapshotMessageOk(true);
   }
@@ -174,7 +182,7 @@ export default function BackupSettingsPage() {
     try {
       await clearAll();
     } catch (error) {
-      refreshSnapshots();
+      await refreshSnapshots();
       setClearMessage(
         error instanceof Error && error.message
           ? error.message
@@ -186,7 +194,7 @@ export default function BackupSettingsPage() {
 
     setClearDialogOpen(false);
     setClearConfirmation("");
-    refreshSnapshots();
+    await refreshSnapshots();
     refreshWebDavSettings();
     setClearMessage("本机数据已清空，并生成一份全新的通用清单。");
     setClearMessageOk(true);
@@ -248,7 +256,7 @@ export default function BackupSettingsPage() {
 
   async function uploadCurrentBackup() {
     const config = prepareWebDavOperation();
-    const currentData = exportData();
+    const currentData = await buildLatestPortableData();
 
     setWebDavBusy(true);
     setPendingRemoteBackup(undefined);
@@ -329,7 +337,7 @@ export default function BackupSettingsPage() {
       return;
     }
 
-    const result = client.importDadKitWebDavBackup(pendingRemoteBackup);
+    const result = await client.importDadKitWebDavBackup(pendingRemoteBackup);
 
     if (result.ok) {
       const timestamp = new Date().toISOString();
@@ -344,7 +352,7 @@ export default function BackupSettingsPage() {
       setPendingRemoteBackup(undefined);
     }
 
-    refreshSnapshots();
+    await refreshSnapshots();
     setWebDavMessage(result.message);
     setWebDavMessageOk(result.ok);
   }
@@ -383,6 +391,53 @@ export default function BackupSettingsPage() {
     } finally {
       setPhotoPackageBusy(false);
     }
+  }
+
+  async function exportJsonBackup() {
+    setJsonBackupBusy(true);
+    setJsonBackupMessage("");
+    try {
+      const data = await buildLatestPortableData();
+      downloadJsonFile(data, `dadkit-v8-${data.exportedAt.slice(0, 10)}.json`);
+      setJsonBackupMessage("完整 JSON 备份已导出，包含宝宝资料、照护事件和删除墓碑。");
+      setJsonBackupMessageOk(true);
+    } catch (error) {
+      setJsonBackupMessage(error instanceof Error && error.message ? error.message : "JSON 备份导出失败，请稍后重试。");
+      setJsonBackupMessageOk(false);
+    } finally {
+      setJsonBackupBusy(false);
+    }
+  }
+
+  async function chooseJsonBackup(event: ChangeEvent<HTMLInputElement>) {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    if (file.size > 32 * 1024 * 1024) {
+      setJsonBackupMessage("JSON 备份不能超过 32 MiB。");
+      setJsonBackupMessageOk(false);
+      return;
+    }
+    try {
+      setPendingJsonBackup(await file.text());
+      setConfirmation({ type: "restoreJson" });
+    } catch {
+      setJsonBackupMessage("无法读取 JSON 备份文件。");
+      setJsonBackupMessageOk(false);
+    }
+  }
+
+  async function restoreJsonBackup() {
+    if (!pendingJsonBackup) return;
+    setJsonBackupBusy(true);
+    const result = await importDataAsync(pendingJsonBackup);
+    setPendingJsonBackup(undefined);
+    setJsonBackupBusy(false);
+    if (result.ok) hydrate();
+    await refreshSnapshots();
+    setJsonBackupMessage(result.message);
+    setJsonBackupMessageOk(result.ok);
   }
 
   async function importPhotoPackage(event: ChangeEvent<HTMLInputElement>) {
@@ -467,7 +522,7 @@ export default function BackupSettingsPage() {
           </CardHeader>
           <CardContent className="grid gap-3">
             <p className="text-sm leading-6 text-muted-foreground">
-              恢复、清空或重建前自动保存清单，最多保留 2 份，以降低本地存储占用。恢复点只在当前浏览器中，不含照片和 WebDAV 配置。
+              恢复、清空或重建前自动保存完整便携数据，包含宝宝资料与照护记录，最多保留 2 份。v8 恢复点保存在 IndexedDB，不含照片和 WebDAV 配置。
             </p>
             {recentSnapshots.length === 0 ? (
               <p className="rounded-2xl bg-muted px-4 py-4 text-sm text-muted-foreground">
@@ -496,6 +551,24 @@ export default function BackupSettingsPage() {
               </Button>
             ) : null}
             <Feedback message={snapshotMessage} ok={snapshotMessageOk} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary"><Database className="size-4" /></span>
+              <span className="text-base">完整 JSON 备份</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            <p className="text-sm leading-6 text-muted-foreground">导出 v8 JSON 可携带清单、医院档案、家庭分工、宝宝资料、全部照护事件、活动计时和删除墓碑。导入属于完整恢复；v3–v7 旧备份不含宝宝数据，恢复时会安全清空本机宝宝记录。</p>
+            <input ref={jsonBackupInputRef} accept="application/json,.json" aria-label="选择 JSON 备份文件" className="sr-only" type="file" onChange={chooseJsonBackup} />
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={jsonBackupBusy} onClick={() => void exportJsonBackup()}><Download />导出 JSON 备份</Button>
+              <Button disabled={jsonBackupBusy} onClick={() => jsonBackupInputRef.current?.click()} variant="outline"><Upload />导入 JSON 备份</Button>
+            </div>
+            <Feedback message={jsonBackupMessage} ok={jsonBackupMessageOk} />
           </CardContent>
         </Card>
 
@@ -558,7 +631,7 @@ export default function BackupSettingsPage() {
           </summary>
           <div className="grid gap-4 border-t border-border/70 p-5">
             <p className="text-sm leading-6 text-muted-foreground">
-              只在你主动操作时上传或下载清单备份。上传与恢复都会按条目合并本地和远端数据，不会自动同步，也不上传照片或 WebDAV 凭据。地址必须使用 HTTPS。
+              只在你主动操作时上传或下载完整 v8 备份。上传与恢复会合并清单字段、宝宝资料字段和照护事件，不会自动同步，也不上传照片或 WebDAV 凭据。地址必须使用 HTTPS。
             </p>
 
             <div className="flex flex-wrap gap-2">
@@ -569,11 +642,7 @@ export default function BackupSettingsPage() {
               <Button
                 disabled={webDavBusy}
                 variant="outline"
-                onClick={() =>
-                  hasLocalData
-                    ? setConfirmation({ type: "downloadRemote" })
-                    : void downloadRemoteBackup()
-                }
+                onClick={() => setConfirmation({ type: "downloadRemote" })}
               >
                 <Download />
                 检查远端备份
@@ -698,7 +767,7 @@ export default function BackupSettingsPage() {
           </CardHeader>
           <CardContent className="grid gap-3">
             <p className="text-sm leading-6 text-muted-foreground">
-              清单与成长记便携数据可由恢复点找回。WebDAV 设置、家庭同步登录状态和本机物品照片会一并清除，且无法从恢复点找回。
+              清单、医院档案、家庭分工、宝宝记录、本机恢复点、WebDAV 设置、家庭同步登录状态和本机物品照片都会清除。请先导出 JSON 或 WebDAV 备份；本操作完成后无法从本机恢复点找回。
             </p>
             <Button
               className="justify-self-start"
@@ -729,7 +798,7 @@ export default function BackupSettingsPage() {
             <DialogHeader>
               <DialogTitle>确认清空本机数据</DialogTitle>
               <DialogDescription>
-                清单与成长记便携数据会先保存为本机恢复点；WebDAV 设置和本机物品照片会被清除，已连接的家庭同步会退出。若恢复点保存失败，本次操作会立即中止。
+                系统会先验证完整恢复点能够成功写入；随后清单、医院档案、家庭分工、宝宝记录、全部本机恢复点、WebDAV 设置和本机物品照片都会清除，已连接的家庭同步会退出。请先导出外部备份。
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-2">
@@ -764,6 +833,8 @@ export default function BackupSettingsPage() {
             confirmLabel={
               confirmation.type === "restoreSnapshot"
                 ? "恢复恢复点"
+                : confirmation.type === "restoreJson"
+                  ? "导入 JSON 备份"
                 : confirmation.type === "deleteSnapshots"
                   ? "删除全部恢复点"
                   : confirmation.type === "clearWebDav"
@@ -772,7 +843,9 @@ export default function BackupSettingsPage() {
             }
             description={
               confirmation.type === "restoreSnapshot"
-                ? "恢复此恢复点会替换当前清单。"
+                ? "恢复此恢复点会完整替换当前便携数据，包括宝宝资料与照护记录。"
+                : confirmation.type === "restoreJson"
+                  ? "JSON 导入属于完整恢复。系统会先创建恢复点；v3–v7 备份会安全清空宝宝资料和照护记录。"
                 : confirmation.type === "deleteSnapshots"
                   ? "全部本机恢复点将被永久删除。"
                   : confirmation.type === "clearWebDav"
@@ -781,9 +854,11 @@ export default function BackupSettingsPage() {
             }
             onConfirm={() => {
               if (confirmation.type === "restoreSnapshot") {
-                restoreLocalSnapshot(confirmation.snapshotId);
+                void restoreLocalSnapshot(confirmation.snapshotId);
+              } else if (confirmation.type === "restoreJson") {
+                void restoreJsonBackup();
               } else if (confirmation.type === "deleteSnapshots") {
-                deleteAllSnapshots();
+                void deleteAllSnapshots();
               } else if (confirmation.type === "clearWebDav") {
                 clearWebDav();
               } else {
@@ -797,6 +872,8 @@ export default function BackupSettingsPage() {
             title={
               confirmation.type === "restoreSnapshot"
                 ? "确认恢复本机恢复点？"
+                : confirmation.type === "restoreJson"
+                  ? "确认导入 JSON 备份？"
                 : confirmation.type === "deleteSnapshots"
                   ? "确认删除全部恢复点？"
                   : confirmation.type === "clearWebDav"

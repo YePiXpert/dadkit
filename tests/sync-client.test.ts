@@ -14,7 +14,7 @@ import {
 } from "@/lib/sync/client";
 import {
   exportData,
-  loadSnapshots,
+  loadSnapshotsAsync,
   loadSyncClientState,
   loadSyncSession,
   saveChecklist,
@@ -187,7 +187,7 @@ describe("family sync client", () => {
       const persisted = JSON.parse(localValues.get(STORAGE_KEYS.checklist) ?? "[]") as ChecklistItem[];
       expect(localValues.get("dadkit:v3:sync-clock-offset-ms")).toBe("-3600000");
       expect(persisted[0]?.updatedAt).toBe(Date.now() - 3_600_000 + 100);
-      expect(loadSnapshots()[0]?.reason).toBe("首次同步时间校准前");
+      expect((await loadSnapshotsAsync())[0]?.reason).toBe("首次同步时间校准前");
       expect(getSyncClockTimelineInitialized()).toBe(true);
     } finally {
       vi.useRealTimers();
@@ -376,7 +376,7 @@ describe("family sync client", () => {
 
     await expect(syncNow()).resolves.toMatchObject({ ok: true });
 
-    expect(requestVersions).toEqual(["7", "7"]);
+    expect(requestVersions).toEqual(["8", "8"]);
     expect(loadHospitalProfile().fields.hospitalName.value).toBe(
       "市妇幼保健院",
     );

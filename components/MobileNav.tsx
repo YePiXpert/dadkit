@@ -25,7 +25,7 @@ export function MobileNav() {
       aria-label="主导航"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-border/70 bg-card pb-[max(env(safe-area-inset-bottom),0.65rem)] pt-2 shadow-nav sm:hidden"
     >
-      <div className="mobile-shell grid grid-cols-2 gap-4 px-8">
+      <div className="mobile-shell grid grid-cols-3 gap-2 px-4">
         {PRIMARY_NAVIGATION_ITEMS.map((item) => {
           const active = isPrimaryNavigationItemActive(pathname, item);
           const Icon = item.icon;

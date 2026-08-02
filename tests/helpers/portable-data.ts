@@ -2,7 +2,9 @@ import {
   type DadKitExportData,
   type DadKitExportDataV5,
   type DadKitExportDataV6,
+  type DadKitExportDataV7,
 } from "@/lib/data/format";
+import { createEmptyBabyData } from "@/lib/baby/defaults";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
 import { createEmptyItemPlanning } from "@/lib/planning/defaults";
 import type { ChecklistItem } from "@/lib/types";
@@ -64,12 +66,23 @@ export function portableV6(
 }
 
 export function portableV7(
-  patch: Partial<DadKitExportData> = {},
-): DadKitExportData {
+  patch: Partial<DadKitExportDataV7> = {},
+): DadKitExportDataV7 {
   return {
     ...portableV6(),
     version: 7,
     planning: createEmptyItemPlanning(),
+    ...patch,
+  };
+}
+
+export function portableV8(
+  patch: Partial<DadKitExportData> = {},
+): DadKitExportData {
+  return {
+    ...portableV7(),
+    version: 8,
+    baby: createEmptyBabyData(),
     ...patch,
   };
 }

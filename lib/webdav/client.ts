@@ -1,7 +1,7 @@
 import {
-  applyImportData,
-  createSnapshot,
-  exportData,
+  applyImportDataAsync,
+  buildLatestPortableData,
+  createSnapshotAsync,
   type DadKitExportData,
   type ImportResult,
   validateImportData,
@@ -24,7 +24,7 @@ function dadKitContentChecksum(data: { exportedAt: string }) {
   return calculateChecksum({ ...data, exportedAt: "" });
 }
 
-const MAX_BACKUP_BYTES = 2 * 1024 * 1024;
+const MAX_BACKUP_BYTES = 32 * 1024 * 1024;
 const WEB_DAV_PROXY_PATH = "/api/webdav";
 const PROXY_HEADER = "x-dadkit-webdav-proxy";
 const PROXY_ERROR_HEADER = "x-dadkit-webdav-proxy-error";
@@ -266,16 +266,18 @@ export async function ensureRemoteDir(
   }
 }
 
-export function importDadKitWebDavBackup(
+export async function importDadKitWebDavBackup(
   backup: DadKitWebDavBackup,
-): ImportResult {
+): Promise<ImportResult> {
   try {
-    createSnapshot("导入 WebDAV 备份前");
+    await createSnapshotAsync("导入 WebDAV 备份前");
   } catch (error) {
     return { ok: false, message: webDavErrorMessage(error) };
   }
 
-  return applyImportData(mergeExportData(exportData(), backup.data));
+  return applyImportDataAsync(
+    mergeExportData(await buildLatestPortableData(), backup.data),
+  );
 }
 
 function validateWebDavInput(
@@ -415,7 +417,8 @@ function isDadKitWebDavBackup(value: unknown): value is DadKitWebDavBackup {
       value.data.version === 4 ||
       value.data.version === 5 ||
       value.data.version === 6 ||
-      value.data.version === 7)
+      value.data.version === 7 ||
+      value.data.version === 8)
   );
 }
 

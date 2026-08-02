@@ -96,7 +96,7 @@ describe("hospital profile page and entry points", () => {
 
   it("assigns /hospital only to 我的 navigation", () => {
     const checklist = PRIMARY_NAVIGATION_ITEMS[0];
-    const mine = PRIMARY_NAVIGATION_ITEMS[1];
+    const mine = PRIMARY_NAVIGATION_ITEMS.find((item) => item.id === "mine")!;
 
     expect(isPrimaryNavigationItemActive("/hospital", checklist)).toBe(false);
     expect(isPrimaryNavigationItemActive("/hospital", mine)).toBe(true);

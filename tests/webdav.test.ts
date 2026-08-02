@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   exportData,
   loadSnapshots,
+  loadSnapshotsAsync,
   loadWebDavSecret,
   saveChecklist,
   saveWebDavConfig,
@@ -42,8 +43,11 @@ import {
 import { DEFAULT_WEBDAV_CONFIG } from "@/lib/webdav/types";
 import { createEmptyItemPlanning, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
 import { loadItemPlanning, saveItemPlanning } from "@/lib/planning/repository";
+import { MemoryBabyRepository, setBabyRepositoryForTests } from "@/lib/baby/repository";
 
 function installStorage() {
+  const babyRepository = new MemoryBabyRepository();
+  setBabyRepositoryForTests(babyRepository);
   const localStore = new Map<string, string>();
   const sessionStore = new Map<string, string>();
   const localStorage = {
@@ -61,7 +65,7 @@ function installStorage() {
 
   vi.stubGlobal("window", { localStorage, sessionStorage });
 
-  return { localStore, sessionStore };
+  return { localStore, sessionStore, babyRepository };
 }
 
 function testItem(
@@ -99,6 +103,7 @@ function hospitalProfile(
 }
 
 afterEach(() => {
+  setBabyRepositoryForTests(undefined);
   vi.unstubAllGlobals();
 });
 
@@ -165,7 +170,7 @@ describe("webdav helpers", () => {
     const backup = buildDadKitWebDavBackup(data, "device-1");
 
     expect(backup.schemaVersion).toBe(3);
-    expect(backup.data.version).toBe(7);
+    expect(backup.data.version).toBe(8);
     expect(backup.app).toBe("DadKit");
     expect(backup.deviceId).toBe("device-1");
     expect(backup.checksum).toBe(calculateChecksum(data));
@@ -299,7 +304,7 @@ describe("webdav helpers", () => {
     expect(loadWebDavSecret(true)).toBe("local-secret");
   });
 
-  it("creates a snapshot before importing a WebDAV backup", () => {
+  it("creates a snapshot before importing a WebDAV backup", async () => {
     installStorage();
 
     saveChecklist([testItem("local-before-webdav")]);
@@ -313,8 +318,8 @@ describe("webdav helpers", () => {
       hiddenTemplateItemIds: [],
     };
     const backup = buildDadKitWebDavBackup(remoteData, "remote-device");
-    const result = importDadKitWebDavBackup(backup);
-    const snapshots = loadSnapshots();
+    const result = await importDadKitWebDavBackup(backup);
+    const snapshots = await loadSnapshotsAsync();
 
     expect(result.ok).toBe(true);
     expect(snapshots[0]?.reason).toBe("导入 WebDAV 备份前");
@@ -393,7 +398,7 @@ describe("webdav helpers", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("restores and merges hospital data from a v7 WebDAV backup", () => {
+  it("restores and merges hospital data from a v7 WebDAV backup", async () => {
     installStorage();
     saveChecklist([testItem("local-hospital")]);
     saveHospitalProfile(
@@ -408,20 +413,20 @@ describe("webdav helpers", () => {
     };
     const backup = buildDadKitWebDavBackup(remoteData, "remote-hospital");
 
-    const result = importDadKitWebDavBackup(backup);
+    const result = await importDadKitWebDavBackup(backup);
 
     expect(result.ok).toBe(true);
     expect(loadHospitalProfile().fields.address).toEqual({
       value: "远端新地址",
       updatedAt: 300,
     });
-    const rescueData = loadSnapshots()[0]?.data;
-    expect(rescueData?.version).toBe(7);
-    if (rescueData?.version !== 7) throw new Error("缺少 v7 恢复快照");
+    const rescueData = (await loadSnapshotsAsync())[0]?.data;
+    expect(rescueData?.version).toBe(8);
+    if (rescueData?.version !== 8) throw new Error("缺少 v8 恢复快照");
     expect(rescueData.hospital.fields.address.value).toBe("旧地址");
   });
 
-  it("restores and field-merges planning from a v7 WebDAV backup", () => {
+  it("restores and field-merges planning from a v7 WebDAV backup", async () => {
     installStorage();
     saveChecklist([testItem("bag")]);
     const local = createEmptyItemPlanning();
@@ -440,9 +445,37 @@ describe("webdav helpers", () => {
       "remote-planning",
     );
 
-    expect(importDadKitWebDavBackup(backup).ok).toBe(true);
+    expect((await importDadKitWebDavBackup(backup)).ok).toBe(true);
     expect(loadItemPlanning().items.bag.assignee.value).toBe("dad");
     expect(loadItemPlanning().items.bag.actualPriceFen.value).toBe(1_500);
+  });
+
+  it("restores and event-merges v8 baby timers, events and tombstones", async () => {
+    const { babyRepository } = installStorage();
+    const localBaby = await babyRepository.getAllBabyData();
+    localBaby.profile.fields.birthDate = { value: "2026-08-01", updatedAt: 10 };
+    localBaby.care.events = [
+      { id: "active-sleep", type: "sleep", note: "", createdAt: 20, updatedAt: 20, deletedAt: null, startAt: "2026-08-01T00:00:00.000Z", endAt: null },
+      { id: "deleted-diaper", type: "diaper", note: "", createdAt: 21, updatedAt: 40, deletedAt: 40, occurredAt: "2026-08-01T00:10:00.000Z", kind: "wet" },
+    ];
+    await babyRepository.replaceBabyDataTransaction(localBaby);
+
+    const remote = exportData();
+    remote.baby.care.events = [
+      { id: "active-pumping", type: "pumping", note: "", createdAt: 30, updatedAt: 30, deletedAt: null, startAt: "2026-08-01T00:20:00.000Z", endAt: null, side: "both", amountMl: null },
+      { id: "deleted-diaper", type: "diaper", note: "", createdAt: 21, updatedAt: 21, deletedAt: null, occurredAt: "2026-08-01T00:10:00.000Z", kind: "wet" },
+    ];
+    const backup = buildDadKitWebDavBackup(remote, "remote-baby");
+
+    expect((await importDadKitWebDavBackup(backup)).ok).toBe(true);
+    const merged = await babyRepository.getAllBabyData();
+    expect(merged.care.events.map((event) => event.id)).toEqual([
+      "active-pumping",
+      "active-sleep",
+      "deleted-diaper",
+    ]);
+    expect(merged.care.events.find((event) => event.id === "deleted-diaper")?.deletedAt).toBe(40);
+    expect((await babyRepository.getActiveEvents()).map((event) => event.type).sort()).toEqual(["pumping", "sleep"]);
   });
 
   it("prefills the default WebDAV target without storing secrets", () => {

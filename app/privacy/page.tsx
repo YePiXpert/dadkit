@@ -8,13 +8,14 @@ import { getReviewPageHref, PUBLIC_SUPPORT_PATH } from "@/lib/app-routes";
 export const metadata: Metadata = {
   title: "隐私政策 | DadKit",
   description:
-    "DadKit 的本地优先隐私说明：不需要账号，清单与成长记默认保存在当前浏览器，WebDAV 由用户手动配置。",
+    "DadKit 的本地优先隐私说明：清单与宝宝记录默认保存在当前设备，家庭同步和 WebDAV 由用户主动启用。",
 };
 
 const localDataItems = [
   "待产清单进度、自定义项目、隐藏项和清单显示模式",
   "用户自行填写的医院名称、地址、电话和入院要求",
   "按物品填写的负责人、完成期限、预计和实际价格、购买渠道与存放位置",
+  "保存在 IndexedDB 的宝宝昵称、出生日期与时间、性别，以及喂养、吸奶、尿布、睡眠和备注",
   "可选的宝宝称呼、预产期和产检时间表完成状态",
   "自动创建的本地恢复快照",
   "仅存于当前设备 IndexedDB 的物品照片",
@@ -24,8 +25,9 @@ const localDataItems = [
 const userControls = [
   "在“我的”中管理清单设置和备份恢复",
   "手动上传或下载 WebDAV 备份",
-  "从自动创建的本地快照恢复清单",
-  "清空当前浏览器中的清单数据和本机物品照片",
+  "导出或完整恢复包含宝宝记录的 v8 JSON",
+  "从自动创建的本地快照恢复完整便携数据",
+  "清空当前浏览器中的清单、医院、家庭分工、宝宝记录和本机物品照片",
   "清除 WebDAV 配置和本机保存的凭据",
 ];
 
@@ -52,11 +54,11 @@ export default function PrivacyPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>清单备份包含什么</CardTitle>
+            <CardTitle>便携备份包含什么</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm leading-6 text-muted-foreground">
             <p>
-              本地恢复快照和 WebDAV 使用同一份便携备份数据，包括清单进度、自定义项目、隐藏项、清单显示模式、医院档案、家庭分工与采购中的负责人、期限、价格、渠道和存放位置，以及宝宝成长记中的可选资料和产检完成状态。
+              JSON、本地恢复快照和 WebDAV 使用同一份 v8 便携备份数据，包括清单、医院档案、家庭分工与采购、宝宝成长记，以及宝宝昵称、出生资料、全部喂养、吸奶、尿布、睡眠记录、活动计时、删除墓碑和用户备注。包含宝宝事件的 v8 恢复快照保存在 IndexedDB，不写入 localStorage。
             </p>
             <p>
               这些备份不包含物品照片，也不包含 WebDAV 地址、用户名、备份路径、同步状态或密码等连接配置。
@@ -120,6 +122,19 @@ export default function PrivacyPage() {
             <p>
               这些信息可能包含家庭安排和消费信息，请只与信任的家庭成员共享同步码，并妥善保管 WebDAV 账号。
             </p>
+            <p>
+              宝宝资料和照护记录也会进入家庭同步。照护事件按记录时间戳合并，删除和全局清空使用墓碑阻止旧设备数据复活；当前仍传输完整文档，不是增量事件同步。
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>非医疗用途</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 text-sm leading-6 text-muted-foreground">
+            <p>宝宝记录仅用于个人整理，不判断奶量是否充足、尿布次数是否异常、睡眠是否正常，也不提供就医建议。</p>
+            <p>出现健康问题请联系医生或当地急救服务。</p>
           </CardContent>
         </Card>
 

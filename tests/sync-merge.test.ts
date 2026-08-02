@@ -9,6 +9,7 @@ import {
   createEmptyItemPlanningRecord,
 } from "@/lib/planning/defaults";
 import { portableV6 } from "@/tests/helpers/portable-data";
+import { createEmptyBabyData } from "@/lib/baby/defaults";
 
 function testItem(
   id: string,
@@ -35,7 +36,7 @@ function testItem(
 
 function exportData(patch: Partial<DadKitExportData> = {}): DadKitExportData {
   return {
-    version: 7,
+    version: 8,
     exportedAt: "2026-07-26T00:00:00.000Z",
     checklistMode: "lean",
     checklist: [],
@@ -51,6 +52,7 @@ function exportData(patch: Partial<DadKitExportData> = {}): DadKitExportData {
     growthUpdatedAt: 0,
     hospital: createEmptyHospitalProfile(),
     planning: createEmptyItemPlanning(),
+    baby: createEmptyBabyData(),
     ...patch,
   };
 }

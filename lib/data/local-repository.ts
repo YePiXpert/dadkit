@@ -13,6 +13,7 @@ export {
   loadHiddenTemplateItemStamps,
   primeChecklistState,
   resetAllData,
+  resetAllDataAsync,
   retryPendingChecklistStateSave,
   saveChecklist,
   saveChecklistMode,

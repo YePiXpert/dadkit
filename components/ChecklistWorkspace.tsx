@@ -39,6 +39,7 @@ import { matchesChecklistSearch } from "@/lib/checklist-search";
 import { showAppToast } from "@/lib/app-toast";
 import { DEPARTURE_PATH } from "@/lib/app-routes";
 import { PlanningSummaryCard } from "@/components/PlanningSummaryCard";
+import { BabyHomeCard } from "@/components/baby/BabyHomeCard";
 import { getDepartureProgress } from "@/lib/departure";
 import { useDadKitStore } from "@/lib/store";
 import { useChecklistViewQuery } from "@/lib/use-checklist-view-query";
@@ -287,6 +288,8 @@ export function ChecklistWorkspace() {
         </Link>
 
         <PlanningSummaryCard compact />
+
+        <BabyHomeCard />
 
         <ChecklistGroupTabs counts={counts} value={view} onChange={setView} />
 

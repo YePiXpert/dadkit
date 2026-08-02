@@ -25,7 +25,7 @@ const backupSettingsPage = readSource(
 const sharedFeedback = readSource("components", "ui", "feedback.tsx");
 
 describe("settings information architecture", () => {
-  it("uses 清单 / 我的 as the two primary destinations", () => {
+  it("uses 清单 / 宝宝 / 我的 as the three primary destinations", () => {
     expect(
       PRIMARY_NAVIGATION_ITEMS.map(({ href, id, label }) => ({
         href,
@@ -34,6 +34,7 @@ describe("settings information architecture", () => {
       })),
     ).toEqual([
       { href: "/", id: "checklist", label: "清单" },
+      { href: "/baby", id: "baby", label: "宝宝" },
       { href: "/settings", id: "mine", label: "我的" },
     ]);
   });
@@ -52,7 +53,7 @@ describe("settings information architecture", () => {
     expect(settingsPage).not.toContain("心愿单");
   });
 
-  it("moves backup capabilities out of the entry page and removes manual JSON UI", () => {
+  it("moves backup capabilities out of the entry page and provides full v8 JSON backup", () => {
     expect(settingsPage).not.toContain("loadSnapshots");
     expect(settingsPage).not.toContain("clearAll");
     expect(settingsPage).not.toContain("WebDAV 地址");
@@ -64,12 +65,12 @@ describe("settings information architecture", () => {
     expect(backupSettingsPage).toContain("照片备份包");
     expect(backupSettingsPage).toContain("导出照片包");
     expect(backupSettingsPage).toContain("导入照片包");
-    expect(backupSettingsPage).not.toContain("复制 JSON");
-    expect(backupSettingsPage).not.toContain("导入 JSON");
+    expect(backupSettingsPage).toContain("导出 JSON 备份");
+    expect(backupSettingsPage).toContain("导入 JSON 备份");
     expect(backupSettingsPage).not.toContain("手动备份");
     expect(backupSettingsPage).not.toContain("应用密码 / 密码");
-    expect(backupSettingsPage).not.toContain("exportJson");
-    expect(backupSettingsPage).not.toContain("importJson");
+    expect(backupSettingsPage).toContain("exportJsonBackup");
+    expect(backupSettingsPage).toContain("importDataAsync");
   });
 
   it("provides local checklist preferences and a non-destructive repair", () => {
@@ -99,7 +100,8 @@ describe("settings information architecture", () => {
       'clearConfirmation !== "清空全部数据"',
     );
     expect(backupSettingsPage).toContain("输入“清空全部数据”以继续");
-    expect(backupSettingsPage).toContain("若恢复点保存失败，本次操作会立即中止");
+    expect(backupSettingsPage).toContain("系统会先验证完整恢复点能够成功写入");
+    expect(backupSettingsPage).toContain("全部本机恢复点");
   });
 
   it("keeps privacy and support subordinate to backup", () => {

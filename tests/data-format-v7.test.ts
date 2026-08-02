@@ -37,7 +37,7 @@ describe("DadKit v7 portable format", () => {
 
     for (const input of [v3, v4, portableV5(), portableV6()]) {
       const upgraded = upgradeExportDataToLatest(input);
-      expect(upgraded.version).toBe(7);
+      expect(upgraded.version).toBe(8);
       expect(upgraded.planning).toEqual({ version: 1, clearedAt: 0, items: {} });
       expect(isDadKitImportData(upgraded)).toBe(true);
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useGrowthStore } from "@/lib/growth-store";
+import { useBabyStore } from "@/lib/baby/store";
 import { useHospitalProfileStore } from "@/lib/hospital/store";
 import { useItemPlanningStore } from "@/lib/planning/store";
 import { useDadKitStore } from "@/lib/store";
@@ -94,6 +95,15 @@ export function startAutoSync() {
     }
   });
 
+  useBabyStore.subscribe((state, previous) => {
+    if (isApplyingRemote() || !state.hydrated) {
+      return;
+    }
+    if (state.changeToken !== previous.changeToken) {
+      scheduleSync();
+    }
+  });
+
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
       void syncNow();
@@ -106,5 +116,5 @@ export function startAutoSync() {
     }
   }, SYNC_POLL_INTERVAL_MS);
 
-  void syncNow();
+  void useBabyStore.getState().hydrate().finally(() => syncNow());
 }

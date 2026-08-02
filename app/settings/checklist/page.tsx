@@ -76,11 +76,11 @@ export default function ChecklistSettingsPage() {
     }
   }
 
-  function rebuildChecklist() {
+  async function rebuildChecklist() {
     if (rebuildConfirmation !== "重新开始") return;
 
     try {
-      resetChecklist();
+      await resetChecklist();
     } catch (error) {
       setMessage(
         error instanceof Error && error.message

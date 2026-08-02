@@ -109,7 +109,7 @@ describe("departure updates use the existing checklist store", () => {
       remaining: 0,
       total: 1,
     });
-    expect(portable.version).toBe(7);
+    expect(portable.version).toBe(8);
     expect(portable.checklist[0]?.status).toBe("packed");
     expect(portable.customItems[0]?.status).toBe("packed");
   });

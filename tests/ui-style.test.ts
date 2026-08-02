@@ -130,11 +130,12 @@ describe("V2 PWA visual and navigation contract", () => {
       PRIMARY_NAVIGATION_ITEMS.map(({ href, id, label }) => ({ href, id, label })),
     ).toEqual([
       { href: "/", id: "checklist", label: "清单" },
+      { href: "/baby", id: "baby", label: "宝宝" },
       { href: "/settings", id: "mine", label: "我的" },
     ]);
 
     const checklistNav = PRIMARY_NAVIGATION_ITEMS[0];
-    const mineNav = PRIMARY_NAVIGATION_ITEMS[1];
+    const mineNav = PRIMARY_NAVIGATION_ITEMS.find((item) => item.id === "mine")!;
 
     expect(isPrimaryNavigationItemActive("/", checklistNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/departure", checklistNav)).toBe(true);
@@ -155,7 +156,7 @@ describe("V2 PWA visual and navigation contract", () => {
       expect(source).toContain('aria-current={active ? "page" : undefined}');
     }
 
-    expect(mobileNav).toContain("grid grid-cols-2");
+    expect(mobileNav).toContain("grid grid-cols-3");
     expect(mobileNav).toContain("env(safe-area-inset-bottom)");
   });
 

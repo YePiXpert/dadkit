@@ -148,6 +148,6 @@ describe("v5/v6/v7 family sync compatibility", () => {
     const persisted = JSON.parse(readFileSync(file, "utf8")) as {
       data: DadKitExportData;
     };
-    expect(persisted.data.version).toBe(7);
+    expect(persisted.data.version).toBe(8);
   });
 });

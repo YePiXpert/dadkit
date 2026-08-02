@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   metadataBase: getMetadataBase(),
   title: "DadKit 待产包清单",
   description:
-    "打开即用的待产包清单与孕周成长参考，按全部、待购买和待装包快速确认准备进度。",
+    "从待产准备到宝宝出生后的喂养、尿布和睡眠记录，支持离线保存、家庭同步与完整备份。",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "DadKit 待产包清单",
-    description: "不用先填资料，打开就能确认待产包还差什么，也能按孕周查看成长参考。",
+    description: "从待产清单、医院档案和家庭分工，到宝宝出生后的喂养、尿布与睡眠记录。",
     type: "website",
     images: [
       {
@@ -55,7 +55,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "DadKit 待产包清单",
-    description: "不用先填资料，打开就能确认待产包还差什么，也能按孕周查看成长参考。",
+    description: "从待产清单、医院档案和家庭分工，到宝宝出生后的喂养、尿布与睡眠记录。",
     images: ["/og.png"],
   },
 };

@@ -35,6 +35,7 @@ import {
 import type { ChecklistItem } from "@/lib/types";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
 import { createEmptyItemPlanning, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
+import { createEmptyBabyData } from "@/lib/baby/defaults";
 import {
   hospitalValuesFromPortable,
   updateHospitalProfile,
@@ -72,7 +73,7 @@ function backupData(
   patch: Partial<DadKitExportData> = {},
 ): DadKitExportData {
   return {
-    version: 7,
+    version: 8,
     exportedAt: "2026-07-25T00:00:00.000Z",
     checklistMode: "full",
     checklist: [testItem("backup-item")],
@@ -88,6 +89,7 @@ function backupData(
     growthUpdatedAt: 0,
     hospital: createEmptyHospitalProfile(),
     planning: createEmptyItemPlanning(),
+    baby: createEmptyBabyData(),
     ...patch,
   };
 }
@@ -108,8 +110,15 @@ function backupDataV4(patch: Record<string, unknown> = {}) {
 }
 
 function backupDataV5(patch: Record<string, unknown> = {}) {
-  const { hospital: _hospital, ...current } = backupData();
+  const {
+    hospital: _hospital,
+    planning: _planning,
+    baby: _baby,
+    ...current
+  } = backupData();
   void _hospital;
+  void _planning;
+  void _baby;
 
   return { ...current, version: 5 as const, ...patch };
 }
@@ -196,10 +205,11 @@ describe("v6 portable backup with the existing local namespace", () => {
         "growthUpdatedAt",
         "hospital",
         "planning",
+        "baby",
       ].sort(),
     );
     expect(exported).toMatchObject({
-      version: 7,
+      version: 8,
       checklistMode: "lean",
       checklist,
       customItems,
@@ -259,7 +269,7 @@ describe("v6 portable backup with the existing local namespace", () => {
     expect(loadDeletedCustomItems()).toEqual({ "gone-custom": 456 });
     expect(loadGrowthUpdatedAt()).toBe(789);
     expect(loadHospitalProfile()).toEqual(payload.hospital);
-    expect(exportData().version).toBe(7);
+    expect(exportData().version).toBe(8);
   });
 
   it("keeps hospital but safely clears planning on a manual v6 restore", () => {
@@ -274,8 +284,9 @@ describe("v6 portable backup with the existing local namespace", () => {
     const latest = backupData({
       hospital: hospitalProfile({ hospitalName: "v6 医院" }),
     });
-    const { planning: _planning, ...withoutPlanning } = latest;
+    const { planning: _planning, baby: _baby, ...withoutPlanning } = latest;
     void _planning;
+    void _baby;
     const v6 = { ...withoutPlanning, version: 6 as const };
 
     const result = importData(JSON.stringify(v6));
@@ -642,8 +653,9 @@ describe("local recovery snapshots", () => {
     const latest = backupData({
       hospital: hospitalProfile({ hospitalName: "快照医院" }),
     });
-    const { planning: _planning, ...withoutPlanning } = latest;
+    const { planning: _planning, baby: _baby, ...withoutPlanning } = latest;
     void _planning;
+    void _baby;
     const v6: DadKitExportDataV6 = { ...withoutPlanning, version: 6 };
     saveSnapshots([
       {

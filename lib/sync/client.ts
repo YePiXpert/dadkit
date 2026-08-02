@@ -3,9 +3,9 @@
 import { create } from "zustand";
 
 import {
-  applyImportData,
-  createSnapshot,
-  exportData,
+  applyImportDataAsync,
+  buildLatestPortableData,
+  createSnapshotAsync,
 } from "@/lib/data/backup";
 import {
   isDadKitImportData,
@@ -163,7 +163,7 @@ async function apiRequest<T>(
   if (token) {
     headers.set("authorization", `Bearer ${token}`);
   }
-  headers.set(DADKIT_DATA_VERSION_HEADER, "7");
+  headers.set(DADKIT_DATA_VERSION_HEADER, "8");
 
   const parentSignal = init.signal;
   const abortFromParent = () => controller.abort(parentSignal?.reason);
@@ -309,10 +309,63 @@ export function alignExportDataToServerTime(
         ]),
       ) as DadKitExportData["planning"]["items"],
     },
+    baby: alignBabyDataToServerTime(data.baby, offset),
   };
 }
 
-function applyMerged(data: DadKitExportData) {
+function alignBabyDataToServerTime(
+  baby: DadKitExportData["baby"],
+  offset: number,
+): DadKitExportData["baby"] {
+  const shift = (timestamp: number) => (timestamp === 0 ? 0 : timestamp + offset);
+  const shiftIso = (value: string | null) =>
+    value === null ? null : new Date(Date.parse(value) + offset).toISOString();
+  const events = baby.care.events.map((event) => {
+    const base = {
+      ...event,
+      createdAt: shift(event.createdAt),
+      updatedAt: shift(event.updatedAt),
+      deletedAt: event.deletedAt === null ? null : shift(event.deletedAt),
+    };
+    if (event.type === "breastfeeding") {
+      return {
+        ...base,
+        startAt: shiftIso(event.startAt)!,
+        endAt: shiftIso(event.endAt),
+        segments: event.segments.map((segment) => ({
+          ...segment,
+          startAt: shiftIso(segment.startAt)!,
+          endAt: shiftIso(segment.endAt),
+        })),
+      };
+    }
+    if (event.type === "bottle" || event.type === "diaper") {
+      return { ...base, occurredAt: shiftIso(event.occurredAt)! };
+    }
+    return {
+      ...base,
+      startAt: shiftIso(event.startAt)!,
+      endAt: shiftIso(event.endAt),
+    };
+  }) as DadKitExportData["baby"]["care"]["events"];
+
+  return {
+    version: 1,
+    profile: {
+      version: 1,
+      clearedAt: shift(baby.profile.clearedAt),
+      fields: {
+        nickname: { ...baby.profile.fields.nickname, updatedAt: shift(baby.profile.fields.nickname.updatedAt) },
+        birthDate: { ...baby.profile.fields.birthDate, updatedAt: shift(baby.profile.fields.birthDate.updatedAt) },
+        birthTime: { ...baby.profile.fields.birthTime, updatedAt: shift(baby.profile.fields.birthTime.updatedAt) },
+        sex: { ...baby.profile.fields.sex, updatedAt: shift(baby.profile.fields.sex.updatedAt) },
+      },
+    },
+    care: { version: 1, clearedAt: shift(baby.care.clearedAt), events },
+  };
+}
+
+async function applyMerged(data: DadKitExportData) {
   const checklist = generateChecklist({
     currentItems: data.checklist,
     customItems: data.customItems,
@@ -322,7 +375,7 @@ function applyMerged(data: DadKitExportData) {
   applyingRemote = true;
 
   try {
-    const result = applyImportData(data);
+    const result = await applyImportDataAsync(data);
 
     if (!result.ok) {
       throw new Error(result.message);
@@ -410,7 +463,7 @@ async function doSync(): Promise<SyncOutcome> {
       pulled.requestStartedAt,
       pulled.receivedAt,
     );
-    const localExport = exportData();
+    const localExport = await buildLatestPortableData();
     const shouldAlignTimeline =
       !getSyncClockTimelineInitialized() &&
       (observedOffset ?? getSyncClockOffset()) !== undefined;
@@ -424,7 +477,7 @@ async function doSync(): Promise<SyncOutcome> {
 
     if (shouldAlignTimeline) {
       try {
-        createSnapshot("首次同步时间校准前");
+        await createSnapshotAsync("首次同步时间校准前");
       } catch {
         // 快照是尽力而为的保护，失败不阻断同步。
       }
@@ -441,12 +494,12 @@ async function doSync(): Promise<SyncOutcome> {
       merged = mergeExportData(local, remoteData);
 
       if (shouldAlignTimeline || checksumOf(merged) !== checksumOf(local)) {
-        applyMerged(merged);
+        await applyMerged(merged);
       }
     } else if (shouldAlignTimeline) {
       // The first server-time observation may arrive with a 304 response. Apply
       // the shifted local timeline before the next write is compared or pushed.
-      applyMerged(merged);
+      await applyMerged(merged);
     }
 
     if (shouldAlignTimeline) {
@@ -480,7 +533,7 @@ async function doSync(): Promise<SyncOutcome> {
         // A legacy-compatible response may omit hospital and/or planning.
         // Merge its supported fields instead of treating absence as a clear.
         merged = mergeExportData(merged, pushed.data.data);
-        applyMerged(merged);
+        await applyMerged(merged);
       }
     }
 

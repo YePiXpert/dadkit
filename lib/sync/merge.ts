@@ -5,6 +5,7 @@ import {
   type DeletedCustomItemStamps,
   type HiddenTemplateItemStamps,
 } from "@/lib/data/format";
+import { mergeBabyData } from "@/lib/baby/merge";
 import { mergeHospitalProfiles } from "@/lib/hospital/merge";
 import { mergeItemPlanning } from "@/lib/planning/merge";
 import type { ChecklistItem } from "@/lib/types";
@@ -104,7 +105,7 @@ export function mergeExportData(
     cleanRemote.growthUpdatedAt > cleanLocal.growthUpdatedAt;
 
   return {
-    version: 7,
+    version: 8,
     exportedAt: new Date().toISOString(),
     // 精简/完整模式是设备偏好,不随同步走。
     checklistMode: cleanLocal.checklistMode,
@@ -122,6 +123,7 @@ export function mergeExportData(
       : cleanLocal.growthUpdatedAt,
     hospital: mergeHospitalProfiles(cleanLocal.hospital, cleanRemote.hospital),
     planning: mergeItemPlanning(cleanLocal.planning, cleanRemote.planning),
+    baby: mergeBabyData(cleanLocal.baby, cleanRemote.baby),
   };
 }
 
