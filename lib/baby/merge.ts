@@ -17,14 +17,14 @@ export function mergeBabyCare(
     const current = merged.get(event.id);
     if (!current || event.updatedAt > current.updatedAt) merged.set(event.id, cloneCareEvent(event));
   }
-  const result = cloneBabyCare({ version: 1, clearedAt, events: [...merged.values()] });
+  const result = cloneBabyCare({ version: 2, clearedAt, events: [...merged.values()] });
   if (!isBabyCarePortableData(result)) throw new Error("合并后的照护记录无效或超过数量上限。");
   return result;
 }
 
 export function mergeBabyData(local: BabyPortableData, remote: BabyPortableData): BabyPortableData {
   const result: BabyPortableData = {
-    version: 1,
+    version: 2,
     profile: mergeBabyProfiles(local.profile, remote.profile),
     care: mergeBabyCare(local.care, remote.care),
   };

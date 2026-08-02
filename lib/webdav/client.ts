@@ -418,7 +418,8 @@ function isDadKitWebDavBackup(value: unknown): value is DadKitWebDavBackup {
       value.data.version === 5 ||
       value.data.version === 6 ||
       value.data.version === 7 ||
-      value.data.version === 8)
+      value.data.version === 8 ||
+      value.data.version === 9)
   );
 }
 

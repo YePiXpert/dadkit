@@ -4,6 +4,7 @@ import { ArrowLeft, CalendarClock, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { MemberMultiSelect } from "@/components/household/MemberMultiSelect";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,19 +17,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { showAppToast } from "@/lib/app-toast";
+import { useHouseholdStore } from "@/lib/household/store";
 import { itemPlanningDraftFromPortable } from "@/lib/planning/portable";
 import { useItemPlanningStore } from "@/lib/planning/store";
 import {
-  PLANNING_ASSIGNEE_LABELS,
-  PLANNING_ASSIGNEES,
   PLANNING_TEXT_LIMIT,
   type ItemPlanningDraft,
   type PlanningDraftField,
@@ -39,7 +32,7 @@ import type { ChecklistItem } from "@/lib/types";
 const CHANNEL_SHORTCUTS = ["京东", "淘宝", "线下门店", "医院", "亲友赠送", "其他"];
 const LOCATION_SHORTCUTS = ["证件包", "妈妈包", "宝宝包", "爸爸背包", "车内", "家中", "临出门拿"];
 const FIELD_ORDER: PlanningDraftField[] = [
-  "assignee",
+  "assigneeIds",
   "dueDate",
   "estimatedPrice",
   "actualPrice",
@@ -60,6 +53,8 @@ export function ItemPlanningDialog({
   const hydrate = useItemPlanningStore((state) => state.hydrate);
   const saveItemDraft = useItemPlanningStore((state) => state.saveItemDraft);
   const clearItem = useItemPlanningStore((state) => state.clearItem);
+  const household = useHouseholdStore((state) => state.household);
+  const hydrateHousehold = useHouseholdStore((state) => state.hydrate);
   const [draft, setDraft] = useState<ItemPlanningDraft>(() =>
     itemPlanningDraftFromPortable(planning, item.id),
   );
@@ -68,7 +63,8 @@ export function ItemPlanningDialog({
 
   useEffect(() => {
     hydrate();
-  }, [hydrate]);
+    hydrateHousehold();
+  }, [hydrate, hydrateHousehold]);
 
   useEffect(() => {
     if (!open) return;
@@ -133,21 +129,8 @@ export function ItemPlanningDialog({
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 pb-8 sm:overflow-visible sm:p-0">
             <div className="grid gap-5">
-              <PlanningField label="负责人" error={errors.assignee} id={`planning-assignee-${item.id}`}>
-                <Select value={draft.assignee} onValueChange={(value) => updateDraft("assignee", value as ItemPlanningDraft["assignee"])}>
-                  <SelectTrigger
-                    aria-describedby={errors.assignee ? `planning-assignee-${item.id}-error` : undefined}
-                    aria-invalid={Boolean(errors.assignee)}
-                    id={`planning-assignee-${item.id}`}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PLANNING_ASSIGNEES.map((value) => (
-                      <SelectItem key={value} value={value}>{PLANNING_ASSIGNEE_LABELS[value]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <PlanningField label="负责人（可多选）" error={errors.assigneeIds} id={`planning-assigneeIds-${item.id}`}>
+                <MemberMultiSelect household={household} id={`planning-assigneeIds-${item.id}`} onChange={(value) => updateDraft("assigneeIds", value)} selectedIds={draft.assigneeIds} />
               </PlanningField>
 
               <PlanningField label="完成期限" error={errors.dueDate} id={`planning-dueDate-${item.id}`}>

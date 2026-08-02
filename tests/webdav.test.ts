@@ -44,6 +44,10 @@ import { DEFAULT_WEBDAV_CONFIG } from "@/lib/webdav/types";
 import { createEmptyItemPlanning, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
 import { loadItemPlanning, saveItemPlanning } from "@/lib/planning/repository";
 import { MemoryBabyRepository, setBabyRepositoryForTests } from "@/lib/baby/repository";
+import { createEmptyHousehold } from "@/lib/household/defaults";
+import { loadHousehold, saveHousehold } from "@/lib/household/repository";
+import { portableV8 } from "@/tests/helpers/portable-data";
+import type { DadKitWebDavBackup } from "@/lib/webdav/types";
 
 function installStorage() {
   const babyRepository = new MemoryBabyRepository();
@@ -170,7 +174,7 @@ describe("webdav helpers", () => {
     const backup = buildDadKitWebDavBackup(data, "device-1");
 
     expect(backup.schemaVersion).toBe(3);
-    expect(backup.data.version).toBe(8);
+    expect(backup.data.version).toBe(9);
     expect(backup.app).toBe("DadKit");
     expect(backup.deviceId).toBe("device-1");
     expect(backup.checksum).toBe(calculateChecksum(data));
@@ -421,8 +425,8 @@ describe("webdav helpers", () => {
       updatedAt: 300,
     });
     const rescueData = (await loadSnapshotsAsync())[0]?.data;
-    expect(rescueData?.version).toBe(8);
-    if (rescueData?.version !== 8) throw new Error("缺少 v8 恢复快照");
+    expect(rescueData?.version).toBe(9);
+    if (rescueData?.version !== 9) throw new Error("缺少 v9 恢复快照");
     expect(rescueData.hospital.fields.address.value).toBe("旧地址");
   });
 
@@ -432,7 +436,7 @@ describe("webdav helpers", () => {
     const local = createEmptyItemPlanning();
     local.items.bag = {
       ...createEmptyItemPlanningRecord(),
-      assignee: { value: "dad", updatedAt: 100 },
+      assigneeIds: { value: ["legacy-dad-v1"], updatedAt: 100 },
     };
     saveItemPlanning(local);
     const remote = createEmptyItemPlanning();
@@ -446,7 +450,7 @@ describe("webdav helpers", () => {
     );
 
     expect((await importDadKitWebDavBackup(backup)).ok).toBe(true);
-    expect(loadItemPlanning().items.bag.assignee.value).toBe("dad");
+    expect(loadItemPlanning().items.bag.assigneeIds.value).toEqual(["legacy-dad-v1"]);
     expect(loadItemPlanning().items.bag.actualPriceFen.value).toBe(1_500);
   });
 
@@ -455,15 +459,15 @@ describe("webdav helpers", () => {
     const localBaby = await babyRepository.getAllBabyData();
     localBaby.profile.fields.birthDate = { value: "2026-08-01", updatedAt: 10 };
     localBaby.care.events = [
-      { id: "active-sleep", type: "sleep", note: "", createdAt: 20, updatedAt: 20, deletedAt: null, startAt: "2026-08-01T00:00:00.000Z", endAt: null },
-      { id: "deleted-diaper", type: "diaper", note: "", createdAt: 21, updatedAt: 40, deletedAt: 40, occurredAt: "2026-08-01T00:10:00.000Z", kind: "wet" },
+      { id: "active-sleep", type: "sleep", note: "", createdAt: 20, updatedAt: 20, deletedAt: null, recordedByMemberId: null, startAt: "2026-08-01T00:00:00.000Z", endAt: null },
+      { id: "deleted-diaper", type: "diaper", note: "", createdAt: 21, updatedAt: 40, deletedAt: 40, recordedByMemberId: null, occurredAt: "2026-08-01T00:10:00.000Z", kind: "wet" },
     ];
     await babyRepository.replaceBabyDataTransaction(localBaby);
 
     const remote = exportData();
     remote.baby.care.events = [
-      { id: "active-pumping", type: "pumping", note: "", createdAt: 30, updatedAt: 30, deletedAt: null, startAt: "2026-08-01T00:20:00.000Z", endAt: null, side: "both", amountMl: null },
-      { id: "deleted-diaper", type: "diaper", note: "", createdAt: 21, updatedAt: 21, deletedAt: null, occurredAt: "2026-08-01T00:10:00.000Z", kind: "wet" },
+      { id: "active-pumping", type: "pumping", note: "", createdAt: 30, updatedAt: 30, deletedAt: null, recordedByMemberId: null, startAt: "2026-08-01T00:20:00.000Z", endAt: null, side: "both", amountMl: null },
+      { id: "deleted-diaper", type: "diaper", note: "", createdAt: 21, updatedAt: 21, deletedAt: null, recordedByMemberId: null, occurredAt: "2026-08-01T00:10:00.000Z", kind: "wet" },
     ];
     const backup = buildDadKitWebDavBackup(remote, "remote-baby");
 
@@ -476,6 +480,60 @@ describe("webdav helpers", () => {
     ]);
     expect(merged.care.events.find((event) => event.id === "deleted-diaper")?.deletedAt).toBe(40);
     expect((await babyRepository.getActiveEvents()).map((event) => event.type).sort()).toEqual(["pumping", "sleep"]);
+  });
+
+  it("merges an actual v8 WebDAV backup without clearing v9 household or recorder", async () => {
+    const { babyRepository } = installStorage();
+    const household = createEmptyHousehold();
+    household.members["member-a"] = {
+      id: "member-a",
+      createdAt: 1,
+      displayName: { value: "小江", updatedAt: 1 },
+      relationshipLabel: { value: "家长", updatedAt: 1 },
+      deleted: { value: false, updatedAt: 1 },
+    };
+    saveHousehold(household);
+    const localBaby = await babyRepository.getAllBabyData();
+    localBaby.care.events = [{
+      id: "shared-event",
+      type: "diaper",
+      note: "v9 原备注",
+      recordedByMemberId: "member-a",
+      createdAt: 10,
+      updatedAt: 10,
+      deletedAt: null,
+      occurredAt: "2026-08-01T00:00:00.000Z",
+      kind: "wet",
+    }];
+    await babyRepository.replaceBabyDataTransaction(localBaby);
+
+    const legacy = portableV8();
+    legacy.baby.care.events = [{
+      id: "shared-event",
+      type: "diaper",
+      note: "v8 WebDAV 编辑",
+      createdAt: 10,
+      updatedAt: 20,
+      deletedAt: null,
+      occurredAt: "2026-08-01T00:00:00.000Z",
+      kind: "wet",
+    }];
+    const backup: DadKitWebDavBackup = {
+      schemaVersion: 3,
+      app: "DadKit",
+      deviceId: "legacy-v8-device",
+      backupId: "legacy-v8-backup",
+      createdAt: "2026-08-01T00:00:00.000Z",
+      updatedAt: "2026-08-01T00:00:00.000Z",
+      checksum: calculateChecksum(legacy),
+      data: legacy,
+    };
+
+    expect((await importDadKitWebDavBackup(backup)).ok).toBe(true);
+    expect(loadHousehold().members["member-a"].displayName.value).toBe("小江");
+    const event = (await babyRepository.getAllBabyData()).care.events[0];
+    expect(event.note).toBe("v8 WebDAV 编辑");
+    expect(event.recordedByMemberId).toBe("member-a");
   });
 
   it("prefills the default WebDAV target without storing secrets", () => {

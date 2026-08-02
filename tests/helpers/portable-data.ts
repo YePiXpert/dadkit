@@ -3,10 +3,13 @@ import {
   type DadKitExportDataV5,
   type DadKitExportDataV6,
   type DadKitExportDataV7,
+  type DadKitExportDataV8,
 } from "@/lib/data/format";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
+import { projectBabyV2ToV1 } from "@/lib/baby/portable";
+import { createEmptyHousehold } from "@/lib/household/defaults";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
-import { createEmptyItemPlanning } from "@/lib/planning/defaults";
+import { createEmptyItemPlanning, createEmptyItemPlanningV1 } from "@/lib/planning/defaults";
 import type { ChecklistItem } from "@/lib/types";
 
 export function portableTestItem(
@@ -71,17 +74,30 @@ export function portableV7(
   return {
     ...portableV6(),
     version: 7,
-    planning: createEmptyItemPlanning(),
+    planning: createEmptyItemPlanningV1(),
     ...patch,
   };
 }
 
 export function portableV8(
-  patch: Partial<DadKitExportData> = {},
-): DadKitExportData {
+  patch: Partial<DadKitExportDataV8> = {},
+): DadKitExportDataV8 {
   return {
     ...portableV7(),
     version: 8,
+    baby: projectBabyV2ToV1(createEmptyBabyData()),
+    ...patch,
+  };
+}
+
+export function portableV9(
+  patch: Partial<DadKitExportData> = {},
+): DadKitExportData {
+  return {
+    ...portableV8(),
+    version: 9,
+    household: createEmptyHousehold(),
+    planning: createEmptyItemPlanning(),
     baby: createEmptyBabyData(),
     ...patch,
   };

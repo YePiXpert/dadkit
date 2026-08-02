@@ -4,6 +4,7 @@ import { Users } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { MemberMultiSelect } from "@/components/household/MemberMultiSelect";
 import {
   Dialog,
   DialogContent,
@@ -22,13 +23,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { showAppToast } from "@/lib/app-toast";
+import { useHouseholdStore } from "@/lib/household/store";
 import { useItemPlanningStore } from "@/lib/planning/store";
-import {
-  PLANNING_ASSIGNEE_LABELS,
-  PLANNING_ASSIGNEES,
-  type PlanningAssignee,
-  type PlanningBulkPatch,
-} from "@/lib/planning/types";
+import type { PlanningBulkPatch } from "@/lib/planning/types";
 
 type BulkMode = "keep" | "set" | "clear";
 
@@ -42,8 +39,10 @@ export function BulkPlanningDialog({
   open: boolean;
 }) {
   const bulkUpdate = useItemPlanningStore((state) => state.bulkUpdate);
+  const household = useHouseholdStore((state) => state.household);
+  const hydrateHousehold = useHouseholdStore((state) => state.hydrate);
   const [assigneeMode, setAssigneeMode] = useState<BulkMode>("keep");
-  const [assignee, setAssignee] = useState<PlanningAssignee>("dad");
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [dueDateMode, setDueDateMode] = useState<BulkMode>("keep");
   const [dueDate, setDueDate] = useState("");
   const [locationMode, setLocationMode] = useState<BulkMode>("keep");
@@ -52,21 +51,23 @@ export function BulkPlanningDialog({
   useEffect(() => {
     if (!open) return;
     setAssigneeMode("keep");
-    setAssignee("dad");
+    setAssigneeIds([]);
     setDueDateMode("keep");
     setDueDate("");
     setLocationMode("keep");
     setStorageLocation("");
   }, [open]);
 
+  useEffect(() => { hydrateHousehold(); }, [hydrateHousehold]);
+
   function save() {
     const patch: PlanningBulkPatch = {
-      assignee:
+      assigneeIds:
         assigneeMode === "keep"
           ? { mode: "keep" }
           : assigneeMode === "clear"
             ? { mode: "clear" }
-            : { mode: "set", value: assignee },
+            : { mode: "set", value: assigneeIds },
       dueDate:
         dueDateMode === "keep"
           ? { mode: "keep" }
@@ -111,14 +112,7 @@ export function BulkPlanningDialog({
         <div className="grid gap-5">
           <BulkField label="负责人" mode={assigneeMode} onModeChange={setAssigneeMode}>
             {assigneeMode === "set" ? (
-              <Select value={assignee} onValueChange={(value) => setAssignee(value as PlanningAssignee)}>
-                <SelectTrigger aria-label="批量负责人"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {PLANNING_ASSIGNEES.map((value) => (
-                    <SelectItem key={value} value={value}>{PLANNING_ASSIGNEE_LABELS[value]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MemberMultiSelect household={household} id="bulk-planning-assignees" onChange={setAssigneeIds} selectedIds={assigneeIds} />
             ) : null}
           </BulkField>
 

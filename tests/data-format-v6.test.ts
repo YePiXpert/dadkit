@@ -11,6 +11,8 @@ import {
 import { hospitalValuesFromPortable, updateHospitalProfile } from "@/lib/hospital/portable";
 import { portableTestItem, portableV5, portableV6, portableV7 } from "@/tests/helpers/portable-data";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
+import { createEmptyHousehold } from "@/lib/household/defaults";
+import { createEmptyItemPlanning } from "@/lib/planning/defaults";
 
 const v3: DadKitExportDataV3 = {
   version: 3,
@@ -39,12 +41,12 @@ describe("DadKit v6 compatibility inside the v7 portable format", () => {
   ])("upgrades %s data with an empty timestamp-zero hospital", (_, input) => {
     const upgraded = upgradeExportDataToLatest(input);
 
-    expect(upgraded.version).toBe(8);
+    expect(upgraded.version).toBe(9);
     expect(upgraded.hospital.fields.hospitalName).toEqual({
       value: "",
       updatedAt: 0,
     });
-    expect(upgraded.planning).toEqual({ version: 1, clearedAt: 0, items: {} });
+    expect(upgraded.planning).toEqual(createEmptyItemPlanning());
     expect(isDadKitImportData(upgraded)).toBe(true);
   });
 
@@ -61,8 +63,9 @@ describe("DadKit v6 compatibility inside the v7 portable format", () => {
     expect(sanitizeDadKitImportData(data)).toEqual(data);
     expect(upgradeExportDataToLatest(data)).toEqual({
       ...data,
-      version: 8,
-      planning: { version: 1, clearedAt: 0, items: {} },
+      version: 9,
+      household: createEmptyHousehold(),
+      planning: createEmptyItemPlanning(),
       baby: createEmptyBabyData(),
     });
   });

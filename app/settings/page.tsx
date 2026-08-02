@@ -5,12 +5,21 @@ import {
   ChevronRight,
   ClipboardCheck,
   Cloud,
+  Users,
 } from "lucide-react";
 
 import { AppearanceCard } from "@/components/AppearanceCard";
 import { InstallPromptSettingsEntry } from "@/components/InstallPromptSettingsEntry";
+import { FamilySetupPrompt } from "@/components/household/FamilySetupPrompt";
 
 const SETTINGS_ENTRIES = [
+  {
+    href: "/settings/family",
+    title: "家庭成员",
+    description: "管理照护者和这台设备的使用者。",
+    icon: Users,
+    accent: "bg-tile-baby-bg text-tile-baby-fg",
+  },
   {
     href: "/hospital",
     title: "医院档案",
@@ -55,6 +64,7 @@ export default function SettingsPage() {
         </header>
 
         <div className="grid gap-3">
+          <FamilySetupPrompt />
           {SETTINGS_ENTRIES.map((entry) => {
             const Icon = entry.icon;
 

@@ -21,17 +21,14 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { showAppToast } from "@/lib/app-toast";
+import { getActiveHouseholdMembers, getRemovedHouseholdMembers } from "@/lib/household/selectors";
+import { useHouseholdStore } from "@/lib/household/store";
 import { getLocalPlanningDate } from "@/lib/planning/date";
 import {
   derivePlanningRows,
   type PlanningListFilter,
 } from "@/lib/planning/selectors";
 import { useItemPlanningStore } from "@/lib/planning/store";
-import {
-  PLANNING_ASSIGNEE_LABELS,
-  PLANNING_ASSIGNEES,
-  type PlanningAssignee,
-} from "@/lib/planning/types";
 import { useDadKitStore } from "@/lib/store";
 
 const FILTER_OPTIONS: Array<{ label: string; value: PlanningListFilter }> = [
@@ -51,9 +48,12 @@ export function PlanningWorkspace() {
   const planningHydrated = useItemPlanningStore((state) => state.hydrated);
   const hydratePlanning = useItemPlanningStore((state) => state.hydrate);
   const clearAll = useItemPlanningStore((state) => state.clearAll);
+  const household = useHouseholdStore((state) => state.household);
+  const householdHydrated = useHouseholdStore((state) => state.hydrated);
+  const hydrateHousehold = useHouseholdStore((state) => state.hydrate);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<PlanningListFilter>("all");
-  const [assignee, setAssignee] = useState<"all" | PlanningAssignee>("all");
+  const [assignee, setAssignee] = useState<string>("all");
   const [includeNotNeeded, setIncludeNotNeeded] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [activeItemId, setActiveItemId] = useState<string>();
@@ -79,9 +79,10 @@ export function PlanningWorkspace() {
   useEffect(() => {
     hydrateChecklist();
     hydratePlanning();
-  }, [hydrateChecklist, hydratePlanning]);
+    hydrateHousehold();
+  }, [hydrateChecklist, hydrateHousehold, hydratePlanning]);
 
-  if (!checklistHydrated || !planningHydrated) {
+  if (!checklistHydrated || !planningHydrated || !householdHydrated) {
     return <PlanningWorkspaceSkeleton />;
   }
 
@@ -147,11 +148,13 @@ export function PlanningWorkspace() {
                 {FILTER_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={assignee} onValueChange={(value) => setAssignee(value as "all" | PlanningAssignee)}>
+            <Select value={assignee} onValueChange={setAssignee}>
               <SelectTrigger aria-label="负责人筛选"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部负责人</SelectItem>
-                {PLANNING_ASSIGNEES.map((value) => <SelectItem key={value} value={value}>{PLANNING_ASSIGNEE_LABELS[value]}</SelectItem>)}
+                <SelectItem value="unassigned">未分工</SelectItem>
+                {getActiveHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}</SelectItem>)}
+                {getRemovedHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}（已移除）</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -178,6 +181,7 @@ export function PlanningWorkspace() {
             {rows.map((row) => (
               <PlanningItemRow
                 item={row.item}
+                household={household}
                 key={row.item.id}
                 onEdit={() => setActiveItemId(row.item.id)}
                 onSelect={() => toggleSelection(row.item.id)}

@@ -14,15 +14,19 @@ const routeBudgets = new Map([
   ["/checklist/[sectionId]/page", 255 * 1024],
   ["/departure/page", 250 * 1024],
   ["/hospital/page", 225 * 1024],
-  ["/planning/page", 245 * 1024],
+  // v3.1 的动态家庭成员、多负责人筛选与兼容标签增加约 7 KiB；
+  // 255 KiB 仅比旧预算高 4.1%，并保留约 1.2% 实测余量。
+  ["/planning/page", 255 * 1024],
   ["/baby/page", 260 * 1024],
   ["/baby/timeline/page", 260 * 1024],
   ["/growth/page", 190 * 1024],
   ["/settings/page", 170 * 1024],
-  ["/settings/checklist/page", 225 * 1024],
-  // v3.0 adds full v8 JSON import/export controls to the already dense backup
-  // surface. Keep the increase below 1% of the previous 247 KiB budget.
-  ["/settings/backup/page", 249 * 1024],
+  ["/onboarding/page", 225 * 1024],
+  ["/settings/family/page", 225 * 1024],
+  ["/settings/checklist/page", 230 * 1024],
+  // v3.1 adds household/planning-v2/baby-v2 validation to the dense backup
+  // surface. Keep roughly 1.5% headroom over the measured v3.1 bundle.
+  ["/settings/backup/page", 258 * 1024],
   ["/privacy/page", 160 * 1024],
   ["/support/page", 160 * 1024],
 ]);
@@ -37,6 +41,8 @@ const routeLabels = new Map([
   ["/baby/timeline/page", "宝宝时间线页"],
   ["/growth/page", "成长记页"],
   ["/settings/page", "我的页"],
+  ["/onboarding/page", "首次使用引导页"],
+  ["/settings/family/page", "家庭成员设置页"],
   ["/settings/checklist/page", "清单设置页"],
   ["/settings/backup/page", "备份页"],
   ["/privacy/page", "隐私说明页"],

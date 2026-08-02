@@ -10,9 +10,9 @@ import type {
   DadKitExportDataV6,
   DadKitExportDataV7,
 } from "@/lib/data/format";
-import { createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
+import { createEmptyItemPlanningRecordV1 } from "@/lib/planning/defaults";
 import { joinSpace, pullSpace, pushSpace } from "@/lib/sync/server-store";
-import type { CareEvent } from "@/lib/baby/types";
+import type { CareEventV1 } from "@/lib/baby/types";
 import {
   portableTestItem,
   portableV5,
@@ -23,7 +23,7 @@ import {
 
 let dataDir: string;
 
-function diaper(id: string, updatedAt: number, deletedAt: number | null = null): CareEvent {
+function diaper(id: string, updatedAt: number, deletedAt: number | null = null): CareEventV1 {
   return {
     id,
     type: "diaper",
@@ -40,7 +40,7 @@ function canonicalV8() {
   const data = portableV8();
   data.hospital.fields.hospitalName = { value: "市妇幼保健院", updatedAt: 10 };
   data.planning.items.bag = {
-    ...createEmptyItemPlanningRecord(),
+    ...createEmptyItemPlanningRecordV1(),
     assignee: { value: "dad", updatedAt: 20 },
   };
   data.baby.profile.fields.birthDate = { value: "2026-08-01", updatedAt: 30 };
@@ -112,7 +112,7 @@ describe("v5/v6/v7/v8 family sync compatibility", () => {
 
     const v7Update = portableV7();
     v7Update.planning.items.bag = {
-      ...createEmptyItemPlanningRecord(),
+      ...createEmptyItemPlanningRecordV1(),
       actualPriceFen: { value: 8_800, updatedAt: 120 },
     };
     await pushSpace(v7.token, v7Update, 7);
@@ -171,6 +171,6 @@ describe("v5/v6/v7/v8 family sync compatibility", () => {
     expect(projected.baby.care).toEqual({ version: 1, clearedAt: 0, events: [] });
     await pushSpace(v8.token, portableV8(), 8);
     const persisted = JSON.parse(readFileSync(file, "utf8")) as { data: DadKitExportData };
-    expect(persisted.data.version).toBe(8);
+    expect(persisted.data.version).toBe(9);
   });
 });

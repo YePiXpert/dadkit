@@ -21,6 +21,7 @@ import {
 } from "@/lib/checklist-v2";
 import { formatChecklistDisplayText } from "@/lib/checklist-display";
 import { useDadKitStore } from "@/lib/store";
+import { useHouseholdStore } from "@/lib/household/store";
 import { formatPlanningMoney, getItemPlanningValues, getPlanningAssigneeLabel } from "@/lib/planning/selectors";
 import { useItemPlanningStore } from "@/lib/planning/store";
 import type { ChecklistItem } from "@/lib/types";
@@ -73,6 +74,8 @@ export function ChecklistItemDetailsDialog({
   const planning = useItemPlanningStore((state) => state.planning);
   const hydratePlanning = useItemPlanningStore((state) => state.hydrate);
   const planningValues = getItemPlanningValues(planning, item.id);
+  const household = useHouseholdStore((state) => state.household);
+  const hydrateHousehold = useHouseholdStore((state) => state.hydrate);
   const itemState = getChecklistItemState(item);
   const stateMeta = STATE_META[itemState];
   const displayOptions = {
@@ -90,7 +93,8 @@ export function ChecklistItemDetailsDialog({
 
   useEffect(() => {
     hydratePlanning();
-  }, [hydratePlanning]);
+    hydrateHousehold();
+  }, [hydrateHousehold, hydratePlanning]);
 
   function removeCurrentItem() {
     removeItem(item.id);
@@ -184,7 +188,7 @@ export function ChecklistItemDetailsDialog({
                 <ShoppingBag className="size-4" />分工与采购
               </p>
               <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">
-                {planningSummary(planningValues)}
+                {planningSummary(planningValues, household)}
               </p>
             </div>
             <Button onClick={() => setPlanningOpen(true)} size="sm" variant="outline">
@@ -244,10 +248,10 @@ export function ChecklistItemDetailsDialog({
   );
 }
 
-function planningSummary(values: ReturnType<typeof getItemPlanningValues>) {
+function planningSummary(values: ReturnType<typeof getItemPlanningValues>, household: ReturnType<typeof useHouseholdStore.getState>["household"]) {
   const parts = [
-    values.assignee !== "unassigned"
-      ? getPlanningAssigneeLabel(values.assignee)
+    values.assigneeIds.length > 0
+      ? getPlanningAssigneeLabel(values.assigneeIds, household)
       : "",
     values.dueDate ? `期限 ${values.dueDate}` : "",
     values.estimatedPriceFen !== null

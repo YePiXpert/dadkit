@@ -223,8 +223,8 @@ describe("v5/v6 family sync compatibility", () => {
       data: DadKitExportData;
     };
 
-    expect(persisted.data.version).toBe(8);
-    expect(persisted.data.planning).toEqual({ version: 1, clearedAt: 0, items: {} });
+    expect(persisted.data.version).toBe(9);
+    expect(persisted.data.planning).toEqual({ version: 2, clearedAt: 0, items: {} });
     expect(persisted.data.checklist.map((item) => item.id).sort()).toEqual([
       "new-v6",
       "stored-v5",

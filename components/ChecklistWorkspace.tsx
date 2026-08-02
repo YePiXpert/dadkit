@@ -40,6 +40,7 @@ import { showAppToast } from "@/lib/app-toast";
 import { DEPARTURE_PATH } from "@/lib/app-routes";
 import { PlanningSummaryCard } from "@/components/PlanningSummaryCard";
 import { BabyHomeCard } from "@/components/baby/BabyHomeCard";
+import { HouseholdFeaturePrompt } from "@/components/household/HouseholdFeaturePrompt";
 import { getDepartureProgress } from "@/lib/departure";
 import { useDadKitStore } from "@/lib/store";
 import { useChecklistViewQuery } from "@/lib/use-checklist-view-query";
@@ -290,6 +291,8 @@ export function ChecklistWorkspace() {
         <PlanningSummaryCard compact />
 
         <BabyHomeCard />
+
+        <HouseholdFeaturePrompt />
 
         <ChecklistGroupTabs counts={counts} value={view} onChange={setView} />
 

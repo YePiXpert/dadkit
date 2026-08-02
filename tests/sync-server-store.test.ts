@@ -24,6 +24,7 @@ import type { ChecklistItem } from "@/lib/types";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
 import { createEmptyItemPlanning } from "@/lib/planning/defaults";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
+import { createEmptyHousehold } from "@/lib/household/defaults";
 
 let dir: string;
 
@@ -54,7 +55,7 @@ function exportData(
   patch: Partial<DadKitExportData> = {},
 ): DadKitExportData {
   return {
-    version: 8,
+    version: 9,
     exportedAt: "2026-07-26T00:00:00.000Z",
     checklistMode: "lean",
     checklist: [],
@@ -71,6 +72,7 @@ function exportData(
     hospital: createEmptyHospitalProfile(),
     planning: createEmptyItemPlanning(),
     baby: createEmptyBabyData(),
+    household: createEmptyHousehold(),
     ...patch,
   };
 }

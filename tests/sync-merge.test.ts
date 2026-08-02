@@ -10,6 +10,7 @@ import {
 } from "@/lib/planning/defaults";
 import { portableV6 } from "@/tests/helpers/portable-data";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
+import { createEmptyHousehold } from "@/lib/household/defaults";
 
 function testItem(
   id: string,
@@ -36,7 +37,7 @@ function testItem(
 
 function exportData(patch: Partial<DadKitExportData> = {}): DadKitExportData {
   return {
-    version: 8,
+    version: 9,
     exportedAt: "2026-07-26T00:00:00.000Z",
     checklistMode: "lean",
     checklist: [],
@@ -53,6 +54,7 @@ function exportData(patch: Partial<DadKitExportData> = {}): DadKitExportData {
     hospital: createEmptyHospitalProfile(),
     planning: createEmptyItemPlanning(),
     baby: createEmptyBabyData(),
+    household: createEmptyHousehold(),
     ...patch,
   };
 }
@@ -238,7 +240,7 @@ describe("mergeExportData", () => {
     const planning = createEmptyItemPlanning();
     planning.items.bag = {
       ...createEmptyItemPlanningRecord(),
-      assignee: { value: "dad", updatedAt: 100 },
+      assigneeIds: { value: ["legacy-dad-v1"], updatedAt: 100 },
     };
     const merged = mergeExportData(exportData({ planning }), portableV6());
     expect(merged.planning).toEqual(planning);

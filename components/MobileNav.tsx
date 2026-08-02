@@ -13,6 +13,7 @@ export function MobileNav() {
   const pathname = usePathname();
 
   if (
+    pathname === "/onboarding" ||
     pathname.startsWith("/checklist/") ||
     pathname === "/growth" ||
     pathname.startsWith("/settings/")

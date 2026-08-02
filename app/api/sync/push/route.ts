@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
   if (
     !isDadKitImportData(payload) ||
-    (payload.version !== 5 && payload.version !== 6 && payload.version !== 7 && payload.version !== 8)
+    (payload.version !== 5 && payload.version !== 6 && payload.version !== 7 && payload.version !== 8 && payload.version !== 9)
   ) {
     return syncError("同步数据格式无效。", 400);
   }

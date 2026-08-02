@@ -36,6 +36,9 @@ import type { ChecklistItem } from "@/lib/types";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
 import { createEmptyItemPlanning, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
+import { createEmptyHousehold } from "@/lib/household/defaults";
+import { loadDeviceIdentity, saveDeviceIdentity } from "@/lib/device-identity/repository";
+import { portableV8 } from "@/tests/helpers/portable-data";
 import {
   hospitalValuesFromPortable,
   updateHospitalProfile,
@@ -73,7 +76,7 @@ function backupData(
   patch: Partial<DadKitExportData> = {},
 ): DadKitExportData {
   return {
-    version: 8,
+    version: 9,
     exportedAt: "2026-07-25T00:00:00.000Z",
     checklistMode: "full",
     checklist: [testItem("backup-item")],
@@ -90,6 +93,7 @@ function backupData(
     hospital: createEmptyHospitalProfile(),
     planning: createEmptyItemPlanning(),
     baby: createEmptyBabyData(),
+    household: createEmptyHousehold(),
     ...patch,
   };
 }
@@ -114,11 +118,13 @@ function backupDataV5(patch: Record<string, unknown> = {}) {
     hospital: _hospital,
     planning: _planning,
     baby: _baby,
+    household: _household,
     ...current
   } = backupData();
   void _hospital;
   void _planning;
   void _baby;
+  void _household;
 
   return { ...current, version: 5 as const, ...patch };
 }
@@ -166,10 +172,10 @@ afterEach(() => {
 });
 
 describe("v6 portable backup with the existing local namespace", () => {
-  it("owns only dadkit:v3 storage keys", () => {
+  it("owns only dadkit:v3 and device-local v4 storage keys", () => {
     expect(Object.values(STORAGE_KEYS).length).toBeGreaterThan(0);
     expect(
-      Object.values(STORAGE_KEYS).every((key) => key.startsWith("dadkit:v3:")),
+      Object.values(STORAGE_KEYS).every((key) => key.startsWith("dadkit:v3:") || key.startsWith("dadkit:v4:")),
     ).toBe(true);
   });
 
@@ -206,10 +212,11 @@ describe("v6 portable backup with the existing local namespace", () => {
         "hospital",
         "planning",
         "baby",
+        "household",
       ].sort(),
     );
     expect(exported).toMatchObject({
-      version: 8,
+      version: 9,
       checklistMode: "lean",
       checklist,
       customItems,
@@ -269,7 +276,7 @@ describe("v6 portable backup with the existing local namespace", () => {
     expect(loadDeletedCustomItems()).toEqual({ "gone-custom": 456 });
     expect(loadGrowthUpdatedAt()).toBe(789);
     expect(loadHospitalProfile()).toEqual(payload.hospital);
-    expect(exportData().version).toBe(8);
+    expect(exportData().version).toBe(9);
   });
 
   it("keeps hospital but safely clears planning on a manual v6 restore", () => {
@@ -278,15 +285,16 @@ describe("v6 portable backup with the existing local namespace", () => {
     const futureTimestamp = Date.now() + 10_000;
     currentPlanning.items.bag = {
       ...createEmptyItemPlanningRecord(),
-      assignee: { value: "dad", updatedAt: futureTimestamp },
+      assigneeIds: { value: ["legacy-dad-v1"], updatedAt: futureTimestamp },
     };
     saveItemPlanning(currentPlanning);
     const latest = backupData({
       hospital: hospitalProfile({ hospitalName: "v6 医院" }),
     });
-    const { planning: _planning, baby: _baby, ...withoutPlanning } = latest;
+    const { planning: _planning, baby: _baby, household: _household, ...withoutPlanning } = latest;
     void _planning;
     void _baby;
+    void _household;
     const v6 = { ...withoutPlanning, version: 6 as const };
 
     const result = importData(JSON.stringify(v6));
@@ -306,7 +314,7 @@ describe("v6 portable backup with the existing local namespace", () => {
     planning.clearedAt = 50;
     planning.items.bag = {
       ...createEmptyItemPlanningRecord(50),
-      assignee: { value: "shared", updatedAt: 60 },
+      assigneeIds: { value: ["legacy-dad-v1", "legacy-mom-v1"], updatedAt: 60 },
       actualPriceFen: { value: 999, updatedAt: 70 },
     };
     const result = importData(JSON.stringify(backupData({ planning })));
@@ -324,6 +332,20 @@ describe("v6 portable backup with the existing local namespace", () => {
 
     expect(result.ok).toBe(false);
     expect(storage.localValues).toEqual(before);
+  });
+
+  it("rolls back the full old import when resetting device identity fails", () => {
+    installBrowserStorage();
+    saveChecklist([testItem("before-identity-failure")]);
+    const identity = { version: 1 as const, currentMemberId: "member-a", preferredEntry: "baby" as const, onboardingCompletedAt: 10 };
+    saveDeviceIdentity(identity);
+    failNextStorageWrite(STORAGE_KEYS.deviceIdentity);
+
+    const result = importData(JSON.stringify(portableV8({ checklist: [testItem("after-identity-failure")] })));
+
+    expect(result.ok).toBe(false);
+    expect(loadChecklist().map((item) => item.id)).toEqual(["before-identity-failure"]);
+    expect(loadDeviceIdentity()).toEqual(identity);
   });
 
   it.each([
@@ -619,7 +641,8 @@ describe("local recovery snapshots", () => {
     const snapshot = createSnapshot("只有 planning");
     expect(snapshot?.data.version).toBe(7);
     if (snapshot?.data.version !== 7) throw new Error("缺少 v7 planning 快照");
-    expect(snapshot.data.planning).toEqual(planning);
+    expect(snapshot.data.planning.version).toBe(1);
+    expect(snapshot.data.planning.items.bag.storageLocation.value).toBe("车内");
   });
 
   it("restores hospital and planning data from a v7 local snapshot", () => {
@@ -647,15 +670,16 @@ describe("local recovery snapshots", () => {
     const futureTimestamp = Date.now() + 20_000;
     planning.items.bag = {
       ...createEmptyItemPlanningRecord(),
-      assignee: { value: "family", updatedAt: futureTimestamp },
+      assigneeIds: { value: ["legacy-family-v1"], updatedAt: futureTimestamp },
     };
     saveItemPlanning(planning);
     const latest = backupData({
       hospital: hospitalProfile({ hospitalName: "快照医院" }),
     });
-    const { planning: _planning, baby: _baby, ...withoutPlanning } = latest;
+    const { planning: _planning, baby: _baby, household: _household, ...withoutPlanning } = latest;
     void _planning;
     void _baby;
+    void _household;
     const v6: DadKitExportDataV6 = { ...withoutPlanning, version: 6 };
     saveSnapshots([
       {

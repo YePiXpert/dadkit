@@ -5,7 +5,14 @@ import { startBreastfeedingEvent } from "@/lib/baby/timers";
 import type { CareEvent } from "@/lib/baby/types";
 import { isBabyCarePortableData, isCareEvent } from "@/lib/baby/validation";
 
-const base = { id: "care-1", note: "", createdAt: 1, updatedAt: 1, deletedAt: null } as const;
+const base = {
+  id: "care-1",
+  note: "",
+  recordedByMemberId: null,
+  createdAt: 1,
+  updatedAt: 1,
+  deletedAt: null,
+} as const;
 
 describe("baby care event validation", () => {
   it("accepts valid events and milk amount boundaries", () => {

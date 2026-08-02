@@ -5,8 +5,10 @@ import {
   type Locator,
   type Page,
 } from "@playwright/test";
+import { seedCompletedOnboarding } from "@/tests/e2e/helpers";
 
 test.describe.configure({ timeout: 120_000 });
+test.beforeEach(async ({ page }) => { await seedCompletedOnboarding(page); });
 
 async function stubClipboard(page: Page) {
   await page.addInitScript(() => {

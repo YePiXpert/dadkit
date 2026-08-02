@@ -18,6 +18,7 @@ const events: CareEvent[] = Array.from({ length: 10_000 }, (_, index) => ({
   createdAt: index + 1,
   updatedAt: index + 1,
   deletedAt: null,
+  recordedByMemberId: null,
   occurredAt,
   kind: index % 3 === 0 ? "both" : index % 2 === 0 ? "wet" : "dirty",
 }));
@@ -31,7 +32,7 @@ function withinBudget<T>(operation: () => T, milliseconds = 2_500) {
 
 describe("10,000 baby event performance", () => {
   it("strictly validates the collection", () => {
-    expect(withinBudget(() => isBabyCarePortableData({ version: 1, clearedAt: 0, events }))).toBe(true);
+    expect(withinBudget(() => isBabyCarePortableData({ version: 2, clearedAt: 0, events }))).toBe(true);
   });
 
   it("merges two offline halves into one stable collection", () => {
@@ -53,8 +54,8 @@ describe("10,000 baby event performance", () => {
   });
 
   it("produces a stable checksum after id sorting", () => {
-    const forward = withinBudget(() => cloneBabyCare({ version: 1, clearedAt: 0, events }));
-    const reverse = withinBudget(() => cloneBabyCare({ version: 1, clearedAt: 0, events: [...events].reverse() }));
+    const forward = withinBudget(() => cloneBabyCare({ version: 2, clearedAt: 0, events }));
+    const reverse = withinBudget(() => cloneBabyCare({ version: 2, clearedAt: 0, events: [...events].reverse() }));
     const first = withinBudget(() => calculateChecksum(forward));
     const second = withinBudget(() => calculateChecksum(reverse));
     expect(second).toBe(first);

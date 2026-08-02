@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { seedCompletedOnboarding } from "@/tests/e2e/helpers";
 
 test.describe.configure({ timeout: 120_000 });
+test.beforeEach(async ({ page }) => { await seedCompletedOnboarding(page); });
 
 function remainingCount(page: import("@playwright/test").Page) {
   return page.locator("#departure-remaining-count").evaluate((element) => {

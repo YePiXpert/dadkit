@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { showAppToast } from "@/lib/app-toast";
+import { getActiveHouseholdMembers, getRemovedHouseholdMembers, householdMemberLabel } from "@/lib/household/selectors";
+import { useHouseholdStore } from "@/lib/household/store";
 import { compareEventsNewestFirst, groupCareEventsByLocalDate } from "@/lib/baby/selectors";
 import { useBabyStore } from "@/lib/baby/store";
 import type { CareEvent, CareEventType } from "@/lib/baby/types";
@@ -27,10 +29,14 @@ export function CareTimelineWorkspace() {
   const [days, setDays] = useState(7);
   const [filter, setFilter] = useState<"all" | CareEventType>("all");
   const [query, setQuery] = useState("");
+  const [recorder, setRecorder] = useState<string>("all");
+  const household = useHouseholdStore((state) => state.household);
+  const hydrateHousehold = useHouseholdStore((state) => state.hydrate);
   const [editing, setEditing] = useState<CareEvent>();
   const [deleting, setDeleting] = useState<CareEvent>();
 
   useEffect(() => { void hydrate(); }, [hydrate]);
+  useEffect(() => { hydrateHousehold(); }, [hydrateHousehold]);
   useEffect(() => {
     if (!hydrated) return;
     const end = Date.now() + 1;
@@ -39,8 +45,9 @@ export function CareTimelineWorkspace() {
 
   const visible = useMemo(() => {
     const map = new Map([...activeEvents, ...timelineEvents].map((event) => [event.id, event]));
-    return [...map.values()].filter((event) => event.deletedAt === null && event.updatedAt > careClearedAt && (filter === "all" || event.type === filter) && (!query.trim() || event.note.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())));
-  }, [activeEvents, careClearedAt, filter, query, timelineEvents]);
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    return [...map.values()].filter((event) => event.deletedAt === null && event.updatedAt > careClearedAt && (filter === "all" || event.type === filter) && (recorder === "all" || (recorder === "none" ? event.recordedByMemberId === null : event.recordedByMemberId === recorder)) && (!normalizedQuery || event.note.toLocaleLowerCase().includes(normalizedQuery) || householdMemberLabel(household, event.recordedByMemberId).toLocaleLowerCase().includes(normalizedQuery)));
+  }, [activeEvents, careClearedAt, filter, household, query, recorder, timelineEvents]);
   const activeVisible = visible
     .filter((event) => (event.type === "breastfeeding" || event.type === "pumping" || event.type === "sleep") && event.endAt === null)
     .sort(compareEventsNewestFirst);
@@ -56,6 +63,7 @@ export function CareTimelineWorkspace() {
         <section className="grid gap-3 rounded-card border border-border bg-card p-3">
           <div className="flex items-center gap-2"><Search className="size-4 text-muted-foreground" /><Label className="sr-only" htmlFor="baby-timeline-search">搜索备注</Label><Input className="border-0 bg-transparent shadow-none" id="baby-timeline-search" onChange={(event) => setQuery(event.target.value)} placeholder="搜索备注" type="search" value={query} /></div>
           <Select value={filter} onValueChange={(value) => setFilter(value as typeof filter)}><SelectTrigger aria-label="记录类型筛选"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部</SelectItem><SelectItem value="breastfeeding">亲喂</SelectItem><SelectItem value="bottle">瓶喂</SelectItem><SelectItem value="pumping">吸奶</SelectItem><SelectItem value="diaper">尿布</SelectItem><SelectItem value="sleep">睡眠</SelectItem></SelectContent></Select>
+          <Select value={recorder} onValueChange={setRecorder}><SelectTrigger aria-label="记录人筛选"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部记录人</SelectItem><SelectItem value="none">未标记记录人</SelectItem>{getActiveHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}</SelectItem>)}{getRemovedHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}（已移除）</SelectItem>)}</SelectContent></Select>
         </section>
 
         {activeVisible.length > 0 ? <section className="grid gap-3"><h2 className="px-1 text-sm font-semibold text-primary">进行中</h2>{activeVisible.map((event) => <CareEventRow event={event} key={event.id} onDelete={() => setDeleting(event)} />)}</section> : null}

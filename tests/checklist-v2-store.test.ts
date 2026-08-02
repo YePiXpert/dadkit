@@ -47,9 +47,9 @@ describe("v3 checklist persistence", () => {
     expect(state.checklist.length).toBeGreaterThan(0);
   });
 
-  it("uses only the dadkit:v3 namespace", () => {
+  it("uses only the DadKit v3/v4 namespaces", () => {
     expect(
-      Object.values(STORAGE_KEYS).every((key) => key.startsWith("dadkit:v3:")),
+      Object.values(STORAGE_KEYS).every((key) => key.startsWith("dadkit:v3:") || key.startsWith("dadkit:v4:")),
     ).toBe(true);
 
     const browserStorage = installBrowserStorage();
@@ -59,7 +59,7 @@ describe("v3 checklist persistence", () => {
     expect(browserStorage.writes.length).toBeGreaterThan(0);
     expect(
       [...browserStorage.reads, ...browserStorage.writes].every((key) =>
-        key.startsWith("dadkit:v3:"),
+        key.startsWith("dadkit:v3:") || key.startsWith("dadkit:v4:"),
       ),
     ).toBe(true);
   });
@@ -83,6 +83,7 @@ describe("v3 checklist persistence", () => {
       browserStorage.removals.every(
         (key) =>
           key.startsWith("dadkit:v3:") ||
+          key.startsWith("dadkit:v4:") ||
           Object.values(GROWTH_STORAGE_KEYS).includes(
             key as (typeof GROWTH_STORAGE_KEYS)[keyof typeof GROWTH_STORAGE_KEYS],
           ),

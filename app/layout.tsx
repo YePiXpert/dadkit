@@ -5,6 +5,7 @@ import { AppToast } from "@/components/AppToast";
 import { BackgroundTasks } from "@/components/BackgroundTasks";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { MobileNav } from "@/components/MobileNav";
+import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 import { PersistenceWarning } from "@/components/PersistenceWarning";
 import { SyncSessionWarning } from "@/components/SyncSessionWarning";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
@@ -85,6 +86,7 @@ export default function RootLayout({
       <body>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <BackgroundTasks />
+        <OnboardingGate />
         <PersistenceWarning />
         <SyncSessionWarning />
         <AppToast />

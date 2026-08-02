@@ -8,215 +8,120 @@ import {
   clearAllItemPlanning,
   clearItemPlanningValues,
   cloneItemPlanning,
+  cloneItemPlanningRecord,
   getEffectiveItemPlanningRecord,
   latestItemPlanningTimestamp,
+  sameIds,
   updateItemPlanningValues,
 } from "@/lib/planning/portable";
 import { loadItemPlanning, saveItemPlanning } from "@/lib/planning/repository";
-import {
-  PLANNING_ASSIGNEES,
-  PLANNING_TEXT_LIMIT,
-  type ItemPlanningDraft,
-  type ItemPlanningPortableData,
-  type PlanningBulkPatch,
-  type PlanningValidationErrors,
-} from "@/lib/planning/types";
-import {
-  isSafePlanningItemId,
-  normalizePlanningText,
-  validateItemPlanningDraft,
-} from "@/lib/planning/validation";
+import { PLANNING_TEXT_LIMIT, type ItemPlanningDraft, type ItemPlanningPortableData, type PlanningBulkPatch, type PlanningValidationErrors } from "@/lib/planning/types";
+import { isSafePlanningItemId, isValidAssigneeIds, normalizeAssigneeIds, normalizePlanningText, validateItemPlanningDraft } from "@/lib/planning/validation";
 import { getSyncAdjustedNow } from "@/lib/sync-clock";
 
-type PlanningActionResult = {
-  ok: boolean;
-  changed: boolean;
-  errors?: PlanningValidationErrors;
-  message?: string;
-};
-
+type PlanningActionResult = { ok: boolean; changed: boolean; errors?: PlanningValidationErrors; message?: string };
 type ItemPlanningState = {
   hydrated: boolean;
   planning: ItemPlanningPortableData;
-  hydrate: () => void;
-  saveItemDraft: (itemId: string, draft: ItemPlanningDraft) => PlanningActionResult;
-  clearItem: (itemId: string) => PlanningActionResult;
-  bulkUpdate: (itemIds: string[], patch: PlanningBulkPatch) => PlanningActionResult;
-  clearAll: () => PlanningActionResult;
+  hydrate(): void;
+  replace(planning: ItemPlanningPortableData): void;
+  saveItemDraft(itemId: string, draft: ItemPlanningDraft): PlanningActionResult;
+  clearItem(itemId: string): PlanningActionResult;
+  bulkUpdate(itemIds: string[], patch: PlanningBulkPatch): PlanningActionResult;
+  clearAll(): PlanningActionResult;
 };
 
-function nextPlanningTimestamp(
-  planning: ItemPlanningPortableData,
-  itemIds?: readonly string[],
-) {
-  return Math.max(
-    getSyncAdjustedNow(),
-    planning.clearedAt + 1,
-    latestItemPlanningTimestamp(planning, itemIds) + 1,
-  );
+function nextPlanningTimestamp(planning: ItemPlanningPortableData, itemIds?: readonly string[]) {
+  return Math.max(getSyncAdjustedNow(), planning.clearedAt + 1, latestItemPlanningTimestamp(planning, itemIds) + 1);
 }
 
 export const useItemPlanningStore = create<ItemPlanningState>((set, get) => ({
   hydrated: false,
   planning: createEmptyItemPlanning(),
-  hydrate: () => {
-    if (get().hydrated) return;
-    set({ hydrated: true, planning: loadItemPlanning() });
-  },
+  hydrate: () => { if (!get().hydrated) set({ hydrated: true, planning: loadItemPlanning() }); },
+  replace: (planning) => { saveItemPlanning(planning); set({ hydrated: true, planning: cloneItemPlanning(planning) }); },
   saveItemDraft: (itemId, draft) => {
-    if (!isSafePlanningItemId(itemId)) {
-      return { ok: false, changed: false, message: "物品标识无效。" };
-    }
+    if (!isSafePlanningItemId(itemId)) return { ok: false, changed: false, message: "物品标识无效。" };
     const validation = validateItemPlanningDraft(draft);
-    if (!validation.ok || !validation.values) {
-      return { ok: false, changed: false, errors: validation.errors };
-    }
-
+    if (!validation.ok || !validation.values) return { ok: false, changed: false, errors: validation.errors };
     const current = get().planning;
-    const next = updateItemPlanningValues(
-      current,
-      itemId,
-      validation.values,
-      nextPlanningTimestamp(current, [itemId]),
-    );
-    if (next.changed) {
-      saveItemPlanning(next.planning);
-      set({ planning: next.planning });
-    }
+    const next = updateItemPlanningValues(current, itemId, validation.values, nextPlanningTimestamp(current, [itemId]));
+    if (next.changed) { saveItemPlanning(next.planning); set({ planning: next.planning }); }
     return { ok: true, changed: next.changed };
   },
   clearItem: (itemId) => {
-    if (!isSafePlanningItemId(itemId)) {
-      return { ok: false, changed: false, message: "物品标识无效。" };
-    }
+    if (!isSafePlanningItemId(itemId)) return { ok: false, changed: false, message: "物品标识无效。" };
     const current = get().planning;
-    const next = clearItemPlanningValues(
-      current,
-      itemId,
-      nextPlanningTimestamp(current, [itemId]),
-    );
-    saveItemPlanning(next);
-    set({ planning: next });
-    return { ok: true, changed: true };
+    const next = clearItemPlanningValues(current, itemId, nextPlanningTimestamp(current, [itemId]));
+    saveItemPlanning(next); set({ planning: next }); return { ok: true, changed: true };
   },
   bulkUpdate: (itemIds, patch) => {
     const ids = [...new Set(itemIds)].filter(isSafePlanningItemId);
-    if (ids.length === 0) {
-      return { ok: false, changed: false, message: "请至少选择一个物品。" };
-    }
+    if (ids.length === 0) return { ok: false, changed: false, message: "请至少选择一个物品。" };
     const normalized = normalizeBulkPatch(patch);
-    if (!normalized.ok) return normalized;
-    if (!normalized.patch) {
-      return { ok: true, changed: false, message: "没有需要修改的字段。" };
-    }
-
+    if (!normalized.ok || !normalized.patch) return normalized;
     const current = get().planning;
     const next = cloneItemPlanning(current);
     const now = nextPlanningTimestamp(current, ids);
     let changed = false;
-
     for (const itemId of ids) {
       const effective = getEffectiveItemPlanningRecord(current, itemId);
-      const record = current.items[itemId]
-        ? { ...current.items[itemId],
-            assignee: { ...current.items[itemId].assignee },
-            dueDate: { ...current.items[itemId].dueDate },
-            estimatedPriceFen: { ...current.items[itemId].estimatedPriceFen },
-            actualPriceFen: { ...current.items[itemId].actualPriceFen },
-            purchaseChannel: { ...current.items[itemId].purchaseChannel },
-            storageLocation: { ...current.items[itemId].storageLocation } }
-        : createEmptyItemPlanningRecord(current.clearedAt);
+      const record = current.items[itemId] ? cloneItemPlanningRecord(current.items[itemId]) : createEmptyItemPlanningRecord(current.clearedAt);
       let itemChanged = false;
-
-      if (normalized.patch.assignee) {
-        const update = normalized.patch.assignee;
-        const value = update.mode === "clear" ? "unassigned" : update.value;
-        if (update.mode === "clear" || effective.assignee.value !== value) {
-          record.assignee = { value, updatedAt: now };
-          itemChanged = true;
-        }
+      if (normalized.patch.assigneeIds) {
+        const update = normalized.patch.assigneeIds;
+        const value = update.mode === "clear" ? [] : normalizeAssigneeIds(update.value);
+        if (!sameIds(effective.assigneeIds.value, value)) { record.assigneeIds = { value, updatedAt: now }; itemChanged = true; }
       }
       if (normalized.patch.dueDate) {
         const update = normalized.patch.dueDate;
         const value = update.mode === "clear" ? "" : update.value;
-        if (update.mode === "clear" || effective.dueDate.value !== value) {
-          record.dueDate = { value, updatedAt: now };
-          itemChanged = true;
-        }
+        if (effective.dueDate.value !== value) { record.dueDate = { value, updatedAt: now }; itemChanged = true; }
       }
       if (normalized.patch.storageLocation) {
         const update = normalized.patch.storageLocation;
         const value = update.mode === "clear" ? "" : update.value;
-        if (update.mode === "clear" || effective.storageLocation.value !== value) {
-          record.storageLocation = { value, updatedAt: now };
-          itemChanged = true;
-        }
+        if (effective.storageLocation.value !== value) { record.storageLocation = { value, updatedAt: now }; itemChanged = true; }
       }
-
-      if (itemChanged) {
-        next.items[itemId] = record;
-        changed = true;
-      }
+      if (itemChanged) { next.items[itemId] = record; changed = true; }
     }
-
-    if (changed) {
-      saveItemPlanning(next);
-      set({ planning: next });
-    }
+    if (changed) { saveItemPlanning(next); set({ planning: next }); }
     return { ok: true, changed };
   },
   clearAll: () => {
     const current = get().planning;
-    const next = clearAllItemPlanning(
-      current,
-      nextPlanningTimestamp(current),
-    );
-    saveItemPlanning(next);
-    set({ planning: next });
-    return { ok: true, changed: true };
+    const next = clearAllItemPlanning(current, nextPlanningTimestamp(current));
+    saveItemPlanning(next); set({ planning: next }); return { ok: true, changed: true };
   },
 }));
 
 function normalizeBulkPatch(patch: PlanningBulkPatch):
-  | { ok: true; changed: false; patch?: never }
-  | { ok: true; changed: false; patch: ExcludeKeepPatch }
+  | { ok: true; changed: false; patch?: ExcludeKeepPatch }
   | { ok: false; changed: false; message: string } {
   const result: ExcludeKeepPatch = {};
-
-  if (patch.assignee && patch.assignee.mode !== "keep") {
-    if (
-      patch.assignee.mode === "set" &&
-      !PLANNING_ASSIGNEES.includes(patch.assignee.value)
-    ) {
-      return { ok: false, changed: false, message: "负责人无效。" };
-    }
-    result.assignee = patch.assignee;
+  if (patch.assigneeIds && patch.assigneeIds.mode !== "keep") {
+    if (patch.assigneeIds.mode === "set") {
+      const value = normalizeAssigneeIds(patch.assigneeIds.value);
+      if (!isValidAssigneeIds(value)) return { ok: false, changed: false, message: "负责人无效。" };
+      result.assigneeIds = { mode: "set", value };
+    } else result.assigneeIds = patch.assigneeIds;
   }
   if (patch.dueDate && patch.dueDate.mode !== "keep") {
-    if (patch.dueDate.mode === "set" && !isPlanningDate(patch.dueDate.value)) {
-      return { ok: false, changed: false, message: "完成期限无效。" };
-    }
+    if (patch.dueDate.mode === "set" && !isPlanningDate(patch.dueDate.value)) return { ok: false, changed: false, message: "完成期限无效。" };
     result.dueDate = patch.dueDate;
   }
   if (patch.storageLocation && patch.storageLocation.mode !== "keep") {
     if (patch.storageLocation.mode === "set") {
       const value = normalizePlanningText(patch.storageLocation.value);
-      if (value.length > PLANNING_TEXT_LIMIT) {
-        return { ok: false, changed: false, message: "存放位置过长。" };
-      }
+      if (value.length > PLANNING_TEXT_LIMIT) return { ok: false, changed: false, message: "存放位置过长。" };
       result.storageLocation = { mode: "set", value };
-    } else {
-      result.storageLocation = patch.storageLocation;
-    }
+    } else result.storageLocation = patch.storageLocation;
   }
-
-  return Object.keys(result).length > 0
-    ? { ok: true, changed: false, patch: result }
-    : { ok: true, changed: false };
+  return Object.keys(result).length > 0 ? { ok: true, changed: false, patch: result } : { ok: true, changed: false };
 }
 
 type ExcludeKeepPatch = {
-  assignee?: Exclude<NonNullable<PlanningBulkPatch["assignee"]>, { mode: "keep" }>;
+  assigneeIds?: Exclude<NonNullable<PlanningBulkPatch["assigneeIds"]>, { mode: "keep" }>;
   dueDate?: Exclude<NonNullable<PlanningBulkPatch["dueDate"]>, { mode: "keep" }>;
   storageLocation?: Exclude<NonNullable<PlanningBulkPatch["storageLocation"]>, { mode: "keep" }>;
 };

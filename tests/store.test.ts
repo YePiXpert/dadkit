@@ -120,7 +120,7 @@ describe("v3 checklist store", () => {
     const planning = createEmptyItemPlanning();
     planning.items[before[0].id] = {
       ...createEmptyItemPlanningRecord(),
-      assignee: { value: "dad", updatedAt: 10 },
+      assigneeIds: { value: ["legacy-dad-v1"], updatedAt: 10 },
     };
     saveItemPlanning(planning);
     useItemPlanningStore.setState({ hydrated: true, planning });
@@ -131,7 +131,7 @@ describe("v3 checklist store", () => {
     const snapshots = await loadSnapshotsAsync();
     expect(snapshots[0]?.reason).toBe("重建清单前");
     expect(snapshots[0]?.data.checklist).toEqual(before);
-    expect(snapshots[0]?.data.version).toBe(8);
+    expect(snapshots[0]?.data.version).toBe(9);
     expect(loadItemPlanning().items).toEqual({});
     expect(loadItemPlanning().clearedAt).toBeGreaterThan(10);
     expect(useDadKitStore.getState().checklist).toEqual(generateChecklist());
@@ -158,7 +158,7 @@ describe("v3 checklist store", () => {
     const planning = createEmptyItemPlanning();
     planning.items[before[0].id] = {
       ...createEmptyItemPlanningRecord(),
-      assignee: { value: "mom", updatedAt: 20 },
+      assigneeIds: { value: ["legacy-mom-v1"], updatedAt: 20 },
     };
     saveItemPlanning(planning);
     useItemPlanningStore.setState({ hydrated: true, planning });

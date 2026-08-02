@@ -1,8 +1,11 @@
 import path from "node:path";
 
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { seedCompletedOnboarding } from "@/tests/e2e/helpers";
 
 const SAMPLE_IMAGE_PATH = path.join(process.cwd(), "public", "icon-192.png");
+
+test.beforeEach(async ({ page }) => { await seedCompletedOnboarding(page); });
 
 async function signalPwaInstallAvailability(page: Page) {
   await expect

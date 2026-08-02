@@ -6,8 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GET as pullRoute } from "@/app/api/sync/pull/route";
 import { POST as pushRoute } from "@/app/api/sync/push/route";
-import type { DadKitExportData } from "@/lib/data/format";
-import { createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
+import type { DadKitExportDataV7 } from "@/lib/data/format";
+import { createEmptyItemPlanningRecordV1 } from "@/lib/planning/defaults";
 import {
   DADKIT_DATA_VERSION_HEADER,
   createSyncEtag,
@@ -43,7 +43,7 @@ describe("v7 representation ETags", () => {
     if (!device) throw new Error("测试同步空间创建失败");
     const data = portableV7();
     data.planning.items.bag = {
-      ...createEmptyItemPlanningRecord(),
+      ...createEmptyItemPlanningRecordV1(),
       assignee: { value: "dad", updatedAt: 10 },
     };
     await pushSpace(device.token, data, 7);
@@ -55,7 +55,7 @@ describe("v7 representation ETags", () => {
 
     const upgraded = await pullRoute(request(device.token, 7, v6Etag));
     const upgradedPayload = (await upgraded.json()) as {
-      data: DadKitExportData;
+      data: DadKitExportDataV7;
       version: number;
     };
     const v7Etag = upgraded.headers.get("etag") ?? undefined;
@@ -81,7 +81,7 @@ describe("v7 representation ETags", () => {
     if (!device) throw new Error("测试同步空间创建失败");
     const data = portableV7();
     data.planning.items.bag = {
-      ...createEmptyItemPlanningRecord(),
+      ...createEmptyItemPlanningRecordV1(),
       actualPriceFen: { value: 880, updatedAt: 20 },
     };
     const response = await pushRoute(
@@ -97,7 +97,7 @@ describe("v7 representation ETags", () => {
       }),
     );
     const payload = (await response.json()) as {
-      data: DadKitExportData;
+      data: DadKitExportDataV7;
       version: number;
     };
     expect(payload.data.planning.items.bag.actualPriceFen.value).toBe(880);

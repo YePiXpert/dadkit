@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { showAppToast } from "@/lib/app-toast";
 import { hasBabyMode } from "@/lib/baby/portable";
 import { useBabyStore } from "@/lib/baby/store";
+import { useHouseholdStore } from "@/lib/household/store";
 
 export function BabyWorkspace() {
   const hydrate = useBabyStore((state) => state.hydrate);
@@ -22,8 +23,9 @@ export function BabyWorkspace() {
   const clearAllBabyData = useBabyStore((state) => state.clearAllBabyData);
   const [profileOpen, setProfileOpen] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
+  const hydrateHousehold = useHouseholdStore((state) => state.hydrate);
 
-  useEffect(() => { void hydrate(); }, [hydrate]);
+  useEffect(() => { void hydrate(); hydrateHousehold(); }, [hydrate, hydrateHousehold]);
 
   if (!hydrated || loading) return <BabyWorkspaceSkeleton />;
 

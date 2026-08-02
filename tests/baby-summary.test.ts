@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { deriveRecentCareEvents, deriveTodayCareSummary } from "@/lib/baby/selectors";
 import type { CareEvent } from "@/lib/baby/types";
 
-const base = (id: string, updatedAt: number) => ({ id, note: "", createdAt: updatedAt, updatedAt, deletedAt: null }) as const;
+const base = (id: string, updatedAt: number) => ({ id, note: "", createdAt: updatedAt, updatedAt, deletedAt: null, recordedByMemberId: null }) as const;
 
 describe("baby today summary", () => {
   it("counts feeding, pumping and both diaper kinds", () => {

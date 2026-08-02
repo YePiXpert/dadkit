@@ -3,17 +3,23 @@ import {
   type GrowthPortableData,
 } from "@/lib/growth-portable";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
-import { cloneBabyData } from "@/lib/baby/portable";
-import type { BabyPortableData } from "@/lib/baby/types";
-import { isBabyPortableData } from "@/lib/baby/validation";
+import { cloneBabyData, cloneBabyDataV1, migrateBabyV1ToV2, projectBabyV2ToV1 } from "@/lib/baby/portable";
+import type { BabyPortableData, BabyPortableDataV1 } from "@/lib/baby/types";
+import { isBabyPortableData, isBabyPortableDataV1 } from "@/lib/baby/validation";
+import { createEmptyHousehold } from "@/lib/household/defaults";
+import { migratePlanningV1ToV2 } from "@/lib/household/migration";
+import { cloneHousehold } from "@/lib/household/portable";
+import type { HouseholdPortableData } from "@/lib/household/types";
+import { isHouseholdPortableData } from "@/lib/household/validation";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
 import { cloneHospitalProfile } from "@/lib/hospital/portable";
 import type { HospitalProfilePortableData } from "@/lib/hospital/types";
 import { isHospitalProfilePortableData } from "@/lib/hospital/validation";
 import { createEmptyItemPlanning } from "@/lib/planning/defaults";
 import { cloneItemPlanning } from "@/lib/planning/portable";
-import type { ItemPlanningPortableData } from "@/lib/planning/types";
-import { isItemPlanningPortableData } from "@/lib/planning/validation";
+import { clonePlanningV1, projectPlanningV2ToV1 } from "@/lib/planning/projection";
+import type { ItemPlanningPortableData, ItemPlanningPortableDataV1 } from "@/lib/planning/types";
+import { isItemPlanningPortableData, isItemPlanningPortableDataV1 } from "@/lib/planning/validation";
 import type {
   ChecklistBag,
   ChecklistCategory,
@@ -64,15 +70,22 @@ export type DadKitExportDataV6 = Omit<DadKitExportDataV5, "version"> & {
 
 export type DadKitExportDataV7 = Omit<DadKitExportDataV6, "version"> & {
   version: 7;
-  planning: ItemPlanningPortableData;
+  planning: ItemPlanningPortableDataV1;
 };
 
 export type DadKitExportDataV8 = Omit<DadKitExportDataV7, "version"> & {
   version: 8;
+  baby: BabyPortableDataV1;
+};
+
+export type DadKitExportDataV9 = Omit<DadKitExportDataV8, "version" | "planning" | "baby"> & {
+  version: 9;
+  household: HouseholdPortableData;
+  planning: ItemPlanningPortableData;
   baby: BabyPortableData;
 };
 
-export type DadKitExportData = DadKitExportDataV8;
+export type DadKitExportData = DadKitExportDataV9;
 
 export type DadKitImportData =
   | DadKitExportDataV3
@@ -80,11 +93,12 @@ export type DadKitImportData =
   | DadKitExportDataV5
   | DadKitExportDataV6
   | DadKitExportDataV7
-  | DadKitExportDataV8;
+  | DadKitExportDataV8
+  | DadKitExportDataV9;
 
-export type DadKitSyncDataVersion = 5 | 6 | 7 | 8;
+export type DadKitSyncDataVersion = 5 | 6 | 7 | 8 | 9;
 
-export const LATEST_DATA_VERSION = 8 as const;
+export const LATEST_DATA_VERSION = 9 as const;
 
 export const V3_EXPORT_KEYS = [
   "version",
@@ -109,6 +123,7 @@ export const V6_EXPORT_KEYS = [...V5_EXPORT_KEYS, "hospital"] as const;
 export const V7_EXPORT_KEYS = [...V6_EXPORT_KEYS, "planning"] as const;
 
 export const V8_EXPORT_KEYS = [...V7_EXPORT_KEYS, "baby"] as const;
+export const V9_EXPORT_KEYS = [...V8_EXPORT_KEYS, "household"] as const;
 
 const CHECKLIST_ITEM_KEYS = [
   "id",
@@ -332,21 +347,33 @@ export function sanitizeDadKitImportData(
     return v6;
   }
 
+  if (data.version === 9) {
+    return {
+      ...v6,
+      version: 9,
+      household: cloneHousehold(data.household),
+      planning: cloneItemPlanning(data.planning),
+      baby: cloneBabyData(data.baby),
+    };
+  }
+
   const v7 = {
     ...v6,
     version: 7,
-    planning: cloneItemPlanning(data.planning),
+    planning: clonePlanningV1(data.planning),
   } as const;
 
   if (data.version === 7) {
     return v7;
   }
 
-  return {
+  if (data.version === 8) return {
     ...v7,
     version: 8,
-    baby: cloneBabyData(data.baby),
+    baby: cloneBabyDataV1(data.baby),
   };
+
+  throw new Error("不支持的数据版本。");
 }
 
 export function upgradeExportDataToLatest(
@@ -370,12 +397,19 @@ export function upgradeExportDataToLatest(
       ? {}
       : clean.deletedCustomItems;
   const growthUpdatedAt =
-    clean.version === 5 || clean.version === 6 || clean.version === 7 || clean.version === 8
+    clean.version === 5 || clean.version === 6 || clean.version === 7 || clean.version === 8 || clean.version === 9
       ? clean.growthUpdatedAt
       : 0;
 
+  const legacyPlanning = clean.version === 7 || clean.version === 8
+    ? migratePlanningV1ToV2(clean.planning)
+    : undefined;
+  const household = clean.version === 9
+    ? cloneHousehold(clean.household)
+    : legacyPlanning?.household ?? createEmptyHousehold();
+
   return {
-    version: 8,
+    version: 9,
     exportedAt: clean.exportedAt,
     checklistMode: clean.checklistMode,
     checklist: clean.checklist.map(copyChecklistItem),
@@ -397,28 +431,46 @@ export function upgradeExportDataToLatest(
     deletedCustomItems: { ...deletedCustomItems },
     growthUpdatedAt,
     hospital:
-      clean.version === 6 || clean.version === 7 || clean.version === 8
+      clean.version === 6 || clean.version === 7 || clean.version === 8 || clean.version === 9
         ? cloneHospitalProfile(clean.hospital)
         : createEmptyHospitalProfile(),
     planning:
-      clean.version === 7 || clean.version === 8
+      clean.version === 9
         ? cloneItemPlanning(clean.planning)
+        : legacyPlanning
+          ? cloneItemPlanning(legacyPlanning.planning)
         : createEmptyItemPlanning(),
-    baby: clean.version === 8 ? cloneBabyData(clean.baby) : createEmptyBabyData(),
+    baby: clean.version === 9
+      ? cloneBabyData(clean.baby)
+      : clean.version === 8
+        ? migrateBabyV1ToV2(clean.baby)
+        : createEmptyBabyData(),
+    household,
   };
 }
 
 export function projectExportDataForVersion(
   data: DadKitImportData,
   targetVersion: DadKitSyncDataVersion,
-): DadKitExportData | DadKitExportDataV7 | DadKitExportDataV6 | DadKitExportDataV5 {
+): DadKitExportData | DadKitExportDataV8 | DadKitExportDataV7 | DadKitExportDataV6 | DadKitExportDataV5 {
   const latest = upgradeExportDataToLatest(data);
 
-  if (targetVersion === 8) {
+  if (targetVersion === 9) {
     return latest;
   }
 
-  const { baby: _baby, ...v7 } = latest;
+  const { household: _household, planning: latestPlanning, baby: latestBaby, ...base } = latest;
+  void _household;
+  const v8: DadKitExportDataV8 = {
+    ...base,
+    version: 8,
+    planning: projectPlanningV2ToV1(latestPlanning),
+    baby: projectBabyV2ToV1(latestBaby),
+  };
+
+  if (targetVersion === 8) return v8;
+
+  const { baby: _baby, ...v7 } = v8;
   void _baby;
 
   if (targetVersion === 7) {
@@ -572,11 +624,11 @@ export function isDadKitImportData(value: unknown): value is DadKitImportData {
     typeof value.growthUpdatedAt === "number" &&
     Number.isFinite(value.growthUpdatedAt) &&
     isHospitalProfilePortableData(value.hospital) &&
-    isItemPlanningPortableData(value.planning)
+    isItemPlanningPortableDataV1(value.planning)
     );
   }
 
-  return (
+  if (value.version === 8) return (
     value.version === 8 &&
     isPlainRecord(value) &&
     hasOnlyKeys(value, V8_EXPORT_KEYS) &&
@@ -587,7 +639,23 @@ export function isDadKitImportData(value: unknown): value is DadKitImportData {
     typeof value.growthUpdatedAt === "number" &&
     Number.isFinite(value.growthUpdatedAt) &&
     isHospitalProfilePortableData(value.hospital) &&
+    isItemPlanningPortableDataV1(value.planning) &&
+    isBabyPortableDataV1(value.baby)
+  );
+
+  return (
+    value.version === 9 &&
+    isPlainRecord(value) &&
+    hasOnlyKeys(value, V9_EXPORT_KEYS) &&
+    hasValidPortableChecklistData(value) &&
+    validateGrowthPortableData(value.growth) &&
+    isHiddenTemplateItemStamps(value.hiddenTemplateItemStamps) &&
+    isDeletedCustomItemStamps(value.deletedCustomItems) &&
+    typeof value.growthUpdatedAt === "number" &&
+    Number.isFinite(value.growthUpdatedAt) &&
+    isHospitalProfilePortableData(value.hospital) &&
     isItemPlanningPortableData(value.planning) &&
-    isBabyPortableData(value.baby)
+    isBabyPortableData(value.baby) &&
+    isHouseholdPortableData(value.household)
   );
 }

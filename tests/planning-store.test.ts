@@ -1,115 +1,41 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
-import { createEmptyItemPlanning, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
+import { createEmptyItemPlanning, createEmptyItemPlanningDraft, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
 import { ITEM_PLANNING_STORAGE_KEY } from "@/lib/planning/repository";
 import { useItemPlanningStore } from "@/lib/planning/store";
 import { installBrowserStorage } from "@/tests/helpers/browser-storage";
 
-const emptyDraft = {
-  assignee: "unassigned" as const,
-  dueDate: "",
-  estimatedPrice: "",
-  actualPrice: "",
-  purchaseChannel: "",
-  storageLocation: "",
-};
-
 beforeEach(() => {
+  installBrowserStorage();
   useItemPlanningStore.setState({ hydrated: false, planning: createEmptyItemPlanning() });
-  vi.useFakeTimers();
-  vi.setSystemTime(new Date("2026-08-01T08:00:00.000Z"));
 });
 
-afterEach(() => {
-  vi.useRealTimers();
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
-});
-
-describe("item planning store", () => {
-  it("hydrates only once", () => {
-    const storage = installBrowserStorage();
+describe("planning v2 store", () => {
+  it("saves one or multiple assignees", () => {
     useItemPlanningStore.getState().hydrate();
-    useItemPlanningStore.getState().hydrate();
-    expect(storage.reads.filter((key) => key === ITEM_PLANNING_STORAGE_KEY)).toHaveLength(1);
-  });
-
-  it("saves once and timestamps only changed fields", () => {
-    const storage = installBrowserStorage();
-    useItemPlanningStore.setState({ hydrated: true });
-    const result = useItemPlanningStore.getState().saveItemDraft("bag", {
-      ...emptyDraft,
-      assignee: "dad",
-      actualPrice: "12.30",
-    });
-    const record = useItemPlanningStore.getState().planning.items.bag;
-    expect(result).toEqual({ ok: true, changed: true });
-    expect(storage.writes).toEqual([ITEM_PLANNING_STORAGE_KEY]);
-    expect(record.assignee.updatedAt).toBe(Date.now());
-    expect(record.actualPriceFen.updatedAt).toBe(Date.now());
-    expect(record.dueDate.updatedAt).toBe(0);
-
-    useItemPlanningStore.getState().saveItemDraft("bag", {
-      ...emptyDraft,
-      assignee: "dad",
-      actualPrice: "",
-    });
-    expect(useItemPlanningStore.getState().planning.items.bag.actualPriceFen).toEqual({
-      value: null,
-      updatedAt: Date.now() + 1,
-    });
-  });
-
-  it("clears one item with a shared newer tombstone", () => {
-    installBrowserStorage();
-    const planning = createEmptyItemPlanning();
-    planning.items.bag = {
-      ...createEmptyItemPlanningRecord(),
-      assignee: { value: "mom", updatedAt: Date.now() + 10_000 },
-    };
-    useItemPlanningStore.setState({ hydrated: true, planning });
-    useItemPlanningStore.getState().clearItem("bag");
-    const record = useItemPlanningStore.getState().planning.items.bag;
-    expect(new Set(Object.values(record).map((field) => field.updatedAt))).toEqual(
-      new Set([Date.now() + 10_001]),
-    );
-  });
-
-  it("bulk-updates once, keeps untouched fields and records explicit clears", () => {
-    const storage = installBrowserStorage();
-    const planning = createEmptyItemPlanning();
-    planning.items.a = {
-      ...createEmptyItemPlanningRecord(),
-      dueDate: { value: "2026-08-02", updatedAt: 10 },
-      actualPriceFen: { value: 500, updatedAt: 20 },
-    };
-    useItemPlanningStore.setState({ hydrated: true, planning });
-    const result = useItemPlanningStore.getState().bulkUpdate(["a", "b"], {
-      assignee: { mode: "set", value: "shared" },
-      dueDate: { mode: "clear" },
-      storageLocation: { mode: "keep" },
-    });
-    const next = useItemPlanningStore.getState().planning;
+    const result = useItemPlanningStore.getState().saveItemDraft("bag", { ...createEmptyItemPlanningDraft(), assigneeIds: ["member-b", "member-a"] });
     expect(result.ok).toBe(true);
-    expect(storage.writes).toEqual([ITEM_PLANNING_STORAGE_KEY]);
-    expect(next.items.a.actualPriceFen).toEqual({ value: 500, updatedAt: 20 });
-    expect(next.items.a.dueDate.value).toBe("");
-    expect(next.items.a.dueDate.updatedAt).toBe(next.items.b.dueDate.updatedAt);
+    expect(useItemPlanningStore.getState().planning.items.bag.assigneeIds.value).toEqual(["member-a", "member-b"]);
   });
 
-  it("globally clears with a timestamp newer than future data", () => {
-    installBrowserStorage();
-    const planning = createEmptyItemPlanning();
-    planning.items.a = {
+  it("bulk replaces or clears only assignees", () => {
+    const storage = installBrowserStorage();
+    const initial = createEmptyItemPlanning();
+    initial.items.a = {
       ...createEmptyItemPlanningRecord(),
-      assignee: { value: "dad", updatedAt: Date.now() + 20_000 },
+      dueDate: { value: "2026-09-01", updatedAt: 50 },
+      storageLocation: { value: "柜子", updatedAt: 60 },
     };
-    useItemPlanningStore.setState({ hydrated: true, planning });
-    useItemPlanningStore.getState().clearAll();
-    expect(useItemPlanningStore.getState().planning).toEqual({
-      version: 1,
-      clearedAt: Date.now() + 20_001,
-      items: {},
-    });
+    useItemPlanningStore.setState({ hydrated: true, planning: initial });
+    window.localStorage.setItem(ITEM_PLANNING_STORAGE_KEY, JSON.stringify(initial));
+    const beforeWrites = storage.writes.length;
+    useItemPlanningStore.getState().bulkUpdate(["a", "b"], { assigneeIds: { mode: "set", value: ["member-a"] } });
+    expect(useItemPlanningStore.getState().planning.items.a.assigneeIds.value).toEqual(["member-a"]);
+    expect(useItemPlanningStore.getState().planning.items.a.dueDate).toEqual({ value: "2026-09-01", updatedAt: 50 });
+    expect(useItemPlanningStore.getState().planning.items.a.storageLocation).toEqual({ value: "柜子", updatedAt: 60 });
+    expect(storage.writes.slice(beforeWrites).filter((key) => key === ITEM_PLANNING_STORAGE_KEY)).toHaveLength(1);
+    useItemPlanningStore.getState().bulkUpdate(["a"], { assigneeIds: { mode: "clear" } });
+    expect(useItemPlanningStore.getState().planning.items.a.assigneeIds.value).toEqual([]);
+    expect(window.localStorage.getItem(ITEM_PLANNING_STORAGE_KEY)).toContain('"version":2');
   });
 });

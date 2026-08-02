@@ -49,6 +49,7 @@ export type CareEventBase = {
   createdAt: number;
   updatedAt: number;
   deletedAt: number | null;
+  recordedByMemberId: string | null;
 };
 
 export type BreastSide = "left" | "right";
@@ -106,14 +107,32 @@ export type CareEvent =
   | DiaperEvent
   | SleepEvent;
 
-export type BabyCarePortableData = {
+export type CareEventV1 = CareEvent extends infer Event
+  ? Event extends CareEventBase
+    ? Omit<Event, "recordedByMemberId">
+    : never
+  : never;
+
+export type BabyCarePortableDataV1 = {
   version: 1;
+  clearedAt: number;
+  events: CareEventV1[];
+};
+
+export type BabyPortableDataV1 = {
+  version: 1;
+  profile: BabyProfilePortableData;
+  care: BabyCarePortableDataV1;
+};
+
+export type BabyCarePortableData = {
+  version: 2;
   clearedAt: number;
   events: CareEvent[];
 };
 
 export type BabyPortableData = {
-  version: 1;
+  version: 2;
   profile: BabyProfilePortableData;
   care: BabyCarePortableData;
 };

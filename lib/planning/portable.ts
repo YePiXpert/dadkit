@@ -12,27 +12,23 @@ import {
   type ItemPlanningValues,
   type PlanningFieldKey,
 } from "@/lib/planning/types";
+import { normalizeAssigneeIds } from "@/lib/planning/validation";
 
-export function cloneItemPlanning(
-  planning: ItemPlanningPortableData,
-): ItemPlanningPortableData {
+export function cloneItemPlanning(planning: ItemPlanningPortableData): ItemPlanningPortableData {
   return {
-    version: 1,
+    version: 2,
     clearedAt: planning.clearedAt,
     items: Object.fromEntries(
-      Object.entries(planning.items).map(([itemId, record]) => [
-        itemId,
-        cloneItemPlanningRecord(record),
-      ]),
+      Object.entries(planning.items)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([id, record]) => [id, cloneItemPlanningRecord(record)]),
     ),
   };
 }
 
-export function cloneItemPlanningRecord(
-  record: ItemPlanningRecord,
-): ItemPlanningRecord {
+export function cloneItemPlanningRecord(record: ItemPlanningRecord): ItemPlanningRecord {
   return {
-    assignee: { ...record.assignee },
+    assigneeIds: { ...record.assigneeIds, value: [...record.assigneeIds.value] },
     dueDate: { ...record.dueDate },
     estimatedPriceFen: { ...record.estimatedPriceFen },
     actualPriceFen: { ...record.actualPriceFen },
@@ -41,31 +37,20 @@ export function cloneItemPlanningRecord(
   };
 }
 
-export function getEffectiveItemPlanningRecord(
-  planning: ItemPlanningPortableData,
-  itemId: string,
-) {
+export function getEffectiveItemPlanningRecord(planning: ItemPlanningPortableData, itemId: string) {
   const current = planning.items[itemId];
   const effective = createEmptyItemPlanningRecord(planning.clearedAt);
-
   if (!current) return effective;
-
   for (const key of PLANNING_FIELD_KEYS) {
-    if (current[key].updatedAt > planning.clearedAt) {
-      setPlanningField(effective, key, current[key]);
-    }
+    if (current[key].updatedAt > planning.clearedAt) setPlanningField(effective, key, current[key]);
   }
-
   return effective;
 }
 
-export function itemPlanningValuesFromPortable(
-  planning: ItemPlanningPortableData,
-  itemId: string,
-): ItemPlanningValues {
+export function itemPlanningValuesFromPortable(planning: ItemPlanningPortableData, itemId: string): ItemPlanningValues {
   const record = getEffectiveItemPlanningRecord(planning, itemId);
   return {
-    assignee: record.assignee.value,
+    assigneeIds: [...record.assigneeIds.value],
     dueDate: record.dueDate.value,
     estimatedPriceFen: record.estimatedPriceFen.value,
     actualPriceFen: record.actualPriceFen.value,
@@ -74,14 +59,11 @@ export function itemPlanningValuesFromPortable(
   };
 }
 
-export function itemPlanningDraftFromPortable(
-  planning: ItemPlanningPortableData,
-  itemId: string,
-): ItemPlanningDraft {
+export function itemPlanningDraftFromPortable(planning: ItemPlanningPortableData, itemId: string): ItemPlanningDraft {
   const values = itemPlanningValuesFromPortable(planning, itemId);
   return {
     ...createEmptyItemPlanningDraft(),
-    assignee: values.assignee,
+    assigneeIds: [...values.assigneeIds],
     dueDate: values.dueDate,
     estimatedPrice: planningMoneyInputValue(values.estimatedPriceFen),
     actualPrice: planningMoneyInputValue(values.actualPriceFen),
@@ -102,9 +84,10 @@ export function updateItemPlanningValues(
     ? cloneItemPlanningRecord(planning.items[itemId])
     : createEmptyItemPlanningRecord(planning.clearedAt);
   let changed = false;
+  const assigneeIds = normalizeAssigneeIds(values.assigneeIds);
 
-  if (currentValues.assignee !== values.assignee) {
-    record.assignee = { value: values.assignee, updatedAt: now };
+  if (!sameIds(currentValues.assigneeIds, assigneeIds)) {
+    record.assigneeIds = { value: assigneeIds, updatedAt: now };
     changed = true;
   }
   if (currentValues.dueDate !== values.dueDate) {
@@ -112,10 +95,7 @@ export function updateItemPlanningValues(
     changed = true;
   }
   if (currentValues.estimatedPriceFen !== values.estimatedPriceFen) {
-    record.estimatedPriceFen = {
-      value: values.estimatedPriceFen,
-      updatedAt: now,
-    };
+    record.estimatedPriceFen = { value: values.estimatedPriceFen, updatedAt: now };
     changed = true;
   }
   if (currentValues.actualPriceFen !== values.actualPriceFen) {
@@ -130,57 +110,46 @@ export function updateItemPlanningValues(
     record.storageLocation = { value: values.storageLocation, updatedAt: now };
     changed = true;
   }
-
   if (changed) next.items[itemId] = record;
   return { changed, planning: next };
 }
 
-export function clearItemPlanningValues(
-  planning: ItemPlanningPortableData,
-  itemId: string,
-  now: number,
-) {
+export function clearItemPlanningValues(planning: ItemPlanningPortableData, itemId: string, now: number) {
   const next = cloneItemPlanning(planning);
   next.items[itemId] = createEmptyItemPlanningRecord(now);
   return next;
 }
 
-export function clearAllItemPlanning(
-  planning: ItemPlanningPortableData,
-  now: number,
-) {
-  return { version: 1, clearedAt: now, items: {} } satisfies ItemPlanningPortableData;
+export function clearAllItemPlanning(_planning: ItemPlanningPortableData, now: number) {
+  return { version: 2, clearedAt: now, items: {} } satisfies ItemPlanningPortableData;
 }
 
-export function latestItemPlanningTimestamp(
-  planning: ItemPlanningPortableData,
-  itemIds?: readonly string[],
-) {
+export function latestItemPlanningTimestamp(planning: ItemPlanningPortableData, itemIds?: readonly string[]) {
   const ids = itemIds ?? Object.keys(planning.items);
   let latest = planning.clearedAt;
-
-  for (const itemId of ids) {
-    const record = planning.items[itemId];
+  for (const id of ids) {
+    const record = planning.items[id];
     if (!record) continue;
-    for (const key of PLANNING_FIELD_KEYS) {
-      latest = Math.max(latest, record[key].updatedAt);
-    }
+    for (const key of PLANNING_FIELD_KEYS) latest = Math.max(latest, record[key].updatedAt);
   }
-
   return latest;
 }
 
 export function isEmptyItemPlanningValues(values: ItemPlanningValues) {
   const empty = createEmptyItemPlanningValues();
-  return PLANNING_FIELD_KEYS.every((key) => values[key] === empty[key]);
+  return values.assigneeIds.length === 0 && PLANNING_FIELD_KEYS.filter((key) => key !== "assigneeIds").every((key) => values[key] === empty[key]);
 }
 
-function setPlanningField(
+export function sameIds(left: readonly string[], right: readonly string[]) {
+  return left.length === right.length && left.every((id, index) => id === right[index]);
+}
+
+export function setPlanningField(
   record: ItemPlanningRecord,
   key: PlanningFieldKey,
   field: ItemPlanningRecord[PlanningFieldKey],
 ) {
-  if (key === "assignee") record.assignee = { ...field } as ItemPlanningRecord["assignee"];
+  if (key === "assigneeIds") record.assigneeIds = { ...(field as ItemPlanningRecord["assigneeIds"]), value: [...(field as ItemPlanningRecord["assigneeIds"]).value] };
   else if (key === "dueDate") record.dueDate = { ...field } as ItemPlanningRecord["dueDate"];
   else if (key === "estimatedPriceFen") record.estimatedPriceFen = { ...field } as ItemPlanningRecord["estimatedPriceFen"];
   else if (key === "actualPriceFen") record.actualPriceFen = { ...field } as ItemPlanningRecord["actualPriceFen"];

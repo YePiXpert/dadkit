@@ -31,13 +31,21 @@ import {
   V6_EXPORT_KEYS,
   V7_EXPORT_KEYS,
   V8_EXPORT_KEYS,
+  V9_EXPORT_KEYS,
   type DadKitExportData,
   type DadKitImportData,
   type DeletedCustomItemStamps,
   type HiddenTemplateItemStamps,
 } from "@/lib/data/format";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
-import { cloneBabyData, latestBabyTimestamp } from "@/lib/baby/portable";
+import { cloneBabyData, latestBabyTimestamp, migrateBabyV1ToV2 } from "@/lib/baby/portable";
+import { DEVICE_IDENTITY_STORAGE_KEY, loadDeviceIdentity, saveDeviceIdentity } from "@/lib/device-identity/repository";
+import { useDeviceIdentityStore } from "@/lib/device-identity/store";
+import { migratePlanningV1ToV2 } from "@/lib/household/migration";
+import { clearHouseholdPortable, latestHouseholdTimestamp } from "@/lib/household/portable";
+import { HOUSEHOLD_STORAGE_KEY, loadHousehold } from "@/lib/household/repository";
+import { resolveHouseholdMember } from "@/lib/household/selectors";
+import { useHouseholdStore } from "@/lib/household/store";
 import { getBabyRepository } from "@/lib/baby/repository";
 import { careEventsForLocalDay } from "@/lib/baby/selectors";
 import { useBabyStore } from "@/lib/baby/store";
@@ -90,7 +98,9 @@ export const STORAGE_KEYS = {
   syncClockOffset: "dadkit:v3:sync-clock-offset-ms",
   syncClockTimelineInitialized: "dadkit:v3:sync-clock-timeline-initialized",
   hospital: HOSPITAL_STORAGE_KEY,
-  planning: ITEM_PLANNING_STORAGE_KEY,
+    planning: ITEM_PLANNING_STORAGE_KEY,
+  household: HOUSEHOLD_STORAGE_KEY,
+  deviceIdentity: DEVICE_IDENTITY_STORAGE_KEY,
 } as const;
 
 export const WEBDAV_SESSION_SECRET_KEY = "dadkit:v3:webdav-session-secret";
@@ -112,6 +122,8 @@ const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.syncClockTimelineInitialized,
   STORAGE_KEYS.hospital,
   STORAGE_KEYS.planning,
+  STORAGE_KEYS.household,
+  STORAGE_KEYS.deviceIdentity,
   GROWTH_STORAGE_KEYS.profile,
   GROWTH_STORAGE_KEYS.progress,
   GROWTH_STORAGE_KEYS.view,
@@ -898,6 +910,15 @@ export function resetAllData(initialChecklist?: ChecklistItem[]) {
   cancelPendingChecklistStateSave();
 
   if (canUseLocalStorage()) {
+    const previousHousehold = loadHousehold();
+    const clearedHousehold = clearHouseholdPortable(
+      previousHousehold,
+      Math.max(
+        getSyncAdjustedNow() + 1,
+        previousHousehold.clearedAt + 1,
+        latestHouseholdTimestamp(previousHousehold) + 1,
+      ),
+    );
     applyStorageMutations(
       DATA_STORAGE_KEYS.map((key) => {
         if (initialChecklist && key === STORAGE_KEYS.checklist) {
@@ -906,6 +927,10 @@ export function resetAllData(initialChecklist?: ChecklistItem[]) {
 
         if (initialChecklist && key === STORAGE_KEYS.checklistMode) {
           return { key, value: JSON.stringify("lean") };
+        }
+
+        if (key === STORAGE_KEYS.household) {
+          return { key, value: JSON.stringify(clearedHousehold) };
         }
 
         return { key, value: null };
@@ -933,6 +958,7 @@ export function resetAllData(initialChecklist?: ChecklistItem[]) {
       hydrated: true,
       planning: createEmptyItemPlanning(),
     });
+    useHouseholdStore.setState({ hydrated: true, household: clearedHousehold });
   }
 
   let sessionSecretCleared = true;
@@ -953,7 +979,7 @@ export function exportData(): DadKitExportData {
   const latest = latestChecklistState;
 
   return {
-    version: 8,
+    version: 9,
     exportedAt: new Date().toISOString(),
     checklistMode: loadChecklistMode(),
     checklist: latest?.checklist ?? loadChecklist(),
@@ -967,14 +993,15 @@ export function exportData(): DadKitExportData {
     hospital: loadHospitalProfile(),
     planning: loadItemPlanning(),
     baby: createEmptyBabyData(),
+    household: loadHousehold(),
   };
 }
 
-/** Builds the complete v8 document from localStorage plus IndexedDB baby data. */
+/** Builds the complete v9 document from localStorage plus IndexedDB baby data. */
 export async function buildLatestPortableData(): Promise<DadKitExportData> {
   const base = exportData();
   const baby = await getBabyRepository().getAllBabyData();
-  return { ...base, version: 8, baby: cloneBabyData(baby) };
+  return { ...base, version: 9, baby: cloneBabyData(baby) };
 }
 
 export function saveChecklistStateAndClearPlanning(
@@ -1032,13 +1059,16 @@ export function validateImportData(rawJson: string): ImportValidationResult {
     parsed.version !== 5 &&
     parsed.version !== 6 &&
     parsed.version !== 7 &&
-    parsed.version !== 8
+    parsed.version !== 8 &&
+    parsed.version !== 9
   ) {
     return { ok: false, message: "不支持的备份版本，未修改本地数据。" };
   }
 
   const expectedKeys =
-    parsed.version === 8
+    parsed.version === 9
+      ? V9_EXPORT_KEYS
+      : parsed.version === 8
       ? V8_EXPORT_KEYS
       : parsed.version === 7
         ? V7_EXPORT_KEYS
@@ -1098,13 +1128,36 @@ export function applyImportData(data: DadKitImportData): ImportResult {
 
   data = sanitizeDadKitImportData(data) as DadKitImportData;
   const hospital =
-    data.version === 6 || data.version === 7 || data.version === 8
+    data.version === 6 || data.version === 7 || data.version === 8 || data.version === 9
       ? data.hospital
       : createEmptyHospitalProfile();
-  const planning =
-    data.version === 7 || data.version === 8
-      ? data.planning
-      : planningClearForLegacyImport();
+  const currentHousehold = loadHousehold();
+  const householdClearedAt = Math.max(
+    getSyncAdjustedNow() + 1,
+    currentHousehold.clearedAt + 1,
+    latestHouseholdTimestamp(currentHousehold) + 1,
+  );
+  const legacyHousehold = clearHouseholdPortable(currentHousehold, householdClearedAt);
+  const migratedPlanning = data.version === 7 || data.version === 8
+    ? migratePlanningV1ToV2(data.planning, legacyHousehold)
+    : undefined;
+  const planning = data.version === 9
+    ? data.planning
+    : migratedPlanning?.planning ?? planningClearForLegacyImport();
+  const household = data.version === 9
+    ? data.household
+    : migratedPlanning?.household ?? legacyHousehold;
+  const currentIdentity = loadDeviceIdentity();
+  const selectedMember = resolveHouseholdMember(
+    household,
+    currentIdentity.currentMemberId,
+  );
+  const nextIdentity =
+    data.version < 9 ||
+    (currentIdentity.currentMemberId !== null &&
+      (!selectedMember || selectedMember.deleted.value))
+      ? { ...currentIdentity, currentMemberId: null }
+      : undefined;
 
   if (!canUseLocalStorage()) {
     return { ok: false, message: "当前环境无法访问本地存储，未修改本地数据。" };
@@ -1125,6 +1178,10 @@ export function applyImportData(data: DadKitImportData): ImportResult {
     },
     { key: STORAGE_KEYS.hospital, value: JSON.stringify(hospital) },
     { key: STORAGE_KEYS.planning, value: JSON.stringify(planning) },
+    { key: STORAGE_KEYS.household, value: JSON.stringify(household) },
+    ...(nextIdentity
+      ? [{ key: STORAGE_KEYS.deviceIdentity, value: JSON.stringify(nextIdentity) }]
+      : []),
   ];
 
   if (data.version !== 3) {
@@ -1144,7 +1201,8 @@ export function applyImportData(data: DadKitImportData): ImportResult {
     data.version === 5 ||
     data.version === 6 ||
     data.version === 7 ||
-    data.version === 8
+    data.version === 8 ||
+    data.version === 9
   ) {
     mutations.push(
       {
@@ -1188,11 +1246,17 @@ export function applyImportData(data: DadKitImportData): ImportResult {
     }
     useHospitalProfileStore.setState({ hydrated: true, profile: hospital });
     useItemPlanningStore.setState({ hydrated: true, planning });
+    useHouseholdStore.setState({ hydrated: true, household });
+    if (nextIdentity) {
+      useDeviceIdentityStore.setState({ ...nextIdentity, hydrated: true });
+    }
     return {
       ok: true,
       message:
-        data.version === 8
+        data.version === 9
           ? "导入成功"
+          : data.version === 8
+            ? "导入成功（旧版负责人已转换为家庭成员；宝宝记录未包含记录人信息）"
           : data.version === 7
             ? "导入成功（v7 备份不包含宝宝资料和照护记录）"
             : data.version === 6
@@ -1220,6 +1284,7 @@ export async function applyImportDataAsync(
 
   const repository = getBabyRepository();
   let previousBaby;
+  const previousIdentity = loadDeviceIdentity();
 
   try {
     previousBaby = await repository.getAllBabyData();
@@ -1233,11 +1298,13 @@ export async function applyImportDataAsync(
     };
   }
 
-  const previousLocal = projectExportDataForVersion(exportData(), 7);
+  const previousLocal = exportData();
   const clean = sanitizeDadKitImportData(data);
   const targetBaby =
-    clean.version === 8
+    clean.version === 9
       ? cloneBabyData(clean.baby)
+      : clean.version === 8
+        ? migrateBabyV1ToV2(clean.baby)
       : createEmptyBabyData(
           Math.max(getSyncAdjustedNow() + 1, latestBabyTimestamp(previousBaby) + 1),
         );
@@ -1277,6 +1344,13 @@ export async function applyImportDataAsync(
     }));
   } catch {
     const localRollback = applyImportData(previousLocal);
+    let identityRollback = true;
+    try {
+      saveDeviceIdentity(previousIdentity);
+      useDeviceIdentityStore.setState({ ...previousIdentity, hydrated: true });
+    } catch {
+      identityRollback = false;
+    }
     let babyRollback = true;
 
     try {
@@ -1285,7 +1359,7 @@ export async function applyImportDataAsync(
       babyRollback = false;
     }
 
-    return localRollback.ok && babyRollback
+    return localRollback.ok && babyRollback && identityRollback
       ? { ok: false, message: "导入失败，本地数据已回滚。" }
       : {
           ok: false,
@@ -1293,8 +1367,11 @@ export async function applyImportDataAsync(
         };
   }
 
-  if (clean.version === 8) {
+  if (clean.version === 9) {
     return { ok: true, message: "导入成功" };
+  }
+  if (clean.version === 8) {
+    return { ok: true, message: "导入成功。旧版备份中的负责人已转换为家庭成员；宝宝记录未包含记录人信息。" };
   }
   if (clean.version === 7) {
     return {
@@ -1377,6 +1454,8 @@ function hasSnapshotData(data: DadKitExportData) {
     data.growth.progress.completedTaskIds.length > 0 ||
     isHospitalProfileConfigured(data.hospital) ||
     hasAnyEffectiveItemPlanning(data.planning) ||
+    data.household.householdName.value.length > 0 ||
+    Object.keys(data.household.members).length > 0 ||
     data.baby.profile.fields.birthDate.value.length > 0 ||
     data.baby.profile.fields.nickname.value.length > 0 ||
     data.baby.care.events.length > 0 ||

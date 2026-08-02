@@ -4,6 +4,7 @@ import { CalendarDays, MapPin, Pencil, ShoppingBag, UserRound } from "lucide-rea
 
 import { Button } from "@/components/ui/button";
 import { getChecklistItemState } from "@/lib/checklist-v2";
+import type { HouseholdPortableData } from "@/lib/household/types";
 import {
   formatPlanningMoney,
   getPlanningAssigneeLabel,
@@ -27,6 +28,7 @@ export function PlanningItemRow({
   selected,
   today,
   values,
+  household,
 }: {
   item: ChecklistItem;
   onEdit: () => void;
@@ -34,6 +36,7 @@ export function PlanningItemRow({
   selected: boolean;
   today: string;
   values: ItemPlanningValues;
+  household: HouseholdPortableData;
 }) {
   const overdue = isPlanningItemOverdue(item, values, today);
   const prices = [
@@ -81,7 +84,7 @@ export function PlanningItemRow({
         <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <UserRound className="size-4" />
-            {getPlanningAssigneeLabel(values.assignee)}
+            {getPlanningAssigneeLabel(values.assigneeIds, household)}
           </span>
           {values.dueDate ? (
             <span className={cn("inline-flex items-center gap-1.5", overdue && "font-semibold text-destructive")}>

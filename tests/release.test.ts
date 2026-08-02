@@ -38,7 +38,7 @@ describe("release endpoints and product surface", () => {
       }>;
     };
 
-    expect(packageJson.version).toBe("3.0.0");
+    expect(packageJson.version).toBe("3.1.0");
     expect(manifest.name).toBe("DadKit 待产包清单");
     expect(manifest.description).toContain("待产包");
     expect(manifest.description).toContain("宝宝记录");
@@ -78,7 +78,9 @@ describe("release endpoints and product surface", () => {
     expect(readme).toContain("WebDAV 备份");
     expect(readme).toContain("宝宝成长记");
     expect(readme).toContain("医院档案");
-    expect(readme).toContain("v5/v6/v7/v8 家庭设备可安全混合同步");
+    expect(readme).toContain("v5/v6/v7/v8/v9 家庭设备可安全混合同步");
+    expect(readme).toContain("通用家庭档案");
+    expect(readme).toContain("当前设备使用者");
     expect(readme).toContain("亲喂、瓶喂、吸奶、尿布和睡眠");
     expect(readme).toContain("全部、待购买、待装包和已装包");
     expect(readme).toContain("https://dadkit.505f.com/");
@@ -114,8 +116,10 @@ describe("release endpoints and product surface", () => {
     expect(manifest).not.toContain("trusted");
     expect(manifest).not.toContain("asset_statements");
     expect(activity).toContain('getAssets().open("www/" + assetPath)');
-    expect(activity).toContain("source=apk&appVersionCode=8");
-    expect(activity).toContain("DadKitAndroid/8");
+    expect(activity).toContain("source=apk&appVersionCode=9");
+    expect(activity).toContain("DadKitAndroid/9");
+    expect(activity).toContain("webView.canGoBack()");
+    expect(activity).toContain("webView.goBack()");
     expect(androidBundle).toContain('rm(path.join(staging, "app", "api")');
     expect(packageJson.devDependencies).not.toHaveProperty("@bubblewrap/cli");
   });
@@ -123,7 +127,7 @@ describe("release endpoints and product surface", () => {
   it("keeps the Android tag release strict and verifies the signed APK", () => {
     const workflow = readSource(".github", "workflows", "android-release.yml");
 
-    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.0.0"');
+    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.1.0"');
     expect(workflow).toContain(
       'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
     );
@@ -226,11 +230,11 @@ describe("release endpoints and product surface", () => {
     );
   });
 
-  it("pre-caches only the minimal app shell during install", () => {
+  it("pre-caches the minimal v3.1 offline entry routes during install", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.0.0-pwa-r1"');
-    expect(sw).toContain('const APP_SHELL_ROUTE = "/"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.1.0-pwa-r1"');
+    expect(sw).toContain('const PRECACHE_ROUTES = ["/", "/onboarding", "/settings/family"]');
     expect(sw).not.toContain("CORE_ROUTES");
 
     for (const route of REMOVED_PRODUCT_ROUTES) {
@@ -328,7 +332,7 @@ describe("release endpoints and product surface", () => {
     expect(assets).toEqual(["/_next/static/css/app.css"]);
   });
 
-  it("pre-caches only the app shell while tolerating optional media failure", async () => {
+  it("pre-caches v3.1 entry routes while tolerating optional media failure", async () => {
     const sw = readSource("public", "sw.js");
     const cachedUrls: string[] = [];
     class FakeRequest {
@@ -381,6 +385,8 @@ describe("release endpoints and product surface", () => {
 
     await expect(precacheAppShell()).resolves.toBeUndefined();
     expect(cachedUrls).toContain("/");
+    expect(cachedUrls).toContain("/onboarding");
+    expect(cachedUrls).toContain("/settings/family");
     expect(cachedUrls).toContain("/_next/static/chunks/root.js");
     expect(cachedUrls).toContain("/icon-192.png");
     expect(cachedUrls).not.toContain("/manifest.webmanifest");

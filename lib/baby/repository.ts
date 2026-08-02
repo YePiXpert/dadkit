@@ -1,7 +1,7 @@
 "use client";
 
 import { createEmptyBabyCare, createEmptyBabyData, createEmptyBabyProfile } from "@/lib/baby/defaults";
-import { cloneBabyData, cloneBabyProfile, cloneCareEvent, latestBabyTimestamp } from "@/lib/baby/portable";
+import { cloneBabyData, cloneBabyProfile, cloneCareEvent, latestBabyTimestamp, upgradeCareEvent } from "@/lib/baby/portable";
 import { careEventSortTime } from "@/lib/baby/time";
 import type {
   BabyPortableData,
@@ -9,10 +9,10 @@ import type {
   CareEvent,
 } from "@/lib/baby/types";
 import { BABY_EVENT_LIMIT } from "@/lib/baby/types";
-import { isBabyPortableData, isBabyProfilePortableData, isCareEvent } from "@/lib/baby/validation";
+import { isBabyPortableData, isBabyProfilePortableData, isCareEvent, isCareEventV1 } from "@/lib/baby/validation";
 
 export const BABY_DATABASE_NAME = "dadkit-baby";
-export const BABY_DATABASE_VERSION = 1;
+export const BABY_DATABASE_VERSION = 2;
 
 const META_STORE = "meta";
 const EVENTS_STORE = "events";
@@ -94,7 +94,7 @@ export class IndexedDbBabyRepository implements BabyRepository {
     const database = await this.openDatabase();
     const transaction = database.transaction(EVENTS_STORE, "readonly");
     const value = await requestPromise<unknown>(transaction.objectStore(EVENTS_STORE).get(id));
-    return isCareEvent(value) ? cloneCareEvent(value) : undefined;
+    return isCareEvent(value) || isCareEventV1(value) ? upgradeCareEvent(value) : undefined;
   }
 
   async getEventsByRange(start: number, end: number) {
@@ -146,15 +146,15 @@ export class IndexedDbBabyRepository implements BabyRepository {
     if (profileEntry && !isBabyProfilePortableData(profileEntry.value)) {
       throw new Error("宝宝资料数据库内容损坏，未读取任何照护记录。");
     }
-    if (rawEvents.some((event) => !isCareEvent(event))) {
+    if (rawEvents.some((event) => !isCareEvent(event) && !isCareEventV1(event))) {
       throw new Error("宝宝照护记录数据库内容损坏，未返回不完整数据。");
     }
     const profile = profileEntry
       ? cloneBabyProfile(profileEntry.value as BabyProfilePortableData)
       : createEmptyBabyProfile();
     const clearedAt = readCareClearedAt(careEntry?.value);
-    const events = (rawEvents as CareEvent[]).map(cloneCareEvent).sort((left, right) => left.id.localeCompare(right.id));
-    return { version: 1, profile, care: { version: 1, clearedAt, events } } satisfies BabyPortableData;
+    const events = rawEvents.map((event) => upgradeCareEvent(event as CareEvent)).sort((left, right) => left.id.localeCompare(right.id));
+    return { version: 2, profile, care: { version: 2, clearedAt, events } } satisfies BabyPortableData;
   }
 
   async getLatestTimestamp() {
@@ -186,13 +186,13 @@ export class IndexedDbBabyRepository implements BabyRepository {
     const transaction = database.transaction(EVENTS_STORE, "readwrite");
     const store = transaction.objectStore(EVENTS_STORE);
     const current = await requestPromise<unknown>(store.get(id));
-    if (!isCareEvent(current)) {
+    if (!isCareEvent(current) && !isCareEventV1(current)) {
       // A readwrite transaction with no writes may complete normally. Waiting
       // for it avoids leaving a late abort/error event detached from this call.
       await transactionComplete(transaction);
       return undefined;
     }
-    const deleted = { ...cloneCareEvent(current), updatedAt: timestamp, deletedAt: timestamp } as CareEvent;
+    const deleted = { ...upgradeCareEvent(current), updatedAt: timestamp, deletedAt: timestamp } as CareEvent;
     if (!isCareEvent(deleted)) {
       transaction.abort();
       throw new Error("删除墓碑格式无效。");
@@ -209,7 +209,7 @@ export class IndexedDbBabyRepository implements BabyRepository {
     const meta = transaction.objectStore(META_STORE);
     const events = transaction.objectStore(EVENTS_STORE);
     meta.put({ key: PROFILE_KEY, value: cloneBabyProfile(data.profile) });
-    meta.put({ key: CARE_META_KEY, value: { version: 1, clearedAt: data.care.clearedAt } });
+    meta.put({ key: CARE_META_KEY, value: { version: 2, clearedAt: data.care.clearedAt } });
     events.clear();
     for (const event of data.care.events) events.put(cloneCareEvent(event));
     await transactionComplete(transaction);
@@ -218,7 +218,7 @@ export class IndexedDbBabyRepository implements BabyRepository {
   async clearCareData(clearedAt: number) {
     const database = await this.openDatabase();
     const transaction = database.transaction([META_STORE, EVENTS_STORE], "readwrite");
-    transaction.objectStore(META_STORE).put({ key: CARE_META_KEY, value: { version: 1, clearedAt } });
+    transaction.objectStore(META_STORE).put({ key: CARE_META_KEY, value: { version: 2, clearedAt } });
     transaction.objectStore(EVENTS_STORE).clear();
     await transactionComplete(transaction);
   }
@@ -228,7 +228,7 @@ export class IndexedDbBabyRepository implements BabyRepository {
     const transaction = database.transaction([META_STORE, EVENTS_STORE], "readwrite");
     const meta = transaction.objectStore(META_STORE);
     meta.put({ key: PROFILE_KEY, value: createEmptyBabyProfile(clearedAt) });
-    meta.put({ key: CARE_META_KEY, value: { version: 1, clearedAt } });
+    meta.put({ key: CARE_META_KEY, value: { version: 2, clearedAt } });
     transaction.objectStore(EVENTS_STORE).clear();
     await transactionComplete(transaction);
   }
@@ -271,7 +271,9 @@ export class IndexedDbBabyRepository implements BabyRepository {
     const database = await this.openDatabase();
     const transaction = database.transaction(EVENTS_STORE, "readonly");
     const values = await requestPromise<unknown[]>(transaction.objectStore(EVENTS_STORE).getAll());
-    return values.filter(isCareEvent).map(cloneCareEvent);
+    return values
+      .filter((value) => isCareEvent(value) || isCareEventV1(value))
+      .map((value) => upgradeCareEvent(value as CareEvent));
   }
 }
 

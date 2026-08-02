@@ -1,6 +1,8 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { seedFamily } from "@/tests/e2e/helpers";
 
 test.describe.configure({ timeout: 60_000 });
+test.beforeEach(async ({ page }) => { await seedFamily(page); });
 
 async function chooseSelect(page: Page, label: string, option: string) {
   await page.getByLabel(label, { exact: true }).click();
@@ -26,7 +28,7 @@ test("从首页进入并保存、取消和清空单项信息", async ({ page }) 
   );
 
   const itemName = await openFirstPlanningItem(page);
-  await chooseSelect(page, "负责人", "爸爸");
+  await page.getByRole("checkbox", { name: /小江/ }).check();
   await page.getByLabel("完成期限").fill("2026-08-05");
   await page.getByLabel("该项预计总价").fill("129.90");
   await page.getByLabel("该项实际总价").fill("118");
@@ -35,7 +37,7 @@ test("从首页进入并保存、取消和清空单项信息", async ({ page }) 
   await page.getByRole("button", { name: "保存", exact: true }).click();
 
   await expect(page.getByText("分工与采购信息已保存。")).toBeVisible();
-  await expect(page.getByText("爸爸", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("小江", { exact: true }).first()).toBeVisible();
   await expect(page.getByText(/预计 ¥129\.90/).first()).toBeVisible();
   await expect(page.getByText(/实际 ¥118\.00/).first()).toBeVisible();
 
@@ -66,7 +68,7 @@ test("物品详情入口和批量负责人、期限设置及清空可持久化",
   await page.getByRole("button", { name: "详情" }).first().click();
   await expect(page.getByText("分工与采购", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "编辑", exact: true }).click();
-  await expect(page.getByLabel("负责人", { exact: true })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: /小江/ })).toBeVisible();
   await page.getByRole("button", { name: "返回物品详情" }).click();
   await page.keyboard.press("Escape");
 
@@ -74,7 +76,7 @@ test("物品详情入口和批量负责人、期限设置及清空可持久化",
   await page.getByRole("button", { name: "选择当前结果" }).click();
   await page.getByRole("button", { name: "批量设置" }).click();
   await chooseSelect(page, "负责人处理方式", "设置值");
-  await chooseSelect(page, "批量负责人", "妈妈");
+  await page.getByRole("checkbox", { name: /奶奶/ }).check();
   await chooseSelect(page, "完成期限处理方式", "设置值");
   await page.getByLabel("批量完成期限").fill("2026-08-08");
   await page.getByRole("button", { name: "保存批量设置" }).click();
@@ -82,15 +84,15 @@ test("物品详情入口和批量负责人、期限设置及清空可持久化",
 
   await chooseSelect(page, "分工筛选", "未来 7 天");
   await expect(page.locator("article").first()).toContainText("2026-08-08");
-  await chooseSelect(page, "负责人筛选", "妈妈");
-  await expect(page.locator("article").first()).toContainText("妈妈");
+  await chooseSelect(page, "负责人筛选", "奶奶");
+  await expect(page.locator("article").first()).toContainText("奶奶");
 
   await page.getByRole("button", { name: "批量设置" }).click();
   await chooseSelect(page, "完成期限处理方式", "清空");
   await page.getByRole("button", { name: "保存批量设置" }).click();
   await page.reload({ waitUntil: "domcontentloaded" });
-  await chooseSelect(page, "负责人筛选", "妈妈");
-  await expect(page.locator("article").first()).toContainText("妈妈");
+  await chooseSelect(page, "负责人筛选", "奶奶");
+  await expect(page.locator("article").first()).toContainText("奶奶");
   await expect(page.getByText("2026-08-08", { exact: true })).toHaveCount(0);
 });
 
@@ -111,7 +113,8 @@ test("360×800 无横向溢出，首次打开后可离线查看和修改", async
     .toBe(true);
 
   await openFirstPlanningItem(page);
-  await chooseSelect(page, "负责人", "共同负责");
+  await page.getByRole("checkbox", { name: /小江/ }).check();
+  await page.getByRole("checkbox", { name: /奶奶/ }).check();
   await page.getByRole("button", { name: "保存", exact: true }).click();
 
   await expect
@@ -129,7 +132,7 @@ test("360×800 无横向溢出，首次打开后可离线查看和修改", async
 
   await context.setOffline(true);
   if (browserName === "webkit") {
-    await expect(page.getByText("共同负责", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(/小江、奶奶|奶奶、小江/).first()).toBeVisible();
     await openFirstPlanningItem(page);
     await page.getByLabel("购买渠道").fill("离线门店");
     await page.getByRole("button", { name: "保存", exact: true }).click();
@@ -137,7 +140,7 @@ test("360×800 无横向溢出，首次打开后可离线查看和修改", async
   }
 
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(page.getByText("共同负责", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(/小江、奶奶|奶奶、小江/).first()).toBeVisible();
   await openFirstPlanningItem(page);
   await page.getByLabel("购买渠道").fill("离线门店");
   await page.getByRole("button", { name: "保存", exact: true }).click();

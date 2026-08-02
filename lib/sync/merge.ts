@@ -7,6 +7,15 @@ import {
 } from "@/lib/data/format";
 import { mergeBabyData } from "@/lib/baby/merge";
 import { mergeHospitalProfiles } from "@/lib/hospital/merge";
+import {
+  LEGACY_DAD_MEMBER_ID,
+  LEGACY_FAMILY_MEMBER_ID,
+  LEGACY_MOM_MEMBER_ID,
+} from "@/lib/household/migration";
+import { mergeHousehold } from "@/lib/household/merge";
+import { cloneHousehold } from "@/lib/household/portable";
+import { getActiveHouseholdMembers } from "@/lib/household/selectors";
+import { HOUSEHOLD_ACTIVE_MEMBER_LIMIT } from "@/lib/household/types";
 import { mergeItemPlanning } from "@/lib/planning/merge";
 import type { ChecklistItem } from "@/lib/types";
 
@@ -86,6 +95,13 @@ export function mergeExportData(
 ): DadKitExportData {
   const cleanLocal = upgradeExportDataToLatest(local);
   const cleanRemote = upgradeExportDataToLatest(remote);
+  if (remote.version < 9) {
+    const localEvents = new Map(cleanLocal.baby.care.events.map((event) => [event.id, event]));
+    cleanRemote.baby.care.events = cleanRemote.baby.care.events.map((event) => ({
+      ...event,
+      recordedByMemberId: localEvents.get(event.id)?.recordedByMemberId ?? null,
+    }));
+  }
 
   const hiddenTemplateItemStamps = mergeHiddenStamps(
     cleanLocal.hiddenTemplateItemStamps,
@@ -103,9 +119,17 @@ export function mergeExportData(
   );
   const remoteGrowthWins =
     cleanRemote.growthUpdatedAt > cleanLocal.growthUpdatedAt;
+  const planning = mergeItemPlanning(cleanLocal.planning, cleanRemote.planning);
+  const remoteHousehold = remote.version < 9
+    ? legacyHouseholdForMergedPlanning(
+        cleanLocal.household,
+        cleanRemote.household,
+        planning,
+      )
+    : cleanRemote.household;
 
   return {
-    version: 8,
+    version: 9,
     exportedAt: new Date().toISOString(),
     // 精简/完整模式是设备偏好,不随同步走。
     checklistMode: cleanLocal.checklistMode,
@@ -122,9 +146,46 @@ export function mergeExportData(
       ? cleanRemote.growthUpdatedAt
       : cleanLocal.growthUpdatedAt,
     hospital: mergeHospitalProfiles(cleanLocal.hospital, cleanRemote.hospital),
-    planning: mergeItemPlanning(cleanLocal.planning, cleanRemote.planning),
+    planning,
     baby: mergeBabyData(cleanLocal.baby, cleanRemote.baby),
+    household: mergeHousehold(cleanLocal.household, remoteHousehold),
   };
+}
+
+const LEGACY_MEMBER_IDS = new Set([
+  LEGACY_DAD_MEMBER_ID,
+  LEGACY_MOM_MEMBER_ID,
+  LEGACY_FAMILY_MEMBER_ID,
+]);
+
+function legacyHouseholdForMergedPlanning(
+  local: DadKitExportData["household"],
+  remote: DadKitExportData["household"],
+  planning: DadKitExportData["planning"],
+) {
+  const next = cloneHousehold(remote);
+  const referenced = new Set(
+    Object.values(planning.items).flatMap((record) => record.assigneeIds.value),
+  );
+  const activeLocalIds = new Set(
+    getActiveHouseholdMembers(local).map((member) => member.id),
+  );
+  let remaining = HOUSEHOLD_ACTIVE_MEMBER_LIMIT - activeLocalIds.size;
+
+  for (const memberId of [...LEGACY_MEMBER_IDS].sort()) {
+    const candidate = next.members[memberId];
+    if (!candidate || !referenced.has(memberId)) {
+      delete next.members[memberId];
+      continue;
+    }
+    if (activeLocalIds.has(memberId)) continue;
+    if (remaining <= 0) {
+      delete next.members[memberId];
+      continue;
+    }
+    remaining -= 1;
+  }
+  return next;
 }
 
 export const mergeCanonicalExportData = mergeExportData;

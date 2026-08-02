@@ -19,12 +19,12 @@ export function createEmptyBabyProfile(timestamp = 0): BabyProfilePortableData {
 }
 
 export function createEmptyBabyCare(clearedAt = 0): BabyCarePortableData {
-  return { version: 1, clearedAt, events: [] };
+  return { version: 2, clearedAt, events: [] };
 }
 
 export function createEmptyBabyData(timestamp = 0): BabyPortableData {
   return {
-    version: 1,
+    version: 2,
     profile: createEmptyBabyProfile(timestamp),
     care: createEmptyBabyCare(timestamp),
   };

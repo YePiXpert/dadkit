@@ -1,5 +1,5 @@
-const CACHE_NAME = "dadkit-v3.0.0-pwa-r1";
-const APP_SHELL_ROUTE = "/";
+const CACHE_NAME = "dadkit-v3.1.0-pwa-r1";
+const PRECACHE_ROUTES = ["/", "/onboarding", "/settings/family"];
 const PWA_ASSETS = [
   "/manifest.webmanifest",
   "/icon.svg",
@@ -128,12 +128,13 @@ function shouldCacheAsset(url) {
 
 async function precacheAppShell() {
   const cache = await caches.open(CACHE_NAME);
-  // install 只预缓存首页外壳及其构建产物：保证离线兜底可用的同时避免
-  // 弱网环境下整批预缓存失败；其余路由在首次访问时由 fetch 处理器写缓存。
-  const shellHtml = await fetchAndCacheRoute(cache, APP_SHELL_ROUTE);
+  // 首页、首次引导和家庭设置是离线启动及 v3.1 家庭配置的关键入口。
+  const routeHtml = await Promise.all(
+    PRECACHE_ROUTES.map((route) => fetchAndCacheRoute(cache, route)),
+  );
 
   await Promise.all(
-    extractBuildAssets(shellHtml).map((asset) =>
+    [...new Set(routeHtml.flatMap(extractBuildAssets))].map((asset) =>
       fetchAndCacheAsset(cache, asset),
     ),
   );

@@ -11,12 +11,15 @@ import {
   BREASTFEEDING_SEGMENT_LIMIT,
   type BabyCarePortableData,
   type BabyPortableData,
+  type BabyPortableDataV1,
   type BabyProfileDraft,
   type BabyProfilePortableData,
   type BabyProfileValidationErrors,
   type BabyProfileValues,
   type CareEvent,
+  type CareEventV1,
 } from "@/lib/baby/types";
+import { isSafeHouseholdMemberId } from "@/lib/household/validation";
 
 const CONTROL_CHARACTERS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g;
 const SAFE_EVENT_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
@@ -150,9 +153,14 @@ export function isCareEvent(value: unknown): value is CareEvent {
   );
 }
 
+export function isCareEventV1(value: unknown): value is CareEventV1 {
+  if (!isPlainRecord(value) || "recordedByMemberId" in value) return false;
+  return isCareEvent({ ...value, recordedByMemberId: null });
+}
+
 export function isBabyCarePortableData(value: unknown): value is BabyCarePortableData {
   if (!isPlainRecord(value) || !hasOnlyKeys(value, ["version", "clearedAt", "events"])) return false;
-  if (value.version !== 1 || !isSafeTimestamp(value.clearedAt) || !Array.isArray(value.events)) return false;
+  if (value.version !== 2 || !isSafeTimestamp(value.clearedAt) || !Array.isArray(value.events)) return false;
   if (value.events.length > BABY_EVENT_LIMIT || !value.events.every(isCareEvent)) return false;
   const ids = value.events.map((event) => (event as CareEvent).id);
   return new Set(ids).size === ids.length;
@@ -162,9 +170,26 @@ export function isBabyPortableData(value: unknown): value is BabyPortableData {
   return (
     isPlainRecord(value) &&
     hasOnlyKeys(value, ["version", "profile", "care"]) &&
-    value.version === 1 &&
+    value.version === 2 &&
     isBabyProfilePortableData(value.profile) &&
     isBabyCarePortableData(value.care)
+  );
+}
+
+export function isBabyPortableDataV1(value: unknown): value is BabyPortableDataV1 {
+  return (
+    isPlainRecord(value) &&
+    hasOnlyKeys(value, ["version", "profile", "care"]) &&
+    value.version === 1 &&
+    isBabyProfilePortableData(value.profile) &&
+    isPlainRecord(value.care) &&
+    hasOnlyKeys(value.care, ["version", "clearedAt", "events"]) &&
+    value.care.version === 1 &&
+    isSafeTimestamp(value.care.clearedAt) &&
+    Array.isArray(value.care.events) &&
+    value.care.events.length <= BABY_EVENT_LIMIT &&
+    value.care.events.every(isCareEventV1) &&
+    new Set(value.care.events.map((event) => (event as CareEventV1).id)).size === value.care.events.length
   );
 }
 
@@ -173,7 +198,7 @@ export function assertBabyPortableData(value: unknown): BabyPortableData {
   return value;
 }
 
-const BASE_KEYS = ["id", "type", "note", "createdAt", "updatedAt", "deletedAt"] as const;
+const BASE_KEYS = ["id", "type", "note", "createdAt", "updatedAt", "deletedAt", "recordedByMemberId"] as const;
 
 function isCareEventBase(value: Record<string, unknown>) {
   return (
@@ -185,7 +210,8 @@ function isCareEventBase(value: Record<string, unknown>) {
     isSafeTimestamp(value.createdAt) &&
     isSafeTimestamp(value.updatedAt) &&
     value.updatedAt >= value.createdAt &&
-    (value.deletedAt === null || (isSafeTimestamp(value.deletedAt) && value.deletedAt === value.updatedAt))
+    (value.deletedAt === null || (isSafeTimestamp(value.deletedAt) && value.deletedAt === value.updatedAt)) &&
+    (value.recordedByMemberId === null || isSafeHouseholdMemberId(value.recordedByMemberId))
   );
 }
 

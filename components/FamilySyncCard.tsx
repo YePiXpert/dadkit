@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Feedback } from "@/components/ui/feedback";
+import { CurrentDeviceMemberCard } from "@/components/household/CurrentDeviceMemberCard";
+import { loadDeviceIdentity } from "@/lib/device-identity/repository";
+import { getActiveHouseholdMembers } from "@/lib/household/selectors";
+import { useHouseholdStore } from "@/lib/household/store";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { loadSyncSession } from "@/lib/data/settings-repository";
@@ -33,6 +37,8 @@ export function FamilySyncCard() {
   const [syncMessageOk, setSyncMessageOk] = useState<boolean>();
   const [syncBusy, setSyncBusy] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+  const [showDeviceMemberPrompt, setShowDeviceMemberPrompt] = useState(false);
+  const household = useHouseholdStore((state) => state.household);
 
   useEffect(() => {
     setInviteName(loadSyncSession()?.spaceName ?? "");
@@ -100,6 +106,11 @@ export function FamilySyncCard() {
 
     if (outcome.ok) {
       setSyncCode("");
+      const latestHousehold = useHouseholdStore.getState().household;
+      setShowDeviceMemberPrompt(
+        !loadDeviceIdentity().currentMemberId &&
+          getActiveHouseholdMembers(latestHousehold).length > 1,
+      );
     }
   }
 
@@ -186,8 +197,15 @@ export function FamilySyncCard() {
         {syncStatus.joined ? (
           <>
             <p className="text-sm leading-6 text-muted-foreground">
-              已连接。这台设备的勾选、新增和删除会在几秒内同步给其他设备。
+              已连接。清单、家庭成员、多人负责人和宝宝记录会在几秒内同步给其他设备；当前设备使用者选择只留在本机。
             </p>
+            {showDeviceMemberPrompt ? (
+              <div className="grid gap-2 rounded-2xl border border-primary/25 bg-secondary/40 p-3">
+                <p className="text-sm font-semibold">请选择这台设备是谁在使用</p>
+                <CurrentDeviceMemberCard compact household={household} />
+                <Button className="justify-self-start" onClick={() => setShowDeviceMemberPrompt(false)} size="sm" variant="ghost">稍后再说</Button>
+              </div>
+            ) : null}
             <div className="grid gap-1 text-xs leading-5 text-muted-foreground sm:grid-cols-2">
               <span>
                 上次同步：

@@ -348,7 +348,7 @@ describe("family sync client", () => {
     const planning = createEmptyItemPlanning();
     planning.items.seed = {
       ...createEmptyItemPlanningRecord(),
-      assignee: { value: "dad", updatedAt: 101 },
+      assigneeIds: { value: ["legacy-dad-v1"], updatedAt: 101 },
     };
     saveItemPlanning(planning);
     useDadKitStore.setState({ hydrated: true });
@@ -376,13 +376,13 @@ describe("family sync client", () => {
 
     await expect(syncNow()).resolves.toMatchObject({ ok: true });
 
-    expect(requestVersions).toEqual(["8", "8"]);
+    expect(requestVersions).toEqual(["9", "9"]);
     expect(loadHospitalProfile().fields.hospitalName.value).toBe(
       "市妇幼保健院",
     );
     expect(loadHospitalProfile().fields.address.value).toBe("健康路 1 号");
     expect(localValues.get(STORAGE_KEYS.hospital)).toBeTruthy();
-    expect(loadItemPlanning().items.seed.assignee.value).toBe("dad");
+    expect(loadItemPlanning().items.seed.assigneeIds.value).toEqual(["legacy-dad-v1"]);
   });
 
   it("creates a family, stores its name and returns the first invite", async () => {

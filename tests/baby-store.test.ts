@@ -112,6 +112,7 @@ describe("baby store", () => {
       createdAt: index + 1,
       updatedAt: index + 1,
       deletedAt: null,
+      recordedByMemberId: null,
       occurredAt,
       kind: "wet",
     }));
@@ -130,6 +131,7 @@ describe("baby store", () => {
       createdAt: 1,
       updatedAt: 1,
       deletedAt: null,
+      recordedByMemberId: null,
       occurredAt,
       kind: "wet",
     };

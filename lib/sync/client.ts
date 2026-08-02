@@ -163,7 +163,7 @@ async function apiRequest<T>(
   if (token) {
     headers.set("authorization", `Bearer ${token}`);
   }
-  headers.set(DADKIT_DATA_VERSION_HEADER, "8");
+  headers.set(DADKIT_DATA_VERSION_HEADER, "9");
 
   const parentSignal = init.signal;
   const abortFromParent = () => controller.abort(parentSignal?.reason);
@@ -295,7 +295,7 @@ export function alignExportDataToServerTime(
       ) as DadKitExportData["hospital"]["fields"],
     },
     planning: {
-      version: 1,
+      version: 2,
       clearedAt: shiftTimestamp(data.planning.clearedAt),
       items: Object.fromEntries(
         Object.entries(data.planning.items).map(([itemId, record]) => [
@@ -308,6 +308,23 @@ export function alignExportDataToServerTime(
           ),
         ]),
       ) as DadKitExportData["planning"]["items"],
+    },
+    household: {
+      version: 1,
+      clearedAt: shiftTimestamp(data.household.clearedAt),
+      householdName: {
+        ...data.household.householdName,
+        updatedAt: shiftTimestamp(data.household.householdName.updatedAt),
+      },
+      members: Object.fromEntries(
+        Object.entries(data.household.members).map(([id, member]) => [id, {
+          ...member,
+          createdAt: shiftTimestamp(member.createdAt),
+          displayName: { ...member.displayName, updatedAt: shiftTimestamp(member.displayName.updatedAt) },
+          relationshipLabel: { ...member.relationshipLabel, updatedAt: shiftTimestamp(member.relationshipLabel.updatedAt) },
+          deleted: { ...member.deleted, updatedAt: shiftTimestamp(member.deleted.updatedAt) },
+        }]),
+      ),
     },
     baby: alignBabyDataToServerTime(data.baby, offset),
   };
@@ -350,7 +367,7 @@ function alignBabyDataToServerTime(
   }) as DadKitExportData["baby"]["care"]["events"];
 
   return {
-    version: 1,
+    version: 2,
     profile: {
       version: 1,
       clearedAt: shift(baby.profile.clearedAt),
@@ -361,7 +378,7 @@ function alignBabyDataToServerTime(
         sex: { ...baby.profile.fields.sex, updatedAt: shift(baby.profile.fields.sex.updatedAt) },
       },
     },
-    care: { version: 1, clearedAt: shift(baby.care.clearedAt), events },
+    care: { version: 2, clearedAt: shift(baby.care.clearedAt), events },
   };
 }
 
