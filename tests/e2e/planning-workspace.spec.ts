@@ -28,7 +28,7 @@ test("从首页进入并保存、取消和清空单项信息", async ({ page }) 
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.getByRole("link", { name: "开始分工" }).click();
   await expect(page).toHaveURL(/\/planning$/);
-  await expect(page.getByRole("link", { name: "清单", exact: true })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "工具", exact: true })).toHaveAttribute(
     "aria-current",
     "page",
   );

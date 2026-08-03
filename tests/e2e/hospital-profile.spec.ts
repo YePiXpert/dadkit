@@ -118,8 +118,10 @@ test("从准备出发进入，保存后刷新并显示摘要、复制和拨号�
   ).toHaveAttribute("href", "tel:+8601012345678");
 });
 
-test("从首页快捷入口进入，取消不保存且清空需要二次确认", async ({ page }) => {
+test("从首页经工具页进入，取消不保存且清空需要二次确认", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.getByRole("link", { name: /全部工具/ }).click();
+  await expect(page).toHaveURL(/\/tools$/);
   await page.getByRole("link", { name: /医院档案/ }).click();
   await expect(page).toHaveURL(/\/hospital$/);
   await page.waitForTimeout(1_000);
@@ -153,7 +155,7 @@ test("从首页快捷入口进入，取消不保存且清空需要二次确认",
   await expect(page.getByText("医院档案已清空。")).toBeVisible();
 });
 
-test("直接访问 360×800 页面无横向溢出且只有我的导航激活", async ({
+test("直接访问 360×800 页面无横向溢出且只有工具导航激活", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 360, height: 800 });
@@ -162,12 +164,12 @@ test("直接访问 360×800 页面无横向溢出且只有我的导航激活", a
   await expect(
     page.getByRole("heading", { name: "医院档案", exact: true }),
   ).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByRole("link", { name: "我的", exact: true })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "工具", exact: true })).toHaveAttribute(
     "aria-current",
     "page",
   );
   await expect(
-    page.getByRole("link", { name: "清单", exact: true }),
+    page.getByRole("link", { name: "我的", exact: true }),
   ).not.toHaveAttribute("aria-current", "page");
   await expect
     .poll(() =>
