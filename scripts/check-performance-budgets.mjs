@@ -22,6 +22,8 @@ const routeBudgets = new Map([
   ["/baby/page", 260 * 1024],
   ["/baby/timeline/page", 260 * 1024],
   ["/growth/page", 190 * 1024],
+  // /tools 是轻量中转页（与 /settings 类似），仅渲染 4 个入口卡片。
+  ["/tools/page", 170 * 1024],
   ["/settings/page", 170 * 1024],
   ["/join/page", 200 * 1024],
   ["/settings/sync/page", 250 * 1024],
@@ -45,6 +47,7 @@ const routeLabels = new Map([
   ["/baby/page", "宝宝记录页"],
   ["/baby/timeline/page", "宝宝时间线页"],
   ["/growth/page", "成长记页"],
+  ["/tools/page", "工具页"],
   ["/settings/page", "我的页"],
   ["/join/page", "家庭同步加入页"],
   ["/settings/sync/page", "家庭同步管理页"],

@@ -64,7 +64,7 @@ export default function SupportPage() {
           <CardContent className="grid gap-2">
             {testChecklist.map((item) => (
               <p
-                className="rounded-lg border border-border bg-background p-3 text-sm leading-6"
+                className="rounded-lg bg-muted/35 p-3 text-sm leading-6"
                 key={item}
               >
                 {item}
@@ -80,7 +80,7 @@ export default function SupportPage() {
           <CardContent className="grid gap-2">
             {feedbackItems.map((item) => (
               <p
-                className="rounded-lg border border-border bg-background p-3 text-sm leading-6"
+                className="rounded-lg bg-muted/35 p-3 text-sm leading-6"
                 key={item}
               >
                 {item}

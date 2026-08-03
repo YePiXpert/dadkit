@@ -8,7 +8,7 @@ type DangerZoneProps = {
 
 export function DangerZone({ title, description, children }: DangerZoneProps) {
   return (
-    <section className="grid gap-3 rounded-card border border-destructive/25 bg-destructive/[0.02] p-4 sm:p-5">
+    <section className="grid gap-3 rounded-card bg-destructive/[0.02] p-4 shadow-sm ring-1 ring-destructive/30 sm:p-5">
       <div className="grid gap-1">
         <h2 className="text-sm font-semibold text-destructive">{title}</h2>
         {description ? (

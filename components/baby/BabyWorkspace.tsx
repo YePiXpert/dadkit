@@ -9,7 +9,6 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showAppToast } from "@/lib/app-toast";
 import { hasBabyMode } from "@/lib/baby/portable";
@@ -33,9 +32,9 @@ export function BabyWorkspace() {
 
   return (
     <div className="page-shell page-shell-with-nav">
-      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+      <section className="mobile-shell grid gap-4">
         {repositoryError && !hasBabyMode(profile) ? (
-          <Card><CardContent className="grid gap-3 p-5"><h1 className="text-lg font-bold">宝宝记录暂不可用</h1><p className="text-sm text-muted-foreground">{repositoryError}</p><p className="text-sm">DadKit 不会静默退回 localStorage，以免让你误以为记录已经保存。</p><Button onClick={() => window.location.reload()} variant="outline">重新尝试</Button></CardContent></Card>
+          <div className="grid gap-3 rounded-card bg-card p-5 shadow-sm"><h1 className="text-lg font-bold">宝宝记录暂不可用</h1><p className="text-sm text-muted-foreground">{repositoryError}</p><p className="text-sm">DadKit 不会静默退回 localStorage，以免让你误以为记录已经保存。</p><Button onClick={() => window.location.reload()} variant="outline">重新尝试</Button></div>
         ) : hasBabyMode(profile) ? (
           <BabyDashboard onEditProfile={() => setProfileOpen(true)} />
         ) : (
@@ -69,5 +68,5 @@ export function BabyWorkspace() {
 }
 
 export function BabyWorkspaceSkeleton() {
-  return <div className="page-shell page-shell-with-nav" aria-label="正在读取宝宝资料和照护记录"><section className="mobile-shell grid gap-4 lg:max-w-2xl"><Skeleton className="h-32 rounded-card" /><Skeleton className="h-20 rounded-card" /><Skeleton className="h-64 rounded-card" /></section></div>;
+  return <div className="page-shell page-shell-with-nav" aria-label="正在读取宝宝资料和照护记录"><section className="mobile-shell grid gap-4"><Skeleton className="h-32 rounded-card" /><Skeleton className="h-20 rounded-card" /><Skeleton className="h-64 rounded-card" /></section></div>;
 }

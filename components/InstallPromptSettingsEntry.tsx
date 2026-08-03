@@ -74,7 +74,7 @@ export function InstallPromptSettingsEntry() {
 
   return (
     <button
-      className="group flex min-h-24 w-full items-center gap-4 rounded-card border border-border bg-card p-4 text-left shadow-sm transition-colors hover:bg-muted/35"
+      className="group flex min-h-24 w-full items-center gap-4 rounded-card bg-card p-4 text-left shadow-sm transition-shadow hover:shadow-md"
       onClick={openInstallPrompt}
       type="button"
     >
@@ -82,7 +82,7 @@ export function InstallPromptSettingsEntry() {
         <Download className="size-5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-base font-semibold text-foreground">
+        <span className="block text-base font-semibold">
           安装到桌面
         </span>
         <span className="mt-1 block text-sm leading-5 text-muted-foreground">

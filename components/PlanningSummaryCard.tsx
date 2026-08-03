@@ -46,11 +46,11 @@ export function PlanningSummaryCard({ compact = false }: { compact?: boolean }) 
           : "还没有分配负责人，可以先从核心物品开始。";
 
     return (
-      <section className="flex min-h-28 items-center gap-3 rounded-card border border-primary/20 bg-card p-4">
+      <section className="card-surface flex min-h-28 items-center gap-3 p-4">
         <span className="icon-tile size-12"><Users className="size-6" /></span>
         <div className="min-w-0 flex-1">
           <p className="section-kicker">一起准备</p>
-          <h2 className="mt-1 text-base font-semibold">家庭分工与采购</h2>
+          <h2 className="mt-1 text-[15px] font-semibold">家庭分工与采购</h2>
           <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">
             {message}
           </p>
@@ -63,12 +63,12 @@ export function PlanningSummaryCard({ compact = false }: { compact?: boolean }) 
   }
 
   return (
-    <section className="grid gap-4 rounded-card border border-primary/20 bg-card p-4 sm:p-5">
+    <section className="card-surface grid gap-4 p-4 sm:p-5">
       <div className="flex items-start gap-3">
         <span className="icon-tile size-12"><CalendarClock className="size-6" /></span>
         <div>
           <p className="section-kicker">当前安排</p>
-          <h2 className="mt-1 text-lg font-semibold">分工与采购概览</h2>
+          <h2 className="mt-1 text-[15px] font-semibold">分工与采购概览</h2>
           <p className="mt-1 text-xs leading-snug text-muted-foreground">
             金额按项目总价统计，不会乘以清单数量。
           </p>
@@ -107,7 +107,7 @@ function SummaryMetric({
   value: string;
 }) {
   return (
-    <div className="rounded-inset bg-background/70 p-3 text-center">
+    <div className="rounded-inset bg-background/70 p-3 text-center shadow-sm">
       <strong className={alert ? "text-xl text-destructive" : "text-xl"}>{value}</strong>
       <span className="mt-1 block text-xs text-muted-foreground">{label}</span>
     </div>

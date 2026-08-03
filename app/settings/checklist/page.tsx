@@ -146,17 +146,17 @@ export default function ChecklistSettingsPage() {
                   <button
                     aria-pressed={active}
                     className={cn(
-                      "min-h-24 rounded-2xl border p-3 text-left transition-colors",
+                      "min-h-24 rounded-2xl bg-card p-3 text-left shadow-sm transition-shadow hover:shadow-md",
                       active
-                        ? "border-primary bg-secondary text-foreground"
-                        : "border-border bg-card text-muted-foreground hover:bg-muted/35",
+                        ? "ring-1 ring-primary bg-secondary text-foreground"
+                        : "text-muted-foreground",
                     )}
                     key={mode.value}
                     onClick={() => setChecklistMode(mode.value)}
                     type="button"
                   >
                     <span className="block text-sm font-semibold">{mode.label}</span>
-                    <span className="mt-1.5 block text-xs leading-5">
+                    <span className="mt-1.5 block text-[13px] leading-5">
                       {mode.description}
                     </span>
                   </button>
@@ -164,9 +164,9 @@ export default function ChecklistSettingsPage() {
               })}
             </div>
 
-            <div className="mt-1 grid gap-2 rounded-2xl border border-border bg-muted/35 p-4">
+            <div className="mt-1 grid gap-2 rounded-2xl bg-muted/35 p-4 shadow-sm">
               <p className="text-sm font-semibold">补回缺失的通用物品</p>
-              <p className="text-xs leading-5 text-muted-foreground">
+              <p className="text-[13px] leading-5 text-muted-foreground">
                 仅补回被移除的默认物品，不会清除勾选进度，也不会删除自定义物品。
               </p>
               <Button

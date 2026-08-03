@@ -130,7 +130,7 @@ export function HospitalProfileWorkspace() {
 
   return (
     <div className="page-shell page-shell-with-nav">
-      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+      <section className="mobile-shell grid gap-4">
         <PageHeader
           backHref={backHref}
           backLabel={
@@ -142,9 +142,9 @@ export function HospitalProfileWorkspace() {
         />
 
         {editing ? (
-          <section className="grid gap-5 rounded-card border border-border bg-card p-4 sm:p-5">
+          <section className="card-surface grid gap-5 p-4 sm:p-5">
             <div>
-              <h2 className="text-base font-semibold">编辑医院档案</h2>
+              <h2 className="text-[15px] font-semibold">编辑医院档案</h2>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 医院名称必填，其余信息可以按当前掌握的内容补充。
               </p>
@@ -176,13 +176,13 @@ export function HospitalProfileWorkspace() {
             </div>
           </section>
         ) : configured ? (
-          <section className="grid gap-4 rounded-card border border-border bg-card p-4 sm:p-5">
+          <section className="card-surface grid gap-4 p-4 sm:p-5">
             <div className="flex min-w-0 items-start gap-3">
               <span className="icon-tile size-12">
                 <Building2 className="size-6" />
               </span>
               <div className="min-w-0 flex-1">
-                <h2 className="break-words text-lg font-semibold">
+                <h2 className="break-words text-[15px] font-semibold">
                   {values.hospitalName}
                 </h2>
                 {values.campusName ? (
@@ -197,7 +197,7 @@ export function HospitalProfileWorkspace() {
               {VIEW_FIELD_ORDER.map((key) =>
                 values[key] ? (
                   <div
-                    className="rounded-inset border border-border/70 bg-background/60 p-3"
+                    className="rounded-inset bg-background/60 p-3 shadow-sm"
                     key={key}
                   >
                     <h3 className="text-xs text-muted-foreground">
@@ -275,11 +275,11 @@ export function HospitalProfileWorkspace() {
             </div>
           </section>
         ) : (
-          <section className="grid justify-items-center rounded-card border border-border bg-card p-8 text-center">
+          <section className="card-surface grid justify-items-center p-8 text-center">
             <span className="icon-tile size-16">
               <MapPin className="size-8" />
             </span>
-            <h2 className="mt-4 text-base font-semibold">还没有填写医院档案</h2>
+            <h2 className="mt-4 text-[15px] font-semibold">还没有填写医院档案</h2>
             <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
               先记下医院名称，再逐步补充电话、地址和入院要求。
             </p>
@@ -366,7 +366,7 @@ function HospitalDraftField({
 function HospitalProfileSkeleton() {
   return (
     <div className="page-shell page-shell-with-nav" aria-label="正在读取医院档案">
-      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+      <section className="mobile-shell grid gap-4">
         <Skeleton className="h-20 rounded-card" />
         <Skeleton className="h-72 rounded-card" />
       </section>

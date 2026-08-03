@@ -150,10 +150,10 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
     <article
       ref={articleRef}
       className={cn(
-        "flex min-w-0 flex-col overflow-hidden rounded-card border border-border/70 bg-card p-2.5 transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_26rem]",
-        itemState === "ready" && "border-primary/30 bg-secondary/35",
-        itemState === "packed" && "border-primary/35 bg-secondary/55",
-        itemState === "not_needed" && "border-border/60 bg-muted/50",
+        "flex min-w-0 flex-col overflow-hidden rounded-card bg-card p-2.5 shadow-sm transition-shadow hover:shadow-md [content-visibility:auto] [contain-intrinsic-size:auto_26rem]",
+        itemState === "ready" && "bg-secondary/35 ring-1 ring-primary/30",
+        itemState === "packed" && "bg-secondary/55 ring-1 ring-primary/35",
+        itemState === "not_needed" && "bg-muted/50 ring-1 ring-border/60",
       )}
     >
       <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-inset bg-muted/75">
@@ -195,26 +195,26 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
       <div className="flex min-h-0 flex-1 flex-col px-1.5 pb-1 pt-3">
         <h3
           className={cn(
-            "break-words text-sm font-semibold leading-5 sm:text-[15px]",
+            "break-words text-[15px] font-semibold leading-5",
             itemState === "not_needed" && "text-muted-foreground",
           )}
         >
           {displayName}
         </h3>
 
-        <p className="mt-1 text-xs font-medium leading-4 text-muted-foreground">
+        <p className="mt-1 text-[13px] font-medium leading-4 text-muted-foreground">
           建议 {displayQuantity}
         </p>
 
         {showFullDescription ? (
-          <p className="mt-2 min-h-10 whitespace-pre-wrap break-words rounded-xl bg-background/75 px-2 py-1.5 text-xs leading-[1.1rem] text-muted-foreground">
+          <p className="mt-2 min-h-10 whitespace-pre-wrap break-words rounded-xl bg-background/75 px-2 py-1.5 text-sm leading-6 text-muted-foreground">
             {displayNote}
           </p>
         ) : null}
 
         <div className="mt-2.5 flex min-h-11 items-center justify-between gap-2 border-t border-border/70 pt-2">
           <button
-            className="inline-flex min-h-11 min-w-0 items-center gap-1 rounded-full px-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="inline-flex min-h-11 min-w-0 items-center gap-1 rounded-full px-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             type="button"
             onClick={() => onOpenDetails(item.id)}
           >
@@ -225,12 +225,12 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
           <button
             aria-label={`${actionLabel}：${displayName}`}
             className={cn(
-              "flex size-11 shrink-0 items-center justify-center rounded-full border-2 border-border bg-card text-muted-foreground transition-all active:scale-95",
+              "flex size-11 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground ring-2 ring-border transition-all active:scale-95",
               itemState === "ready" &&
-                "border-primary/30 bg-secondary text-primary",
+                "bg-secondary text-primary ring-primary/30",
               itemState === "packed" &&
-                "border-primary bg-primary text-primary-foreground",
-              itemState === "not_needed" && "border-border bg-muted",
+                "bg-primary text-primary-foreground ring-primary",
+              itemState === "not_needed" && "bg-muted ring-border",
             )}
             title={actionLabel}
             type="button"

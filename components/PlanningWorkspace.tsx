@@ -118,7 +118,7 @@ export function PlanningWorkspace() {
 
   return (
     <div className="page-shell page-shell-with-nav">
-      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+      <section className="mobile-shell grid gap-4">
         <PageHeader
           backHref="/"
           backLabel="返回首页"
@@ -129,7 +129,7 @@ export function PlanningWorkspace() {
 
         <PlanningSummaryCard />
 
-        <section className="grid gap-3 rounded-card border border-border bg-card p-3">
+        <section className="card-surface grid gap-3 p-3">
           <div className="flex items-center gap-2">
             <Search className="size-4 shrink-0 text-muted-foreground" />
             <Label className="sr-only" htmlFor="planning-search">搜索物品</Label>
@@ -186,7 +186,7 @@ export function PlanningWorkspace() {
 
         <div className="flex flex-wrap items-center justify-between gap-2 px-1">
           <div>
-            <h2 className="text-base font-semibold">物品安排</h2>
+            <h2 className="text-[15px] font-semibold">物品安排</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">当前显示 {rows.length} 项</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -225,7 +225,7 @@ export function PlanningWorkspace() {
       </section>
 
       {selected.length > 0 ? (
-        <div className="sticky bottom-[calc(5.6rem+env(safe-area-inset-bottom))] z-30 mx-auto mt-4 flex w-[min(calc(100%-2rem),40rem)] items-center justify-between gap-3 rounded-card border border-primary/30 bg-card/95 p-3 shadow-lg backdrop-blur sm:bottom-4">
+        <div className="sticky bottom-[calc(5.6rem+env(safe-area-inset-bottom))] z-30 mx-auto mt-4 flex w-[min(calc(100%-2rem),40rem)] items-center justify-between gap-3 rounded-card bg-card/95 p-3 shadow-lg backdrop-blur sm:bottom-4">
           <span className="text-sm font-semibold">已选择 {selected.length} 项</span>
           <Button onClick={() => setBulkOpen(true)}><Users className="size-4" />批量设置</Button>
         </div>
@@ -250,7 +250,7 @@ export function PlanningWorkspace() {
 export function PlanningWorkspaceSkeleton() {
   return (
     <div className="page-shell page-shell-with-nav" aria-label="正在读取家庭分工与采购信息">
-      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+      <section className="mobile-shell grid gap-4">
         <Skeleton className="h-20 rounded-card" />
         <Skeleton className="h-64 rounded-card" />
         <Skeleton className="h-32 rounded-card" />

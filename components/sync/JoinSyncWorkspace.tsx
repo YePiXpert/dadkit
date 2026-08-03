@@ -95,7 +95,7 @@ export function JoinSyncWorkspace() {
 
   return (
     <div className="page-shell page-shell-with-nav">
-      <section className="mobile-shell grid gap-5 sm:max-w-xl">
+      <section className="mobile-shell grid gap-5 sm:max-w-[42rem]">
         <PageHeader backHref="/settings/sync" backLabel="返回同步设置" kicker="私密邀请" subtitle="邀请凭据只在本页内存中短暂使用，不会保存到浏览器存储。" title="加入家庭同步" />
         {!online ? (
           <Feedback message="需要联网才能加入家庭同步。" ok={false} />
@@ -112,10 +112,10 @@ export function JoinSyncWorkspace() {
             <div className="grid gap-2">
               <Label htmlFor="join-device-name">设备名称</Label>
               <Input id="join-device-name" maxLength={60} onChange={(event) => setDeviceName(event.target.value)} placeholder="例如：家中 iPad" value={deviceName} />
-              <p className="text-xs leading-5 text-muted-foreground">设备名称与家庭成员是两回事，不会自动成为记录人。</p>
+              <p className="text-[13px] leading-5 text-muted-foreground">设备名称与家庭成员是两回事，不会自动成为记录人。</p>
             </div>
             {existingName ? (
-              <label className="flex items-start gap-3 rounded-xl border border-border bg-muted/35 p-3 text-sm leading-6">
+              <label className="flex items-start gap-3 rounded-xl bg-muted/35 p-3 text-sm leading-6 shadow-sm">
                 <input checked={replaceConfirmed} className="mt-1 size-4 accent-primary" onChange={(event) => setReplaceConfirmed(event.target.checked)} type="checkbox" />
                 <span>当前连接“{existingName}”。我确认切换同步空间；本机业务数据不会删除，数据仍按现有合并规则处理。</span>
               </label>
@@ -127,7 +127,7 @@ export function JoinSyncWorkspace() {
             {!online ? <WifiOff className="mx-auto size-5 text-muted-foreground" /> : null}
           </CardContent>
         </Card>
-        <p className="px-2 text-xs leading-5 text-muted-foreground">邀请链接属于敏感凭据，请勿公开发布。家庭同步会把数据保存到你的同步服务器，当前不提供端到端加密。</p>
+        <p className="px-2 text-[13px] leading-5 text-muted-foreground">邀请链接属于敏感凭据，请勿公开发布。家庭同步会把数据保存到你的同步服务器，当前不提供端到端加密。</p>
       </section>
     </div>
   );

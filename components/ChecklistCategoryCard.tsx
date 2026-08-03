@@ -96,7 +96,7 @@ export function ChecklistCategoryCard({
   return (
     <section>
       <Link
-        className="flex min-h-[5.25rem] w-full items-center gap-3 rounded-card border border-border/70 bg-card px-4 py-3.5 text-left transition-colors hover:bg-muted/35"
+        className="flex min-h-[5.25rem] w-full items-center gap-3 rounded-card bg-card px-4 py-3.5 text-left shadow-sm transition-shadow hover:shadow-md"
         href={href}
       >
         <span
@@ -108,10 +108,10 @@ export function ChecklistCategoryCard({
           <Icon className="size-5" strokeWidth={1.8} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block break-words text-sm font-semibold leading-5 sm:text-base">
+          <span className="block break-words text-[15px] font-semibold leading-5">
             {title}
           </span>
-          <span className="mt-0.5 block text-xs leading-4 text-muted-foreground">
+          <span className="mt-0.5 block text-[13px] leading-4 text-muted-foreground">
             {caption}
           </span>
           {progressItems.length > 0 ? (

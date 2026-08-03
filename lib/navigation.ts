@@ -1,10 +1,10 @@
-import { Baby, ClipboardList, House, UserRound, type LucideIcon } from "lucide-react";
+import { Baby, ClipboardList, House, LayoutGrid, UserRound, type LucideIcon } from "lucide-react";
 
 export type PrimaryNavigationItem = {
-  href: "/" | "/checklist" | "/baby" | "/settings";
+  href: "/" | "/checklist" | "/baby" | "/tools" | "/settings";
   icon: LucideIcon;
-  id: "home" | "checklist" | "baby" | "mine";
-  label: "首页" | "清单" | "宝宝" | "我的";
+  id: "home" | "checklist" | "baby" | "tools" | "mine";
+  label: "首页" | "清单" | "宝宝" | "工具" | "我的";
   ownedRoutes: readonly string[];
 };
 
@@ -21,7 +21,7 @@ export const PRIMARY_NAVIGATION_ITEMS = [
     href: "/checklist",
     label: "清单",
     icon: ClipboardList,
-    ownedRoutes: ["/checklist", "/departure", "/planning"],
+    ownedRoutes: ["/checklist"],
   },
   {
     id: "baby",
@@ -31,17 +31,18 @@ export const PRIMARY_NAVIGATION_ITEMS = [
     ownedRoutes: ["/baby"],
   },
   {
+    id: "tools",
+    href: "/tools",
+    label: "工具",
+    icon: LayoutGrid,
+    ownedRoutes: ["/tools", "/growth", "/departure", "/hospital", "/planning"],
+  },
+  {
     id: "mine",
     href: "/settings",
     label: "我的",
     icon: UserRound,
-    ownedRoutes: [
-      "/settings",
-      "/growth",
-      "/hospital",
-      "/privacy",
-      "/support",
-    ],
+    ownedRoutes: ["/settings", "/privacy", "/support"],
   },
 ] as const satisfies readonly PrimaryNavigationItem[];
 
@@ -64,7 +65,6 @@ export function showsMobileNavigation(pathname: string) {
   return !(
     pathname === "/onboarding" ||
     pathname.startsWith("/checklist/") ||
-    pathname === "/growth" ||
     pathname.startsWith("/settings/")
   );
 }

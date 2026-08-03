@@ -100,7 +100,7 @@ export function QuantityStepper({
           value={draftCount}
         />
         {suffix ? (
-          <span className="text-xs font-normal text-muted-foreground">
+          <span className="text-[13px] font-normal text-muted-foreground">
             {suffix.trim()}
           </span>
         ) : null}

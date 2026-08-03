@@ -125,8 +125,8 @@ export function GrowthWorkspace() {
   }
 
   return (
-    <div className="page-shell">
-      <section className="mobile-shell grid gap-5 sm:max-w-[42rem]">
+    <div className="page-shell page-shell-with-nav">
+      <section className="mobile-shell grid gap-5">
         <PageHeader
           backHref="/settings"
           backLabel="返回我的"
@@ -134,14 +134,14 @@ export function GrowthWorkspace() {
           title="宝宝成长记"
         />
 
-        <details className="group rounded-card border bg-card">
+        <details className="group rounded-card bg-card shadow-sm transition-shadow hover:shadow-md">
           <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
             <span className="icon-tile">
               <UserRound className="size-4" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold">个性化成长记</span>
-              <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+              <span className="block text-[15px] font-semibold">个性化成长记</span>
+              <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
                 {nickname || dueDate
                   ? `${babyName}${dueDate ? ` · 预产期 ${formatFullDate(dueDate)}` : ""}`
                   : "可选填昵称和医生确认的预产期"}
@@ -171,7 +171,7 @@ export function GrowthWorkspace() {
                 value={dueDate}
               />
             </label>
-            <p className="text-xs leading-5 text-muted-foreground sm:col-span-2">
+            <p className="text-[13px] leading-5 text-muted-foreground sm:col-span-2">
               请填写产科确认的日期。填写后会先定位到当前参考孕周，你仍可手动浏览其他周。
             </p>
           </div>
@@ -185,7 +185,7 @@ export function GrowthWorkspace() {
           <div className="grid gap-5 p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="flex flex-wrap items-center gap-2 text-xs font-semibold text-primary">
+                <p className="section-kicker flex flex-wrap items-center gap-2 text-primary">
                   <span className="rounded-full bg-card/75 px-2.5 py-1">
                     {current.trimester}
                   </span>
@@ -202,8 +202,8 @@ export function GrowthWorkspace() {
                 </p>
               </div>
               {projectedDate ? (
-                <div className="rounded-2xl border border-card/80 bg-card/75 px-3 py-2 text-right">
-                  <p className="text-xs text-muted-foreground">按预产期推算</p>
+                <div className="rounded-2xl bg-card/75 px-3 py-2 text-right">
+                  <p className="text-[13px] text-muted-foreground">按预产期推算</p>
                   <p className="mt-0.5 text-sm font-semibold">
                     约 {formatFullDate(projectedDate)}
                   </p>
@@ -211,13 +211,13 @@ export function GrowthWorkspace() {
               ) : null}
             </div>
 
-            <div className="rounded-card border border-card/80 bg-card/70 p-3">
+            <div className="rounded-card bg-card/70 p-3">
               <GrowthAnalogyIllustration
                 analogy={current.analogy}
                 className={currentWeekPopping ? "sticker-pop" : undefined}
                 week={current.week}
               />
-              <p className="mt-1 text-center text-xs text-muted-foreground">
+              <p className="mt-1 text-center text-[13px] text-muted-foreground">
                 原创示意，仅帮助理解大致尺度，不按真实比例
               </p>
             </div>
@@ -272,13 +272,13 @@ export function GrowthWorkspace() {
               />
             </div>
             {current.referenceWeightG !== undefined ? (
-              <p className="-mt-2 px-1 text-xs leading-5 text-muted-foreground">
+              <p className="-mt-2 px-1 text-[13px] leading-5 text-muted-foreground">
                 体重为 INTERGROWTH‑21st 群体超声估重中位参考，不是宝宝的实测值，也不能代替连续生长评估。
               </p>
             ) : null}
 
-            <div className="rounded-2xl border border-card/75 bg-card/70 p-4">
-              <h3 className="text-sm font-semibold">这周可能在发生</h3>
+            <div className="rounded-2xl bg-card/70 p-4">
+              <h3 className="text-[15px] font-semibold">这周可能在发生</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 {current.summary}
               </p>
@@ -287,11 +287,11 @@ export function GrowthWorkspace() {
 
           <div className="border-t border-card/70 bg-card/55 p-5 sm:p-6">
             <div className="flex items-start gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-card text-primary">
+              <span className="icon-tile bg-card text-primary">
                 <ClipboardCheck className="size-4" />
               </span>
               <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-semibold">本周常见产检提醒</h3>
+                <h3 className="text-[15px] font-semibold">本周常见产检提醒</h3>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
                   {current.checkupReminder}
                 </p>
@@ -309,7 +309,7 @@ export function GrowthWorkspace() {
           </div>
         </section>
 
-        <section aria-label="切换孕周" className="rounded-card border bg-card p-4 sm:p-5">
+        <section aria-label="切换孕周" className="rounded-card bg-card p-4 sm:p-5 shadow-sm">
           <p aria-live="polite" className="sr-only">
             正在查看孕 {current.week} 周
           </p>
@@ -323,7 +323,7 @@ export function GrowthWorkspace() {
             >
               <ChevronLeft />
             </Button>
-            <label className="grid gap-1 text-center text-xs text-muted-foreground" htmlFor="growth-week-select">
+            <label className="grid gap-1 text-center text-[13px] text-muted-foreground" htmlFor="growth-week-select">
               逐周切换
               <select
                 className="h-11 w-full rounded-xl border border-input bg-card px-3 text-center text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -372,7 +372,7 @@ export function GrowthWorkspace() {
             type="range"
             value={current.week}
           />
-          <div aria-hidden="true" className="flex justify-between text-xs text-muted-foreground">
+          <div aria-hidden="true" className="flex justify-between text-[13px] text-muted-foreground">
             <span>8 周</span>
             <span>40 周</span>
           </div>
@@ -381,12 +381,12 @@ export function GrowthWorkspace() {
         <section aria-labelledby="growth-timeline-title" className="grid gap-4">
           <div className="flex items-end justify-between gap-3 px-1">
             <div>
-              <p className="text-xs font-semibold text-primary">孕 8–40 周</p>
-              <h2 className="mt-1 text-lg font-bold" id="growth-timeline-title">
+              <p className="section-kicker text-primary">孕 8–40 周</p>
+              <h2 className="mt-1 text-[15px] font-semibold" id="growth-timeline-title">
                 完整时间表
               </h2>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground">
               已完成 {completedTaskIds.length} 项，共 {GROWTH_WEEKS.length} 项
             </p>
           </div>
@@ -394,11 +394,11 @@ export function GrowthWorkspace() {
           {TIMELINE_GROUPS.map((trimester) => (
             <section
               aria-labelledby={`growth-${trimester}`}
-              className="overflow-hidden rounded-card border bg-card"
+              className="overflow-hidden rounded-card bg-card shadow-sm"
               key={trimester}
             >
               <h3
-                className="border-b border-border/70 bg-muted/45 px-5 py-3 text-sm font-semibold"
+                className="border-b border-border/70 bg-muted/45 px-5 py-3 text-[15px] font-semibold"
                 id={`growth-${trimester}`}
               >
                 {trimester}
@@ -426,25 +426,25 @@ export function GrowthWorkspace() {
                     >
                       <button
                         aria-current={active ? "step" : undefined}
-                        className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-2xl px-2 text-left transition-colors hover:bg-secondary/50"
+                        className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-2xl px-2 text-left transition-shadow hover:shadow-md"
                         onClick={() => selectWeek(entry.week, true)}
                         type="button"
                       >
                         <span
                           className={cn(
-                            "flex size-10 shrink-0 items-center justify-center rounded-2xl border text-sm font-bold tabular-nums",
+                            "flex size-10 shrink-0 items-center justify-center rounded-2xl ring-1 text-sm font-bold tabular-nums",
                             active
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-border bg-muted text-foreground",
+                              ? "ring-primary bg-primary text-primary-foreground"
+                              : "ring-border bg-muted text-foreground",
                           )}
                         >
                           {entry.week}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-semibold">
+                          <span className="block truncate text-[15px] font-semibold">
                             {entry.stage} · {entry.analogy}
                           </span>
-                          <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                          <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">
                             {entryDate
                               ? `约 ${formatFullDate(entryDate)}`
                               : entry.checkupReminder}
@@ -455,10 +455,10 @@ export function GrowthWorkspace() {
                         aria-label={`${taskDone ? "撤销" : "完成"}孕 ${entry.week} 周产检提醒`}
                         aria-pressed={taskDone}
                         className={cn(
-                          "flex size-11 shrink-0 items-center justify-center rounded-full border transition-colors",
+                          "flex size-11 shrink-0 items-center justify-center rounded-full ring-1 transition-colors",
                           taskDone
-                            ? "border-primary bg-secondary text-primary"
-                            : "border-border bg-card text-muted-foreground hover:bg-muted",
+                            ? "ring-primary bg-secondary text-primary"
+                            : "ring-border bg-card text-muted-foreground hover:bg-muted",
                         )}
                         onClick={() => toggleCompletedTask(entry.checkupTaskId)}
                         type="button"
@@ -477,7 +477,7 @@ export function GrowthWorkspace() {
           ))}
         </section>
 
-        <aside className="rounded-card border bg-card p-5" role="note">
+        <aside className="rounded-card bg-card p-5 shadow-sm" role="note">
           <div className="flex items-start gap-3">
             <Info className="mt-0.5 size-5 shrink-0 text-primary" />
             <p className="text-sm leading-6 text-muted-foreground">
@@ -486,19 +486,19 @@ export function GrowthWorkspace() {
           </div>
         </aside>
 
-        <section className="rounded-card border bg-card p-5">
+        <section className="rounded-card bg-card p-5 shadow-sm">
           <div className="flex items-center gap-2">
             <CalendarDays className="size-4 text-primary" />
-            <h2 className="text-sm font-semibold">内容依据</h2>
+            <h2 className="text-[15px] font-semibold">内容依据</h2>
           </div>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+          <p className="mt-2 text-[13px] leading-5 text-muted-foreground">
             以下权威资料用于核对孕周、估重和常见产检时间窗；页面文字均为简短概括，并非照搬原文或图像。医学安排以你的产科团队为准。
           </p>
           <ul className="mt-3 grid gap-2 text-sm">
             {GROWTH_SOURCES.map((source) => (
               <li key={source.href}>
                 <a
-                  className="inline-flex min-h-11 items-center rounded-xl px-2 text-primary underline decoration-primary/35 underline-offset-4 hover:bg-secondary/50"
+                  className="inline-flex min-h-11 items-center rounded-xl px-2 text-primary underline decoration-primary/35 underline-offset-4 transition-shadow hover:shadow-md"
                   href={source.href}
                   rel="noreferrer"
                   target="_blank"
@@ -527,8 +527,8 @@ function Metric({
   value: string;
 }) {
   return (
-    <div className={cn("rounded-2xl border border-card/75 bg-card/75 p-3", className)}>
-      <p className="flex items-center gap-1.5 text-xs text-muted-foreground [&_svg]:size-3.5">
+    <div className={cn("rounded-2xl bg-card/75 p-3 shadow-sm", className)}>
+      <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground [&_svg]:size-3.5">
         {icon}
         {label}
       </p>

@@ -4,10 +4,8 @@ import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  Building2,
-  PackageCheck,
-  Sprout,
-  Users,
+  ChevronRight,
+  LayoutGrid,
 } from "lucide-react";
 
 import { BabyHomeCard } from "@/components/baby/BabyHomeCard";
@@ -15,28 +13,14 @@ import { HomeHeroIllustration } from "@/components/HomeHeroIllustration";
 import { HouseholdFeaturePrompt } from "@/components/household/HouseholdFeaturePrompt";
 import { PlanningSummaryCard } from "@/components/PlanningSummaryCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  CHECKLIST_PATH,
-  DEPARTURE_PATH,
-  GROWTH_PATH,
-  HOSPITAL_PATH,
-  PLANNING_PATH,
-} from "@/lib/app-routes";
+import { CHECKLIST_PATH } from "@/lib/app-routes";
 import { hasBabyMode } from "@/lib/baby/portable";
 import { useBabyStore } from "@/lib/baby/store";
 import { deriveChecklistView } from "@/lib/checklist-v2";
-import { getDepartureProgress } from "@/lib/departure";
 import { getCurrentGrowthWeekFromDueDate, getDaysUntilDueDate } from "@/lib/growth";
 import { useGrowthStore } from "@/lib/growth-store";
 import { useHouseholdStore } from "@/lib/household/store";
 import { useDadKitStore } from "@/lib/store";
-
-const QUICK_ENTRIES = [
-  { href: DEPARTURE_PATH, label: "准备出发", icon: PackageCheck },
-  { href: PLANNING_PATH, label: "家庭分工", icon: Users },
-  { href: HOSPITAL_PATH, label: "医院档案", icon: Building2 },
-  { href: GROWTH_PATH, label: "宝宝成长记", icon: Sprout },
-] as const;
 
 export function HomeDashboard() {
   const hydrated = useDadKitStore((state) => state.hydrated);
@@ -64,10 +48,6 @@ export function HomeDashboard() {
     () => deriveChecklistView(checklist, { mode: checklistMode, view: "all" }),
     [checklist, checklistMode],
   );
-  const departureProgress = useMemo(
-    () => getDepartureProgress(checklist),
-    [checklist],
-  );
 
   if (!hydrated || !householdHydrated || !babyHydrated || !growthHydrated) {
     return <HomeDashboardSkeleton />;
@@ -78,9 +58,9 @@ export function HomeDashboard() {
 
   return (
     <div className="page-shell page-shell-with-nav">
-      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+      <section className="mobile-shell grid gap-4 sm:max-w-[42rem]">
         <header className="grid gap-1 px-1 py-2 text-center">
-          <h1 className="text-xl font-bold leading-tight tracking-tight sm:text-2xl">
+          <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-[28px]">
             {householdName || "首页"}
           </h1>
           <p className="text-sm leading-6 text-muted-foreground">
@@ -95,41 +75,27 @@ export function HomeDashboard() {
 
         {babyBorn ? <BabyHomeCard /> : <ProgressHero counts={counts} packing={packing} />}
 
-        <section aria-label="快捷入口" className="grid grid-cols-4 gap-2">
-          {QUICK_ENTRIES.map((entry) => {
-            const Icon = entry.icon;
-            const caption =
-              entry.href === DEPARTURE_PATH
-                ? getDepartureCaption(departureProgress)
-                : null;
-
-            return (
-              <Link
-                className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-card border border-border bg-card p-3 text-center shadow-sm transition-colors hover:bg-secondary/35"
-                href={entry.href}
-                key={entry.href}
-              >
-                <span className="icon-tile size-10">
-                  <Icon className="size-5" />
-                </span>
-                <span className="grid gap-0.5">
-                  <span className="text-xs font-semibold leading-4">
-                    {entry.label}
-                  </span>
-                  {caption ? (
-                    <span className="text-[11px] leading-3 text-muted-foreground">
-                      {caption}
-                    </span>
-                  ) : null}
-                </span>
-              </Link>
-            );
-          })}
-        </section>
-
         {babyBorn ? <ProgressHero counts={counts} packing={packing} /> : <BabyHomeCard />}
 
         <PlanningSummaryCard compact />
+
+        <Link
+          className="group flex items-center gap-4 rounded-card bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
+          href="/tools"
+        >
+          <span className="icon-tile size-10">
+            <LayoutGrid className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-semibold text-foreground">
+              全部工具
+            </span>
+            <span className="mt-0.5 block text-sm leading-5 text-muted-foreground">
+              孕周成长、准备出发、医院档案与家庭分工
+            </span>
+          </span>
+          <ChevronRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+        </Link>
 
         <HouseholdFeaturePrompt />
       </section>
@@ -209,12 +175,6 @@ function ProgressStat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function getDepartureCaption(progress: { remaining: number; total: number }) {
-  if (progress.remaining > 0) return `还有 ${progress.remaining} 项待确认`;
-  if (progress.total > 0) return "已全部确认";
-  return null;
-}
-
 function getStageLine(
   babyBorn: boolean,
   babyNickname: string,
@@ -259,7 +219,7 @@ function getDaysSinceBirth(birthDate: string) {
 export function HomeDashboardSkeleton() {
   return (
     <div className="page-shell page-shell-with-nav" aria-label="正在准备首页">
-      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+      <section className="mobile-shell grid gap-4 sm:max-w-[42rem]">
         <div className="grid gap-2 px-1 py-2">
           <Skeleton className="h-7 w-24 rounded-xl" />
           <Skeleton className="h-4 w-56 rounded-lg" />
@@ -279,14 +239,9 @@ export function HomeDashboardSkeleton() {
             <Skeleton className="h-10 rounded-xl bg-background/70" />
           </div>
         </div>
-        <div className="grid grid-cols-4 gap-2">
-          <Skeleton className="h-20 rounded-card" />
-          <Skeleton className="h-20 rounded-card" />
-          <Skeleton className="h-20 rounded-card" />
-          <Skeleton className="h-20 rounded-card" />
-        </div>
         <div className="grid gap-4">
           <Skeleton className="h-28 rounded-card" />
+          <Skeleton className="h-20 rounded-card" />
           <Skeleton className="h-28 rounded-card" />
         </div>
       </section>

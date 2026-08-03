@@ -49,7 +49,7 @@ export function CelebrationOverlay({
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent className="celebration-card grid justify-items-center gap-3 overflow-visible rounded-card border border-border bg-background px-8 py-7 text-center shadow-xl">
+      <DialogContent className="celebration-card grid justify-items-center gap-3 overflow-visible rounded-card bg-background px-8 py-7 text-center shadow-xl">
         {CONFETTI_PIECES.map((piece, index) => (
           <span
             aria-hidden="true"

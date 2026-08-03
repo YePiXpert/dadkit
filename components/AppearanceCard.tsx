@@ -30,7 +30,7 @@ export function AppearanceCard() {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
+        <CardTitle className="flex items-center gap-2">
           <span className="icon-tile">
             <SunMoon className="size-4" />
           </span>
@@ -46,10 +46,10 @@ export function AppearanceCard() {
               <button
                 aria-pressed={active}
                 className={cn(
-                  "min-h-11 rounded-2xl border px-3 py-2 text-sm font-semibold transition-colors",
+                  "min-h-11 rounded-2xl bg-card px-3 py-2 text-sm font-semibold shadow-sm transition-shadow hover:shadow-md",
                   active
-                    ? "border-primary bg-secondary text-foreground"
-                    : "border-border bg-card text-muted-foreground hover:bg-muted/35",
+                    ? "ring-1 ring-primary bg-secondary text-foreground"
+                    : "text-muted-foreground",
                 )}
                 key={option.value}
                 onClick={() => setPreference(option.value)}

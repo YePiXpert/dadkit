@@ -197,7 +197,7 @@ export function ChecklistWorkspace() {
 
   return (
     <div className="page-shell page-shell-with-nav">
-      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+      <section className="mobile-shell grid gap-4">
         <PageHeader
           title="待产包清单"
           subtitle="看一眼还差什么，准备好就打勾。"
@@ -251,7 +251,7 @@ export function ChecklistWorkspace() {
 
         <ChecklistGroupTabs counts={counts} value={view} onChange={setView} />
 
-        <div className="grid gap-2 rounded-2xl border border-border bg-card p-3">
+        <div className="grid gap-2 rounded-card bg-card p-3 shadow-sm">
           <label className="sr-only" htmlFor="checklist-search">
             搜索清单
           </label>
@@ -283,13 +283,13 @@ export function ChecklistWorkspace() {
 
         <div className="flex items-center justify-between gap-3 px-1 pt-1">
           <div>
-            <h2 className="text-base font-semibold">{activeView?.label}</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <h2 className="text-[15px] font-semibold">{activeView?.label}</h2>
+            <p className="mt-0.5 text-[13px] text-muted-foreground">
               {getViewCaption(view, searchedVisibleItems.length)}
             </p>
           </div>
           <Link
-            className="flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+            className="flex min-h-11 items-center gap-1.5 rounded-full bg-card px-3 text-[13px] font-semibold text-muted-foreground shadow-sm transition-shadow hover:shadow-md hover:text-foreground"
             href="/settings/checklist"
           >
             <Settings2 className="size-4" />
@@ -312,7 +312,7 @@ export function ChecklistWorkspace() {
 
         {highlightNotNeeded ? (
           <section
-            className="rounded-2xl border border-primary/30 bg-secondary/45 p-3 text-sm text-primary"
+            className="rounded-card bg-secondary/45 p-3 text-sm text-primary ring-1 ring-primary/30"
             id="not-needed-items"
           >
             {notNeededCount > 0
@@ -322,7 +322,7 @@ export function ChecklistWorkspace() {
         ) : null}
 
         {copyFallbackText ? (
-          <div className="rounded-2xl border border-primary/30 bg-secondary/35 p-3">
+          <div className="rounded-card bg-secondary/35 p-3 ring-1 ring-primary/30">
             <p className="mb-2 text-sm font-medium">浏览器未授权复制，请手动复制以下内容：</p>
             <textarea
               className="min-h-36 w-full rounded-xl border border-border bg-card p-3 text-base leading-6 outline-none focus:ring-2 focus:ring-ring"
@@ -361,7 +361,7 @@ export function ChecklistWorkspace() {
           ))}
         </div>
 
-        <p className="px-3 text-center text-xs leading-5 text-muted-foreground">
+        <p className="px-3 text-center text-[13px] leading-5 text-muted-foreground">
           清单是准备参考，不替代医院通知或医疗建议。
         </p>
       </section>
@@ -370,7 +370,7 @@ export function ChecklistWorkspace() {
         trigger={
           <button
             aria-label="新增物品"
-            className="safe-bottom-fab fixed right-4 z-40 flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform active:scale-95 sm:right-[max(1rem,calc(50%_-_21rem_-_5rem))]"
+            className="safe-bottom-fab fixed right-4 z-40 flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glow transition-transform active:scale-95 sm:right-[max(1rem,calc(50%_-_21rem_-_5rem))]"
             type="button"
           >
             <Plus className="size-7" strokeWidth={2.2} />
@@ -467,7 +467,7 @@ function getViewCaption(view: ChecklistView, count: number) {
 export function ChecklistWorkspaceSkeleton() {
   return (
     <div className="page-shell page-shell-with-nav" aria-label="正在准备清单">
-      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+      <section className="mobile-shell grid gap-4">
         <div className="grid gap-2 px-1 py-2">
           <Skeleton className="h-7 w-32 rounded-xl" />
           <Skeleton className="h-4 w-52 rounded-lg" />

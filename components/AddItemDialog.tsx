@@ -105,7 +105,7 @@ export function AddItemDialog({ defaultCategory = "mom_labor", trigger }: AddIte
         )}
       </DialogTrigger>
       <DialogContent
-        className="flex flex-col overflow-hidden sm:gap-5 sm:border sm:border-border sm:p-6"
+        className="flex flex-col overflow-hidden rounded-card bg-background shadow-lg sm:gap-5 sm:p-6"
         mobileFullscreen
         showCloseButton={false}
       >
@@ -132,12 +132,12 @@ export function AddItemDialog({ defaultCategory = "mom_labor", trigger }: AddIte
               <PackagePlus className="size-12" strokeWidth={1.45} />
             </div>
             <div className="grid gap-3">
-              <p className="text-lg font-semibold">预计数量</p>
+              <p className="text-[15px] font-semibold">预计数量</p>
               <QuantityStepper value={quantity} onChange={setQuantity} />
             </div>
           </div>
           <div className="grid gap-4">
-            <div className="grid divide-y divide-border rounded-card border border-border bg-card px-5">
+            <div className="grid divide-y divide-border rounded-card bg-card px-5 shadow-sm">
               <FormRow htmlFor="add-item-name" label="物品名称" hint="必填">
                 <Input
                   id="add-item-name"
@@ -199,7 +199,7 @@ export function AddItemDialog({ defaultCategory = "mom_labor", trigger }: AddIte
                 </Select>
               </FormRow>
             </div>
-            <div className="grid gap-3 rounded-card border border-border bg-card p-5">
+            <div className="grid gap-3 rounded-card bg-card p-5 shadow-sm">
               <label className="text-sm font-semibold" htmlFor="add-item-note">
                 备注
               </label>

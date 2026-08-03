@@ -13,7 +13,7 @@ export function AppHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="hidden border-b border-border/70 bg-card/90 backdrop-blur-xl sm:sticky sm:top-0 sm:z-40 sm:block sm:pt-[env(safe-area-inset-top)]">
+    <header className="hidden bg-background/80 shadow-sm backdrop-blur-xl sm:sticky sm:top-0 sm:z-40 sm:block sm:pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex h-[4.5rem] max-w-[42rem] items-center justify-between gap-4 px-6">
         <Link className="flex min-w-0 items-center gap-2" href="/">
           <span className="min-w-0">
@@ -21,7 +21,7 @@ export function AppHeader() {
               DadKit
             </span>
             <span className="hidden text-xs text-muted-foreground sm:block">
-              待产准备
+              从待产到育儿
             </span>
           </span>
         </Link>
@@ -34,8 +34,8 @@ export function AppHeader() {
               <Link
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-11 items-center gap-2 rounded-full px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-secondary-foreground",
-                  active && "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:text-primary-foreground",
+                  "inline-flex h-11 items-center gap-2 rounded-full px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-secondary-foreground",
+                  active && "bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 hover:text-primary-foreground",
                 )}
                 href={item.href}
                 key={item.href}

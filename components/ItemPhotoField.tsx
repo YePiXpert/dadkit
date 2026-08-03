@@ -193,12 +193,12 @@ export function ItemPhotoField({
   return (
     <section
       aria-label={`${itemName}的物品照片`}
-      className="grid gap-2 rounded-xl border border-border/70 bg-muted/35 p-3"
+      className="grid gap-2 rounded-card bg-card p-3 shadow-sm"
     >
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold text-foreground">物品照片</p>
+        <p className="text-[13px] font-semibold text-foreground">物品照片</p>
         {controller.loading || controller.busy ? (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-[13px] text-muted-foreground">
             {controller.busy ? "处理中…" : "读取中…"}
           </span>
         ) : null}
@@ -214,7 +214,7 @@ export function ItemPhotoField({
           />
         </div>
       ) : (
-        <div className="flex min-h-20 items-center justify-center rounded-xl border border-dashed border-border bg-background px-4 text-center text-xs leading-5 text-muted-foreground">
+        <div className="flex min-h-20 items-center justify-center rounded-xl border border-dashed border-border bg-background px-4 text-center text-[13px] leading-5 text-muted-foreground">
           拍下实物或包装，家人找东西时更快。
         </div>
       )}
@@ -269,12 +269,12 @@ export function ItemPhotoField({
         ) : null}
       </div>
 
-      <p className="text-xs leading-4 text-muted-foreground">
+      <p className="text-[13px] leading-4 text-muted-foreground">
         最长边压缩为 800px，原图上限 20 MiB。照片不会进入普通恢复点或
         WebDAV 备份；可前往“设置 - 备份与恢复”导出或导入独立照片备份包。
       </p>
       {controller.error ? (
-        <p aria-live="polite" className="text-xs text-destructive" role="alert">
+        <p aria-live="polite" className="text-[13px] text-destructive" role="alert">
           {controller.error}
         </p>
       ) : null}

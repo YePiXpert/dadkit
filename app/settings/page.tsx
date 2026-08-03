@@ -47,7 +47,7 @@ export default function SettingsPage() {
     <div className="page-shell page-shell-with-nav">
       <section className="mobile-shell grid gap-5 sm:max-w-[42rem]">
         <header className="px-1 pb-1 text-center">
-          <h1 className="py-2 text-xl font-bold leading-tight tracking-tight sm:text-2xl">
+          <h1 className="py-2 text-2xl font-bold leading-tight tracking-tight sm:text-[28px]">
             我的
           </h1>
           <p className="text-sm leading-6 text-muted-foreground">
@@ -62,7 +62,7 @@ export default function SettingsPage() {
 
             return (
               <Link
-                className="group flex min-h-24 items-center gap-4 rounded-card border border-border bg-card p-4 shadow-sm transition-colors hover:bg-muted/35"
+                className="group flex min-h-24 items-center gap-4 rounded-card bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
                 href={entry.href}
                 key={entry.href}
               >
@@ -72,7 +72,7 @@ export default function SettingsPage() {
                   <Icon className="size-5" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-base font-semibold text-foreground">
+                  <span className="block text-base font-semibold">
                     {entry.title}
                   </span>
                   <span className="mt-1 block text-sm leading-5 text-muted-foreground">

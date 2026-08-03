@@ -16,11 +16,11 @@ export function CareEventRow({ event, onEdit, onDelete, now = Date.now() }: { ev
   useEffect(() => { hydrateHousehold(); }, [hydrateHousehold]);
   const Icon = event.type === "sleep" ? BedDouble : event.type === "diaper" ? ShowerHead : event.type === "breastfeeding" ? Baby : Milk;
   return (
-    <article className="flex min-w-0 items-start gap-3 rounded-card border border-border bg-card p-3 shadow-sm">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary"><Icon className="size-5" /></span>
+    <article className="flex min-w-0 items-start gap-3 rounded-card bg-card p-3 shadow-sm">
+      <span className="icon-tile bg-secondary text-primary"><Icon className="size-5" /></span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-semibold">{eventTitle(event)}</h3>
+          <h3 className="text-[15px] font-semibold">{eventTitle(event)}</h3>
           <time className="text-xs text-muted-foreground" dateTime={new Date(careEventSortTime(event)).toISOString()}>{new Date(careEventSortTime(event)).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">{eventSummary(event, now)}</p>

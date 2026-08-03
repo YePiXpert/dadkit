@@ -14,11 +14,17 @@ const dialog = source("components/ItemPlanningDialog.tsx");
 const bulk = source("components/BulkPlanningDialog.tsx");
 const details = source("components/ChecklistItemDetailsDialog.tsx");
 const home = source("components/HomeDashboard.tsx");
+const toolsPage = source("app/tools/page.tsx");
 
 describe("planning product surface", () => {
-  it("adds a compact home entry without replacing departure", () => {
+  it("surfaces planning in the dashboard and via the tools hub", () => {
     expect(home).toContain("PlanningSummaryCard compact");
-    expect(home).toContain("DEPARTURE_PATH");
+    expect(home).toContain("全部工具");
+    expect(home).toContain('href="/tools"');
+    expect(home).not.toContain("DEPARTURE_PATH");
+
+    expect(toolsPage).toContain("家庭分工与采购");
+    expect(toolsPage).toContain('href: "/planning"');
     expect(summary).toContain("家庭分工与采购");
     expect(summary).toContain("已经超过完成期限");
   });

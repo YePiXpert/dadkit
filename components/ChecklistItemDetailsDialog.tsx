@@ -118,7 +118,7 @@ export function ChecklistItemDetailsDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-4 rounded-card border border-border bg-background p-5 sm:max-w-md">
+      <DialogContent className="gap-4 rounded-card bg-background p-5 shadow-lg sm:max-w-md">
         <DialogHeader className="pr-8">
           <DialogTitle className="break-words text-xl leading-7">
             {displayName}
@@ -128,11 +128,11 @@ export function ChecklistItemDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <section className="rounded-inset border border-border/70 bg-card p-4">
+        <section className="rounded-card bg-card p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold">当前状态</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="text-[15px] font-semibold">当前状态</p>
+              <p className="mt-0.5 text-[13px] text-muted-foreground">
                 {stateMeta.description}
               </p>
             </div>
@@ -158,23 +158,23 @@ export function ChecklistItemDetailsDialog({
           </Button>
         </section>
 
-        <section className="rounded-inset border border-border/70 bg-card p-4">
-          <p className="text-sm font-semibold">物品说明</p>
+        <section className="rounded-card bg-card p-4 shadow-sm">
+          <p className="text-[15px] font-semibold">物品说明</p>
           <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground">
             {displayNote}
           </p>
         </section>
 
         {!photoController.loading && !photoController.photoUrl ? (
-          <section className="rounded-inset border border-border/70 bg-card p-4">
-            <p className="text-sm font-semibold">物品示意</p>
+          <section className="rounded-card bg-card p-4 shadow-sm">
+            <p className="text-[15px] font-semibold">物品示意</p>
             <div className="relative mt-2 aspect-[4/3] max-h-52 overflow-hidden rounded-xl bg-background">
               <ChecklistItemArt
                 alt={`${displayName}的物品插画`}
                 item={item}
               />
             </div>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            <p className="mt-2 text-[13px] leading-5 text-muted-foreground">
               无品牌示意图，具体物品以医院和家庭实际需要为准。
             </p>
           </section>
@@ -182,13 +182,13 @@ export function ChecklistItemDetailsDialog({
 
         <ItemPhotoField controller={photoController} itemName={displayName} />
 
-        <section className="grid gap-3 rounded-inset border border-border/70 bg-card p-4">
+        <section className="grid gap-3 rounded-card bg-card p-4 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="flex items-center gap-2 text-sm font-semibold">
+              <p className="flex items-center gap-2 text-[15px] font-semibold">
                 <ShoppingBag className="size-4" />分工与采购
               </p>
-              <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">
+              <p className="mt-1 break-words text-[13px] leading-5 text-muted-foreground">
                 {planningSummary(planningValues, household)}
               </p>
             </div>
@@ -198,11 +198,11 @@ export function ChecklistItemDetailsDialog({
           </div>
         </section>
 
-        <section className="grid gap-2 rounded-inset border border-border/70 bg-card p-3">
+        <section className="grid gap-2 rounded-card bg-card p-3 shadow-sm">
           <div className="flex min-h-11 items-center justify-between gap-3 px-1">
             <div>
-              <p className="text-sm font-semibold">编辑物品</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[15px] font-semibold">编辑物品</p>
+              <p className="text-[13px] text-muted-foreground">
                 修改分类、数量或备注
               </p>
             </div>

@@ -23,10 +23,10 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-card border text-center shadow-none",
+        "flex flex-col items-center justify-center rounded-card text-center",
         variant === "dashed"
-          ? "min-h-[160px] border-dashed border-border bg-transparent p-6"
-          : "min-h-[220px] border-border bg-card p-8",
+          ? "min-h-[160px] border border-dashed border-border bg-transparent p-6"
+          : "min-h-[220px] bg-card p-8 shadow-sm",
       )}
     >
       {illustrationId ? (
@@ -43,7 +43,7 @@ export function EmptyState({
           <Icon className="size-7" />
         </span>
       ) : null}
-      <h2 className="text-base font-semibold">{title}</h2>
+      <h2 className="text-[15px] font-semibold">{title}</h2>
       {description ? (
         <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
           {description}

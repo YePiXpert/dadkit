@@ -25,7 +25,7 @@ const backupSettingsPage = readSource(
 const sharedFeedback = readSource("components", "ui", "feedback.tsx");
 
 describe("settings information architecture", () => {
-  it("uses 清单 / 宝宝 / 我的 as the three primary destinations", () => {
+  it("uses 首页 / 清单 / 宝宝 / 工具 / 我的 as the five primary destinations", () => {
     expect(
       PRIMARY_NAVIGATION_ITEMS.map(({ href, id, label }) => ({
         href,
@@ -36,6 +36,7 @@ describe("settings information architecture", () => {
       { href: "/", id: "home", label: "首页" },
       { href: "/checklist", id: "checklist", label: "清单" },
       { href: "/baby", id: "baby", label: "宝宝" },
+      { href: "/tools", id: "tools", label: "工具" },
       { href: "/settings", id: "mine", label: "我的" },
     ]);
   });

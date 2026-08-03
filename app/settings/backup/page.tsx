@@ -486,7 +486,7 @@ export default function BackupSettingsPage() {
 
         <section className="hero-card p-5 sm:p-6">
           <div className="flex items-center gap-4">
-            <span className="flex size-14 shrink-0 items-center justify-center rounded-full border border-card/80 bg-card text-primary shadow-sm">
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-card text-primary shadow-sm">
               <ShieldCheck className="size-6" />
             </span>
             <div className="min-w-0 flex-1">
@@ -497,14 +497,14 @@ export default function BackupSettingsPage() {
             </div>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-card/70 bg-card/75 px-4 py-3">
-              <p className="text-xs text-muted-foreground">家庭同步</p>
+            <div className="rounded-2xl bg-card/75 px-4 py-3 shadow-sm">
+              <p className="text-[13px] text-muted-foreground">家庭同步</p>
               <p className="mt-1 text-lg font-bold">
                 {syncStatus.joined ? "已连接" : "未连接"}
               </p>
             </div>
-            <div className="rounded-2xl border border-card/70 bg-card/75 px-4 py-3">
-              <p className="text-xs text-muted-foreground">本机恢复点</p>
+            <div className="rounded-2xl bg-card/75 px-4 py-3 shadow-sm">
+              <p className="text-[13px] text-muted-foreground">本机恢复点</p>
               <p className="mt-1 text-lg font-bold tabular-nums">{snapshots.length} 份</p>
             </div>
           </div>
@@ -612,14 +612,14 @@ export default function BackupSettingsPage() {
           </CardContent>
         </Card>
 
-        <details className="group overflow-hidden rounded-card border border-border bg-card">
+        <details className="group overflow-hidden rounded-card bg-card shadow-sm">
           <summary className="flex min-h-20 cursor-pointer list-none items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary">
               <Cloud className="size-4" />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-semibold">WebDAV 备份</span>
-              <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
+              <span className="mt-0.5 block text-[13px] leading-5 text-muted-foreground">
                 {webDavConfigured
                   ? `已配置 · 上次上传 ${formatOptionalTime(webDavSyncState.lastUploadAt)}`
                   : "高级功能：跨设备手动上传或恢复备份"}
@@ -656,7 +656,7 @@ export default function BackupSettingsPage() {
             <form
               aria-label="WebDAV 配置"
               autoComplete="off"
-              className="grid gap-3 rounded-2xl border border-border bg-muted/35 p-3 sm:grid-cols-2"
+              className="grid gap-3 rounded-2xl bg-muted/35 p-3 shadow-sm sm:grid-cols-2"
               onSubmit={(event) => event.preventDefault()}
             >
               <Field label="WebDAV 地址" htmlFor="webdav-endpoint">
@@ -667,7 +667,7 @@ export default function BackupSettingsPage() {
                     value={webDavConfig.endpoint}
                     onChange={(event) => updateWebDavConfig({ endpoint: event.target.value })}
                   />
-                  <p className="text-xs leading-5 text-muted-foreground">
+                  <p className="text-[13px] leading-5 text-muted-foreground">
                     默认地址适用于 123 云盘；其他服务请填写自己的 WebDAV 地址。
                   </p>
                 </>
@@ -719,10 +719,10 @@ export default function BackupSettingsPage() {
                   onChange={(event) => updateWebDavConfig({ filename: event.target.value })}
                 />
               </Field>
-              <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 sm:col-span-2">
+              <div className="flex items-center justify-between gap-3 rounded-lg bg-card p-3 shadow-sm sm:col-span-2">
                 <div>
                   <Label htmlFor="webdav-remember-secret">记住密码在本设备</Label>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
                     默认只保留到当前浏览器会话结束。开启后会明文保存在此设备的本地存储，仅在可信设备上使用。
                   </p>
                 </div>
@@ -735,7 +735,7 @@ export default function BackupSettingsPage() {
             </form>
 
             {pendingRemoteBackup ? (
-              <div className="grid gap-3 rounded-xl border border-border bg-muted/35 p-3 text-sm">
+              <div className="grid gap-3 rounded-xl bg-muted/35 p-3 text-sm shadow-sm">
                 <div className="grid gap-2 sm:grid-cols-2">
                   <StatusTile label="远端更新时间" value={formatSnapshotTime(pendingRemoteBackup.updatedAt)} />
                   <StatusTile label="清单项目" value={`${pendingRemoteBackup.data.checklist.length} 项`} />
@@ -751,7 +751,7 @@ export default function BackupSettingsPage() {
 
             <Feedback message={webDavMessage} ok={webDavMessageOk} />
 
-            <div className="grid gap-1 text-xs leading-5 text-muted-foreground sm:grid-cols-2">
+            <div className="grid gap-1 text-[13px] leading-5 text-muted-foreground sm:grid-cols-2">
               <span>上次上传：{formatOptionalTime(webDavSyncState.lastUploadAt)}</span>
               <span>上次下载：{formatOptionalTime(webDavSyncState.lastDownloadAt)}</span>
             </div>
@@ -882,7 +882,7 @@ export default function BackupSettingsPage() {
           />
         ) : null}
 
-        <footer className="grid gap-2 px-3 pb-4 pt-1 text-center text-xs leading-5 text-muted-foreground">
+        <footer className="grid gap-2 px-3 pb-4 pt-1 text-center text-[13px] leading-5 text-muted-foreground">
           <p>数据默认保存在当前浏览器。</p>
           <p className="flex items-center justify-center gap-3">
             <Link className="inline-flex min-h-11 items-center px-1 text-primary hover:underline" href={getReviewPageHref(PUBLIC_PRIVACY_PATH)}>
@@ -907,10 +907,10 @@ function SnapshotRow({
   onRestore: (id: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 p-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-muted/40 p-3 shadow-sm">
       <div className="min-w-0">
         <p className="text-sm font-semibold">{formatSnapshotTime(snapshot.createdAt)}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{snapshot.reason}</p>
+        <p className="mt-1 text-[13px] text-muted-foreground">{snapshot.reason}</p>
       </div>
       <Button size="sm" variant="outline" onClick={() => onRestore(snapshot.id)}>
         恢复
@@ -985,8 +985,8 @@ function Field({
 
 function StatusTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-card px-3 py-2">
-      <p className="text-xs text-muted-foreground">{label}</p>
+    <div className="rounded-lg bg-card px-3 py-2 shadow-sm">
+      <p className="text-[13px] text-muted-foreground">{label}</p>
       <p className="mt-1 break-words font-semibold">{value}</p>
     </div>
   );

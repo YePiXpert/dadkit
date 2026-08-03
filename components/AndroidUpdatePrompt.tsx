@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+
 type AndroidRelease = {
   versionCode: number;
   versionName?: string;
@@ -99,7 +101,7 @@ export function AndroidUpdatePrompt() {
   return (
     <aside
       aria-live="polite"
-      className="safe-bottom-toast fixed inset-x-3 z-[61] mx-auto max-w-md rounded-card border border-border bg-card p-4 text-sm shadow-md"
+      className="safe-bottom-toast fixed inset-x-3 z-[61] mx-auto max-w-md rounded-card bg-card p-4 text-sm shadow-lg"
     >
       <p className="font-semibold">
         DadKit {release.versionName || release.versionCode} 可更新
@@ -110,20 +112,19 @@ export function AndroidUpdatePrompt() {
         </p>
       ) : null}
       <div className="mt-3 flex justify-end gap-2">
-        <button
-          className="min-h-11 rounded-full px-4 text-sm font-semibold text-muted-foreground"
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => setDismissed(true)}
         >
           稍后
-        </button>
-        <a
-          className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 py-2 font-semibold text-primary-foreground shadow-sm"
-          href={downloadUrl}
-        >
-          <Download className="size-4" />
-          下载更新
-        </a>
+        </Button>
+        <Button asChild>
+          <a href={downloadUrl}>
+            <Download className="size-4" />
+            下载更新
+          </a>
+        </Button>
       </div>
     </aside>
   );

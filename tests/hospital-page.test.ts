@@ -16,7 +16,7 @@ const page = readSource("app", "hospital", "page.tsx");
 const workspace = readSource("components", "HospitalProfileWorkspace.tsx");
 const summary = readSource("components", "HospitalSummaryCard.tsx");
 const departure = readSource("components", "DepartureWorkspace.tsx");
-const homeDashboard = readSource("components", "HomeDashboard.tsx");
+const toolsPage = readSource("app", "tools", "page.tsx");
 const pwaRegister = readSource("components", "PwaRegister.tsx");
 const serviceWorker = readSource("public", "sw.js");
 
@@ -24,8 +24,8 @@ describe("hospital profile page and entry points", () => {
   it("ships the route, metadata and both requested entry points", () => {
     expect(page).toContain("HospitalProfileWorkspace");
     expect(page).toContain("医院档案 | DadKit");
-    expect(homeDashboard).toContain("HOSPITAL_PATH");
-    expect(homeDashboard).toContain("医院档案");
+    expect(toolsPage).toContain("医院档案");
+    expect(toolsPage).toContain('href: "/hospital"');
     expect(departure).toContain("<HospitalSummaryCard />");
     expect(departure.indexOf("<HospitalSummaryCard />")).toBeGreaterThan(
       departure.indexOf('id="departure-remaining-count"'),
@@ -94,12 +94,16 @@ describe("hospital profile page and entry points", () => {
     expect(summary).not.toContain("geolocation");
   });
 
-  it("assigns /hospital only to 我的 navigation", () => {
-    const checklist = PRIMARY_NAVIGATION_ITEMS[0];
+  it("assigns /hospital to the 工具 navigation tab", () => {
+    const checklist = PRIMARY_NAVIGATION_ITEMS.find(
+      (item) => item.id === "checklist",
+    )!;
+    const tools = PRIMARY_NAVIGATION_ITEMS.find((item) => item.id === "tools")!;
     const mine = PRIMARY_NAVIGATION_ITEMS.find((item) => item.id === "mine")!;
 
     expect(isPrimaryNavigationItemActive("/hospital", checklist)).toBe(false);
-    expect(isPrimaryNavigationItemActive("/hospital", mine)).toBe(true);
+    expect(isPrimaryNavigationItemActive("/hospital", tools)).toBe(true);
+    expect(isPrimaryNavigationItemActive("/hospital", mine)).toBe(false);
   });
 
   it("asks the active service worker to cache a first-visited route", () => {

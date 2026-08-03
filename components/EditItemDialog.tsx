@@ -121,7 +121,7 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
         </Button>
       </DialogTrigger>
       <DialogContent
-        className="flex flex-col overflow-hidden sm:gap-5 sm:border sm:border-border sm:p-6"
+        className="flex flex-col overflow-hidden rounded-card bg-background shadow-lg sm:gap-5 sm:p-6"
         mobileFullscreen
         showCloseButton={false}
       >
@@ -148,12 +148,12 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
               <PackageOpen className="size-12" strokeWidth={1.45} />
             </div>
             <div className="grid gap-3">
-              <p className="text-lg font-semibold">预计数量</p>
+              <p className="text-[15px] font-semibold">预计数量</p>
               <QuantityStepper value={quantity} onChange={setQuantity} />
             </div>
           </div>
           <div className="grid gap-4">
-            <div className="grid divide-y divide-border rounded-card border border-border bg-card px-5">
+            <div className="grid divide-y divide-border rounded-card bg-card px-5 shadow-sm">
               <FormRow htmlFor={`edit-item-name-${item.id}`} label="物品名称">
                 <Input
                   id={`edit-item-name-${item.id}`}
@@ -218,7 +218,7 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
                 </FormRow>
               ) : null}
             </div>
-            <div className="grid gap-3 rounded-card border border-border bg-card p-5">
+            <div className="grid gap-3 rounded-card bg-card p-5 shadow-sm">
               <label className="text-sm font-semibold" htmlFor={`edit-item-note-${item.id}`}>
                 备注
               </label>

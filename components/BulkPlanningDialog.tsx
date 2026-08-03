@@ -150,7 +150,7 @@ function BulkField({
   onModeChange: (mode: BulkMode) => void;
 }) {
   return (
-    <div className="grid gap-2 rounded-inset border border-border/70 p-3">
+    <div className="grid gap-2 rounded-inset bg-card p-3 shadow-sm">
       <Label>{label}</Label>
       <Select value={mode} onValueChange={(value) => onModeChange(value as BulkMode)}>
         <SelectTrigger aria-label={`${label}处理方式`}><SelectValue /></SelectTrigger>

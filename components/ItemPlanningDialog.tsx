@@ -108,7 +108,7 @@ export function ItemPlanningDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          className="flex flex-col overflow-hidden sm:gap-5 sm:border sm:border-border sm:p-6"
+          className="flex flex-col overflow-hidden sm:gap-5 sm:p-6"
           mobileFullscreen
           showCloseButton={false}
         >
@@ -274,7 +274,7 @@ function TextPlanningField({
       <div className="flex flex-wrap gap-2">
         {shortcuts.map((shortcut) => (
           <button
-            className="min-h-9 rounded-full border border-border bg-card px-3 text-xs text-muted-foreground hover:text-foreground"
+            className="min-h-9 rounded-full bg-secondary px-3 text-xs text-muted-foreground hover:text-foreground"
             key={shortcut}
             onClick={() => onChange(shortcut)}
             type="button"

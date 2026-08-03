@@ -8,6 +8,7 @@ import { MobileNav } from "@/components/MobileNav";
 import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
 import { PersistenceWarning } from "@/components/PersistenceWarning";
 import { SyncSessionWarning } from "@/components/SyncSessionWarning";
+import { MISANS_STYLESHEETS } from "@/lib/font";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
 import "./globals.css";
 
@@ -84,6 +85,9 @@ export default function RootLayout({
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <body>
+        {MISANS_STYLESHEETS.map((href) => (
+          <link href={href} key={href} precedence="font" rel="stylesheet" />
+        ))}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <BackgroundTasks />
         <OnboardingGate />

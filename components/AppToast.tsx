@@ -39,9 +39,9 @@ export function AppToast() {
     <div
       aria-live="polite"
       className={cn(
-        "safe-bottom-toast fixed inset-x-3 z-[70] mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm shadow-lg",
-        toast.tone === "warning" && "border-warning-foreground/25 bg-warning text-warning-foreground",
-        toast.tone === "success" && "border-primary/20",
+        "safe-bottom-toast fixed inset-x-3 z-[70] mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-card p-3 text-sm shadow-lg",
+        toast.tone === "warning" && "ring-1 ring-warning-foreground/25 bg-warning text-warning-foreground",
+        toast.tone === "success" && "ring-1 ring-primary/20",
       )}
       role="status"
     >

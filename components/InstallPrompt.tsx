@@ -169,7 +169,7 @@ export function InstallPrompt() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">把 DadKit 装到桌面</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
             {showIosGuide && !deferredPrompt
               ? "用 Safari 打开，点底部分享按钮，选择“添加到主屏幕”，离线也能用。"
               : "安装后可直接从桌面打开，离线也能查看和更新待产清单。"}

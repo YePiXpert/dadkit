@@ -34,7 +34,7 @@ export function PersistenceWarning() {
 
   return (
     <aside
-      className="fixed inset-x-3 top-3 z-[70] mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-card p-3 text-xs shadow-md"
+      className="fixed inset-x-3 top-3 z-[70] mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl bg-card p-3 text-xs shadow-md ring-1 ring-destructive/30"
       role="alert"
     >
       <span>{status?.lastError ? "修改仍保留在当前页面，但尚未写入本机存储。" : message}</span>

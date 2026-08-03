@@ -59,9 +59,9 @@ export function CareTimelineWorkspace() {
 
   return (
     <div className="page-shell page-shell-with-nav">
-      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+      <section className="mobile-shell grid gap-4">
         <PageHeader backHref="/baby" backLabel="返回宝宝记录" kicker="照护时间线" subtitle="默认加载最近 7 天，可按类型筛选并搜索备注。" title="全部宝宝记录" />
-        <section className="grid gap-3 rounded-card border border-border bg-card p-3">
+        <section className="grid gap-3 rounded-card bg-card p-3 shadow-sm">
           <div className="flex items-center gap-2"><Search className="size-4 text-muted-foreground" /><Label className="sr-only" htmlFor="baby-timeline-search">搜索备注</Label><Input className="border-0 bg-transparent shadow-none" id="baby-timeline-search" onChange={(event) => setQuery(event.target.value)} placeholder="搜索备注" type="search" value={query} /></div>
           <Select value={filter} onValueChange={(value) => setFilter(value as typeof filter)}><SelectTrigger aria-label="记录类型筛选"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部</SelectItem><SelectItem value="breastfeeding">亲喂</SelectItem><SelectItem value="bottle">瓶喂</SelectItem><SelectItem value="pumping">吸奶</SelectItem><SelectItem value="diaper">尿布</SelectItem><SelectItem value="sleep">睡眠</SelectItem></SelectContent></Select>
           <Select value={recorder} onValueChange={setRecorder}><SelectTrigger aria-label="记录人筛选"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">全部记录人</SelectItem><SelectItem value="none">未标记记录人</SelectItem>{getActiveHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}</SelectItem>)}{getRemovedHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}（已移除）</SelectItem>)}</SelectContent></Select>

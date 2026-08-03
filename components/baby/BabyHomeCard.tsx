@@ -44,11 +44,11 @@ export function BabyHomeCard() {
     : "";
 
   return (
-    <Link className="group flex min-h-24 items-center gap-3 rounded-card border border-primary/20 bg-card p-4 transition-colors hover:bg-secondary/35" href="/baby">
+    <Link className="group flex min-h-24 items-center gap-3 rounded-card bg-card p-4 shadow-sm transition-shadow hover:shadow-md" href="/baby">
       <span className="icon-tile size-12"><Baby className="size-6" /></span>
       <span className="min-w-0 flex-1">
-        <strong className="block break-words text-base font-semibold">{enabled ? profile.fields.nickname.value || "宝宝记录" : "宝宝记录"}</strong>
-        <span className="mt-1 block break-words text-xs leading-5 text-muted-foreground">
+        <strong className="block break-words text-[15px] font-semibold">{enabled ? profile.fields.nickname.value || "宝宝记录" : "宝宝记录"}</strong>
+        <span className="mt-1 block break-words text-[13px] leading-5 text-muted-foreground">
           {enabled
             ? `${lastFeeding ? `上次喂养${formatCareRelativeTime(lastFeeding.type === "bottle" ? lastFeeding.occurredAt : lastFeeding.startAt, now)}` : "还没有喂养记录"} · 今日 ${summary.totalRecordCount} 条${activeEvents.length ? ` · ${activeEvents.some((event) => event.type === "breastfeeding") ? "亲喂" : "睡眠/吸奶"}计时中` : ""}`
             : hydrated

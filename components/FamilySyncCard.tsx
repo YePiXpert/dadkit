@@ -61,7 +61,7 @@ export function FamilySyncCard() {
       <CardContent className="grid gap-4">
         {status.joined && session ? (
           <>
-            <div className="rounded-xl border border-border bg-muted/35 p-3 text-sm leading-6">
+            <div className="rounded-xl bg-muted/35 p-3 text-sm leading-6 shadow-sm">
               <p className="font-semibold">{label}</p>
               <p className="text-muted-foreground">
                 {isLegacySyncSession(session)
@@ -82,7 +82,7 @@ export function FamilySyncCard() {
               <Button asChild><Link href="/settings/sync">创建同步空间</Link></Button>
               <Button asChild variant="outline"><Link href="/join">通过邀请加入</Link></Button>
             </div>
-            <details className="rounded-xl border border-border p-3 text-sm">
+            <details className="rounded-xl bg-muted/35 p-3 text-sm shadow-sm">
               <summary className="cursor-pointer font-medium">使用旧同步码</summary>
               <div className="mt-4 grid gap-3">
                 <div className="grid gap-2"><Label htmlFor="legacy-sync-name">原家庭名称</Label><Input id="legacy-sync-name" maxLength={32} onChange={(event) => setName(event.target.value)} value={name} /></div>
@@ -93,7 +93,7 @@ export function FamilySyncCard() {
           </>
         )}
         <Feedback message={message || status.lastError || ""} ok={ok} />
-        <p className="text-xs leading-5 text-muted-foreground">同步数据保存在所连接的服务器上，当前不提供端到端加密。请使用 HTTPS 并妥善保管邀请链接。</p>
+        <p className="text-[13px] leading-5 text-muted-foreground">同步数据保存在所连接的服务器上，当前不提供端到端加密。请使用 HTTPS 并妥善保管邀请链接。</p>
       </CardContent>
     </Card>
   );

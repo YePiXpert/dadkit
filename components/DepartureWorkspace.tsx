@@ -79,7 +79,7 @@ export function DepartureWorkspace() {
 
   return (
     <div className="page-shell page-shell-with-nav">
-      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+      <section className="mobile-shell grid gap-4">
         <PageHeader
           backHref="/"
           backLabel="返回首页"
@@ -134,10 +134,10 @@ export function DepartureWorkspace() {
         <HospitalSummaryCard />
 
         {progress.total > 0 && progress.remaining === 0 ? (
-          <section className="flex items-start gap-3 rounded-card border border-primary/25 bg-secondary/45 p-4">
+          <section className="flex items-start gap-3 rounded-card bg-secondary/50 p-4 shadow-sm">
             <CheckCircle2 className="mt-0.5 size-6 shrink-0 text-primary" />
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold">关键物品已经确认</h2>
+              <h2 className="text-[15px] font-semibold">关键物品已经确认</h2>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 可以安心出发；需要重新核对时，点开下面的物品即可恢复。
               </p>
@@ -171,7 +171,7 @@ export function DepartureWorkspace() {
                   <div className="flex min-w-0 items-end justify-between gap-3 px-1">
                     <div className="min-w-0">
                       <h2
-                        className="break-words text-base font-semibold"
+                        className="break-words text-[15px] font-semibold"
                         id={`departure-group-${group.id}`}
                       >
                         {group.label}
@@ -249,7 +249,7 @@ export function DepartureWorkspaceSkeleton() {
       aria-label="正在准备出发清单"
       className="page-shell page-shell-with-nav"
     >
-      <section className="mobile-shell grid gap-4 lg:max-w-2xl">
+      <section className="mobile-shell grid gap-4">
         <Skeleton className="h-20 rounded-card" />
         <Skeleton className="h-48 rounded-card" />
         <div className="grid gap-3">

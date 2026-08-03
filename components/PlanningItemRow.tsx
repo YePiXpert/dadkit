@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, MapPin, Pencil, ShoppingBag, UserRound } from "lucide-react";
+import { CalendarDays, Check, MapPin, Pencil, ShoppingBag, UserRound } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { getChecklistItemState } from "@/lib/checklist-v2";
@@ -51,9 +51,9 @@ export function PlanningItemRow({
   return (
     <article
       className={cn(
-        "grid min-w-0 gap-3 rounded-card border border-border/70 bg-card p-4",
-        selected && "border-primary/50 bg-secondary/35",
-        overdue && "border-destructive/35",
+        "grid min-w-0 gap-3 rounded-card bg-card p-4 shadow-sm transition-colors",
+        selected && "bg-secondary/50",
+        overdue && "ring-1 ring-destructive/40",
       )}
     >
       <div className="flex min-w-0 items-start gap-3">
@@ -61,13 +61,13 @@ export function PlanningItemRow({
           aria-label={`${selected ? "取消选择" : "选择"}${item.name}`}
           aria-pressed={selected}
           className={cn(
-            "mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-full border border-border text-sm font-semibold",
+            "mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card transition-colors",
             selected && "border-primary bg-primary text-primary-foreground",
           )}
           onClick={onSelect}
           type="button"
         >
-          {selected ? "✓" : "选"}
+          {selected ? <Check aria-hidden="true" className="size-5" /> : null}
         </button>
         <button className="min-w-0 flex-1 text-left" onClick={onEdit} type="button">
           <span className="block break-words text-sm font-semibold">{item.name}</span>
