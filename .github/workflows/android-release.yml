@@ -30,7 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$GITHUB_REF_NAME" = "v3.4.0"
+          test "$GITHUB_REF_NAME" = "v3.4.1"
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
@@ -104,15 +104,15 @@ jobs:
           test -f "$AAB"
           "$BUILD_TOOLS/zipalign" -c -v 4 "$APK"
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
-          cp "$APK" DadKit-3.4.0.apk
-          sha256sum DadKit-3.4.0.apk > DadKit-3.4.0.apk.sha256
-          cp "$AAB" DadKit-3.4.0.aab
+          cp "$APK" DadKit-3.4.1.apk
+          sha256sum DadKit-3.4.1.apk > DadKit-3.4.1.apk.sha256
+          cp "$AAB" DadKit-3.4.1.aab
 
       - name: Store AAB privately for 30 days
         uses: actions/upload-artifact@v4
         with:
-          name: DadKit-3.4.0-aab
-          path: DadKit-3.4.0.aab
+          name: DadKit-3.4.1-aab
+          path: DadKit-3.4.1.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -121,20 +121,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          DadKit 3.4.0
+          DadKit 3.4.1
 
-          - 界面全面升级：无边框暖色卡片、柔和分层阴影、MiSans 字体，观感接近原生应用
-          - 底部与桌面导航扩为五项，新增「工具」一级入口
-          - 新增工具页：孕期成长记、准备出发、医院档案、家庭分工与采购一排直达
-          - 首页重排为准备进度、宝宝、分工摘要与全部工具入口，层级更清晰
-          - 开关、按钮、徽章、对话框与视图切换等基础组件样式统一精致化
-          - Android 包名为 com.dadkit.mobile，versionCode 为 13
+          - 维护版本：重构端到端导航测试，工具页四个入口与首页分工快捷入口均独立覆盖
+          - 导航激活态改为严格验证唯一当前项，降低界面调整后的回归风险
+          - 移除固定延时，改用语义化就绪条件，提升 Chromium 与 WebKit 验收稳定性
+          - Android 包名为 com.dadkit.mobile，versionCode 为 14
           - APK 内置完整界面、清单、成长图和物品图，断网可直接打开
           - 清单、成长记录和照片仍默认保存在应用本机沙箱；家庭同步与 WebDAV 为可选联网功能
           EOF
           gh release create "$GITHUB_REF_NAME" \
-            DadKit-3.4.0.apk \
-            DadKit-3.4.0.apk.sha256 \
+            DadKit-3.4.1.apk \
+            DadKit-3.4.1.apk.sha256 \
             --verify-tag \
-            --title "DadKit 3.4.0" \
+            --title "DadKit 3.4.1" \
             --notes-file release-notes.md
