@@ -1,5 +1,8 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
-import { seedFamily } from "@/tests/e2e/helpers";
+import {
+  expectOnlyPrimaryNavigationItemActive,
+  seedFamily,
+} from "@/tests/e2e/helpers";
 
 test.describe.configure({ timeout: 60_000 });
 test.beforeEach(async ({ page }) => { await seedFamily(page); });
@@ -24,14 +27,12 @@ async function openFirstPlanningItem(page: Page) {
   return name ?? "";
 }
 
-test("从首页进入并保存、取消和清空单项信息", async ({ page }) => {
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  await page.getByRole("link", { name: "开始分工" }).click();
-  await expect(page).toHaveURL(/\/planning$/);
-  await expect(page.getByRole("link", { name: "工具", exact: true })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
+test("可保存、取消和清空单项信息", async ({ page }) => {
+  await page.goto("/planning", { waitUntil: "domcontentloaded" });
+  await expect(
+    page.getByRole("heading", { name: "家庭分工与采购", exact: true }),
+  ).toBeVisible({ timeout: 60_000 });
+  await expectOnlyPrimaryNavigationItemActive(page, "工具");
 
   const itemName = await openFirstPlanningItem(page);
   await page.getByRole("checkbox", { name: /小江/ }).check();

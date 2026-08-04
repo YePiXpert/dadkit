@@ -1,4 +1,50 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
+import type { PrimaryNavigationItem } from "@/lib/navigation";
+
+export type PrimaryNavigationLabel = PrimaryNavigationItem["label"];
+
+export async function expectOnlyPrimaryNavigationItemActive(
+  page: Page,
+  label: PrimaryNavigationLabel,
+) {
+  const navigation = page.getByRole("navigation", { name: "主导航" });
+
+  await expect(navigation).toBeVisible();
+  await expect(navigation.locator('[aria-current="page"]')).toHaveCount(1);
+  await expect(
+    navigation.getByRole("link", { name: label, exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+}
+
+export async function openToolFromHome(
+  page: Page,
+  toolName: string,
+  pathname: string,
+) {
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  const toolsEntry = page.getByRole("link", {
+    name: /^全部工具(?:\s|$)/,
+  });
+  await expect(toolsEntry).toBeVisible({ timeout: 60_000 });
+  await toolsEntry.click();
+  await expectPathname(page, "/tools");
+
+  const toolEntry = page.getByRole("link", {
+    name: new RegExp(`^${escapeRegExp(toolName)}(?:\\s|$)`),
+  });
+  await expect(toolEntry).toBeVisible();
+  await toolEntry.click();
+  await expectPathname(page, pathname);
+}
+
+export async function expectPathname(page: Page, pathname: string) {
+  await expect.poll(() => new URL(page.url()).pathname).toBe(pathname);
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 export async function seedCompletedOnboarding(page: Page) {
   await page.addInitScript(() => {

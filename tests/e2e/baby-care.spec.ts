@@ -1,5 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
-import { seedCompletedOnboarding } from "@/tests/e2e/helpers";
+import {
+  expectOnlyPrimaryNavigationItemActive,
+  seedCompletedOnboarding,
+} from "@/tests/e2e/helpers";
 
 test.describe.configure({ timeout: 120_000 });
 test.beforeEach(async ({ page }) => { await seedCompletedOnboarding(page); });
@@ -25,10 +28,10 @@ async function chooseSelect(page: Page, label: string, option: string) {
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 
-test("宝宝资料、三栏导航和计时在刷新后可恢复", async ({ page }) => {
+test("宝宝资料、主导航和计时在刷新后可恢复", async ({ page }) => {
   await setupBaby(page, "E2E宝宝");
   await expect(page.getByRole("link", { name: "清单", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "宝宝", exact: true })).toHaveAttribute("aria-current", "page");
+  await expectOnlyPrimaryNavigationItemActive(page, "宝宝");
   await expect(page.getByRole("link", { name: "我的", exact: true })).toBeVisible();
 
   await openQuickAction(page, "亲喂");

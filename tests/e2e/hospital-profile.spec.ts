@@ -5,7 +5,10 @@ import {
   type Locator,
   type Page,
 } from "@playwright/test";
-import { seedCompletedOnboarding } from "@/tests/e2e/helpers";
+import {
+  expectOnlyPrimaryNavigationItemActive,
+  seedCompletedOnboarding,
+} from "@/tests/e2e/helpers";
 
 test.describe.configure({ timeout: 120_000 });
 test.beforeEach(async ({ page }) => { await seedCompletedOnboarding(page); });
@@ -53,8 +56,6 @@ async function dismissTransientUi(page: Page) {
 
   if ((await refresh.count()) > 0 && (await refresh.isVisible())) {
     await refresh.click();
-    await page.waitForTimeout(1_000);
-    await page.waitForLoadState("domcontentloaded");
   }
 }
 
@@ -78,9 +79,10 @@ test("从准备出发进入，保存后刷新并显示摘要、复制和拨号�
   await expect(
     page.getByRole("heading", { name: "医院档案", exact: true }),
   ).toBeVisible();
-  await page.waitForTimeout(1_000);
+  const createProfile = page.getByRole("button", { name: "填写医院档案" });
+  await expect(createProfile).toBeVisible();
   await dismissTransientUi(page);
-  await page.getByRole("button", { name: "填写医院档案" }).click();
+  await createProfile.click();
   await fillHospital(page);
   await dismissTransientUi(page);
   await clickCentered(page.getByRole("button", { name: "保存档案" }));
@@ -118,16 +120,16 @@ test("从准备出发进入，保存后刷新并显示摘要、复制和拨号�
   ).toHaveAttribute("href", "tel:+8601012345678");
 });
 
-test("从首页经工具页进入，取消不保存且清空需要二次确认", async ({ page }) => {
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  await page.getByRole("link", { name: /全部工具/ }).click();
-  await expect(page).toHaveURL(/\/tools$/);
-  await page.getByRole("link", { name: /医院档案/ }).click();
-  await expect(page).toHaveURL(/\/hospital$/);
-  await page.waitForTimeout(1_000);
+test("取消不保存且清空需要二次确认", async ({ page }) => {
+  await page.goto("/hospital", { waitUntil: "domcontentloaded" });
+  await expect(
+    page.getByRole("heading", { name: "医院档案", exact: true }),
+  ).toBeVisible({ timeout: 60_000 });
+  const createProfile = page.getByRole("button", { name: "填写医院档案" });
+  await expect(createProfile).toBeVisible();
   await dismissTransientUi(page);
 
-  await page.getByRole("button", { name: "填写医院档案" }).click();
+  await createProfile.click();
   await page.locator("#hospital-hospitalName").fill("中心医院");
   await page.locator("#hospital-address").fill("原地址");
   await dismissTransientUi(page);
@@ -164,13 +166,7 @@ test("直接访问 360×800 页面无横向溢出且只有工具导航激活", a
   await expect(
     page.getByRole("heading", { name: "医院档案", exact: true }),
   ).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByRole("link", { name: "工具", exact: true })).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
-  await expect(
-    page.getByRole("link", { name: "我的", exact: true }),
-  ).not.toHaveAttribute("aria-current", "page");
+  await expectOnlyPrimaryNavigationItemActive(page, "工具");
   await expect
     .poll(() =>
       page.evaluate(

@@ -1,5 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { seedCompletedOnboarding } from "@/tests/e2e/helpers";
+import {
+  expectOnlyPrimaryNavigationItemActive,
+  seedCompletedOnboarding,
+} from "@/tests/e2e/helpers";
 
 test.describe.configure({ timeout: 120_000 });
 test.beforeEach(async ({ page }) => { await seedCompletedOnboarding(page); });
@@ -11,21 +14,13 @@ function remainingCount(page: import("@playwright/test").Page) {
   });
 }
 
-test("从首页经工具hub进入后可单项和整组确认，刷新保持同一状态", async ({
+test("可单项和整组确认，刷新保持同一状态", async ({
   page,
 }) => {
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  const toolsEntry = page.getByRole("link", { name: /全部工具/ });
-  await expect(toolsEntry).toBeVisible({ timeout: 60_000 });
-  await toolsEntry.click();
-
-  await expect(page).toHaveURL(/\/tools$/);
-  const entry = page.getByRole("link", { name: /准备出发/ });
-  await expect(entry).toBeVisible();
-  await entry.click();
-
-  await expect(page).toHaveURL(/\/departure$/);
-  await expect(page.getByRole("heading", { name: "准备出发" })).toBeVisible();
+  await page.goto("/departure", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("heading", { name: "准备出发" })).toBeVisible({
+    timeout: 60_000,
+  });
   await expect(page.getByRole("heading", { name: "证件资料" })).toBeVisible();
 
   const beforeSingle = await remainingCount(page);
@@ -51,9 +46,6 @@ test("从首页经工具hub进入后可单项和整组确认，刷新保持同�
   const remainingAfterBatch = await remainingCount(page);
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect.poll(() => remainingCount(page)).toBe(remainingAfterBatch);
-
-  await page.getByRole("link", { name: "返回首页" }).click();
-  await expect(page.getByRole("link", { name: /全部工具/ })).toBeVisible();
 });
 
 test("可以直接访问准备出发页面", async ({ page }) => {
@@ -66,13 +58,7 @@ test("可以直接访问准备出发页面", async ({ page }) => {
   await expect(
     page.getByRole("progressbar", { name: /出发物品确认/ }),
   ).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "主导航" })).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "工具", exact: true }),
-  ).toHaveAttribute(
-    "aria-current",
-    "page",
-  );
+  await expectOnlyPrimaryNavigationItemActive(page, "工具");
   await expect
     .poll(() =>
       page.evaluate(
