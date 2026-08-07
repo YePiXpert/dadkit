@@ -17,6 +17,7 @@ function resetStore() {
     todayEvents: [],
     activeEvents: [],
     timelineEvents: [],
+    timelineRange: undefined,
     loading: false,
     repositoryError: undefined,
     changeToken: 0,
@@ -142,5 +143,31 @@ describe("baby store", () => {
     expect(useBabyStore.getState().timelineEvents[0]?.note).toBe("新备注");
     await useBabyStore.getState().deleteEvent(event.id);
     expect(useBabyStore.getState().timelineEvents[0]?.deletedAt).not.toBeNull();
+  });
+
+  it("rebuilds the loaded timeline range when remote data adds an event", async () => {
+    const occurredAt = new Date().toISOString();
+    const timestamp = Date.parse(occurredAt);
+    await useBabyStore.getState().hydrate();
+    await useBabyStore.getState().loadTimelineRange(timestamp - 1, timestamp + 1);
+
+    const remote = await repository.getAllBabyData();
+    remote.care.events.push({
+      id: "remote-timeline-event",
+      type: "diaper",
+      note: "远端新增",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      deletedAt: null,
+      recordedByMemberId: null,
+      occurredAt,
+      kind: "wet",
+    });
+
+    await useBabyStore.getState().applyRemoteBabyData(remote);
+
+    expect(useBabyStore.getState().timelineEvents).toMatchObject([
+      { id: "remote-timeline-event", note: "远端新增" },
+    ]);
   });
 });

@@ -1,5 +1,8 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
-import { seedCompletedOnboarding } from "@/tests/e2e/helpers";
+import {
+  seedCompletedOnboarding,
+  waitForOfflineReady,
+} from "@/tests/e2e/helpers";
 
 test.describe.configure({ timeout: 120_000 });
 test.beforeEach(async ({ page }) => { await seedCompletedOnboarding(page); });
@@ -17,15 +20,6 @@ async function addWetDiaper(page: Page) {
   await page.getByRole("region", { name: "快速记录" }).getByRole("button", { name: "尿布", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "小便", exact: true }).click();
   await expect(page.getByText("尿布记录已保存。")).toBeVisible();
-}
-
-async function waitForCachedRoute(page: Page, route: string) {
-  await expect.poll(async () => page.evaluate(async (candidate) => {
-    if (!("serviceWorker" in navigator)) return false;
-    const registration = await navigator.serviceWorker.getRegistration();
-    const cached = await caches.match(candidate, { ignoreSearch: true });
-    return Boolean(registration?.active && cached?.ok);
-  }, route), { timeout: 60_000 }).toBe(true);
 }
 
 test("360×800、reduced-motion 和直接路由保持可用", async ({ page }) => {
@@ -51,9 +45,9 @@ test("首次访问后可离线重开并新增宝宝记录", async ({
   await setupBaby(page);
   await page.goto("/baby/timeline", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "全部宝宝记录" })).toBeVisible();
-  await waitForCachedRoute(page, "/baby/timeline");
+  await waitForOfflineReady(page, "/baby/timeline");
   await page.goto("/baby", { waitUntil: "domcontentloaded" });
-  await waitForCachedRoute(page, "/baby");
+  await waitForOfflineReady(page, "/baby");
 
   await context.setOffline(true);
   if (browserName === "webkit") {

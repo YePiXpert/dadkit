@@ -108,7 +108,7 @@ V3 的目标：在 V2「打开就知道还差什么」的基础上，把界面�
 ## 发布链路
 
 - Web/PWA：manifest、Service Worker、离线页和安装入口必须可独立工作；新版本需更新 Service Worker cache name。
-- Android：`android/` 工程 + `scripts/build-android-web.mjs` 静态导出打包 APK（含字体等 public 资产）；发布走 `scripts/release-apk.sh` 与 `scripts/validate-android-release.mjs`。
+- Android：`android/` 工程使用 Kotlin 与 Jetpack Compose 构建传统原生 APK；`scripts/prepare-native-android.mjs` 只生成原生默认清单，发布走 `scripts/release-apk.sh` 与 `scripts/validate-android-release.mjs`。
 
 ## 边界
 

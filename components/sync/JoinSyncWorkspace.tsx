@@ -17,7 +17,9 @@ export function JoinSyncWorkspace() {
   const [inviteToken, setInviteToken] = useState("");
   const [pasted, setPasted] = useState("");
   const [deviceName, setDeviceName] = useState("这台设备");
+  const [hasExistingSession, setHasExistingSession] = useState(false);
   const [existingName, setExistingName] = useState<string>();
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [replaceConfirmed, setReplaceConfirmed] = useState(false);
   const [online, setOnline] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -31,14 +33,21 @@ export function JoinSyncWorkspace() {
       setInviteToken(fromFragment);
       setPasted("已读取邀请链接");
     }
-    void import("@/lib/data/settings-repository").then(({ loadSyncSession }) => {
-      const session = loadSyncSession();
-      setExistingName(
-        session && "displayName" in session
-          ? session.displayName
-          : session?.spaceName,
-      );
-    });
+    void import("@/lib/data/settings-repository")
+      .then(({ loadSyncSession }) => {
+        const session = loadSyncSession();
+        setHasExistingSession(Boolean(session));
+        setExistingName(
+          session && "displayName" in session
+            ? session.displayName
+            : session?.spaceName,
+        );
+        setSessionChecked(true);
+      })
+      .catch(() => {
+        setMessage("无法检查当前同步空间，请刷新页面后重试。");
+        setOk(false);
+      });
     const updateOnline = () => setOnline(navigator.onLine);
     updateOnline();
     window.addEventListener("online", updateOnline);
@@ -72,14 +81,16 @@ export function JoinSyncWorkspace() {
       setOk(false);
       return;
     }
-    if (existingName && !replaceConfirmed) {
+    if (hasExistingSession && !replaceConfirmed) {
       setMessage("请先确认切换家庭同步空间。");
       setOk(false);
       return;
     }
     setBusy(true);
     const { joinSyncSpaceByInvite } = await import("@/lib/sync/client");
-    const result = await joinSyncSpaceByInvite(inviteToken, deviceName.trim());
+    const result = await joinSyncSpaceByInvite(inviteToken, deviceName.trim(), {
+      replaceExisting: replaceConfirmed,
+    });
     setBusy(false);
     if (!result.ok) {
       setMessage(result.message);
@@ -114,14 +125,14 @@ export function JoinSyncWorkspace() {
               <Input id="join-device-name" maxLength={60} onChange={(event) => setDeviceName(event.target.value)} placeholder="例如：家中 iPad" value={deviceName} />
               <p className="text-[13px] leading-5 text-muted-foreground">设备名称与家庭成员是两回事，不会自动成为记录人。</p>
             </div>
-            {existingName ? (
+            {hasExistingSession ? (
               <label className="flex items-start gap-3 rounded-xl bg-muted/35 p-3 text-sm leading-6 shadow-sm">
                 <input checked={replaceConfirmed} className="mt-1 size-4 accent-primary" onChange={(event) => setReplaceConfirmed(event.target.checked)} type="checkbox" />
-                <span>当前连接“{existingName}”。我确认切换同步空间；本机业务数据不会删除，数据仍按现有合并规则处理。</span>
+                <span>当前连接“{existingName ?? "现有家庭同步空间"}”。我确认切换同步空间；本机业务数据不会删除，数据仍按现有合并规则处理。</span>
               </label>
             ) : null}
             <Feedback message={message} ok={ok} />
-            <Button disabled={busy || !online || !inviteToken || !deviceName.trim()} onClick={() => void join()}>
+            <Button disabled={busy || !online || !sessionChecked || !inviteToken || !deviceName.trim() || Boolean(hasExistingSession && !replaceConfirmed)} onClick={() => void join()}>
               {busy ? "正在加入…" : "加入家庭同步"}
             </Button>
             {!online ? <WifiOff className="mx-auto size-5 text-muted-foreground" /> : null}

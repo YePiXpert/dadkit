@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createEmptyItemPlanning, createEmptyItemPlanningDraft, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
 import { ITEM_PLANNING_STORAGE_KEY } from "@/lib/planning/repository";
 import { useItemPlanningStore } from "@/lib/planning/store";
-import { installBrowserStorage } from "@/tests/helpers/browser-storage";
+import {
+  failNextStorageWrite,
+  installBrowserStorage,
+} from "@/tests/helpers/browser-storage";
 
 beforeEach(() => {
   installBrowserStorage();
@@ -37,5 +40,21 @@ describe("planning v2 store", () => {
     useItemPlanningStore.getState().bulkUpdate(["a"], { assigneeIds: { mode: "clear" } });
     expect(useItemPlanningStore.getState().planning.items.a.assigneeIds.value).toEqual([]);
     expect(window.localStorage.getItem(ITEM_PLANNING_STORAGE_KEY)).toContain('"version":2');
+  });
+
+  it("returns failure without optimistic memory updates when storage fails", () => {
+    const before = useItemPlanningStore.getState().planning;
+    failNextStorageWrite(ITEM_PLANNING_STORAGE_KEY);
+
+    const result = useItemPlanningStore
+      .getState()
+      .saveItemDraft("bag", {
+        ...createEmptyItemPlanningDraft(),
+        purchaseChannel: "京东",
+      });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("本机存储");
+    expect(useItemPlanningStore.getState().planning).toEqual(before);
   });
 });

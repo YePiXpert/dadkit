@@ -19,19 +19,17 @@ import {
 } from "@/lib/hospital/types";
 import { validateHospitalDraft } from "@/lib/hospital/validation";
 import { getSyncAdjustedNow } from "@/lib/sync-clock";
+import type { DataActionResult } from "@/lib/data/action-result";
+import { mergeHospitalProfiles } from "@/lib/hospital/merge";
 
-type HospitalSaveResult = {
-  changed: boolean;
-  errors?: HospitalValidationErrors;
-  ok: boolean;
-};
+type HospitalSaveResult = DataActionResult<HospitalValidationErrors>;
 
 type HospitalProfileState = {
   hydrated: boolean;
   profile: HospitalProfilePortableData;
   hydrate: () => void;
   saveDraft: (draft: HospitalProfileValues) => HospitalSaveResult;
-  clearProfile: () => boolean;
+  clearProfile: () => HospitalSaveResult;
 };
 
 function nextHospitalTimestamp(profile: HospitalProfilePortableData) {
@@ -59,30 +57,48 @@ export const useHospitalProfileStore = create<HospitalProfileState>(
         return { ok: false, changed: false, errors: validation.errors };
       }
 
+      const current = mergeHospitalProfiles(get().profile, loadHospitalProfile());
       const next = updateHospitalProfile(
-        get().profile,
+        current,
         validation.values,
-        nextHospitalTimestamp(get().profile),
+        nextHospitalTimestamp(current),
       );
 
       if (next.changed) {
-        saveHospitalProfile(next.profile);
+        try {
+          saveHospitalProfile(next.profile);
+        } catch {
+          return {
+            ok: false,
+            changed: false,
+            message: "医院档案未能写入本机存储，请清理空间后重试。",
+          };
+        }
         set({ profile: next.profile });
       }
 
       return { ok: true, changed: next.changed };
     },
     clearProfile: () => {
+      const current = mergeHospitalProfiles(get().profile, loadHospitalProfile());
       const next = clearHospitalProfile(
-        get().profile,
-        nextHospitalTimestamp(get().profile),
+        current,
+        nextHospitalTimestamp(current),
       );
 
-      if (!next.changed) return false;
+      if (!next.changed) return { ok: true, changed: false };
 
-      saveHospitalProfile(next.profile);
+      try {
+        saveHospitalProfile(next.profile);
+      } catch {
+        return {
+          ok: false,
+          changed: false,
+          message: "医院档案未能写入本机存储，请清理空间后重试。",
+        };
+      }
       set({ profile: next.profile });
-      return true;
+      return { ok: true, changed: true };
     },
   }),
 );

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   clearPwaInstalledSession,
-  isBundledAndroidApp,
+  isIosSafariBrowser,
   isPwaInstallAvailable,
   isPwaInstalled,
   markPwaInstalled,
@@ -94,13 +94,6 @@ describe("PWA install status", () => {
     expect(installPromptLogic).not.toContain("localStorage");
   });
 
-  it("recognizes the bundled Android WebView user agent", () => {
-    expect(isBundledAndroidApp()).toBe(false);
-
-    stubWindow("Mozilla/5.0 DadKitAndroid/4");
-    expect(isBundledAndroidApp()).toBe(true);
-  });
-
   it("only exposes an install action when the browser can fulfill it", () => {
     expect(isPwaInstallAvailable()).toBe(false);
 
@@ -117,12 +110,25 @@ describe("PWA install status", () => {
     expect(settingsEntry).toContain("!isPwaInstalled()");
     expect(settingsEntry).toContain("isPwaInstallAvailable()");
     expect(settingsEntry).toContain('addEventListener("appinstalled"');
-    expect(settingsEntry).toContain("!isBundledAndroidApp()");
     expect(settingsEntry).toContain("if (!showInstallEntry)");
     expect(installPrompt).toContain("markPwaInstalled()");
     expect(installPrompt).toContain('addEventListener("appinstalled"');
     expect(installPrompt).toContain("clearPwaInstalledSession()");
     expect(installPrompt).toContain("INSTALL_STATUS_CHANGED_EVENT");
+  });
+
+  it("shows direct steps in Safari and asks other iOS browsers to switch", () => {
+    stubWindow(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Version/18.0 Mobile/15E148 Safari/604.1",
+    );
+    expect(isIosSafariBrowser()).toBe(true);
+
+    stubWindow(
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) CriOS/126.0 Mobile/15E148 Safari/604.1",
+    );
+    expect(isIosSafariBrowser()).toBe(false);
+    expect(installPrompt).toContain("点底部分享按钮");
+    expect(installPrompt).toContain("请先用 Safari 打开本页");
   });
 });
 

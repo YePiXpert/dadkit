@@ -3,6 +3,7 @@
 import type { DeviceIdentityLocalData } from "@/lib/device-identity/types";
 import type { HouseholdPortableData } from "@/lib/household/types";
 import { isSafeHouseholdMemberId } from "@/lib/household/validation";
+import { publishDataChange } from "@/lib/data/change-bus";
 
 export const DEVICE_IDENTITY_STORAGE_KEY = "dadkit:v4:device-identity";
 
@@ -30,6 +31,7 @@ export function saveDeviceIdentity(identity: DeviceIdentityLocalData) {
   if (typeof window === "undefined") return;
   if (!isDeviceIdentity(identity)) throw new Error("当前设备使用者设置无效。");
   window.localStorage.setItem(DEVICE_IDENTITY_STORAGE_KEY, JSON.stringify(identity));
+  publishDataChange("device-identity");
   if (typeof window.dispatchEvent === "function" && typeof CustomEvent === "function") {
     window.dispatchEvent(new CustomEvent("dadkit:device-identity-change"));
   }

@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 
 import { PageHeader } from "@/components/PageHeader";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DangerZone } from "@/components/DangerZone";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,13 +31,6 @@ import {
 import { Feedback } from "@/components/ui/feedback";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
   getReviewPageHref,
@@ -78,12 +70,19 @@ const FamilySyncCard = dynamic(
     import("@/components/FamilySyncCard").then(
       (module) => module.FamilySyncCard,
     ),
-  {
-    loading: () => (
-      <div className="h-28 animate-pulse rounded-card bg-muted" />
+);
+const ConfirmDialog = dynamic(
+  () =>
+    import("@/components/ConfirmDialog").then(
+      (module) => module.ConfirmDialog,
     ),
-    ssr: false,
-  },
+);
+const PhotoBackupCard = dynamic(
+  () =>
+    import("@/components/PhotoBackupCard").then(
+      (module) => module.PhotoBackupCard,
+    ),
+  { ssr: false },
 );
 
 type BackupConfirmation =
@@ -231,6 +230,16 @@ export default function BackupSettingsPage() {
     return config;
   }
 
+  function reportWebDavResult(result: { message: string; ok: boolean }) {
+    setWebDavMessage(result.message);
+    setWebDavMessageOk(result.ok);
+  }
+
+  function reportWebDavClientLoadError(stopBusy = false) {
+    reportWebDavResult({ message: WEB_DAV_CLIENT_LOAD_ERROR, ok: false });
+    if (stopBusy) setWebDavBusy(false);
+  }
+
   async function testWebDav() {
     const config = prepareWebDavOperation();
 
@@ -239,16 +248,13 @@ export default function BackupSettingsPage() {
     const client = await loadWebDavClient();
 
     if (!client) {
-      setWebDavMessage(WEB_DAV_CLIENT_LOAD_ERROR);
-      setWebDavMessageOk(false);
-      setWebDavBusy(false);
+      reportWebDavClientLoadError(true);
       return;
     }
 
     const result = await client.testWebDavConnection(config, webDavSecret);
 
-    setWebDavMessage(result.message);
-    setWebDavMessageOk(result.ok);
+    reportWebDavResult(result);
     updateWebDavSyncState({
       lastError: result.ok ? undefined : result.message,
     });
@@ -265,17 +271,14 @@ export default function BackupSettingsPage() {
     const client = await loadWebDavClient();
 
     if (!client) {
-      setWebDavMessage(WEB_DAV_CLIENT_LOAD_ERROR);
-      setWebDavMessageOk(false);
-      setWebDavBusy(false);
+      reportWebDavClientLoadError(true);
       return;
     }
 
     const result = await client.uploadWebDavBackup(config, webDavSecret, currentData, {
       deviceId: webDavSyncState.deviceId,
     });
-    setWebDavMessage(result.message);
-    setWebDavMessageOk(result.ok);
+    reportWebDavResult(result);
 
     if (result.ok) {
       const timestamp = new Date().toISOString();
@@ -301,16 +304,13 @@ export default function BackupSettingsPage() {
     const client = await loadWebDavClient();
 
     if (!client) {
-      setWebDavMessage(WEB_DAV_CLIENT_LOAD_ERROR);
-      setWebDavMessageOk(false);
-      setWebDavBusy(false);
+      reportWebDavClientLoadError(true);
       return;
     }
 
     const result = await client.downloadWebDavBackup(config, webDavSecret);
 
-    setWebDavMessage(result.message);
-    setWebDavMessageOk(result.ok);
+    reportWebDavResult(result);
 
     if (result.ok && result.backup) {
       setPendingRemoteBackup(result.backup);
@@ -333,8 +333,7 @@ export default function BackupSettingsPage() {
     const client = await loadWebDavClient();
 
     if (!client) {
-      setWebDavMessage(WEB_DAV_CLIENT_LOAD_ERROR);
-      setWebDavMessageOk(false);
+      reportWebDavClientLoadError();
       return;
     }
 
@@ -354,8 +353,7 @@ export default function BackupSettingsPage() {
     }
 
     await refreshSnapshots();
-    setWebDavMessage(result.message);
-    setWebDavMessageOk(result.ok);
+    reportWebDavResult(result);
   }
 
   function clearWebDav() {
@@ -573,44 +571,14 @@ export default function BackupSettingsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2">
-              <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
-                <Download className="size-4" />
-              </span>
-              <span className="text-base">照片备份包</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3">
-            <p className="text-sm leading-6 text-muted-foreground">
-              物品照片保存在设备的本地照片库，不会混入普通恢复点或 WebDAV 备份。换设备前可导出独立照片备份包，并在新设备导入。
-            </p>
-            <input
-              ref={photoPackageInputRef}
-              accept="application/json,.json"
-              aria-label="导入照片备份包"
-              className="sr-only"
-              type="file"
-              onChange={importPhotoPackage}
-            />
-            <div className="flex flex-wrap gap-2">
-              <Button disabled={photoPackageBusy} onClick={exportPhotoPackage}>
-                <Download />
-                导出照片包
-              </Button>
-              <Button
-                disabled={photoPackageBusy}
-                variant="outline"
-                onClick={() => photoPackageInputRef.current?.click()}
-              >
-                <Upload />
-                导入照片包
-              </Button>
-            </div>
-            <Feedback message={photoPackageMessage} ok={photoPackageMessageOk} />
-          </CardContent>
-        </Card>
+        <PhotoBackupCard
+          busy={photoPackageBusy}
+          inputRef={photoPackageInputRef}
+          message={photoPackageMessage}
+          messageOk={photoPackageMessageOk}
+          onExport={exportPhotoPackage}
+          onImport={importPhotoPackage}
+        />
 
         <details className="group overflow-hidden rounded-card bg-card shadow-sm">
           <summary className="flex min-h-20 cursor-pointer list-none items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
@@ -690,20 +658,17 @@ export default function BackupSettingsPage() {
                 />
               </Field>
               <Field label="凭据类型" htmlFor="webdav-auth-mode">
-                <Select
+                <select
+                  className="flex h-11 w-full rounded-2xl border border-input bg-card px-3.5 py-2 text-base outline-none ring-offset-background focus:ring-2 focus:ring-ring"
+                  id="webdav-auth-mode"
                   value={webDavConfig.authMode}
-                  onValueChange={(value) =>
-                    updateWebDavConfig({ authMode: value as WebDavConfig["authMode"] })
+                  onChange={(event) =>
+                    updateWebDavConfig({ authMode: event.target.value as WebDavConfig["authMode"] })
                   }
                 >
-                  <SelectTrigger id="webdav-auth-mode">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="app_password">应用密码</SelectItem>
-                    <SelectItem value="basic">普通密码</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="app_password">应用密码</option>
+                  <option value="basic">普通密码</option>
+                </select>
               </Field>
               <Field label="远端目录" htmlFor="webdav-remote-dir">
                 <Input

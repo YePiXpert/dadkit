@@ -16,12 +16,10 @@ const checklistSettingsPage = readSource(
   "checklist",
   "page.tsx",
 );
-const backupSettingsPage = readSource(
-  "app",
-  "settings",
-  "backup",
-  "page.tsx",
-);
+const backupSettingsPage = [
+  readSource("app", "settings", "backup", "page.tsx"),
+  readSource("components", "PhotoBackupCard.tsx"),
+].join("\n");
 const sharedFeedback = readSource("components", "ui", "feedback.tsx");
 
 describe("settings information architecture", () => {

@@ -6,6 +6,8 @@ import { buildLatestPortableData, createSnapshotAsync, exportData } from "@/lib/
 import { installBrowserStorage } from "@/tests/helpers/browser-storage";
 import { buildDadKitWebDavBackup } from "@/lib/webdav/client";
 import { saveHousehold } from "@/lib/household/repository";
+import { useDeviceIdentityStore } from "@/lib/device-identity/store";
+import { failNextStorageWrite } from "@/tests/helpers/browser-storage";
 
 beforeEach(() => installBrowserStorage());
 
@@ -38,5 +40,46 @@ describe("device identity isolation", () => {
       expect(JSON.stringify(value)).not.toContain("member-secret");
       expect(JSON.stringify(value)).not.toContain("currentMemberId");
     }
+  });
+
+  it("does not update the identity store after a failed write", () => {
+    useDeviceIdentityStore.setState({
+      ...loadDeviceIdentity(),
+      hydrated: true,
+    });
+    const before = useDeviceIdentityStore.getState().preferredEntry;
+    failNextStorageWrite(DEVICE_IDENTITY_STORAGE_KEY);
+
+    const result = useDeviceIdentityStore
+      .getState()
+      .setPreferredEntry("baby");
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("本机存储");
+    expect(useDeviceIdentityStore.getState().preferredEntry).toBe(before);
+  });
+
+  it("rebases a field patch on the latest persisted identity", () => {
+    useDeviceIdentityStore.setState({
+      ...loadDeviceIdentity(),
+      hydrated: true,
+    });
+    saveDeviceIdentity({
+      version: 1,
+      currentMemberId: "member-external",
+      preferredEntry: "auto",
+      onboardingCompletedAt: 10,
+    });
+
+    const result = useDeviceIdentityStore
+      .getState()
+      .setPreferredEntry("baby");
+
+    expect(result.ok).toBe(true);
+    expect(loadDeviceIdentity()).toMatchObject({
+      currentMemberId: "member-external",
+      preferredEntry: "baby",
+      onboardingCompletedAt: 10,
+    });
   });
 });

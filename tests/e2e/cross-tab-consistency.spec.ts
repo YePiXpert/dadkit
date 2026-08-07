@@ -1,0 +1,95 @@
+import path from "node:path";
+
+import { expect, test } from "@playwright/test";
+
+import { seedFamily } from "@/tests/e2e/helpers";
+
+const SAMPLE_IMAGE_PATH = path.join(process.cwd(), "public", "icon-192.png");
+
+test.describe.configure({ timeout: 180_000 });
+test.beforeEach(async ({ page }) => {
+  await seedFamily(page);
+});
+
+test("双标签实时同步清单、分工、宝宝记录和物品照片", async ({
+  context,
+  page,
+}) => {
+  const otherPage = await context.newPage();
+  const itemName = `双标签物品-${test.info().project.name}`;
+
+  try {
+    await page.goto("/checklist/mom", { waitUntil: "domcontentloaded" });
+    await otherPage.goto("/checklist/mom", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("button", { name: "新增物品" })).toBeVisible({
+      timeout: 60_000,
+    });
+    await expect(
+      otherPage.getByRole("button", { name: "新增物品" }),
+    ).toBeVisible({ timeout: 60_000 });
+    await page.waitForTimeout(1_500);
+
+    await page.getByRole("button", { name: "新增物品" }).click();
+    await page.locator("#add-item-name").fill(itemName);
+    await page.getByRole("button", { name: "加入清单" }).click();
+    await expect(otherPage.getByText(itemName, { exact: true })).toBeVisible();
+
+    const itemCard = page.locator("article").filter({ hasText: itemName });
+    const otherItemCard = otherPage
+      .locator("article")
+      .filter({ hasText: itemName });
+    await itemCard.getByRole("button", { name: "详情" }).click();
+    await otherItemCard.getByRole("button", { name: "详情" }).click();
+    await page
+      .locator('input[aria-label="从相册选择物品照片"]')
+      .setInputFiles(SAMPLE_IMAGE_PATH);
+    await expect(
+      otherPage.getByRole("img", { name: `${itemName}的物品照片` }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+    await otherPage.keyboard.press("Escape");
+
+    await page.goto("/planning", { waitUntil: "domcontentloaded" });
+    await otherPage.goto("/planning", { waitUntil: "domcontentloaded" });
+    await expect(
+      page.getByRole("heading", { name: "家庭分工与采购", exact: true }),
+    ).toBeVisible();
+    await expect(
+      otherPage.getByRole("heading", { name: "家庭分工与采购", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: `编辑${itemName}的分工与采购` })
+      .click();
+    await page.getByLabel("购买渠道").fill("跨标签门店");
+    await page.getByRole("button", { name: "保存", exact: true }).click();
+    await expect(
+      otherPage.getByText("跨标签门店", { exact: false }),
+    ).toBeVisible();
+
+    await page.goto("/baby", { waitUntil: "domcontentloaded" });
+    await otherPage.goto("/baby", { waitUntil: "domcontentloaded" });
+    await expect(
+      page.getByRole("button", { name: "宝宝已出生，开始记录" }),
+    ).toBeVisible();
+    await expect(
+      otherPage.getByRole("button", { name: "宝宝已出生，开始记录" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "宝宝已出生，开始记录" }).click();
+    await page.locator("#baby-profile-nickname").fill("双标签宝宝");
+    await page.locator("#baby-profile-birthDate").fill("2026-08-01");
+    await page.getByRole("button", { name: "保存资料" }).click();
+    await expect(
+      otherPage.getByRole("heading", { name: "双标签宝宝", exact: true }),
+    ).toBeVisible();
+
+    await page
+      .getByRole("region", { name: "快速记录" })
+      .getByRole("button", { name: "瓶喂", exact: true })
+      .click();
+    await page.locator("#baby-care-amount").fill("66");
+    await page.getByRole("button", { name: "保存瓶喂记录" }).click();
+    await expect(otherPage.getByText("66 ml", { exact: false }).first()).toBeVisible();
+  } finally {
+    await otherPage.close();
+  }
+});

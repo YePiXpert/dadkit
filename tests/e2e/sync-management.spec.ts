@@ -80,7 +80,60 @@ test("加入页和同步管理页可离线重开", async ({ browserName, context
   } else {
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "家庭同步" })).toBeVisible();
-    await expect(page.getByText("当前离线：可查看本机已知状态，管理操作需要联网。")).toBeVisible();
+    if (await page.evaluate(() => navigator.onLine)) {
+      await expect(page.getByRole("button", { name: "重新检查同步服务" })).toBeVisible();
+    } else {
+      await expect(page.getByText("当前离线：可查看本机已知状态，管理操作需要联网。")).toBeVisible();
+    }
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("同步服务临时失败后可在不刷新页面的情况下重试", async ({ page }) => {
+  let attempts = 0;
+  await page.route("**/api/sync/service-info", async (route) => {
+    attempts += 1;
+    if (attempts === 1) {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "同步服务暂时不可用。" }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+
+  await page.goto("/settings/sync", { waitUntil: "domcontentloaded" });
+  await expect(page.getByText("同步服务暂时不可用。")).toBeVisible();
+  expect(await page.evaluate(() => navigator.onLine)).toBe(true);
+  await page.getByRole("button", { name: "重新检查同步服务" }).click();
+  await expect(page.getByText("同步服务暂时不可用。")).toHaveCount(0);
+  expect(attempts).toBeGreaterThanOrEqual(2);
+});
+
+test("已有同步会话时加入按钮等待检查并要求替换确认", async ({ page }) => {
+  const invite = `DK2.${"a".repeat(64)}.${"A".repeat(20)}`;
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "dadkit:v3:sync-session",
+      JSON.stringify({
+        version: 2,
+        protocolVersion: 2,
+        spaceId: "b".repeat(64),
+        displayName: "现有家庭",
+        sessionId: "c".repeat(64),
+        deviceName: "当前设备",
+        role: "member",
+        joinedAt: "2026-08-01T00:00:00.000Z",
+      }),
+    );
+  });
+
+  await page.goto(`/join#invite=${invite}`, { waitUntil: "domcontentloaded" });
+  const joinButton = page.getByRole("button", { name: "加入家庭同步" });
+  await expect(page.getByText(/当前连接“现有家庭”/)).toBeVisible();
+  await expect(joinButton).toBeDisabled();
+  await page.getByRole("checkbox").check();
+  await expect(joinButton).toBeEnabled();
 });

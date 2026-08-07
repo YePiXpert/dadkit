@@ -25,14 +25,14 @@ import {
   validateHouseholdName,
 } from "@/lib/household/validation";
 import { getSyncAdjustedNow } from "@/lib/sync-clock";
+import { mergeHousehold } from "@/lib/household/merge";
+import type { DataActionResult } from "@/lib/data/action-result";
 
-type HouseholdActionResult = {
-  ok: boolean;
-  changed: boolean;
+type HouseholdActionResult = DataActionResult<HouseholdValidationErrors> & {
   memberId?: string;
-  message?: string;
-  errors?: HouseholdValidationErrors;
 };
+
+const HOUSEHOLD_PERSISTENCE_ERROR = "家庭档案未能写入本机存储，请清理空间后重试。";
 
 type HouseholdState = {
   hydrated: boolean;
@@ -66,13 +66,15 @@ export const useHouseholdStore = create<HouseholdState>((set, get) => ({
     if (!validation.ok) {
       return { ok: false, changed: false, errors: { householdName: validation.message } };
     }
-    const current = get().household;
+    const current = mergeHousehold(get().household, loadHousehold());
     if (current.householdName.value === validation.value) {
       return { ok: true, changed: false };
     }
     const next = cloneHousehold(current);
     next.householdName = { value: validation.value, updatedAt: nextTimestamp(current) };
-    persist(next, set);
+    if (!persist(next, set)) {
+      return { ok: false, changed: false, message: HOUSEHOLD_PERSISTENCE_ERROR };
+    }
     return { ok: true, changed: true };
   },
   addMember: (draft) => {
@@ -80,7 +82,7 @@ export const useHouseholdStore = create<HouseholdState>((set, get) => ({
     if (!validation.ok || !validation.values) {
       return { ok: false, changed: false, errors: validation.errors };
     }
-    const current = get().household;
+    const current = mergeHousehold(get().household, loadHousehold());
     if (getActiveHouseholdMembers(current).length >= HOUSEHOLD_ACTIVE_MEMBER_LIMIT) {
       return { ok: false, changed: false, message: "家庭成员最多 12 人。" };
     }
@@ -106,11 +108,13 @@ export const useHouseholdStore = create<HouseholdState>((set, get) => ({
       relationshipLabel: { value: validation.values.relationshipLabel, updatedAt: now },
       deleted: { value: false, updatedAt: now },
     };
-    persist(next, set);
+    if (!persist(next, set)) {
+      return { ok: false, changed: false, message: HOUSEHOLD_PERSISTENCE_ERROR };
+    }
     return { ok: true, changed: true, memberId: id };
   },
   updateMember: (id, draft) => {
-    const current = get().household;
+    const current = mergeHousehold(get().household, loadHousehold());
     const member = current.members[id];
     if (!isSafeHouseholdMemberId(id) || !member) {
       return { ok: false, changed: false, message: "家庭成员不存在。" };
@@ -127,25 +131,31 @@ export const useHouseholdStore = create<HouseholdState>((set, get) => ({
     const next = cloneHousehold(current);
     if (nameChanged) next.members[id].displayName = { value: validation.values.displayName, updatedAt: now };
     if (relationshipChanged) next.members[id].relationshipLabel = { value: validation.values.relationshipLabel, updatedAt: now };
-    persist(next, set);
+    if (!persist(next, set)) {
+      return { ok: false, changed: false, message: HOUSEHOLD_PERSISTENCE_ERROR };
+    }
     return { ok: true, changed: true };
   },
   removeMember: (id) => {
-    const current = get().household;
+    const current = mergeHousehold(get().household, loadHousehold());
     const member = current.members[id];
     if (!isSafeHouseholdMemberId(id) || !member || member.deleted.value) {
       return { ok: false, changed: false, message: "家庭成员不存在或已移除。" };
     }
     const next = cloneHousehold(current);
     next.members[id].deleted = { value: true, updatedAt: nextTimestamp(current) };
-    persist(next, set);
+    if (!persist(next, set)) {
+      return { ok: false, changed: false, message: HOUSEHOLD_PERSISTENCE_ERROR };
+    }
     clearUnavailableDeviceMember(next);
     return { ok: true, changed: true };
   },
   clearAll: () => {
-    const current = get().household;
+    const current = mergeHousehold(get().household, loadHousehold());
     const next = clearHouseholdPortable(current, nextTimestamp(current));
-    persist(next, set);
+    if (!persist(next, set)) {
+      return { ok: false, changed: false, message: HOUSEHOLD_PERSISTENCE_ERROR };
+    }
     clearUnavailableDeviceMember(next);
     return { ok: true, changed: true };
   },
@@ -155,8 +165,13 @@ function persist(
   household: HouseholdPortableData,
   set: (partial: Partial<HouseholdState>) => void,
 ) {
-  saveHousehold(household);
+  try {
+    saveHousehold(household);
+  } catch {
+    return false;
+  }
   set({ hydrated: true, household });
+  return true;
 }
 
 function nextTimestamp(household: HouseholdPortableData) {

@@ -13,13 +13,6 @@ import { PlanningSummaryCard } from "@/components/PlanningSummaryCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { showAppToast } from "@/lib/app-toast";
@@ -111,7 +104,11 @@ export function PlanningWorkspace() {
   }
 
   function clearAllPlanning() {
-    clearAll();
+    const result = clearAll();
+    if (!result.ok) {
+      showAppToast({ message: result.message ?? "清空失败。", tone: "warning" });
+      return;
+    }
     setSelectedIds(new Set());
     showAppToast({ message: "全部家庭分工与采购信息已清空。", tone: "success" });
   }
@@ -159,21 +156,39 @@ export function PlanningWorkspace() {
             </summary>
             <div className="grid gap-3 pt-1">
               <div className="grid gap-2 sm:grid-cols-2">
-                <Select value={filter} onValueChange={(value) => setFilter(value as PlanningListFilter)}>
-                  <SelectTrigger aria-label="分工筛选"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {FILTER_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Select value={assignee} onValueChange={setAssignee}>
-                  <SelectTrigger aria-label="负责人筛选"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全部负责人</SelectItem>
-                    <SelectItem value="unassigned">未分工</SelectItem>
-                    {getActiveHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}</SelectItem>)}
-                    {getRemovedHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}（已移除）</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <select
+                  aria-label="分工筛选"
+                  className="flex h-11 w-full rounded-2xl border border-input bg-card px-3.5 py-2 text-base outline-none ring-offset-background focus:ring-2 focus:ring-ring"
+                  onChange={(event) =>
+                    setFilter(event.target.value as PlanningListFilter)
+                  }
+                  value={filter}
+                >
+                  {FILTER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  aria-label="负责人筛选"
+                  className="flex h-11 w-full rounded-2xl border border-input bg-card px-3.5 py-2 text-base outline-none ring-offset-background focus:ring-2 focus:ring-ring"
+                  onChange={(event) => setAssignee(event.target.value)}
+                  value={assignee}
+                >
+                  <option value="all">全部负责人</option>
+                  <option value="unassigned">未分工</option>
+                  {getActiveHouseholdMembers(household).map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.displayName.value}
+                    </option>
+                  ))}
+                  {getRemovedHouseholdMembers(household).map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.displayName.value}（已移除）
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex min-h-11 items-center justify-between gap-3">

@@ -10,7 +10,10 @@ import {
 } from "@/lib/navigation";
 
 function readSource(...segments: string[]) {
-  return readFileSync(join(process.cwd(), ...segments), "utf8");
+  return readFileSync(join(process.cwd(), ...segments), "utf8").replace(
+    /\r\n/g,
+    "\n",
+  );
 }
 
 const globals = readSource("app", "globals.css");
@@ -127,7 +130,7 @@ describe("V3 PWA visual and navigation contract", () => {
     }
   });
 
-  it("ships standalone web and a dependency-light bundled Android surface", () => {
+  it("ships standalone web and a dependency-light native Android surface", () => {
     const dependencyNames = Object.keys({
       ...packageJson.dependencies,
       ...packageJson.devDependencies,
@@ -139,10 +142,9 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(Object.keys(packageJson.scripts).some((name) => name.startsWith("mobile:"))).toBe(
       false,
     );
-    expect(nextConfig).toContain(
-      'output: isAndroidBundle ? "export" : "standalone"',
-    );
-    expect(nextConfig).toContain('DADKIT_BUILD_TARGET === "android"');
+    expect(nextConfig).toContain('output: "standalone"');
+    expect(nextConfig).toContain("trailingSlash: false");
+    expect(nextConfig).not.toContain("process.env.");
     expect(nextConfig).not.toContain("DADKIT_CAPACITOR_EXPORT");
     expect(pwaRegister).not.toContain("gesturestart");
     expect(pwaRegister).not.toContain("preventDoubleTapZoom");

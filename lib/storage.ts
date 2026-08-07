@@ -48,7 +48,7 @@ import { resolveHouseholdMember } from "@/lib/household/selectors";
 import { useHouseholdStore } from "@/lib/household/store";
 import { getBabyRepository } from "@/lib/baby/repository";
 import { careEventsForLocalDay } from "@/lib/baby/selectors";
-import { useBabyStore } from "@/lib/baby/store";
+import { timelineEventsForRange, useBabyStore } from "@/lib/baby/store";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
 import {
   HOSPITAL_STORAGE_KEY,
@@ -80,6 +80,8 @@ import {
   registerChecklistStateSaveRetryHandler,
   resetChecklistPersistenceStatus,
 } from "@/lib/persistence-status";
+import { publishDataChange } from "@/lib/data/change-bus";
+import { applyChecklistRuntimeDocument } from "@/lib/checklist-runtime";
 
 export const STORAGE_KEYS = {
   checklist: "dadkit:v3:checklist",
@@ -237,14 +239,17 @@ function readJson<T>(key: string, fallback: T): T {
 
 function writeJson<T>(key: string, value: T) {
   if (!canUseLocalStorage()) {
-    return;
+    return false;
   }
 
   const serialized = JSON.stringify(value);
 
   if (window.localStorage.getItem(key) !== serialized) {
     window.localStorage.setItem(key, serialized);
+    return true;
   }
+
+  return false;
 }
 
 function deviceId() {
@@ -434,7 +439,9 @@ export function loadChecklist() {
 }
 
 export function saveChecklist(items: ChecklistItem[]) {
-  writeJson(STORAGE_KEYS.checklist, items);
+  if (writeJson(STORAGE_KEYS.checklist, items)) {
+    publishDataChange("checklist");
+  }
   // This legacy, single-field helper is also used by import/repair tools and
   // tests.  It cannot safely reconstruct the rest of the in-memory document,
   // so make the next export/snapshot read the coherent persisted document.
@@ -452,7 +459,9 @@ export function loadCustomItems() {
 }
 
 export function saveCustomItems(items: ChecklistItem[]) {
-  writeJson(STORAGE_KEYS.customItems, items);
+  if (writeJson(STORAGE_KEYS.customItems, items)) {
+    publishDataChange("checklist");
+  }
   latestChecklistState = undefined;
 }
 
@@ -472,7 +481,9 @@ export function loadHiddenTemplateItemIds() {
 }
 
 export function saveHiddenTemplateItemIds(ids: string[]) {
-  writeJson(STORAGE_KEYS.hiddenTemplateItems, Array.from(new Set(ids)));
+  if (writeJson(STORAGE_KEYS.hiddenTemplateItems, Array.from(new Set(ids)))) {
+    publishDataChange("checklist");
+  }
   latestChecklistState = undefined;
 }
 
@@ -492,7 +503,9 @@ export function loadHiddenTemplateItemStamps(): HiddenTemplateItemStamps {
 }
 
 export function saveHiddenTemplateItemStamps(stamps: HiddenTemplateItemStamps) {
-  writeJson(STORAGE_KEYS.hiddenTemplateStamps, stamps);
+  if (writeJson(STORAGE_KEYS.hiddenTemplateStamps, stamps)) {
+    publishDataChange("checklist");
+  }
 }
 
 export function loadDeletedCustomItems(): DeletedCustomItemStamps {
@@ -501,7 +514,9 @@ export function loadDeletedCustomItems(): DeletedCustomItemStamps {
 }
 
 export function saveDeletedCustomItems(stamps: DeletedCustomItemStamps) {
-  writeJson(STORAGE_KEYS.deletedCustomItems, stamps);
+  if (writeJson(STORAGE_KEYS.deletedCustomItems, stamps)) {
+    publishDataChange("checklist");
+  }
 }
 
 export function loadGrowthUpdatedAt(): number {
@@ -575,10 +590,13 @@ export function saveSyncSession(session: SyncSession | undefined) {
 
   if (!session) {
     window.localStorage.removeItem(STORAGE_KEYS.syncSession);
+    publishDataChange("sync-settings");
     return;
   }
 
-  writeJson(STORAGE_KEYS.syncSession, session);
+  if (writeJson(STORAGE_KEYS.syncSession, session)) {
+    publishDataChange("sync-settings");
+  }
 }
 
 export function loadSyncClientState(): SyncClientState {
@@ -680,6 +698,7 @@ function writeChecklistStateNow({
       value: JSON.stringify(Array.from(new Set(hiddenTemplateItemIds))),
     },
   ]);
+  publishDataChange("checklist");
 }
 
 export function saveChecklistState(payload: ChecklistStatePayload) {
@@ -813,7 +832,9 @@ export function loadChecklistMode(): ChecklistMode {
 }
 
 export function saveChecklistMode(mode: ChecklistMode) {
-  writeJson(STORAGE_KEYS.checklistMode, mode);
+  if (writeJson(STORAGE_KEYS.checklistMode, mode)) {
+    publishDataChange("checklist");
+  }
 }
 
 export function loadWebDavConfig(): WebDavConfig {
@@ -1065,6 +1086,17 @@ export async function buildLatestPortableData(): Promise<DadKitExportData> {
 export function saveChecklistStateAndClearPlanning(
   payload: ChecklistStatePayload,
 ) {
+  saveChecklistStateTransaction(payload, { clearPlanning: true });
+}
+
+export function saveChecklistStateTransaction(
+  payload: ChecklistStatePayload,
+  options: {
+    clearPlanning?: boolean;
+    deletedCustomItems?: DeletedCustomItemStamps;
+    hiddenTemplateItemStamps?: HiddenTemplateItemStamps;
+  } = {},
+) {
   cancelPendingChecklistStateSave();
 
   if (!canUseLocalStorage()) {
@@ -1073,21 +1105,39 @@ export function saveChecklistStateAndClearPlanning(
 
   const revision = markChecklistStateDirty();
   const next = cloneChecklistState(payload);
-  const planning = planningClearForLegacyImport();
+  const planning = options.clearPlanning ? planningClearForLegacyImport() : undefined;
 
   try {
-    applyStorageMutations([
+    const mutations: StorageMutation[] = [
       { key: STORAGE_KEYS.checklist, value: JSON.stringify(next.checklist) },
       { key: STORAGE_KEYS.customItems, value: JSON.stringify(next.customItems) },
       {
         key: STORAGE_KEYS.hiddenTemplateItems,
         value: JSON.stringify(next.hiddenTemplateItemIds),
       },
-      { key: STORAGE_KEYS.planning, value: JSON.stringify(planning) },
-    ]);
+    ];
+    if (planning) {
+      mutations.push({ key: STORAGE_KEYS.planning, value: JSON.stringify(planning) });
+    }
+    if (options.hiddenTemplateItemStamps) {
+      mutations.push({
+        key: STORAGE_KEYS.hiddenTemplateStamps,
+        value: JSON.stringify(options.hiddenTemplateItemStamps),
+      });
+    }
+    if (options.deletedCustomItems) {
+      mutations.push({
+        key: STORAGE_KEYS.deletedCustomItems,
+        value: JSON.stringify(options.deletedCustomItems),
+      });
+    }
+    applyStorageMutations(mutations);
     latestChecklistState = next;
-    useItemPlanningStore.setState({ hydrated: true, planning });
+    if (planning) {
+      useItemPlanningStore.setState({ hydrated: true, planning });
+    }
     recordChecklistStatePersisted(revision);
+    publishDataChange("checklist");
   } catch (error) {
     recordChecklistPersistenceError(
       error instanceof Error && error.message
@@ -1295,6 +1345,15 @@ export function applyImportData(data: DadKitImportData): ImportResult {
       customItems: data.customItems,
       hiddenTemplateItemIds: data.hiddenTemplateItemIds,
     });
+    applyChecklistRuntimeDocument(
+      {
+        checklist: data.checklist,
+        checklistMode: data.checklistMode,
+        customItems: data.customItems,
+        hiddenTemplateItemIds: data.hiddenTemplateItemIds,
+      },
+      "hydrate",
+    );
     if (data.version !== 3) {
       useGrowthStore.setState({
         ...data.growth.profile,
@@ -1374,6 +1433,7 @@ export async function applyImportDataAsync(
 
   try {
     await repository.replaceBabyDataTransaction(targetBaby);
+    publishDataChange("baby");
     useBabyStore.setState((state) => ({
       hydrated: true,
       profile: targetBaby.profile,
@@ -1396,7 +1456,7 @@ export async function applyImportDataAsync(
             event.type === "sleep") &&
           event.endAt === null,
       ),
-      timelineEvents: [],
+      timelineEvents: timelineEventsForRange(targetBaby, state.timelineRange),
       repositoryError: undefined,
       changeToken: state.changeToken + 1,
     }));

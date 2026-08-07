@@ -4,8 +4,12 @@ import { saveDeviceIdentity, loadDeviceIdentity } from "@/lib/device-identity/re
 import { createEmptyHousehold } from "@/lib/household/defaults";
 import { getActiveHouseholdMembers, getRemovedHouseholdMembers } from "@/lib/household/selectors";
 import { useHouseholdStore } from "@/lib/household/store";
-import { installBrowserStorage } from "@/tests/helpers/browser-storage";
+import {
+  failNextStorageWrite,
+  installBrowserStorage,
+} from "@/tests/helpers/browser-storage";
 import { useDeviceIdentityStore } from "@/lib/device-identity/store";
+import { HOUSEHOLD_STORAGE_KEY } from "@/lib/household/repository";
 
 beforeEach(() => {
   installBrowserStorage();
@@ -54,5 +58,18 @@ describe("household store", () => {
     expect(after.clearedAt).toBeGreaterThan(before.householdName.updatedAt);
     expect(after.householdName.value).toBe("");
     expect(after.members).toEqual({});
+  });
+
+  it("keeps the in-memory household unchanged when persistence fails", () => {
+    const before = useHouseholdStore.getState().household;
+    failNextStorageWrite(HOUSEHOLD_STORAGE_KEY);
+
+    const result = useHouseholdStore
+      .getState()
+      .addMember({ displayName: "小江", relationshipLabel: "家长" });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("本机存储");
+    expect(useHouseholdStore.getState().household).toEqual(before);
   });
 });

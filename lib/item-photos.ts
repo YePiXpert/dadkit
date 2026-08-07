@@ -1,3 +1,5 @@
+import { publishDataChange } from "@/lib/data/change-bus";
+
 const ITEM_PHOTO_DATABASE = "dadkit-v2-item-photos";
 const ITEM_PHOTO_DATABASE_VERSION = 3;
 const ITEM_PHOTO_STORE = "photos";
@@ -500,8 +502,16 @@ export function subscribeToItemPhotoChanges(listener: ItemPhotoChangeListener) {
   };
 }
 
-function emitItemPhotoChange(itemId?: string) {
+export function notifyExternalItemPhotoChange(itemId?: string) {
+  emitItemPhotoChange(itemId, false);
+}
+
+function emitItemPhotoChange(itemId?: string, publish = true) {
   invalidatePhotoCaches(itemId);
+
+  if (publish) {
+    publishDataChange("item-photo", itemId);
+  }
 
   for (const listener of photoChangeListeners) {
     try {

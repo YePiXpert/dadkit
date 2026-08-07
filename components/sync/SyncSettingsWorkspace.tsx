@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Feedback } from "@/components/ui/feedback";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SYNC_SETTINGS_CHANGE_EVENT } from "@/lib/data/change-bus";
 import {
   isLegacySyncSession,
   loadSyncClientState,
@@ -69,6 +70,8 @@ export function SyncSettingsWorkspace() {
   const syncStatus = useSyncStatusStore();
   const [online, setOnline] = useState(true);
   const [service, setService] = useState<SyncServiceInfo>();
+  const [serviceError, setServiceError] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const [space, setSpace] = useState<SyncSpaceMetadata>();
   const [hasSession, setHasSession] = useState(false);
   const [sessions, setSessions] = useState<SyncSessionMetadata[]>([]);
@@ -85,20 +88,27 @@ export function SyncSettingsWorkspace() {
   const [messageOk, setMessageOk] = useState<boolean>();
 
   const refresh = useCallback(async () => {
+    setRefreshing(true);
     const local = loadSyncSession();
     setHasSession(Boolean(local));
     setLegacy(isLegacySyncSession(local));
     const serviceResult = await fetchSyncServiceInfo();
-    if (serviceResult.ok) setService(serviceResult.data);
-    else setOnline(false);
+    if (serviceResult.ok) {
+      setService(serviceResult.data);
+      setServiceError("");
+    } else {
+      setServiceError(serviceResult.message);
+    }
     if (!local || isLegacySyncSession(local)) {
       setSpace(undefined);
+      setRefreshing(false);
       return;
     }
     const metadata = await fetchSyncSpaceMetadata();
     if (!metadata.ok) {
       setMessage(metadata.message);
       setMessageOk(false);
+      setRefreshing(false);
       return;
     }
     setSpace(metadata.space);
@@ -114,6 +124,7 @@ export function SyncSettingsWorkspace() {
       setSessions([metadata.space.currentSession]);
       setInvites([]);
     }
+    setRefreshing(false);
   }, []);
 
   useEffect(() => {
@@ -121,10 +132,12 @@ export function SyncSettingsWorkspace() {
     updateOnline();
     window.addEventListener("online", updateOnline);
     window.addEventListener("offline", updateOnline);
+    window.addEventListener(SYNC_SETTINGS_CHANGE_EVENT, refresh);
     void refresh();
     return () => {
       window.removeEventListener("online", updateOnline);
       window.removeEventListener("offline", updateOnline);
+      window.removeEventListener(SYNC_SETTINGS_CHANGE_EVENT, refresh);
     };
   }, [refresh]);
 
@@ -197,6 +210,18 @@ export function SyncSettingsWorkspace() {
       <section className="mobile-shell grid gap-5 pb-28 sm:max-w-[42rem]">
         <PageHeader backHref="/settings" backLabel="返回我的" kicker="多设备协作" subtitle="同步设备与家庭成员是两套独立概念；设备角色只控制同步空间管理。" title="家庭同步" />
         {!online ? <Feedback message="当前离线：可查看本机已知状态，管理操作需要联网。" ok={false} /> : null}
+        {serviceError ? (
+          <div className="grid gap-2">
+            <Feedback message={serviceError} ok={false} />
+            <Button
+              disabled={!online || refreshing}
+              onClick={() => void refresh()}
+              variant="outline"
+            >
+              {refreshing ? "正在检查…" : "重新检查同步服务"}
+            </Button>
+          </div>
+        ) : null}
         <Feedback message={message} ok={messageOk} />
 
         {!hasSession ? (

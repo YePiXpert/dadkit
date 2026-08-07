@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, PackageOpen, Pencil } from "lucide-react";
 
 import { QuantityStepper } from "@/components/QuantityStepper";
+import { DraftConflictNotice } from "@/components/DraftConflictNotice";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,9 +39,19 @@ import {
 } from "@/lib/types";
 import { CUSTOM_PREPARATION_OPTIONS } from "@/lib/custom-item-options";
 import { useDadKitStore } from "@/lib/store";
+import { useDraftConflict } from "@/lib/use-draft-conflict";
+import { useDialogHistoryGuard } from "@/lib/use-dialog-history-guard";
 
 type EditItemDialogProps = {
   item: ChecklistItem;
+};
+
+type ChecklistItemForm = {
+  name: string;
+  category: ChecklistCategory;
+  preparationKind: PreparationKind;
+  quantity: string;
+  note: string;
 };
 
 const CUSTOM_CATEGORIES: ChecklistCategory[] = [
@@ -61,20 +72,16 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
     [item.source],
   );
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState(
-    formatChecklistDisplayText(item.name, displayOptions),
-  );
-  const [category, setCategory] = useState<ChecklistCategory>(item.category);
-  const [preparationKind, setPreparationKind] = useState<PreparationKind>(
-    inferPreparationKind(item),
-  );
-  const [quantity, setQuantity] = useState(
-    formatChecklistDisplayText(item.quantity, displayOptions),
-  );
-  const [note, setNote] = useState(
-    formatChecklistDisplayText(item.note, displayOptions),
-  );
+  const conflict = useDraftConflict<ChecklistItemForm>({
+    name: formatChecklistDisplayText(item.name, displayOptions),
+    category: item.category,
+    preparationKind: inferPreparationKind(item),
+    quantity: formatChecklistDisplayText(item.quantity, displayOptions),
+    note: formatChecklistDisplayText(item.note, displayOptions),
+  }, open);
+  const { name, category, preparationKind, quantity, note } = conflict.draft;
   const [nameTouched, setNameTouched] = useState(false);
+  useDialogHistoryGuard(open, () => setOpen(false));
   const canEditPreparationKind = item.source === "user";
   const nameError = nameTouched && !name.trim();
 
@@ -83,11 +90,6 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
       return;
     }
 
-    setName(formatChecklistDisplayText(item.name, displayOptions));
-    setCategory(item.category);
-    setPreparationKind(inferPreparationKind(item));
-    setQuantity(formatChecklistDisplayText(item.quantity, displayOptions));
-    setNote(formatChecklistDisplayText(item.note, displayOptions));
     setNameTouched(false);
   }, [displayOptions, item, open]);
 
@@ -143,13 +145,18 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
           </DialogDescription>
         </DialogHeader>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 pb-8 sm:overflow-visible sm:p-0">
+          <DraftConflictNotice
+            fields={conflict.conflictFields.map((key) => CHECKLIST_FIELD_LABELS[key])}
+            onAcceptExternal={conflict.acceptExternal}
+            onKeepLocal={conflict.keepLocal}
+          />
           <div className="mb-5 grid grid-cols-[6.75rem_1fr] items-center gap-5 sm:grid-cols-[6rem_1fr]">
             <div className="flex aspect-square items-center justify-center rounded-card bg-secondary/70 text-primary">
               <PackageOpen className="size-12" strokeWidth={1.45} />
             </div>
             <div className="grid gap-3">
               <p className="text-[15px] font-semibold">预计数量</p>
-              <QuantityStepper value={quantity} onChange={setQuantity} />
+              <QuantityStepper value={quantity} onChange={(value) => conflict.setField("quantity", value)} />
             </div>
           </div>
           <div className="grid gap-4">
@@ -164,7 +171,7 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
                   value={name}
                   onBlur={() => setNameTouched(true)}
                   onChange={(event) => {
-                    setName(event.target.value);
+                    conflict.setField("name", event.target.value);
                     if (event.target.value.trim()) setNameTouched(false);
                   }}
                 />
@@ -182,7 +189,7 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
                 <Select
                   disabled={!item.editable}
                   value={category}
-                  onValueChange={(value) => setCategory(value as ChecklistCategory)}
+                  onValueChange={(value) => conflict.setField("category", value as ChecklistCategory)}
                 >
                   <SelectTrigger aria-label="分类" className="w-auto max-w-[11rem] border-0 bg-transparent px-0 text-right shadow-none focus:ring-0">
                     <SelectValue />
@@ -201,7 +208,7 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
                   <Select
                     value={preparationKind}
                     onValueChange={(value) =>
-                      setPreparationKind(value as PreparationKind)
+                      conflict.setField("preparationKind", value as PreparationKind)
                     }
                   >
                     <SelectTrigger aria-label="当前情况" className="w-auto max-w-[11rem] border-0 bg-transparent px-0 text-right shadow-none focus:ring-0">
@@ -227,7 +234,7 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
                 className="min-h-28 resize-none border-0 bg-transparent px-0 text-base shadow-none focus-visible:ring-0"
                 placeholder="可以添加规格、颜色…"
                 value={note}
-                onChange={(event) => setNote(event.target.value)}
+                onChange={(event) => conflict.setField("note", event.target.value)}
               />
             </div>
           </div>
@@ -235,7 +242,7 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
         <DialogFooter className="grid shrink-0 gap-2 border-t border-border/60 bg-background/95 px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-3 backdrop-blur sm:border-0 sm:bg-transparent sm:p-0">
           <Button
             className="h-14 w-full text-base"
-            disabled={!name.trim()}
+            disabled={!name.trim() || conflict.hasConflict}
             size="lg"
             onClick={submit}
           >
@@ -251,6 +258,14 @@ export function EditItemDialog({ item }: EditItemDialogProps) {
     </Dialog>
   );
 }
+
+const CHECKLIST_FIELD_LABELS: Record<keyof ChecklistItemForm, string> = {
+  name: "物品名称",
+  category: "分类",
+  preparationKind: "当前情况",
+  quantity: "预计数量",
+  note: "备注",
+};
 
 function FormRow({
   children,

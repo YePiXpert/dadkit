@@ -88,8 +88,8 @@ export type ChecklistPersistence = {
 
 export const CATEGORY_LABELS: Record<ChecklistCategory, string> = {
   documents: "证件包",
-  mom_labor: "妈妈包",
-  mom_postpartum: "妈妈包",
+  mom_labor: "待产妈妈包",
+  mom_postpartum: "产后妈妈包",
   baby: "宝宝包",
   confinement_mom: "月子妈妈包",
   confinement_baby: "宝宝家中囤货",

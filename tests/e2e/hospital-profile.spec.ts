@@ -157,6 +157,59 @@ test("取消不保存且清空需要二次确认", async ({ page }) => {
   await expect(page.getByText("医院档案已清空。")).toBeVisible();
 });
 
+test("同一浏览器双标签实时合并并要求显式解决同字段冲突", async ({
+  context,
+  page,
+}) => {
+  const otherPage = await context.newPage();
+  try {
+    await page.goto("/hospital", { waitUntil: "domcontentloaded" });
+    await otherPage.goto("/hospital", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("button", { name: "填写医院档案" })).toBeVisible({
+      timeout: 60_000,
+    });
+    await expect(
+      otherPage.getByRole("button", { name: "填写医院档案" }),
+    ).toBeVisible({ timeout: 60_000 });
+    await page.waitForTimeout(1_500);
+
+    await page.getByRole("button", { name: "填写医院档案" }).click();
+    await page.locator("#hospital-hospitalName").fill("双标签妇幼医院");
+    await page.locator("#hospital-address").fill("初始地址");
+    await page.getByRole("button", { name: "保存档案" }).click();
+    await expect(
+      otherPage.getByRole("heading", { name: "双标签妇幼医院" }),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "编辑档案" }).click();
+    await otherPage.getByRole("button", { name: "编辑档案" }).click();
+    await page.locator("#hospital-address").fill("本页草稿地址");
+    await otherPage.locator("#hospital-address").fill("其他页面地址");
+    await otherPage.getByRole("button", { name: "保存档案" }).click();
+
+    await expect(page.getByText(/其他页面也修改了/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "保存档案" })).toBeDisabled();
+    await page.getByRole("button", { name: "采用其他页面版本" }).click();
+    await expect(page.locator("#hospital-address")).toHaveValue("其他页面地址");
+
+    await page.locator("#hospital-address").fill("保留本页地址");
+    await otherPage.getByRole("button", { name: "编辑档案" }).click();
+    await expect(otherPage.locator("#hospital-hospitalName")).toBeFocused();
+    await otherPage.locator("#hospital-address").fill("第二次外部地址");
+    await expect(otherPage.locator("#hospital-address")).toHaveValue(
+      "第二次外部地址",
+    );
+    await otherPage.getByRole("button", { name: "保存档案" }).click();
+    await expect(page.getByText(/其他页面也修改了/)).toBeVisible();
+    await page.getByRole("button", { name: "保留本页修改" }).click();
+    await page.getByRole("button", { name: "保存档案" }).click();
+
+    await expect(otherPage.getByText("保留本页地址", { exact: true })).toBeVisible();
+  } finally {
+    await otherPage.close();
+  }
+});
+
 test("直接访问 360×800 页面无横向溢出且只有工具导航激活", async ({
   page,
 }) => {

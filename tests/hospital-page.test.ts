@@ -112,6 +112,7 @@ describe("hospital profile page and entry points", () => {
     expect(pwaRegister).toContain("稍后");
     expect(pwaRegister).toContain("setWaitingWorker(undefined)");
     expect(serviceWorker).toContain('event.data?.type === "CACHE_ROUTE"');
+    expect(serviceWorker).toContain('event.data?.type === "CACHE_ASSETS"');
     expect(serviceWorker).toContain('typeof event.data.url === "string"');
     expect(serviceWorker).toContain("fetchAndCacheRoute");
     expect(serviceWorker).toContain('!url.pathname.startsWith("/api/")');

@@ -4,6 +4,7 @@ import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
 import { cloneHospitalProfile } from "@/lib/hospital/portable";
 import type { HospitalProfilePortableData } from "@/lib/hospital/types";
 import { isHospitalProfilePortableData } from "@/lib/hospital/validation";
+import { publishDataChange } from "@/lib/data/change-bus";
 
 export const HOSPITAL_STORAGE_KEY = "dadkit:v3:hospital-profile";
 
@@ -37,5 +38,6 @@ export function saveHospitalProfile(profile: HospitalProfilePortableData) {
 
   if (window.localStorage.getItem(HOSPITAL_STORAGE_KEY) !== serialized) {
     window.localStorage.setItem(HOSPITAL_STORAGE_KEY, serialized);
+    publishDataChange("hospital");
   }
 }

@@ -42,6 +42,40 @@ export async function expectPathname(page: Page, pathname: string) {
   await expect.poll(() => new URL(page.url()).pathname).toBe(pathname);
 }
 
+export async function waitForOfflineReady(page: Page, route: string) {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(async (candidate) => {
+          if (!("serviceWorker" in navigator)) return false;
+          const registration = await navigator.serviceWorker.getRegistration();
+          const routeResponse = await caches.match(candidate, {
+            ignoreSearch: true,
+          });
+          const assetUrls = performance
+            .getEntriesByType("resource")
+            .map((entry) => new URL(entry.name, window.location.href))
+            .filter(
+              (url) =>
+                url.origin === window.location.origin &&
+                url.pathname.startsWith("/_next/static/"),
+            );
+          const assetResponses = await Promise.all(
+            assetUrls.map((url) => caches.match(url.href)),
+          );
+
+          return Boolean(
+            registration?.active &&
+              routeResponse?.ok &&
+              document.documentElement.dataset.dadkitOfflineReady === "true" &&
+              assetResponses.every((response) => response?.ok),
+          );
+        }, route),
+      { timeout: 60_000 },
+    )
+    .toBe(true);
+}
+
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

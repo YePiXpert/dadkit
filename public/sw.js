@@ -1,5 +1,24 @@
-const CACHE_NAME = "dadkit-v3.4.1-pwa-r1";
-const PRECACHE_ROUTES = ["/", "/checklist", "/onboarding", "/join", "/settings/family", "/settings/sync"];
+const CACHE_NAME = "dadkit-v3.4.1-pwa-r3";
+const PRECACHE_ROUTES = [
+  "/",
+  "/checklist",
+  "/onboarding",
+  "/join",
+  "/baby",
+  "/baby/timeline",
+  "/tools",
+  "/growth",
+  "/departure",
+  "/hospital",
+  "/planning",
+  "/settings",
+  "/settings/backup",
+  "/settings/checklist",
+  "/settings/family",
+  "/settings/sync",
+  "/privacy",
+  "/support",
+];
 const PWA_ASSETS = [
   "/manifest.webmanifest",
   "/icon.svg",
@@ -43,6 +62,26 @@ self.addEventListener("message", (event) => {
     return;
   }
 
+  if (event.data?.type === "CACHE_ASSETS" && Array.isArray(event.data.urls)) {
+    const assets = [
+      ...new Set(
+        event.data.urls
+          .slice(0, 200)
+          .map(normalizeNextStaticAsset)
+          .filter(Boolean),
+      ),
+    ];
+    const work = caches
+      .open(CACHE_NAME)
+      .then((cache) =>
+        Promise.all(assets.map((asset) => fetchAndCacheAsset(cache, asset))),
+      );
+
+    replyWhenSettled(event, work);
+    event.waitUntil(work);
+    return;
+  }
+
   if (
     event.data?.type === "CACHE_ROUTE" &&
     typeof event.data.url === "string"
@@ -55,11 +94,14 @@ self.addEventListener("message", (event) => {
       url.pathname !== "/api" &&
       !url.pathname.startsWith("/api/")
     ) {
-      event.waitUntil(
-        caches
-          .open(CACHE_NAME)
-          .then((cache) => fetchAndCacheRoute(cache, `${url.pathname}${url.search}`)),
-      );
+      const work = caches
+        .open(CACHE_NAME)
+        .then((cache) =>
+          fetchAndCacheRoute(cache, `${url.pathname}${url.search}`),
+        );
+
+      replyWhenSettled(event, work);
+      event.waitUntil(work);
     }
   }
 });
@@ -126,9 +168,43 @@ function shouldCacheAsset(url) {
   );
 }
 
+function normalizeNextStaticAsset(candidate) {
+  if (typeof candidate !== "string") {
+    return null;
+  }
+
+  try {
+    const url = new URL(candidate, self.location.origin);
+
+    if (
+      url.origin !== self.location.origin ||
+      !url.pathname.startsWith("/_next/static/")
+    ) {
+      return null;
+    }
+
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return null;
+  }
+}
+
+function replyWhenSettled(event, work) {
+  const replyPort = event.ports?.[0];
+
+  if (!replyPort) {
+    return;
+  }
+
+  work.then(
+    () => replyPort.postMessage({ ok: true }),
+    () => replyPort.postMessage({ ok: false }),
+  );
+}
+
 async function precacheAppShell() {
   const cache = await caches.open(CACHE_NAME);
-  // 首页、首次引导、加入页和家庭设置是离线启动的关键入口。
+  // 核心页面都在安装时缓存，首次离线打开仍停留在目标路由。
   const routeHtml = await Promise.all(
     PRECACHE_ROUTES.map((route) => fetchAndCacheRoute(cache, route)),
   );

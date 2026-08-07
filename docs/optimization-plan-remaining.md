@@ -4,7 +4,7 @@
 
 ## 项目速览
 
-- DadKit 2.1.1：local-first 待产准备应用，Next.js 15（App Router）+ React 19 + zustand + Tailwind，PWA + Android（WebView 套壳）。
+- DadKit：local-first 待产准备应用，Web/iPhone 使用 Next.js PWA，Android 使用 Kotlin + Jetpack Compose 原生应用。
 - 核心页面：`/` 首页（清单总览）、`/checklist/[sectionId]` 分类清单、`/growth` 孕期成长、`/settings` 及三个子页、`/privacy`、`/support`。
 - 核心状态：`lib/store.ts`（清单 zustand store）、`lib/checklist-v2.ts`（视图/统计逻辑）、`lib/growth-store.ts`、`lib/storage.ts`（localStorage 持久化 + 快照 + 导入导出）、`lib/sync/`（家庭同步）、`lib/webdav/`（WebDAV 备份）、`lib/item-photos.ts`（IndexedDB 照片）。
 

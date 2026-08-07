@@ -102,10 +102,16 @@ describe("item photo integration contract", () => {
     join(process.cwd(), "lib", "webdav", "client.ts"),
     "utf8",
   );
-  const backupPage = readFileSync(
-    join(process.cwd(), "app", "settings", "backup", "page.tsx"),
-    "utf8",
-  );
+  const backupPage = [
+    readFileSync(
+      join(process.cwd(), "app", "settings", "backup", "page.tsx"),
+      "utf8",
+    ),
+    readFileSync(
+      join(process.cwd(), "components", "PhotoBackupCard.tsx"),
+      "utf8",
+    ),
+  ].join("\n");
 
   it("uses native IndexedDB and canvas JPEG compression", () => {
     expect(photoLibrary).toContain("indexedDB.open");

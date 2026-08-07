@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { installBrowserStorage } from "@/tests/helpers/browser-storage";
+import {
+  failNextStorageWrite,
+  installBrowserStorage,
+} from "@/tests/helpers/browser-storage";
 import { DEFAULT_GROWTH_WEEK, GROWTH_WEEKS } from "@/lib/growth";
 import {
   DEFAULT_GROWTH_PROFILE,
@@ -15,6 +18,11 @@ import {
   validateGrowthPortableData,
   type GrowthPortableData,
 } from "@/lib/growth-store";
+import {
+  getPersistenceOverview,
+  resetChecklistPersistenceStatus,
+  retryPendingPersistence,
+} from "@/lib/persistence-status";
 
 function installLocalStorage() {
   return installBrowserStorage().localValues;
@@ -50,6 +58,7 @@ function portableData(
 
 afterEach(() => {
   resetStoreState();
+  resetChecklistPersistenceStatus();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -248,6 +257,44 @@ describe("growth store", () => {
       nickname: "小满",
       dueDate: "",
     });
+  });
+
+  it("rebases a pending nickname on the latest persisted due date", () => {
+    const values = installLocalStorage();
+    useGrowthStore.setState({
+      hydrated: true,
+      nickname: "旧昵称",
+      dueDate: "2026-08-01",
+    });
+    values.set(
+      GROWTH_STORAGE_KEYS.profile,
+      JSON.stringify({ nickname: "远端昵称", dueDate: "2026-09-09" }),
+    );
+
+    useGrowthStore.getState().setNickname("本页昵称");
+    flushPendingProfileWrite();
+
+    expect(JSON.parse(values.get(GROWTH_STORAGE_KEYS.profile) ?? "{}")).toEqual({
+      nickname: "本页昵称",
+      dueDate: "2026-09-09",
+    });
+  });
+
+  it("retains a failed optimistic nickname write and retries it", () => {
+    const values = installLocalStorage();
+    useGrowthStore.getState().setNickname("小满");
+    failNextStorageWrite(GROWTH_STORAGE_KEYS.profile);
+
+    expect(() => flushPendingProfileWrite()).toThrow();
+    expect(useGrowthStore.getState().nickname).toBe("小满");
+    expect(getPersistenceOverview().failure?.domain).toBe("growth");
+
+    expect(retryPendingPersistence("growth")).toBe(true);
+    expect(JSON.parse(values.get(GROWTH_STORAGE_KEYS.profile) ?? "{}")).toEqual({
+      nickname: "小满",
+      dueDate: "",
+    });
+    expect(getPersistenceOverview().failure).toBeUndefined();
   });
 
   it("exports the latest nickname before the debounced write lands", () => {

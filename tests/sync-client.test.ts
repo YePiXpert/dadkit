@@ -6,6 +6,7 @@ import {
   createInvite,
   createSpace,
   getSyncRetryDelay,
+  joinSyncSpaceByInvite,
   joinSpace,
   leaveSpace,
   refreshSyncStatus,
@@ -231,6 +232,31 @@ describe("family sync client", () => {
     expect(outcome.ok).toBe(false);
     expect(outcome.deferred).toBe(true);
     expect(outcome.message).toContain("撤销窗口");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("does not request a new invite space until replacing the current session is confirmed", async () => {
+    installBrowserStorage({
+      "dadkit:v3:sync-session": JSON.stringify({
+        version: 2,
+        protocolVersion: 2,
+        spaceId: "a".repeat(64),
+        displayName: "现有家庭",
+        sessionId: "b".repeat(64),
+        deviceName: "这台设备",
+        role: "member",
+        joinedAt: "2026-08-01T00:00:00.000Z",
+      }),
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const outcome = await joinSyncSpaceByInvite("DK2.invite", "新设备", {
+      replaceExisting: false,
+    });
+
+    expect(outcome).toMatchObject({ ok: false });
+    expect(outcome.message).toContain("确认切换同步空间");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

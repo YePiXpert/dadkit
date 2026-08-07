@@ -44,6 +44,13 @@ import {
   validateBabyProfileDraft,
 } from "@/lib/baby/validation";
 import { getSyncAdjustedNow } from "@/lib/sync-clock";
+import { careEventSortTime } from "@/lib/baby/time";
+import { publishDataChange } from "@/lib/data/change-bus";
+
+export type BabyTimelineRange = {
+  start: number;
+  end: number;
+};
 
 type BabyState = {
   hydrated: boolean;
@@ -53,6 +60,7 @@ type BabyState = {
   todayEvents: CareEvent[];
   activeEvents: CareEvent[];
   timelineEvents: CareEvent[];
+  timelineRange?: BabyTimelineRange;
   loading: boolean;
   repositoryError?: string;
   changeToken: number;
@@ -73,6 +81,7 @@ type BabyState = {
   updateEvent(eventId: string, event: CareEvent): Promise<CareActionResult>;
   deleteEvent(eventId: string): Promise<CareActionResult>;
   loadRecentEvents(): Promise<void>;
+  reloadFromRepository(): Promise<void>;
   loadTimelineRange(start: number, end: number): Promise<CareEvent[]>;
   applyRemoteBabyData(data: BabyPortableData): Promise<void>;
 };
@@ -88,6 +97,7 @@ export const useBabyStore = create<BabyState>((set, get) => ({
   todayEvents: [],
   activeEvents: [],
   timelineEvents: [],
+  timelineRange: undefined,
   loading: false,
   changeToken: 0,
 
@@ -124,6 +134,7 @@ export const useBabyStore = create<BabyState>((set, get) => ({
       const updated = updateBabyProfileValues(data.profile, validation.values, timestamp);
       if (!updated.changed) return ok(false);
       await repository.saveBabyProfile(updated.profile);
+      publishDataChange("baby");
       set((state) => ({ profile: updated.profile, changeToken: state.changeToken + 1 }));
       return ok();
     });
@@ -135,6 +146,7 @@ export const useBabyStore = create<BabyState>((set, get) => ({
     const timestamp = await nextTimestamp(data);
     const profile = createEmptyBabyProfile(timestamp);
     await repository.saveBabyProfile(profile);
+    publishDataChange("baby");
     set((state) => ({ profile, changeToken: state.changeToken + 1 }));
     return ok();
   }),
@@ -144,6 +156,7 @@ export const useBabyStore = create<BabyState>((set, get) => ({
     const data = await repository.getAllBabyData();
     const timestamp = await nextTimestamp(data);
     await repository.clearAllBabyData(timestamp);
+    publishDataChange("baby");
     set((state) => ({
       profile: createEmptyBabyProfile(timestamp),
       careClearedAt: timestamp,
@@ -247,19 +260,23 @@ export const useBabyStore = create<BabyState>((set, get) => ({
     const timestamp = await nextTimestamp(data, current.updatedAt);
     const deleted = await repository.deleteEventAsTombstone(eventId, timestamp);
     if (!deleted) return fail("没有找到这条记录。");
+    publishDataChange("baby", eventId);
     await refreshEventState(true);
     return ok();
   }),
 
   loadRecentEvents: async () => { await refreshEventState(false); },
 
+  reloadFromRepository: async () => { await refreshEventState(false); },
+
   loadTimelineRange: async (start, end) => {
+    const timelineRange = { start, end };
     try {
       const events = await getBabyRepository().getEventsByRange(start, end);
-      set({ timelineEvents: events, repositoryError: undefined });
+      set({ timelineEvents: events, timelineRange, repositoryError: undefined });
       return events;
     } catch (error) {
-      set({ repositoryError: errorMessage(error) });
+      set({ timelineRange, repositoryError: errorMessage(error) });
       return [];
     }
   },
@@ -270,13 +287,14 @@ export const useBabyStore = create<BabyState>((set, get) => ({
     const local = await repository.getAllBabyData();
     const merged = mergeBabyData(local, remote);
     await repository.replaceBabyDataTransaction(merged);
+    publishDataChange("baby");
     set((state) => ({
       profile: merged.profile,
       careClearedAt: merged.care.clearedAt,
       recentEvents: activeRecent(merged),
       todayEvents: activeToday(merged),
       activeEvents: activeOnly(merged),
-      timelineEvents: refreshLoadedTimeline(state.timelineEvents, merged),
+      timelineEvents: timelineEventsForRange(merged, state.timelineRange),
       repositoryError: undefined,
     }));
   },
@@ -293,6 +311,7 @@ async function writeEvent(
     if ("ok" in built) return built;
     if (!isCareEvent(built)) return fail("照护记录格式无效。");
     await repository.putEvent(built);
+    publishDataChange("baby", built.id);
     await refreshEventState(true);
     return ok();
   });
@@ -307,7 +326,7 @@ async function refreshEventState(changed: boolean) {
     recentEvents: activeRecent(data),
     todayEvents: activeToday(data),
     activeEvents: activeOnly(data),
-    timelineEvents: refreshLoadedTimeline(state.timelineEvents, data),
+    timelineEvents: timelineEventsForRange(data, state.timelineRange),
     repositoryError: undefined,
     changeToken: changed ? state.changeToken + 1 : state.changeToken,
   }));
@@ -354,9 +373,23 @@ function activeToday(data: BabyPortableData) {
   ).map(cloneCareEvent);
 }
 
-function refreshLoadedTimeline(current: CareEvent[], data: BabyPortableData) {
-  const latest = new Map(data.care.events.map((event) => [event.id, event]));
-  return current.map((event) => cloneCareEvent(latest.get(event.id) ?? event));
+export function timelineEventsForRange(
+  data: BabyPortableData,
+  range?: BabyTimelineRange,
+) {
+  if (!range) return [];
+
+  return data.care.events
+    .filter((event) => {
+      const timestamp = careEventSortTime(event);
+      return timestamp >= range.start && timestamp < range.end;
+    })
+    .sort(
+      (left, right) =>
+        careEventSortTime(right) - careEventSortTime(left) ||
+        left.id.localeCompare(right.id),
+    )
+    .map(cloneCareEvent);
 }
 
 function errorMessage(error: unknown) {

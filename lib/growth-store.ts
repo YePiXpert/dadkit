@@ -16,8 +16,16 @@ import {
   type GrowthProfileData,
   type GrowthProgressData,
 } from "@/lib/growth-portable";
-import { recordStorageWarning } from "@/lib/persistence-status";
+import {
+  markPersistenceDirty,
+  getPersistenceStatus,
+  recordPersistenceError,
+  recordPersistencePersisted,
+  recordStorageWarning,
+  registerPersistenceRetryHandler,
+} from "@/lib/persistence-status";
 import { getSyncAdjustedNow } from "@/lib/sync-clock";
+import { publishDataChange } from "@/lib/data/change-bus";
 
 export { validateGrowthPortableData } from "@/lib/growth-portable";
 export type {
@@ -90,7 +98,7 @@ export const useGrowthStore = create<GrowthStore>((set, get) => ({
 
     const nextProfile = {
       nickname: normalizeNickname(nickname),
-      dueDate: get().dueDate,
+      dueDate: readGrowthProfile().dueDate,
     };
 
     // 内存状态立即更新保证输入响应，落盘做防抖，避免每次按键都同步写 localStorage。
@@ -103,14 +111,15 @@ export const useGrowthStore = create<GrowthStore>((set, get) => ({
       get().hydrate();
     }
 
+    const persistedProfile = readGrowthProfile();
     const nextProfile = {
-      nickname: get().nickname,
+      nickname: profileWritePending ? get().nickname : persistedProfile.nickname,
       dueDate: normalizeDueDate(dueDate),
     };
 
     try {
       writeStorage(GROWTH_STORAGE_KEYS.profile, nextProfile);
-      markGrowthUpdated();
+      markGrowthUpdated(nextGrowthUpdatedAt());
     } catch (error) {
       recordGrowthStorageFailure(error);
       throw error;
@@ -118,6 +127,7 @@ export const useGrowthStore = create<GrowthStore>((set, get) => ({
     // 本次写入已包含最新昵称，取消防抖中的 profile 落盘。
     cancelPendingProfileWrite();
     set(nextProfile);
+    recordGrowthProfilePersisted();
   },
 
   setLastViewedWeek: (week) => {
@@ -129,6 +139,7 @@ export const useGrowthStore = create<GrowthStore>((set, get) => ({
 
     try {
       writeStorage(GROWTH_STORAGE_KEYS.view, nextView);
+      publishDataChange("growth");
     } catch (error) {
       recordGrowthStorageFailure(error);
       throw error;
@@ -145,14 +156,15 @@ export const useGrowthStore = create<GrowthStore>((set, get) => ({
       throw new Error("未知的成长记产检任务。");
     }
 
-    const completedTaskIds = get().completedTaskIds.includes(taskId)
-      ? get().completedTaskIds.filter((candidate) => candidate !== taskId)
-      : normalizeCompletedTaskIds([...get().completedTaskIds, taskId]);
+    const persistedTaskIds = readGrowthProgress().completedTaskIds;
+    const completedTaskIds = persistedTaskIds.includes(taskId)
+      ? persistedTaskIds.filter((candidate) => candidate !== taskId)
+      : normalizeCompletedTaskIds([...persistedTaskIds, taskId]);
     const nextProgress = { completedTaskIds };
 
     try {
       writeStorage(GROWTH_STORAGE_KEYS.progress, nextProgress);
-      markGrowthUpdated();
+      markGrowthUpdated(nextGrowthUpdatedAt());
     } catch (error) {
       recordGrowthStorageFailure(error);
       throw error;
@@ -193,6 +205,8 @@ export function applyGrowthPortableData(data: GrowthPortableData): void {
 
   persistPortableDataAtomically(profile, progress);
   useGrowthStore.setState({ ...profile, ...progress, hydrated: true });
+  recordGrowthProfilePersisted();
+  publishDataChange("growth");
 }
 
 export function resetGrowthData(): void {
@@ -210,6 +224,8 @@ export function resetGrowthData(): void {
     ...DEFAULT_GROWTH_VIEW,
     hydrated: true,
   });
+  recordGrowthProfilePersisted();
+  publishDataChange("growth");
 }
 
 function readGrowthProfile(): GrowthProfileData {
@@ -310,8 +326,16 @@ function writeStorage(key: string, value: unknown) {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
-function markGrowthUpdated() {
-  writeStorage(GROWTH_UPDATED_AT_STORAGE_KEY, getSyncAdjustedNow());
+function markGrowthUpdated(timestamp = nextGrowthUpdatedAt()) {
+  writeStorage(GROWTH_UPDATED_AT_STORAGE_KEY, timestamp);
+  publishDataChange("growth");
+}
+
+function nextGrowthUpdatedAt() {
+  const persisted = readStorage(GROWTH_UPDATED_AT_STORAGE_KEY);
+  const persistedTimestamp =
+    typeof persisted === "number" && Number.isFinite(persisted) ? persisted : 0;
+  return Math.max(getSyncAdjustedNow(), persistedTimestamp + 1, profileWritePendingAt + 1);
 }
 
 // 昵称输入每次按键都会调用 setNickname：落盘做 400ms 防抖，
@@ -319,6 +343,8 @@ function markGrowthUpdated() {
 const PROFILE_WRITE_DEBOUNCE_MS = 400;
 
 let profileWritePending = false;
+let profileWritePendingAt = 0;
+let profileWritePendingRevision = 0;
 let profileWriteTimer: ReturnType<typeof setTimeout> | undefined;
 let profileWriteListenersInstalled = false;
 
@@ -350,6 +376,8 @@ function scheduleProfileWrite() {
   }
 
   profileWritePending = true;
+  profileWritePendingAt = nextGrowthUpdatedAt();
+  profileWritePendingRevision = markPersistenceDirty("growth");
   installProfileWriteListeners();
 
   if (profileWriteTimer !== undefined) {
@@ -369,6 +397,8 @@ function cancelPendingProfileWrite() {
   }
 
   profileWritePending = false;
+  profileWritePendingAt = 0;
+  profileWritePendingRevision = 0;
 }
 
 export function flushPendingProfileWrite() {
@@ -382,15 +412,24 @@ export function flushPendingProfileWrite() {
   }
 
   profileWritePending = false;
+  const pendingTimestamp = profileWritePendingAt || nextGrowthUpdatedAt();
+  const pendingRevision =
+    profileWritePendingRevision || markPersistenceDirty("growth");
+  profileWritePendingAt = 0;
+  profileWritePendingRevision = 0;
 
-  const { nickname, dueDate } = useGrowthStore.getState();
+  const { nickname } = useGrowthStore.getState();
+  const dueDate = readGrowthProfile().dueDate;
 
   try {
     writeStorage(GROWTH_STORAGE_KEYS.profile, { nickname, dueDate });
-    markGrowthUpdated();
+    markGrowthUpdated(pendingTimestamp);
+    recordPersistencePersisted("growth", pendingRevision);
   } catch (error) {
     profileWritePending = true;
-    recordGrowthStorageFailure(error);
+    profileWritePendingAt = pendingTimestamp;
+    profileWritePendingRevision = pendingRevision;
+    recordGrowthStorageFailure(error, true);
     throw error;
   }
 }
@@ -403,13 +442,53 @@ export function flushPendingProfileWriteSafely() {
   }
 }
 
-function recordGrowthStorageFailure(error: unknown) {
-  recordStorageWarning(
-    error instanceof Error && error.message
-      ? `成长记尚未写入本机存储：${error.message}`
-      : "成长记尚未写入本机存储，请清理空间后重试。",
+export function reloadGrowthFromStorage() {
+  if (!hasBrowserStorage()) return;
+  const persisted = readStorage(GROWTH_UPDATED_AT_STORAGE_KEY);
+  const persistedTimestamp =
+    typeof persisted === "number" && Number.isFinite(persisted) ? persisted : 0;
+
+  if (profileWritePending && profileWritePendingAt > persistedTimestamp) {
+    return;
+  }
+
+  cancelPendingProfileWrite();
+  useGrowthStore.setState({
+    ...readGrowthProfile(),
+    ...readGrowthProgress(),
+    ...readGrowthView(),
+    hydrated: true,
+  });
+  recordGrowthProfilePersisted();
+}
+
+function recordGrowthProfilePersisted() {
+  recordPersistencePersisted(
+    "growth",
+    getPersistenceStatus("growth").dirtyRevision,
   );
 }
+
+function recordGrowthStorageFailure(error: unknown, retryable = false) {
+  const message =
+    error instanceof Error && error.message
+      ? `成长记尚未写入本机存储：${error.message}`
+      : "成长记尚未写入本机存储，请清理空间后重试。";
+  if (retryable) {
+    recordPersistenceError("growth", message);
+  } else {
+    recordStorageWarning(message);
+  }
+}
+
+registerPersistenceRetryHandler("growth", () => {
+  try {
+    flushPendingProfileWrite();
+    return true;
+  } catch {
+    return false;
+  }
+});
 
 function hasBrowserStorage() {
   return typeof window !== "undefined" && Boolean(window.localStorage);

@@ -4,6 +4,7 @@ import { ArrowLeft, CalendarClock, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { DraftConflictNotice } from "@/components/DraftConflictNotice";
 import { MemberMultiSelect } from "@/components/household/MemberMultiSelect";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,8 @@ import {
   type PlanningValidationErrors,
 } from "@/lib/planning/types";
 import type { ChecklistItem } from "@/lib/types";
+import { useDraftConflict } from "@/lib/use-draft-conflict";
+import { useDialogHistoryGuard } from "@/lib/use-dialog-history-guard";
 
 const CHANNEL_SHORTCUTS = ["京东", "淘宝", "线下门店", "医院", "亲友赠送", "其他"];
 const LOCATION_SHORTCUTS = ["证件包", "妈妈包", "宝宝包", "爸爸背包", "车内", "家中", "临出门拿"];
@@ -55,11 +58,14 @@ export function ItemPlanningDialog({
   const clearItem = useItemPlanningStore((state) => state.clearItem);
   const household = useHouseholdStore((state) => state.household);
   const hydrateHousehold = useHouseholdStore((state) => state.hydrate);
-  const [draft, setDraft] = useState<ItemPlanningDraft>(() =>
+  const conflict = useDraftConflict<ItemPlanningDraft>(
     itemPlanningDraftFromPortable(planning, item.id),
+    open,
   );
+  const draft = conflict.draft;
   const [errors, setErrors] = useState<PlanningValidationErrors>({});
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+  useDialogHistoryGuard(open, () => onOpenChange(false));
 
   useEffect(() => {
     hydrate();
@@ -68,15 +74,14 @@ export function ItemPlanningDialog({
 
   useEffect(() => {
     if (!open) return;
-    setDraft(itemPlanningDraftFromPortable(planning, item.id));
     setErrors({});
-  }, [item.id, open, planning]);
+  }, [item.id, open]);
 
   function updateDraft<K extends keyof ItemPlanningDraft>(
     key: K,
     value: ItemPlanningDraft[K],
   ) {
-    setDraft((current) => ({ ...current, [key]: value }));
+    conflict.setField(key, value);
     if (errors[key]) {
       setErrors((current) => ({ ...current, [key]: undefined }));
     }
@@ -99,7 +104,11 @@ export function ItemPlanningDialog({
   }
 
   function clearSavedItem() {
-    clearItem(item.id);
+    const result = clearItem(item.id);
+    if (!result.ok) {
+      showAppToast({ message: result.message ?? "清空失败。", tone: "warning" });
+      return;
+    }
     onOpenChange(false);
     showAppToast({ message: "这项分工与采购信息已清空。", tone: "success" });
   }
@@ -130,6 +139,11 @@ export function ItemPlanningDialog({
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 pb-8 sm:overflow-visible sm:p-0">
             <div className="grid gap-5">
+              <DraftConflictNotice
+                fields={conflict.conflictFields.map((key) => PLANNING_FIELD_LABELS[key])}
+                onAcceptExternal={conflict.acceptExternal}
+                onKeepLocal={conflict.keepLocal}
+              />
               <PlanningField label="负责人（可多选）" error={errors.assigneeIds} id={`planning-assigneeIds-${item.id}`}>
                 <MemberMultiSelect household={household} id={`planning-assigneeIds-${item.id}`} onChange={(value) => updateDraft("assigneeIds", value)} selectedIds={draft.assigneeIds} />
               </PlanningField>
@@ -197,7 +211,7 @@ export function ItemPlanningDialog({
           </div>
 
           <DialogFooter className="grid shrink-0 gap-2 border-t border-border/60 bg-background/95 px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-3 backdrop-blur sm:border-0 sm:bg-transparent sm:p-0">
-            <Button className="h-14 w-full text-base" onClick={save} size="lg">
+            <Button className="h-14 w-full text-base" disabled={conflict.hasConflict} onClick={save} size="lg">
               <CalendarClock className="size-5" />保存
             </Button>
             <DialogClose asChild><Button className="hidden sm:inline-flex" variant="ghost">取消</Button></DialogClose>
@@ -217,6 +231,15 @@ export function ItemPlanningDialog({
     </>
   );
 }
+
+const PLANNING_FIELD_LABELS: Record<keyof ItemPlanningDraft, string> = {
+  assigneeIds: "负责人",
+  dueDate: "完成期限",
+  estimatedPrice: "预计总价",
+  actualPrice: "实际总价",
+  purchaseChannel: "购买渠道",
+  storageLocation: "存放位置",
+};
 
 function PlanningField({
   children,

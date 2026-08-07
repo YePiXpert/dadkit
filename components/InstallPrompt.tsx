@@ -9,8 +9,8 @@ import {
   clearPwaInstalledSession,
   INSTALL_PROMPT_DISMISS_KEY,
   INSTALL_STATUS_CHANGED_EVENT,
-  isBundledAndroidApp,
   isIosInstallGuideAvailable,
+  isIosSafariBrowser,
   isPwaInstallAvailable,
   isPwaInstalled,
   isStandaloneDisplay,
@@ -45,14 +45,6 @@ export function InstallPrompt() {
   }, [hydrate]);
 
   useEffect(() => {
-    if (isBundledAndroidApp()) {
-      setPwaInstallPromptAvailable(false);
-      setDeferredPrompt(null);
-      setShowIosGuide(false);
-      setShowPrompt(false);
-      return;
-    }
-
     if (isStandaloneDisplay()) {
       markPwaInstalled();
     }
@@ -87,7 +79,6 @@ export function InstallPrompt() {
 
     function handleManualOpen() {
       if (
-        isBundledAndroidApp() ||
         isPwaInstalled() ||
         !isPwaInstallAvailable()
       ) {
@@ -125,7 +116,6 @@ export function InstallPrompt() {
     if (
       !hydrated ||
       completedCount < AUTO_PROMPT_COMPLETION_COUNT ||
-      isBundledAndroidApp() ||
       isPwaInstalled() ||
       window.localStorage.getItem(INSTALL_PROMPT_DISMISS_KEY) === "1"
     ) {
@@ -171,7 +161,9 @@ export function InstallPrompt() {
           <p className="text-sm font-semibold">把 DadKit 装到桌面</p>
           <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
             {showIosGuide && !deferredPrompt
-              ? "用 Safari 打开，点底部分享按钮，选择“添加到主屏幕”，离线也能用。"
+              ? isIosSafariBrowser()
+                ? "点底部分享按钮，选择“添加到主屏幕”，离线也能用。"
+                : "请先用 Safari 打开本页，再点底部分享按钮，选择“添加到主屏幕”。"
               : "安装后可直接从桌面打开，离线也能查看和更新待产清单。"}
           </p>
           {deferredPrompt ? (

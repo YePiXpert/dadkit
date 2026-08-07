@@ -31,6 +31,7 @@ import {
   type PreparationKind,
 } from "@/lib/types";
 import { CUSTOM_PREPARATION_OPTIONS } from "@/lib/custom-item-options";
+import { useDialogHistoryGuard } from "@/lib/use-dialog-history-guard";
 import { showAppToast } from "@/lib/app-toast";
 import { useDadKitStore } from "@/lib/store";
 
@@ -61,6 +62,7 @@ export function AddItemDialog({ defaultCategory = "mom_labor", trigger }: AddIte
   const [note, setNote] = useState("");
   const [nameTouched, setNameTouched] = useState(false);
   const nameError = nameTouched && !name.trim();
+  useDialogHistoryGuard(open, () => setOpen(false));
 
   function submit() {
     if (!name.trim()) {

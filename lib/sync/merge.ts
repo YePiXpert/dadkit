@@ -89,6 +89,44 @@ function keepsCustomItem(
   return deletedAt === undefined || deletedAt <= timestampOf(item);
 }
 
+export type ChecklistMergeDocument = {
+  checklist: ChecklistItem[];
+  customItems: ChecklistItem[];
+  hiddenTemplateItemStamps: HiddenTemplateItemStamps;
+  deletedCustomItems: DeletedCustomItemStamps;
+};
+
+export function mergeChecklistDocuments(
+  local: ChecklistMergeDocument,
+  remote: ChecklistMergeDocument,
+) {
+  const hiddenTemplateItemStamps = mergeHiddenStamps(
+    local.hiddenTemplateItemStamps,
+    remote.hiddenTemplateItemStamps,
+  );
+  const deletedCustomItems = mergeTombstones(
+    local.deletedCustomItems,
+    remote.deletedCustomItems,
+  );
+  const customItems = mergeItemLists(local.customItems, remote.customItems).filter(
+    (item) => keepsCustomItem(item, deletedCustomItems),
+  );
+  const checklist = mergeItemLists(local.checklist, remote.checklist).filter(
+    (item) => item.source !== "user" || keepsCustomItem(item, deletedCustomItems),
+  );
+
+  return {
+    checklist,
+    customItems,
+    hiddenTemplateItemIds: Object.entries(hiddenTemplateItemStamps)
+      .filter(([, stamp]) => stamp.hidden)
+      .map(([id]) => id)
+      .sort(),
+    hiddenTemplateItemStamps,
+    deletedCustomItems,
+  };
+}
+
 export function mergeExportData(
   local: DadKitExportData,
   remote: DadKitImportData,
@@ -103,20 +141,7 @@ export function mergeExportData(
     }));
   }
 
-  const hiddenTemplateItemStamps = mergeHiddenStamps(
-    cleanLocal.hiddenTemplateItemStamps,
-    cleanRemote.hiddenTemplateItemStamps,
-  );
-  const deletedCustomItems = mergeTombstones(
-    cleanLocal.deletedCustomItems,
-    cleanRemote.deletedCustomItems,
-  );
-  const customItems = mergeItemLists(cleanLocal.customItems, cleanRemote.customItems).filter(
-    (item) => keepsCustomItem(item, deletedCustomItems),
-  );
-  const checklist = mergeItemLists(cleanLocal.checklist, cleanRemote.checklist).filter(
-    (item) => item.source !== "user" || keepsCustomItem(item, deletedCustomItems),
-  );
+  const checklistDocument = mergeChecklistDocuments(cleanLocal, cleanRemote);
   const remoteGrowthWins =
     cleanRemote.growthUpdatedAt > cleanLocal.growthUpdatedAt;
   const planning = mergeItemPlanning(cleanLocal.planning, cleanRemote.planning);
@@ -133,15 +158,12 @@ export function mergeExportData(
     exportedAt: new Date().toISOString(),
     // 精简/完整模式是设备偏好,不随同步走。
     checklistMode: cleanLocal.checklistMode,
-    checklist,
-    customItems,
-    hiddenTemplateItemIds: Object.entries(hiddenTemplateItemStamps)
-      .filter(([, stamp]) => stamp.hidden)
-      .map(([id]) => id)
-      .sort(),
+    checklist: checklistDocument.checklist,
+    customItems: checklistDocument.customItems,
+    hiddenTemplateItemIds: checklistDocument.hiddenTemplateItemIds,
     growth: remoteGrowthWins ? cleanRemote.growth : cleanLocal.growth,
-    hiddenTemplateItemStamps,
-    deletedCustomItems,
+    hiddenTemplateItemStamps: checklistDocument.hiddenTemplateItemStamps,
+    deletedCustomItems: checklistDocument.deletedCustomItems,
     growthUpdatedAt: remoteGrowthWins
       ? cleanRemote.growthUpdatedAt
       : cleanLocal.growthUpdatedAt,

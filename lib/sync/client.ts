@@ -415,11 +415,13 @@ async function applyMerged(data: DadKitExportData) {
       throw new Error(result.message);
     }
 
-    useDadKitStore.setState({
+    useDadKitStore.setState((state) => ({
       checklist,
       customItems: data.customItems,
       hiddenTemplateItemIds: data.hiddenTemplateItemIds,
-    });
+      changeOrigin: "remote",
+      changeRevision: state.changeRevision + 1,
+    }));
     useGrowthStore.setState({
       ...data.growth.profile,
       ...data.growth.progress,
@@ -939,10 +941,20 @@ export async function createRandomSyncSpace(displayName: string, deviceName: str
   }
 }
 
-export async function joinSyncSpaceByInvite(inviteToken: string, deviceName: string) {
+export async function joinSyncSpaceByInvite(
+  inviteToken: string,
+  deviceName: string,
+  options: { replaceExisting: boolean },
+) {
   try {
-    await createSnapshotAsync("加入家庭同步前");
     const existing = loadSyncSession();
+    if (existing && !options.replaceExisting) {
+      return {
+        ok: false as const,
+        message: "当前设备已经连接家庭同步，请先确认切换同步空间。",
+      };
+    }
+    await createSnapshotAsync("加入家庭同步前");
     const result = await apiRequest<{ space: SyncSpaceMetadata }>(
       "/api/sync/v2/join",
       { method: "POST", body: JSON.stringify({ inviteToken, deviceName }) },

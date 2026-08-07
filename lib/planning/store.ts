@@ -18,8 +18,11 @@ import { loadItemPlanning, saveItemPlanning } from "@/lib/planning/repository";
 import { PLANNING_TEXT_LIMIT, type ItemPlanningDraft, type ItemPlanningPortableData, type PlanningBulkPatch, type PlanningValidationErrors } from "@/lib/planning/types";
 import { isSafePlanningItemId, isValidAssigneeIds, normalizeAssigneeIds, normalizePlanningText, validateItemPlanningDraft } from "@/lib/planning/validation";
 import { getSyncAdjustedNow } from "@/lib/sync-clock";
+import { mergeItemPlanning } from "@/lib/planning/merge";
+import type { DataActionResult } from "@/lib/data/action-result";
 
-type PlanningActionResult = { ok: boolean; changed: boolean; errors?: PlanningValidationErrors; message?: string };
+type PlanningActionResult = DataActionResult<PlanningValidationErrors>;
+const PLANNING_PERSISTENCE_ERROR = "家庭分工未能写入本机存储，请清理空间后重试。";
 type ItemPlanningState = {
   hydrated: boolean;
   planning: ItemPlanningPortableData;
@@ -44,23 +47,33 @@ export const useItemPlanningStore = create<ItemPlanningState>((set, get) => ({
     if (!isSafePlanningItemId(itemId)) return { ok: false, changed: false, message: "物品标识无效。" };
     const validation = validateItemPlanningDraft(draft);
     if (!validation.ok || !validation.values) return { ok: false, changed: false, errors: validation.errors };
-    const current = get().planning;
+    const current = mergeItemPlanning(get().planning, loadItemPlanning());
     const next = updateItemPlanningValues(current, itemId, validation.values, nextPlanningTimestamp(current, [itemId]));
-    if (next.changed) { saveItemPlanning(next.planning); set({ planning: next.planning }); }
+    if (next.changed) {
+      try {
+        saveItemPlanning(next.planning);
+      } catch {
+        return { ok: false, changed: false, message: PLANNING_PERSISTENCE_ERROR };
+      }
+      set({ planning: next.planning });
+    }
     return { ok: true, changed: next.changed };
   },
   clearItem: (itemId) => {
     if (!isSafePlanningItemId(itemId)) return { ok: false, changed: false, message: "物品标识无效。" };
-    const current = get().planning;
+    const current = mergeItemPlanning(get().planning, loadItemPlanning());
     const next = clearItemPlanningValues(current, itemId, nextPlanningTimestamp(current, [itemId]));
-    saveItemPlanning(next); set({ planning: next }); return { ok: true, changed: true };
+    try { saveItemPlanning(next); } catch {
+      return { ok: false, changed: false, message: PLANNING_PERSISTENCE_ERROR };
+    }
+    set({ planning: next }); return { ok: true, changed: true };
   },
   bulkUpdate: (itemIds, patch) => {
     const ids = [...new Set(itemIds)].filter(isSafePlanningItemId);
     if (ids.length === 0) return { ok: false, changed: false, message: "请至少选择一个物品。" };
     const normalized = normalizeBulkPatch(patch);
     if (!normalized.ok || !normalized.patch) return normalized;
-    const current = get().planning;
+    const current = mergeItemPlanning(get().planning, loadItemPlanning());
     const next = cloneItemPlanning(current);
     const now = nextPlanningTimestamp(current, ids);
     let changed = false;
@@ -85,13 +98,21 @@ export const useItemPlanningStore = create<ItemPlanningState>((set, get) => ({
       }
       if (itemChanged) { next.items[itemId] = record; changed = true; }
     }
-    if (changed) { saveItemPlanning(next); set({ planning: next }); }
+    if (changed) {
+      try { saveItemPlanning(next); } catch {
+        return { ok: false, changed: false, message: PLANNING_PERSISTENCE_ERROR };
+      }
+      set({ planning: next });
+    }
     return { ok: true, changed };
   },
   clearAll: () => {
-    const current = get().planning;
+    const current = mergeItemPlanning(get().planning, loadItemPlanning());
     const next = clearAllItemPlanning(current, nextPlanningTimestamp(current));
-    saveItemPlanning(next); set({ planning: next }); return { ok: true, changed: true };
+    try { saveItemPlanning(next); } catch {
+      return { ok: false, changed: false, message: PLANNING_PERSISTENCE_ERROR };
+    }
+    set({ planning: next }); return { ok: true, changed: true };
   },
 }));
 

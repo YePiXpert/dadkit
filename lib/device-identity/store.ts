@@ -12,14 +12,15 @@ import type {
   PreferredEntry,
 } from "@/lib/device-identity/types";
 import { isSafeHouseholdMemberId } from "@/lib/household/validation";
+import type { DataActionResult } from "@/lib/data/action-result";
 
 type DeviceIdentityState = DeviceIdentityLocalData & {
   hydrated: boolean;
   hydrate(): void;
-  setCurrentMemberId(memberId: string | null): void;
-  setPreferredEntry(preferredEntry: PreferredEntry): void;
-  completeOnboarding(timestamp?: number): void;
-  resetOnboarding(): void;
+  setCurrentMemberId(memberId: string | null): DataActionResult;
+  setPreferredEntry(preferredEntry: PreferredEntry): DataActionResult;
+  completeOnboarding(timestamp?: number): DataActionResult;
+  resetOnboarding(): DataActionResult;
 };
 
 export const useDeviceIdentityStore = create<DeviceIdentityState>((set, get) => ({
@@ -31,18 +32,18 @@ export const useDeviceIdentityStore = create<DeviceIdentityState>((set, get) => 
   },
   setCurrentMemberId: (memberId) => {
     if (memberId !== null && !isSafeHouseholdMemberId(memberId)) {
-      throw new Error("家庭成员标识无效。");
+      return { ok: false, changed: false, message: "家庭成员标识无效。" };
     }
-    persist({ ...pickIdentity(get()), currentMemberId: memberId }, set);
+    return persist({ ...loadDeviceIdentity(), currentMemberId: memberId }, set);
   },
   setPreferredEntry: (preferredEntry) => {
-    persist({ ...pickIdentity(get()), preferredEntry }, set);
+    return persist({ ...loadDeviceIdentity(), preferredEntry }, set);
   },
   completeOnboarding: (timestamp = Date.now()) => {
-    persist({ ...pickIdentity(get()), onboardingCompletedAt: timestamp }, set);
+    return persist({ ...loadDeviceIdentity(), onboardingCompletedAt: timestamp }, set);
   },
   resetOnboarding: () => {
-    persist({ ...pickIdentity(get()), onboardingCompletedAt: null }, set);
+    return persist({ ...loadDeviceIdentity(), onboardingCompletedAt: null }, set);
   },
 }));
 
@@ -59,6 +60,21 @@ function persist(
   identity: DeviceIdentityLocalData,
   set: (partial: Partial<DeviceIdentityState>) => void,
 ) {
-  saveDeviceIdentity(identity);
+  const current = pickIdentity(useDeviceIdentityStore.getState());
+  const changed = JSON.stringify(current) !== JSON.stringify(identity);
+  if (JSON.stringify(loadDeviceIdentity()) === JSON.stringify(identity)) {
+    if (changed) set({ ...identity, hydrated: true });
+    return { ok: true, changed };
+  }
+  try {
+    saveDeviceIdentity(identity);
+  } catch {
+    return {
+      ok: false,
+      changed: false,
+      message: "设备设置未能写入本机存储，请清理空间后重试。",
+    };
+  }
   set({ ...identity, hydrated: true });
+  return { ok: true, changed: true };
 }

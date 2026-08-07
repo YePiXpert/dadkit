@@ -3,7 +3,8 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
-import { isBundledAndroidApp } from "@/lib/install-prompt";
+import { PwaRegister } from "@/components/PwaRegister";
+import { startCrossTabSync } from "@/lib/data/cross-tab-sync";
 
 const AndroidUpdatePrompt = dynamic(
   () =>
@@ -12,26 +13,17 @@ const AndroidUpdatePrompt = dynamic(
     ),
   { ssr: false },
 );
-const PwaRegister = dynamic(
-  () =>
-    import("@/components/PwaRegister").then(
-      (module) => module.PwaRegister,
-    ),
-  { ssr: false },
-);
-
 export function BackgroundTasks() {
   const [idle, setIdle] = useState(false);
-  const [bundledAndroid, setBundledAndroid] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let idleCallback: number | undefined;
+    const stopCrossTabSync = startCrossTabSync();
 
     const start = () => {
       if (cancelled) return;
-      setBundledAndroid(isBundledAndroidApp());
       setIdle(true);
       void import("@/lib/sync/auto-sync").then(({ startAutoSync }) => {
         if (!cancelled) {
@@ -71,13 +63,14 @@ export function BackgroundTasks() {
       if (timer !== undefined) {
         clearTimeout(timer);
       }
+      stopCrossTabSync();
     };
   }, []);
 
-  return idle ? (
+  return (
     <>
-      {bundledAndroid ? null : <PwaRegister />}
-      <AndroidUpdatePrompt />
+      <PwaRegister />
+      {idle ? <AndroidUpdatePrompt /> : null}
     </>
-  ) : null;
+  );
 }

@@ -373,7 +373,7 @@ export function sanitizeDadKitImportData(
     baby: cloneBabyDataV1(data.baby),
   };
 
-  throw new Error("不支持的数据版本。");
+  throw new Error("无法读取这个备份文件，请选择由 DadKit 导出的备份。");
 }
 
 export function upgradeExportDataToLatest(

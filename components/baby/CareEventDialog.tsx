@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { DraftConflictNotice } from "@/components/DraftConflictNotice";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,9 +23,34 @@ export function CareEventDialog({ event, open, onOpenChange }: { event?: CareEve
   const household = useHouseholdStore((state) => state.household);
   const hydrateHousehold = useHouseholdStore((state) => state.hydrate);
   const [draft, setDraft] = useState<CareEvent>();
+  const [conflictedExternal, setConflictedExternal] = useState<CareEvent>();
+  const baseRef = useRef<CareEvent | undefined>(undefined);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { setDraft(event ? cloneCareEvent(event) : undefined); }, [event, open]);
+  useEffect(() => {
+    if (!open || !event) {
+      baseRef.current = undefined;
+      setConflictedExternal(undefined);
+      return;
+    }
+    const external = cloneCareEvent(event);
+    const base = baseRef.current;
+    if (!base || base.id !== external.id) {
+      baseRef.current = external;
+      setDraft(external);
+      setConflictedExternal(undefined);
+      return;
+    }
+    if (JSON.stringify(base) === JSON.stringify(external)) return;
+    const dirty = draft && JSON.stringify(draft) !== JSON.stringify(base);
+    baseRef.current = external;
+    if (dirty && JSON.stringify(draft) !== JSON.stringify(external)) {
+      setConflictedExternal(external);
+    } else {
+      setDraft(external);
+      setConflictedExternal(undefined);
+    }
+  }, [draft, event, open]);
   useEffect(() => { hydrateHousehold(); }, [hydrateHousehold]);
   if (!event || !draft) return null;
 
@@ -58,6 +84,14 @@ export function CareEventDialog({ event, open, onOpenChange }: { event?: CareEve
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader><DialogTitle>编辑照护记录</DialogTitle><DialogDescription>记录类型和标识不会改变；保存后会按整条记录参与家庭同步。</DialogDescription></DialogHeader>
+        <DraftConflictNotice
+          fields={conflictedExternal ? ["照护记录"] : []}
+          onAcceptExternal={() => {
+            if (conflictedExternal) setDraft(cloneCareEvent(conflictedExternal));
+            setConflictedExternal(undefined);
+          }}
+          onKeepLocal={() => setConflictedExternal(undefined)}
+        />
         <div className="grid max-h-[60vh] gap-4 overflow-y-auto pr-1">
           {draft.type === "bottle" ? <><DateTimeField id="edit-bottle-occurred" label="发生时间" value={draft.occurredAt} onChange={(value) => updateTime("occurredAt", value)} /><div className="grid gap-2"><Label htmlFor="edit-bottle-milk-type">奶类</Label><Select value={draft.milkType} onValueChange={(milkType) => setDraft({ ...draft, milkType: milkType as typeof draft.milkType })}><SelectTrigger id="edit-bottle-milk-type"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="breastmilk">瓶喂母乳</SelectItem><SelectItem value="formula">配方奶</SelectItem></SelectContent></Select></div><Amount id="edit-bottle-amount" value={draft.amountMl} onChange={(amountMl) => setDraft({ ...draft, amountMl: amountMl ?? draft.amountMl })} /></> : null}
           {draft.type === "diaper" ? <><DateTimeField id="edit-diaper-occurred" label="发生时间" value={draft.occurredAt} onChange={(value) => updateTime("occurredAt", value)} /><div className="grid gap-2"><Label htmlFor="edit-diaper-kind">尿布类型</Label><Select value={draft.kind} onValueChange={(kind) => setDraft({ ...draft, kind: kind as typeof draft.kind })}><SelectTrigger id="edit-diaper-kind"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="wet">小便</SelectItem><SelectItem value="dirty">大便</SelectItem><SelectItem value="both">都有</SelectItem></SelectContent></Select></div></> : null}
@@ -66,7 +100,7 @@ export function CareEventDialog({ event, open, onOpenChange }: { event?: CareEve
           <div className="grid gap-2"><Label htmlFor="edit-care-recorder">记录人</Label><Select value={draft.recordedByMemberId ?? "none"} onValueChange={(value) => setDraft({ ...draft, recordedByMemberId: value === "none" ? null : value })}><SelectTrigger id="edit-care-recorder"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">未标记记录人</SelectItem>{getActiveHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}</SelectItem>)}{getRemovedHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}（已移除）</SelectItem>)}{draft.recordedByMemberId && !household.members[draft.recordedByMemberId] ? <SelectItem value={draft.recordedByMemberId}>{householdMemberLabel(household, draft.recordedByMemberId)}</SelectItem> : null}</SelectContent></Select></div>
           <div className="grid gap-2"><Label htmlFor="edit-care-note">备注</Label><Textarea id="edit-care-note" maxLength={1000} onChange={(change) => setDraft({ ...draft, note: change.target.value })} value={draft.note} /></div>
         </div>
-        <DialogFooter><Button disabled={saving} onClick={() => onOpenChange(false)} variant="outline">取消</Button><Button disabled={saving} onClick={() => void save()}>{saving ? "正在保存…" : "保存修改"}</Button></DialogFooter>
+        <DialogFooter><Button disabled={saving} onClick={() => onOpenChange(false)} variant="outline">取消</Button><Button disabled={saving || Boolean(conflictedExternal)} onClick={() => void save()}>{saving ? "正在保存…" : "保存修改"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );

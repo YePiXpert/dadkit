@@ -9,6 +9,7 @@ import {
   isItemPlanningPortableData,
   isItemPlanningPortableDataV1,
 } from "@/lib/planning/validation";
+import { publishDataChange } from "@/lib/data/change-bus";
 
 export const ITEM_PLANNING_STORAGE_KEY = "dadkit:v3:item-planning";
 
@@ -36,5 +37,6 @@ export function saveItemPlanning(planning: ItemPlanningPortableData) {
   const serialized = JSON.stringify(cloneItemPlanning(planning));
   if (window.localStorage.getItem(ITEM_PLANNING_STORAGE_KEY) !== serialized) {
     window.localStorage.setItem(ITEM_PLANNING_STORAGE_KEY, serialized);
+    publishDataChange("planning");
   }
 }

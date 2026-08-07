@@ -11,18 +11,58 @@ export type ChecklistPersistenceStatus = {
   storageWarning?: string;
 };
 
+export type PersistenceDomain =
+  | "checklist"
+  | "growth"
+  | "hospital"
+  | "planning"
+  | "household"
+  | "device-identity"
+  | "baby"
+  | "item-photo";
+
+export type DomainPersistenceStatus = {
+  domain: PersistenceDomain;
+  dirtyRevision: number;
+  persistedRevision: number;
+  lastError?: string;
+};
+
+export type PersistenceOverview = {
+  failure?: DomainPersistenceStatus;
+  storageWarning?: string;
+};
+
 export const CHECKLIST_PERSISTENCE_EVENT = "dadkit:persistence-status";
 
-let checklistDirtyRevision = 0;
-let checklistPersistedRevision = 0;
-let checklistPersistenceError: string | undefined;
+const domainStatuses = new Map<PersistenceDomain, DomainPersistenceStatus>();
 let storageWarning: string | undefined;
 
 export function getChecklistPersistenceStatus(): ChecklistPersistenceStatus {
+  const status = getPersistenceStatus("checklist");
   return {
-    dirtyRevision: checklistDirtyRevision,
-    persistedRevision: checklistPersistedRevision,
-    lastError: checklistPersistenceError,
+    dirtyRevision: status.dirtyRevision,
+    persistedRevision: status.persistedRevision,
+    lastError: status.lastError,
+    storageWarning,
+  };
+}
+
+export function getPersistenceStatus(
+  domain: PersistenceDomain,
+): DomainPersistenceStatus {
+  const status = domainStatuses.get(domain);
+  return status
+    ? { ...status }
+    : { domain, dirtyRevision: 0, persistedRevision: 0 };
+}
+
+export function getPersistenceOverview(): PersistenceOverview {
+  const failure = [...domainStatuses.values()].find(
+    (status) => Boolean(status.lastError),
+  );
+  return {
+    ...(failure ? { failure: { ...failure } } : {}),
     storageWarning,
   };
 }
@@ -34,24 +74,50 @@ function notifyChecklistPersistenceStatus() {
   ) {
     window.dispatchEvent(
       new CustomEvent(CHECKLIST_PERSISTENCE_EVENT, {
-        detail: getChecklistPersistenceStatus(),
+        detail: getPersistenceOverview(),
       }),
     );
   }
 }
 
 export function markChecklistStateDirty(): number {
-  return ++checklistDirtyRevision;
+  return markPersistenceDirty("checklist");
 }
 
 export function recordChecklistStatePersisted(revision: number) {
-  checklistPersistedRevision = Math.max(checklistPersistedRevision, revision);
-  checklistPersistenceError = undefined;
-  notifyChecklistPersistenceStatus();
+  recordPersistencePersisted("checklist", revision);
 }
 
 export function recordChecklistPersistenceError(message: string) {
-  checklistPersistenceError = message;
+  recordPersistenceError("checklist", message);
+}
+
+export function markPersistenceDirty(domain: PersistenceDomain): number {
+  const current = getPersistenceStatus(domain);
+  const revision = current.dirtyRevision + 1;
+  domainStatuses.set(domain, { ...current, dirtyRevision: revision });
+  return revision;
+}
+
+export function recordPersistencePersisted(
+  domain: PersistenceDomain,
+  revision: number,
+) {
+  const current = getPersistenceStatus(domain);
+  domainStatuses.set(domain, {
+    ...current,
+    persistedRevision: Math.max(current.persistedRevision, revision),
+    lastError: undefined,
+  });
+  notifyChecklistPersistenceStatus();
+}
+
+export function recordPersistenceError(
+  domain: PersistenceDomain,
+  message: string,
+) {
+  const current = getPersistenceStatus(domain);
+  domainStatuses.set(domain, { ...current, lastError: message });
   notifyChecklistPersistenceStatus();
 }
 
@@ -90,24 +156,36 @@ export async function checkStorageCapacity() {
 }
 
 export function resetChecklistPersistenceStatus() {
-  checklistDirtyRevision = 0;
-  checklistPersistedRevision = 0;
-  checklistPersistenceError = undefined;
+  domainStatuses.clear();
   storageWarning = undefined;
 }
 
-type ChecklistStateSaveRetryHandler = () => boolean;
+type PersistenceRetryHandler = () => boolean;
 
-let checklistStateSaveRetryHandler: ChecklistStateSaveRetryHandler | undefined;
+const persistenceRetryHandlers = new Map<
+  PersistenceDomain,
+  PersistenceRetryHandler
+>();
 
 // Registered by lib/storage.ts at module load so subscribers can trigger a
 // retry without importing the storage module themselves.
 export function registerChecklistStateSaveRetryHandler(
-  handler: ChecklistStateSaveRetryHandler,
+  handler: PersistenceRetryHandler,
 ) {
-  checklistStateSaveRetryHandler = handler;
+  registerPersistenceRetryHandler("checklist", handler);
 }
 
 export function retryPendingChecklistStateSave() {
-  return checklistStateSaveRetryHandler?.() ?? true;
+  return retryPendingPersistence("checklist");
+}
+
+export function registerPersistenceRetryHandler(
+  domain: PersistenceDomain,
+  handler: PersistenceRetryHandler,
+) {
+  persistenceRetryHandlers.set(domain, handler);
+}
+
+export function retryPendingPersistence(domain: PersistenceDomain) {
+  return persistenceRetryHandlers.get(domain)?.() ?? true;
 }

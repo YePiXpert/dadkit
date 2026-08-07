@@ -4,6 +4,7 @@ import { createEmptyHousehold } from "@/lib/household/defaults";
 import { cloneHousehold } from "@/lib/household/portable";
 import type { HouseholdPortableData } from "@/lib/household/types";
 import { isHouseholdPortableData } from "@/lib/household/validation";
+import { publishDataChange } from "@/lib/data/change-bus";
 
 export const HOUSEHOLD_STORAGE_KEY = "dadkit:v4:household";
 
@@ -28,5 +29,6 @@ export function saveHousehold(household: HouseholdPortableData) {
   const serialized = JSON.stringify(cloneHousehold(household));
   if (window.localStorage.getItem(HOUSEHOLD_STORAGE_KEY) !== serialized) {
     window.localStorage.setItem(HOUSEHOLD_STORAGE_KEY, serialized);
+    publishDataChange("household");
   }
 }

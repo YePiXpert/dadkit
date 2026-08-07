@@ -8,9 +8,11 @@ import { generateChecklist } from "@/lib/rules";
 import {
   loadChecklist,
   loadDeletedCustomItems,
+  loadHiddenTemplateItemStamps,
   loadSnapshotsAsync,
   resetAllData,
   saveChecklist,
+  saveHiddenTemplateItemStamps,
   STORAGE_KEYS,
   exportData,
 } from "@/lib/storage";
@@ -381,6 +383,66 @@ describe("v3 checklist store", () => {
 
       expect(loadChecklist()).toEqual([]);
       expect(loadDeletedCustomItems()[custom.id]).toBeDefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("rolls back a pending deletion when metadata persistence fails", () => {
+    vi.useFakeTimers();
+
+    try {
+      installBrowserStorage();
+      const custom = testItem("failed-tombstone");
+      saveChecklist([custom]);
+      useDadKitStore.setState({
+        hydrated: true,
+        checklist: [custom],
+        customItems: [custom],
+        hiddenTemplateItemIds: [],
+        pendingRemovalIds: [],
+      });
+      failNextStorageWrite(STORAGE_KEYS.deletedCustomItems);
+
+      useDadKitStore.getState().removeItem(custom.id);
+      vi.advanceTimersByTime(5000);
+
+      expect(loadChecklist()).toEqual([custom]);
+      expect(loadDeletedCustomItems()).not.toHaveProperty(custom.id);
+      expect(useDadKitStore.getState().checklist).toEqual([custom]);
+      expect(useDadKitStore.getState().pendingRemovalIds).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("makes a template deletion newer than future entity and stamp clocks", () => {
+    vi.useFakeTimers();
+
+    try {
+      installBrowserStorage();
+      const future = Date.now() + 60_000;
+      const template = generateChecklist()[0];
+      const item = { ...template, updatedAt: future - 1 };
+      saveChecklist([item]);
+      saveHiddenTemplateItemStamps({
+        [item.id]: { hidden: false, updatedAt: future },
+      });
+      useDadKitStore.setState({
+        hydrated: true,
+        checklist: [item],
+        customItems: [],
+        hiddenTemplateItemIds: [],
+        pendingRemovalIds: [],
+      });
+
+      useDadKitStore.getState().removeItem(item.id);
+      vi.advanceTimersByTime(5000);
+
+      expect(loadHiddenTemplateItemStamps()[item.id]).toEqual({
+        hidden: true,
+        updatedAt: future + 1,
+      });
     } finally {
       vi.useRealTimers();
     }

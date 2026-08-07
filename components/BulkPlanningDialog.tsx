@@ -15,13 +15,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { showAppToast } from "@/lib/app-toast";
 import { useHouseholdStore } from "@/lib/household/store";
 import { useItemPlanningStore } from "@/lib/planning/store";
@@ -152,14 +145,16 @@ function BulkField({
   return (
     <div className="grid gap-2 rounded-inset bg-card p-3 shadow-sm">
       <Label>{label}</Label>
-      <Select value={mode} onValueChange={(value) => onModeChange(value as BulkMode)}>
-        <SelectTrigger aria-label={`${label}处理方式`}><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="keep">保持不变</SelectItem>
-          <SelectItem value="set">设置值</SelectItem>
-          <SelectItem value="clear">清空</SelectItem>
-        </SelectContent>
-      </Select>
+      <select
+        aria-label={`${label}处理方式`}
+        className="flex h-11 w-full rounded-2xl border border-input bg-card px-3.5 py-2 text-base outline-none ring-offset-background focus:ring-2 focus:ring-ring"
+        onChange={(event) => onModeChange(event.target.value as BulkMode)}
+        value={mode}
+      >
+        <option value="keep">保持不变</option>
+        <option value="set">设置值</option>
+        <option value="clear">清空</option>
+      </select>
       {children}
     </div>
   );

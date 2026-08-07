@@ -127,8 +127,9 @@ jobs:
           - 导航激活态改为严格验证唯一当前项，降低界面调整后的回归风险
           - 移除固定延时，改用语义化就绪条件，提升 Chromium 与 WebKit 验收稳定性
           - Android 包名为 com.dadkit.mobile，versionCode 为 14
-          - APK 内置完整界面、清单、成长图和物品图，断网可直接打开
-          - 清单、成长记录和照片仍默认保存在应用本机沙箱；家庭同步与 WebDAV 为可选联网功能
+          - Android 已改为 Kotlin + Jetpack Compose 原生应用，不再通过浏览器或 WebView 打开
+          - 原生清单、宝宝照护、医院档案、家庭成员、备份恢复均可离线使用
+          - Android 与 iPhone PWA 可选择加入同一家庭并同步数据
           EOF
           gh release create "$GITHUB_REF_NAME" \
             DadKit-3.4.1.apk \

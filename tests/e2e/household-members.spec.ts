@@ -5,7 +5,14 @@ import { seedCompletedOnboarding, seedFamily } from "@/tests/e2e/helpers";
 test.describe.configure({ timeout: 120_000 });
 
 async function chooseSelect(page: Page, label: string, option: string) {
-  await page.getByLabel(label, { exact: true }).click();
+  const trigger = page.getByLabel(label, { exact: true });
+
+  if (await trigger.evaluate((element) => element instanceof HTMLSelectElement)) {
+    await trigger.selectOption({ label: option });
+    return;
+  }
+
+  await trigger.click();
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 

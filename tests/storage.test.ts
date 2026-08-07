@@ -51,6 +51,7 @@ import {
   loadItemPlanning,
   saveItemPlanning,
 } from "@/lib/planning/repository";
+import { useDadKitStore } from "@/lib/store";
 
 function testItem(id = "item-1", patch: Partial<ChecklistItem> = {}): ChecklistItem {
   return {
@@ -167,6 +168,14 @@ function currentDataSnapshot() {
 }
 
 afterEach(() => {
+  useDadKitStore.setState({
+    hydrated: false,
+    checklist: [],
+    checklistMode: "lean",
+    customItems: [],
+    hiddenTemplateItemIds: [],
+    pendingRemovalIds: [],
+  });
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -277,6 +286,35 @@ describe("v6 portable backup with the existing local namespace", () => {
     expect(loadGrowthUpdatedAt()).toBe(789);
     expect(loadHospitalProfile()).toEqual(payload.hospital);
     expect(exportData().version).toBe(9);
+  });
+
+  it("refreshes an already hydrated checklist store after import", () => {
+    installBrowserStorage();
+    useDadKitStore.setState({
+      hydrated: true,
+      checklist: [testItem("stale")],
+      checklistMode: "lean",
+      customItems: [],
+      hiddenTemplateItemIds: [],
+      pendingRemovalIds: [],
+    });
+    const imported = testItem("imported", { updatedAt: 100 });
+
+    expect(
+      importData(
+        JSON.stringify(
+          backupData({ checklist: [imported], customItems: [imported] }),
+        ),
+      ).ok,
+    ).toBe(true);
+    expect(useDadKitStore.getState()).toMatchObject({
+      hydrated: true,
+      checklistMode: "full",
+      changeOrigin: "hydrate",
+    });
+    expect(
+      useDadKitStore.getState().checklist.some((item) => item.id === imported.id),
+    ).toBe(true);
   });
 
   it("keeps hospital but safely clears planning on a manual v6 restore", () => {

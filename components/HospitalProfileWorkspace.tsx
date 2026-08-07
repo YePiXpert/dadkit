@@ -5,6 +5,7 @@ import { Building2, Copy, MapPin, Pencil, Phone, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { DraftConflictNotice } from "@/components/DraftConflictNotice";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,7 @@ import {
   type HospitalValidationErrors,
 } from "@/lib/hospital/types";
 import { hospitalTelHref } from "@/lib/hospital/validation";
+import { useDraftConflict } from "@/lib/use-draft-conflict";
 
 const SINGLE_LINE_FIELDS = [
   "hospitalName",
@@ -44,16 +46,15 @@ export function HospitalProfileWorkspace() {
   const saveDraft = useHospitalProfileStore((state) => state.saveDraft);
   const clearProfile = useHospitalProfileStore((state) => state.clearProfile);
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState<HospitalProfileValues>(() =>
-    hospitalValuesFromPortable(profile),
-  );
+  const values = hospitalValuesFromPortable(profile);
+  const conflict = useDraftConflict<HospitalProfileValues>(values, editing);
+  const draft = conflict.draft;
   const [errors, setErrors] = useState<HospitalValidationErrors>({});
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const [copyFallback, setCopyFallback] = useState("");
   const hospitalNameRef = useRef<HTMLInputElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
   const configured = isHospitalProfileConfigured(profile);
-  const values = hospitalValuesFromPortable(profile);
   const backHref =
     searchParams.get("from") === "departure" ? "/departure" : "/settings";
 
@@ -62,14 +63,14 @@ export function HospitalProfileWorkspace() {
   }, [hydrate]);
 
   function beginEditing() {
-    setDraft(hospitalValuesFromPortable(profile));
+    conflict.reset(hospitalValuesFromPortable(profile));
     setErrors({});
     setEditing(true);
     window.requestAnimationFrame(() => hospitalNameRef.current?.focus());
   }
 
   function cancelEditing() {
-    setDraft(hospitalValuesFromPortable(profile));
+    conflict.reset(hospitalValuesFromPortable(profile));
     setErrors({});
     setEditing(false);
     window.requestAnimationFrame(() => editButtonRef.current?.focus());
@@ -85,6 +86,9 @@ export function HospitalProfileWorkspace() {
         (key) => nextErrors[key],
       );
       document.getElementById(`hospital-${firstInvalid}`)?.focus();
+      if (result.message) {
+        showAppToast({ message: result.message, tone: "warning" });
+      }
       return;
     }
 
@@ -98,7 +102,14 @@ export function HospitalProfileWorkspace() {
   }
 
   function clearSavedProfile() {
-    clearProfile();
+    const result = clearProfile();
+    if (!result.ok) {
+      showAppToast({
+        message: result.message ?? "医院档案清空失败，请重试。",
+        tone: "warning",
+      });
+      return;
+    }
     setEditing(false);
     setErrors({});
     setCopyFallback("");
@@ -151,6 +162,11 @@ export function HospitalProfileWorkspace() {
             </div>
 
             <div className="grid gap-4">
+              <DraftConflictNotice
+                fields={conflict.conflictFields.map((key) => HOSPITAL_FIELD_LABELS[key])}
+                onAcceptExternal={conflict.acceptExternal}
+                onKeepLocal={conflict.keepLocal}
+              />
               {HOSPITAL_FIELD_KEYS.map((key) => (
                 <HospitalDraftField
                   draft={draft}
@@ -159,7 +175,7 @@ export function HospitalProfileWorkspace() {
                   inputRef={key === "hospitalName" ? hospitalNameRef : undefined}
                   key={key}
                   onChange={(value) => {
-                    setDraft((current) => ({ ...current, [key]: value }));
+                    conflict.setField(key, value);
                     if (errors[key]) {
                       setErrors((current) => ({ ...current, [key]: undefined }));
                     }
@@ -169,7 +185,7 @@ export function HospitalProfileWorkspace() {
             </div>
 
             <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-              <Button onClick={saveProfile}>保存档案</Button>
+              <Button disabled={conflict.hasConflict} onClick={saveProfile}>保存档案</Button>
               <Button onClick={cancelEditing} variant="outline">
                 取消
               </Button>

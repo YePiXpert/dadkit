@@ -2,14 +2,16 @@ import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import {
   expectOnlyPrimaryNavigationItemActive,
   seedFamily,
+  waitForOfflineReady,
 } from "@/tests/e2e/helpers";
 
 test.describe.configure({ timeout: 60_000 });
 test.beforeEach(async ({ page }) => { await seedFamily(page); });
 
 async function chooseSelect(page: Page, label: string, option: string) {
-  await page.getByLabel(label, { exact: true }).click();
-  await page.getByRole("option", { name: option, exact: true }).click();
+  await page
+    .getByLabel(label, { exact: true })
+    .selectOption({ label: option });
 }
 
 async function expandFilters(page: Page) {
@@ -44,7 +46,9 @@ test("可保存、取消和清空单项信息", async ({ page }) => {
   await page.getByRole("button", { name: "保存", exact: true }).click();
 
   await expect(page.getByText("分工与采购信息已保存。")).toBeVisible();
-  await expect(page.getByText("小江", { exact: true }).first()).toBeVisible();
+  await expect(
+    page.locator("article").getByText("小江", { exact: true }).first(),
+  ).toBeVisible();
   await expect(page.getByText(/预计 ¥129\.90/).first()).toBeVisible();
   await expect(page.getByText(/实际 ¥118\.00/).first()).toBeVisible();
 
@@ -126,18 +130,7 @@ test("360×800 无横向溢出，首次打开后可离线查看和修改", async
   await page.getByRole("checkbox", { name: /奶奶/ }).check();
   await page.getByRole("button", { name: "保存", exact: true }).click();
 
-  await expect
-    .poll(
-      () =>
-        page.evaluate(async () => {
-          if (!("serviceWorker" in navigator)) return false;
-          const registration = await navigator.serviceWorker.getRegistration();
-          const cached = await caches.match("/planning", { ignoreSearch: true });
-          return Boolean(registration?.active && cached?.ok);
-        }),
-      { timeout: 60_000 },
-    )
-    .toBe(true);
+  await waitForOfflineReady(page, "/planning");
 
   await context.setOffline(true);
   if (browserName === "webkit") {

@@ -53,6 +53,8 @@ export function ChecklistWorkspace() {
   const hydrate = useDadKitStore((state) => state.hydrate);
   const checklist = useDadKitStore((state) => state.checklist);
   const checklistMode = useDadKitStore((state) => state.checklistMode);
+  const changeOrigin = useDadKitStore((state) => state.changeOrigin);
+  const changeRevision = useDadKitStore((state) => state.changeRevision);
   const markItemsPacked = useDadKitStore((state) => state.markItemsPacked);
   const [search, setSearch] = useState("");
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
@@ -109,15 +111,22 @@ export function ChecklistWorkspace() {
   }, [hydrate]);
 
   useEffect(() => {
+    if (!hydrated) return;
     const previous = previousPercentRef.current;
     previousPercentRef.current = packing.percent;
 
-    if (previous !== null && previous < 100 && packing.percent === 100) {
+    if (
+      changeOrigin === "local" &&
+      previous !== null &&
+      previous < 100 &&
+      packing.percent === 100
+    ) {
       setCelebrating(true);
     }
-  }, [packing.percent]);
+  }, [changeOrigin, changeRevision, hydrated, packing.percent]);
 
   useEffect(() => {
+    if (!hydrated) return;
     const completedSectionIds = new Set(
       allSections
         .filter(
@@ -135,6 +144,10 @@ export function ChecklistWorkspace() {
     previousCompletedSectionsRef.current = completedSectionIds;
 
     if (previousPercent === null || !previousSections) {
+      return;
+    }
+
+    if (changeOrigin !== "local") {
       return;
     }
 
@@ -163,7 +176,7 @@ export function ChecklistWorkspace() {
         tone: "success",
       });
     }
-  }, [allSections, packing.percent]);
+  }, [allSections, changeOrigin, changeRevision, hydrated, packing.percent]);
 
   async function copyChecklistText() {
     const text = formatChecklistAsText(checklist);

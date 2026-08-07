@@ -2,6 +2,44 @@
 
 import { useEffect, useState } from "react";
 
+const OFFLINE_READY_ATTRIBUTE = "data-dadkit-offline-ready";
+
+function getNextStaticAssets(entries: PerformanceEntry[]) {
+  return entries
+    .map((entry) => new URL(entry.name, window.location.href))
+    .filter(
+      (url) =>
+        url.origin === window.location.origin &&
+        url.pathname.startsWith("/_next/static/"),
+    )
+    .map((url) => `${url.pathname}${url.search}`);
+}
+
+function getLoadedNextStaticAssets() {
+  return getNextStaticAssets(performance.getEntriesByType("resource"));
+}
+
+function requestWorkerCache(
+  worker: ServiceWorker,
+  message: { type: "CACHE_ROUTE"; url: string } | { type: "CACHE_ASSETS"; urls: string[] },
+) {
+  return new Promise<void>((resolve, reject) => {
+    const channel = new MessageChannel();
+    const timeout = window.setTimeout(() => {
+      channel.port1.close();
+      reject(new Error("Service Worker cache request timed out."));
+    }, 15_000);
+
+    channel.port1.onmessage = (event: MessageEvent<{ ok?: boolean }>) => {
+      window.clearTimeout(timeout);
+      channel.port1.close();
+      if (event.data?.ok) resolve();
+      else reject(new Error("Service Worker cache request failed."));
+    };
+    worker.postMessage(message, [channel.port2]);
+  });
+}
+
 export function PwaRegister() {
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker>();
 
@@ -52,7 +90,67 @@ export function PwaRegister() {
     }
 
     let refreshing = false;
+    let cacheSequence = 0;
+    let cacheWork = Promise.resolve();
+    let assetObserver: PerformanceObserver | undefined;
+    let activeWorker: ServiceWorker | undefined;
+    let registrationTimer: number | undefined;
     const hadController = Boolean(navigator.serviceWorker.controller);
+    const root = document.documentElement;
+    const pendingAssets = new Set<string>();
+    const reportedAssets = new Set<string>();
+    performance.setResourceTimingBufferSize(1_000);
+    root.removeAttribute(OFFLINE_READY_ATTRIBUTE);
+
+    function queueCache(work: () => Promise<void>) {
+      const sequence = ++cacheSequence;
+      root.removeAttribute(OFFLINE_READY_ATTRIBUTE);
+      cacheWork = cacheWork
+        .catch(() => undefined)
+        .then(work)
+        .then(() => {
+          if (sequence === cacheSequence) {
+            root.setAttribute(OFFLINE_READY_ATTRIBUTE, "true");
+          }
+        })
+        .catch(() => {
+          if (sequence === cacheSequence) {
+            root.removeAttribute(OFFLINE_READY_ATTRIBUTE);
+          }
+        });
+    }
+
+    function cacheAssets(assets: string[]) {
+      const unreported: string[] = [];
+
+      for (const asset of assets) {
+        if (reportedAssets.has(asset)) continue;
+        if (!activeWorker) {
+          pendingAssets.add(asset);
+          continue;
+        }
+        reportedAssets.add(asset);
+        unreported.push(asset);
+      }
+
+      if (activeWorker && unreported.length > 0) {
+        const worker = activeWorker;
+        queueCache(() =>
+          requestWorkerCache(worker, {
+            type: "CACHE_ASSETS",
+            urls: unreported,
+          }),
+        );
+      }
+    }
+
+    cacheAssets(getLoadedNextStaticAssets());
+    if ("PerformanceObserver" in window) {
+      assetObserver = new PerformanceObserver((list) => {
+        cacheAssets(getNextStaticAssets(list.getEntries()));
+      });
+      assetObserver.observe({ type: "resource", buffered: true });
+    }
 
     function handleControllerChange() {
       if (!hadController || refreshing) {
@@ -65,9 +163,11 @@ export function PwaRegister() {
 
     navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
 
-    navigator.serviceWorker
-      .register("/sw.js")
-      .then(async (registration) => {
+    function startRegistration() {
+      registrationTimer = undefined;
+      void navigator.serviceWorker
+        .register("/sw.js")
+        .then(async (registration) => {
         if (registration.waiting && hadController) {
           setWaitingWorker(registration.waiting);
         }
@@ -82,6 +182,7 @@ export function PwaRegister() {
           worker.addEventListener("statechange", () => {
             if (
               worker.state === "installed" &&
+              hadController &&
               navigator.serviceWorker.controller
             ) {
               setWaitingWorker(worker);
@@ -90,18 +191,56 @@ export function PwaRegister() {
         });
 
         const readyRegistration = await navigator.serviceWorker.ready;
-        readyRegistration.active?.postMessage({
-          type: "CACHE_ROUTE",
-          url: `${window.location.pathname}${window.location.search}`,
+        const worker = readyRegistration.active;
+
+        if (!worker) {
+          return;
+        }
+
+        activeWorker = worker;
+
+        queueCache(async () => {
+          await requestWorkerCache(worker, {
+            type: "CACHE_ROUTE",
+            url: `${window.location.pathname}${window.location.search}`,
+          });
+          const assets = [
+            ...new Set([...pendingAssets, ...getLoadedNextStaticAssets()]),
+          ];
+          pendingAssets.clear();
+          assets.forEach((asset) => reportedAssets.add(asset));
+          if (assets.length > 0) {
+            await requestWorkerCache(worker, {
+              type: "CACHE_ASSETS",
+              urls: assets,
+            });
+          }
         });
 
         // 浏览器自身会定期检查 Service Worker 更新，不再每次加载强制 update()。
-      })
-      .catch(() => {
-        // PWA registration is best-effort.
-      });
+        })
+        .catch(() => {
+          // PWA registration is best-effort.
+        });
+    }
+
+    function scheduleRegistration() {
+      registrationTimer = window.setTimeout(startRegistration, 3_000);
+    }
+
+    if (document.readyState === "complete") {
+      scheduleRegistration();
+    } else {
+      window.addEventListener("load", scheduleRegistration, { once: true });
+    }
 
     return () => {
+      assetObserver?.disconnect();
+      window.removeEventListener("load", scheduleRegistration);
+      if (registrationTimer !== undefined) {
+        window.clearTimeout(registrationTimer);
+      }
+      root.removeAttribute(OFFLINE_READY_ATTRIBUTE);
       navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);
     };
   }, []);

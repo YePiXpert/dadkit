@@ -4,7 +4,10 @@ import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
 import { hospitalValuesFromPortable } from "@/lib/hospital/portable";
 import { HOSPITAL_STORAGE_KEY } from "@/lib/hospital/repository";
 import { useHospitalProfileStore } from "@/lib/hospital/store";
-import { installBrowserStorage } from "@/tests/helpers/browser-storage";
+import {
+  failNextStorageWrite,
+  installBrowserStorage,
+} from "@/tests/helpers/browser-storage";
 
 beforeEach(() => {
   useHospitalProfileStore.setState({
@@ -93,6 +96,20 @@ describe("hospital profile store persistence", () => {
     expect(storage.writes).toEqual([]);
   });
 
+  it("keeps memory unchanged when persistence fails", () => {
+    installBrowserStorage();
+    const before = useHospitalProfileStore.getState().profile;
+    const draft = hospitalValuesFromPortable(before);
+    draft.hospitalName = "市妇幼保健院";
+    failNextStorageWrite(HOSPITAL_STORAGE_KEY);
+
+    const result = useHospitalProfileStore.getState().saveDraft(draft);
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("本机存储");
+    expect(useHospitalProfileStore.getState().profile).toEqual(before);
+  });
+
   it("makes a local clear newer than a future timestamp already received", () => {
     installBrowserStorage();
     const profile = createEmptyHospitalProfile();
@@ -106,7 +123,10 @@ describe("hospital profile store persistence", () => {
     };
     useHospitalProfileStore.setState({ profile });
 
-    expect(useHospitalProfileStore.getState().clearProfile()).toBe(true);
+    expect(useHospitalProfileStore.getState().clearProfile()).toEqual({
+      ok: true,
+      changed: true,
+    });
     expect(
       useHospitalProfileStore.getState().profile.fields.maternityPhone,
     ).toEqual({ value: "", updatedAt: Date.now() + 10_001 });

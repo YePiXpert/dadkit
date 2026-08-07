@@ -1,5 +1,6 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { runInNewContext } from "node:vm";
 
 import { describe, expect, it } from "vitest";
@@ -91,7 +92,7 @@ describe("release endpoints and product surface", () => {
     expect(readme).not.toContain("公开 APK、日志和仓库不得包含");
   });
 
-  it("ships a bundled Android WebView shell without TWA dependencies", () => {
+  it("ships a traditional native Android app without WebView or TWA dependencies", () => {
     const manifest = readSource(
       "android",
       "app",
@@ -108,19 +109,46 @@ describe("release endpoints and product surface", () => {
       "com",
       "dadkit",
       "mobile",
-      "LauncherActivity.java",
+      "MainActivity.kt",
     );
-    const androidBundle = readSource("scripts", "build-android-web.mjs");
+    const app = readSource(
+      "android",
+      "app",
+      "src",
+      "main",
+      "java",
+      "com",
+      "dadkit",
+      "mobile",
+      "ui",
+      "DadKitApp.kt",
+    );
+    const syncClient = readSource(
+      "android",
+      "app",
+      "src",
+      "main",
+      "java",
+      "com",
+      "dadkit",
+      "mobile",
+      "sync",
+      "NativeSyncClient.kt",
+    );
 
     expect(manifest).toContain("android.permission.INTERNET");
     expect(manifest).not.toContain("trusted");
     expect(manifest).not.toContain("asset_statements");
-    expect(activity).toContain('getAssets().open("www/" + assetPath)');
-    expect(activity).toContain("source=apk&appVersionCode=14");
-    expect(activity).toContain("DadKitAndroid/14");
-    expect(activity).toContain("webView.canGoBack()");
-    expect(activity).toContain("webView.goBack()");
-    expect(androidBundle).toContain('rm(path.join(staging, "app", "api")');
+    expect(manifest).toContain('android:name=".MainActivity"');
+    expect(activity).toContain(": ComponentActivity()");
+    expect(activity).toContain("setContent");
+    expect(app).toContain('BottomDestination(Screen.HOME, "首页"');
+    expect(app).toContain('BottomDestination(Screen.CHECKLIST, "清单"');
+    expect(app).toContain("ActivityResultContracts.CreateDocument");
+    expect(syncClient).toContain('"/api/sync/pull"');
+    expect(syncClient).toContain('"/api/sync/push"');
+    expect([activity, app, syncClient].join("\n")).not.toContain("WebView");
+    expect(existsSync(join(process.cwd(), "android", "app", "src", "main", "assets", "www"))).toBe(false);
     expect(packageJson.devDependencies).not.toHaveProperty("@bubblewrap/cli");
   });
 
@@ -139,18 +167,31 @@ describe("release endpoints and product surface", () => {
   });
 
   it("returns health status with version and buildTime", async () => {
-    const response = await GET();
-    const body = await response.json();
+    const previousDataDir = process.env.DADKIT_DATA_DIR;
+    const healthDataDir = mkdtempSync(join(tmpdir(), "dadkit-health-"));
+    process.env.DADKIT_DATA_DIR = healthDataDir;
 
-    expect(response.status).toBe(200);
-    expect(body).toEqual({
-      ok: true,
-      version: packageJson.version,
-      buildTime: process.env.DADKIT_BUILD_TIME ?? "unknown",
-      syncProtocolVersion: 2,
-      syncSpaceSchemaVersion: 2,
-      storageWritable: true,
-    });
+    try {
+      const response = await GET();
+      const body = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(body).toEqual({
+        ok: true,
+        version: packageJson.version,
+        buildTime: process.env.DADKIT_BUILD_TIME ?? "unknown",
+        syncProtocolVersion: 2,
+        syncSpaceSchemaVersion: 2,
+        storageWritable: true,
+      });
+    } finally {
+      if (previousDataDir === undefined) {
+        delete process.env.DADKIT_DATA_DIR;
+      } else {
+        process.env.DADKIT_DATA_DIR = previousDataDir;
+      }
+      rmSync(healthDataDir, { force: true, recursive: true });
+    }
   });
 
   it("ships installable PWA PNG icons", () => {
@@ -218,7 +259,7 @@ describe("release endpoints and product surface", () => {
       expect(existsSync(join(process.cwd(), "app", route, "page.tsx"))).toBe(
         false,
       );
-      expect(sources).not.toContain(`/${route}`);
+      expect(sources).not.toMatch(new RegExp(`["']/${route}["'?]`));
     }
 
     expect(existsSync(join(process.cwd(), "app", "page.tsx"))).toBe(true);
@@ -233,11 +274,30 @@ describe("release endpoints and product surface", () => {
     );
   });
 
-  it("pre-caches the minimal offline entry routes during install", () => {
+  it("pre-caches all core offline routes during install", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.1-pwa-r1"');
-    expect(sw).toContain('const PRECACHE_ROUTES = ["/", "/checklist", "/onboarding", "/join", "/settings/family", "/settings/sync"]');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.1-pwa-r3"');
+    for (const route of [
+      "/",
+      "/checklist",
+      "/baby",
+      "/baby/timeline",
+      "/tools",
+      "/growth",
+      "/departure",
+      "/hospital",
+      "/planning",
+      "/settings",
+      "/settings/backup",
+      "/settings/checklist",
+      "/settings/family",
+      "/settings/sync",
+      "/privacy",
+      "/support",
+    ]) {
+      expect(sw).toContain(`"${route}"`);
+    }
     expect(sw).not.toContain("CORE_ROUTES");
 
     for (const route of REMOVED_PRODUCT_ROUTES) {
@@ -335,6 +395,71 @@ describe("release endpoints and product surface", () => {
     expect(assets).toEqual(["/_next/static/css/app.css"]);
   });
 
+  it("caches only same-origin Next assets and acknowledges completion", async () => {
+    const sw = readSource("public", "sw.js");
+    const listeners = new Map<string, (event: Record<string, unknown>) => void>();
+    const cachedUrls: string[] = [];
+    let cacheWork: Promise<unknown> | undefined;
+    let reply: { ok?: boolean } | undefined;
+    class FakeRequest {
+      constructor(readonly url: string) {}
+    }
+    const context = {
+      self: {
+        addEventListener: (
+          type: string,
+          listener: (event: Record<string, unknown>) => void,
+        ) => listeners.set(type, listener),
+        location: { origin: "https://dadkit.example" },
+      },
+      caches: {
+        async open() {
+          return {
+            async put(request: FakeRequest) {
+              cachedUrls.push(request.url);
+            },
+          };
+        },
+      },
+      Request: FakeRequest,
+      URL,
+      async fetch() {
+        return { ok: true, type: "basic" };
+      },
+    } as Record<string, unknown>;
+
+    runInNewContext(sw, context);
+    listeners.get("message")?.({
+      data: {
+        type: "CACHE_ASSETS",
+        urls: [
+          "/_next/static/chunks/dialog.js?build=1",
+          "https://dadkit.example/_next/static/css/app.css",
+          "https://example.net/_next/static/chunks/foreign.js",
+          "/api/private",
+        ],
+      },
+      ports: [
+        {
+          postMessage(message: { ok?: boolean }) {
+            reply = message;
+          },
+        },
+      ],
+      waitUntil(work: Promise<unknown>) {
+        cacheWork = work;
+      },
+    });
+
+    await cacheWork;
+    await Promise.resolve();
+    expect(cachedUrls).toEqual([
+      "/_next/static/chunks/dialog.js?build=1",
+      "/_next/static/css/app.css",
+    ]);
+    expect(reply?.ok).toBe(true);
+  });
+
   it("pre-caches entry routes while tolerating optional media failure", async () => {
     const sw = readSource("public", "sw.js");
     const cachedUrls: string[] = [];
@@ -396,8 +521,10 @@ describe("release endpoints and product surface", () => {
     expect(cachedUrls).toContain("/_next/static/chunks/root.js");
     expect(cachedUrls).toContain("/icon-192.png");
     expect(cachedUrls).not.toContain("/manifest.webmanifest");
-    expect(cachedUrls).not.toContain("/settings");
-    expect(cachedUrls).not.toContain("/growth");
+    expect(cachedUrls).toContain("/settings");
+    expect(cachedUrls).toContain("/growth");
+    expect(cachedUrls).toContain("/baby/timeline");
+    expect(cachedUrls).toContain("/hospital");
     expect(cachedUrls).not.toContain("/checklist/mom");
 
     for (const route of REMOVED_PRODUCT_ROUTES) {

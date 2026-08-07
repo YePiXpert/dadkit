@@ -68,24 +68,6 @@ test("移动端输入保持 16px，安装入口仅在可用时显示", async ({ 
   await expect(installEntry).toHaveCount(0);
 });
 
-test("Android APK WebView 不显示 PWA 安装入口", async ({ page }: { page: Page }) => {
-  await page.goto("/settings", { waitUntil: "domcontentloaded" });
-  const installEntry = page.getByRole("button", { name: /安装到桌面/ });
-  await signalPwaInstallAvailability(page);
-  await expect(installEntry).toBeVisible();
-
-  await page.addInitScript(() => {
-    const userAgent = `${window.navigator.userAgent} DadKitAndroid/4`;
-    Object.defineProperty(window.navigator, "userAgent", {
-      configurable: true,
-      get: () => userAgent,
-    });
-  });
-
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(installEntry).toHaveCount(0);
-});
-
 test("清单和成长记在移动端完成 hydrate 并持久化", async ({ page }: { page: Page }) => {
   // Playwright WebKit on Windows can defer the first hydrated interaction
   // while its process warms up. This is a functional workflow, not a
