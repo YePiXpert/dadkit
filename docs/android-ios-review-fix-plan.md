@@ -13,7 +13,7 @@
   - `data/NativeModels.kt`（模型 + `categoryLabels`）
   - `sync/NativeSyncClient.kt`（pull→merge→push，Bearer token 来自创建/加入时的 Set-Cookie）
   - `sync/JsonDocumentMerger.kt`
-  - 构建：`android/app/build.gradle`（versionCode 14 / versionName 3.4.1，`SYNC_BASE_URL` 由 `DADKIT_PUBLIC_ORIGIN` 注入，默认 `https://dadkit.505f.com`）
+  - 构建：`android/app/build.gradle`（versionCode 15 / versionName 3.4.2，`SYNC_BASE_URL` 由 `DADKIT_PUBLIC_ORIGIN` 注入，默认 `https://dadkit.505f.com`）
 
 ## 施工约定（必须遵守）
 
@@ -175,7 +175,7 @@
 
 - 阶段 1–5 已全部完成，阶段 3.5 可选清单搜索也已实现。
 - Android 已补齐字段级时间戳、服务器时钟偏移、退出同步、原生更新检查、医院 14 字段、清单完整编辑能力与照护记录人；原生 JUnit 覆盖 repository 与时钟逻辑。
-- iOS PWA 已补齐核心路由预缓存、动态构建资源缓存回执、对话框 history guard 与 Safari 差异化安装文案。Service Worker 使用 `dadkit-v3.4.1-pwa-r3`，注册延后到页面完成加载后，避免与首屏 LCP 争用资源。
+- iOS PWA 已补齐核心路由预缓存、动态构建资源缓存回执、对话框 history guard 与 Safari 差异化安装文案。Service Worker 在 3.4.2 发布时更新为 `dadkit-v3.4.2-pwa-r1`，注册延后到页面完成加载后，避免与首屏 LCP 争用资源。
 - WebView/TWA 死代码已清理；`/api/app-version`、`AndroidUpdatePrompt`、`prepare-native-android.mjs` 与原生同步 UA 按计划保留。
 - 最终验收：
   - `npm run lint`、`npm run typecheck`、`npm run build`、`npm run performance:check` 全部通过；规划页 240.1 KiB / 255 KiB，备份页 239.9 KiB / 258 KiB。

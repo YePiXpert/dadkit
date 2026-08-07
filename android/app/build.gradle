@@ -19,8 +19,8 @@ android {
         applicationId "com.dadkit.mobile"
         minSdkVersion 23
         targetSdkVersion 36
-        versionCode 14
-        versionName "3.4.1"
+        versionCode 15
+        versionName "3.4.2"
         buildConfigField "String", "SYNC_BASE_URL", "\"${syncBaseUrl}\""
     }
 
