@@ -68,6 +68,57 @@ test("移动端输入保持 16px，安装入口仅在可用时显示", async ({ 
   await expect(installEntry).toHaveCount(0);
 });
 
+test("Android 设置页显示当前版本并允许手动检查更新", async ({ page }: { page: Page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window.navigator, "userAgent", {
+      configurable: true,
+      value: `${window.navigator.userAgent} DadKitAndroid/19`,
+    });
+    window.localStorage.setItem("dadkit:android-version-code", "19");
+    window.localStorage.setItem(
+      "dadkit:android-version-checked-at",
+      String(Date.now()),
+    );
+  });
+
+  let checks = 0;
+  await page.route("**/api/app-version", async (route) => {
+    checks += 1;
+    await route.fulfill({
+      contentType: "application/json",
+      json: {
+        versionCode: 20,
+        versionName: "3.4.7",
+        notes: "下一版本测试更新。",
+        sha256: "a".repeat(64),
+        url: "/api/app-version/apk?versionCode=20",
+      },
+      status: 200,
+    });
+  });
+
+  await page.goto("/settings", { waitUntil: "domcontentloaded" });
+  const aboutEntry = page.getByRole("link", { name: /关于 DadKit/ });
+  await expect(aboutEntry).toHaveAttribute("href", "/settings/about");
+  await aboutEntry.click();
+  await expect(page).toHaveURL(/\/settings\/about$/);
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "关于 DadKit" }),
+  ).toBeVisible();
+  await expect(page.getByText("3.4.6 (19)")).toBeVisible();
+  const checkButton = page.getByRole("button", { name: "检查更新" });
+  await expect(checkButton).toBeVisible();
+  await checkButton.click();
+
+  await expect(page.getByText("发现新版本 3.4.7")).toBeVisible();
+  await expect(page.getByRole("link", { name: "下载更新" })).toHaveAttribute(
+    "href",
+    "/api/app-version/apk?versionCode=20",
+  );
+  expect(checks).toBe(1);
+});
+
 test("清单和成长记在移动端完成 hydrate 并持久化", async ({ page }: { page: Page }) => {
   // Playwright WebKit on Windows can defer the first hydrated interaction
   // while its process warms up. This is a functional workflow, not a

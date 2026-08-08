@@ -91,11 +91,12 @@ curl -fsS http://127.0.0.1:3333/healthz
 
 Android APK 升级：
 
-1. 3.4.4 及以后版本会在应用内检查更新；点「下载更新」后可查看进度，APK 完成 SHA-256 校验后会直接打开 Android 系统安装界面。
-2. 第一次使用应用内更新时，Android 可能要求允许 DadKit「安装未知应用」；授权后回到 DadKit 再点一次下载即可。
-3. 旧 APK 或浏览器环境会自动回退到外链下载；也可以随时打开[最新 Release](https://github.com/YePiXpert/dadkit/releases/latest)手动下载 `DadKit-*.apk`。
-4. 包名保持 `com.dadkit.mobile`，`versionCode` 按版本递增，可直接覆盖安装旧版本。
+1. 3.4.4 及以后版本会在应用内检查更新；「我的 → 关于 DadKit」会显示当前版本，并可随时手动检查更新（不受后台检查的 6 小时间隔限制）。
+2. 点「下载更新」后可查看进度，APK 完成 SHA-256 校验后会直接打开 Android 系统安装界面。
+3. 第一次使用应用内更新时，Android 可能要求允许 DadKit「安装未知应用」；授权后回到 DadKit 再点一次下载即可。
+4. 旧 APK 或浏览器环境会自动回退到外链下载；也可以随时打开[最新 Release](https://github.com/YePiXpert/dadkit/releases/latest)手动下载 `DadKit-*.apk`。
+5. 包名保持 `com.dadkit.mobile`，`versionCode` 按版本递增，可直接覆盖安装旧版本。
 
-本次版本的详细变更与验收结果见 [DadKit 3.4.5 发布说明](docs/release-v3.4.5.md)。
+本次版本的详细变更与验收结果见 [DadKit 3.4.6 发布说明](docs/release-v3.4.6.md)。
 
 浏览器 PWA 会随网站和 Service Worker 自动更新；必要时关闭并重新打开应用。

@@ -4,9 +4,9 @@ import path from "node:path";
 
 const root = process.cwd();
 const expected = {
-  tag: "v3.4.5",
-  versionName: "3.4.5",
-  versionCode: 18,
+  tag: "v3.4.6",
+  versionName: "3.4.6",
+  versionCode: 19,
   packageId: "com.dadkit.mobile",
   host: "dadkit.505f.com",
 };
@@ -86,6 +86,7 @@ for (const route of [
   "hospital/index.html",
   "planning/index.html",
   "settings/index.html",
+  "settings/about/index.html",
   "settings/backup/index.html",
   "settings/checklist/index.html",
   "settings/family/index.html",

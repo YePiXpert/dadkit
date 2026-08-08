@@ -37,7 +37,10 @@ test("双标签实时同步清单、分工、宝宝记录和物品照片", async
     const otherItemCard = otherPage
       .locator("article")
       .filter({ hasText: itemName });
-    await expect(otherItemCard).toHaveCount(1);
+    // WebKit can throttle a background tab while the full suite is under
+    // load. This is an eventual-consistency assertion, not a latency budget;
+    // keep a bounded 20s window so a genuinely lost signal still fails.
+    await expect(otherItemCard).toHaveCount(1, { timeout: 20_000 });
     // Cards use content-visibility:auto. A synchronized custom item can be at
     // the end of the long list and is intentionally not painted until scrolled
     // near the viewport, so assert DOM arrival before checking visibility.

@@ -290,6 +290,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(settingsPage).not.toContain('href: "/growth"');
     expect(settingsPage).toContain('href: "/settings/checklist"');
     expect(settingsPage).toContain('href: "/settings/backup"');
+    expect(settingsPage).toContain('href: "/settings/about"');
     expect(checklistSettingsPage).toContain("显示物品说明");
     expect(backupSettingsPage).toContain("本机恢复点");
     expect(backupSettingsPage).toContain("WebDAV 备份");

@@ -3,6 +3,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   Cloud,
+  Info,
   Share2,
   Users,
 } from "lucide-react";
@@ -10,6 +11,7 @@ import {
 import { AppearanceCard } from "@/components/AppearanceCard";
 import { InstallPromptSettingsEntry } from "@/components/InstallPromptSettingsEntry";
 import { FamilySetupPrompt } from "@/components/household/FamilySetupPrompt";
+import packageJson from "@/package.json";
 
 const SETTINGS_ENTRIES = [
   {
@@ -39,6 +41,13 @@ const SETTINGS_ENTRIES = [
     description: "管理本机恢复点、JSON 和 WebDAV 备份。",
     icon: Cloud,
     accent: "bg-tile-dad-bg text-tile-dad-fg",
+  },
+  {
+    href: "/settings/about",
+    title: "关于 DadKit",
+    description: `当前版本 ${packageJson.version}，查看版本并检查更新。`,
+    icon: Info,
+    accent: "bg-tile-docs-bg text-tile-docs-fg",
   },
 ] as const;
 

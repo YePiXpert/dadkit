@@ -30,7 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$GITHUB_REF_NAME" = "v3.4.5"
+          test "$GITHUB_REF_NAME" = "v3.4.6"
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
@@ -108,20 +108,21 @@ jobs:
           test "$(awk '/^assets\/www\/item-art\/.*\.webp$/ { count++ } END { print count+0 }' apk-entries.txt)" = "144"
           test "$(awk '/^assets\/www\/growth\/.*\.webp$/ { count++ } END { print count+0 }' apk-entries.txt)" = "33"
           grep -q '^assets/www/index.html$' apk-entries.txt
+          grep -q '^assets/www/settings/about/index.html$' apk-entries.txt
           grep -q '^assets/www/tools/index.html$' apk-entries.txt
           if grep -q '^assets/default_checklist.json$' apk-entries.txt; then
             echo "Retired native checklist asset must not be packaged." >&2
             exit 1
           fi
-          cp "$APK" DadKit-3.4.5.apk
-          sha256sum DadKit-3.4.5.apk > DadKit-3.4.5.apk.sha256
-          cp "$AAB" DadKit-3.4.5.aab
+          cp "$APK" DadKit-3.4.6.apk
+          sha256sum DadKit-3.4.6.apk > DadKit-3.4.6.apk.sha256
+          cp "$AAB" DadKit-3.4.6.aab
 
       - name: Store AAB privately for 30 days
         uses: actions/upload-artifact@v4
         with:
-          name: DadKit-3.4.5-aab
-          path: DadKit-3.4.5.aab
+          name: DadKit-3.4.6-aab
+          path: DadKit-3.4.6.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -130,18 +131,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          DadKit 3.4.5
+          DadKit 3.4.6
 
-          - 修复 Android 窄屏单列清单中物品图片过高的问题，低于 360px 时使用更紧凑的 16:9 图片比例
-          - 修复 APK 静态导出路径带末尾斜杠时，清单首页被误判为详情页而隐藏底部菜单的问题
-          - 所有清单分类页恢复常驻五项底部菜单，并将新增物品按钮移到菜单上方
-          - WebKit 跨标签刷新同时使用 BroadcastChannel 与 storage 信号并去重，降低高负载下的消息丢失概率
+          - 「我的」新增「关于 DadKit」入口，显示当前版本名和 versionCode
+          - Android 可随时手动检查更新，不受后台自动检查 6 小时间隔限制
+          - 明确显示已是最新版、检查失败、新版说明和下载校验进度
+          - 启动更新浮层与设置页共用版本、下载和校验状态，避免重复入口互相覆盖
+          - 新增关于页面的 PWA 离线缓存和 APK 静态资源完整性门禁
           - APK 继续内置完整 PWA 页面、144 张物品图、33 张成长图和全部离线资源
-          - Android 包名为 com.dadkit.mobile，versionCode 为 18
+          - Android 包名为 com.dadkit.mobile，versionCode 为 19
           EOF
           gh release create "$GITHUB_REF_NAME" \
-            DadKit-3.4.5.apk \
-            DadKit-3.4.5.apk.sha256 \
+            DadKit-3.4.6.apk \
+            DadKit-3.4.6.apk.sha256 \
             --verify-tag \
-            --title "DadKit 3.4.5" \
+            --title "DadKit 3.4.6" \
             --notes-file release-notes.md

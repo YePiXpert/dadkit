@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class LauncherActivity extends Activity {
     private static final String APP_HOST = "dadkit.505f.com";
     private static final String START_URL =
-            "https://" + APP_HOST + "/?source=apk&appVersionCode=18";
+            "https://" + APP_HOST + "/?source=apk&appVersionCode=19";
     private static final int FILE_CHOOSER_REQUEST = 201;
     private static final String NATIVE_DATA_PREFERENCES = "dadkit_native_data";
     private static final String NATIVE_DOCUMENT_KEY = "family_document";
@@ -94,7 +94,7 @@ public class LauncherActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setSupportZoom(false);
         settings.setUserAgentString(
-                settings.getUserAgentString() + " DadKitAndroid/18"
+                settings.getUserAgentString() + " DadKitAndroid/19"
         );
 
         CookieManager.getInstance().setAcceptCookie(true);

@@ -9,12 +9,32 @@ import {
   androidUpdateProgressLabel,
   startNativeUpdateDownload,
 } from "@/components/AndroidUpdatePrompt";
+import {
+  ANDROID_UPDATE_CHECK_INTERVAL_MS,
+  ANDROID_UPDATE_CHECKED_AT_STORAGE_KEY,
+  ANDROID_VERSION_STORAGE_KEY,
+  captureCurrentAndroidVersionCode,
+  checkForAndroidUpdate,
+  resetAndroidUpdateSessionState,
+} from "@/lib/android-update";
 
 function readSource(...segments: string[]) {
   return readFileSync(join(process.cwd(), ...segments), "utf8");
 }
 
 const promptSource = readSource("components", "AndroidUpdatePrompt.tsx");
+const settingsCardSource = readSource(
+  "components",
+  "AndroidUpdateSettingsCard.tsx",
+);
+const settingsPageSource = readSource("app", "settings", "page.tsx");
+const aboutPageSource = readSource(
+  "app",
+  "settings",
+  "about",
+  "page.tsx",
+);
+const updateCoreSource = readSource("lib", "android-update.ts");
 const launcherSource = readSource(
   "android",
   "app",
@@ -61,7 +81,42 @@ function stubWindowWithBridge() {
   return startDownload;
 }
 
+function createLocalStorage(initial: Record<string, string> = {}): Storage {
+  const values = new Map(Object.entries(initial));
+  return {
+    get length() {
+      return values.size;
+    },
+    clear: () => values.clear(),
+    getItem: (key) => values.get(key) ?? null,
+    key: (index) => [...values.keys()][index] ?? null,
+    removeItem: (key) => values.delete(key),
+    setItem: (key, value) => values.set(key, String(value)),
+  };
+}
+
+function stubAndroidWindow({
+  search = "",
+  storage = createLocalStorage(),
+}: {
+  search?: string;
+  storage?: Storage;
+} = {}) {
+  vi.stubGlobal("window", {
+    location: {
+      origin: "https://dadkit.505f.com",
+      search,
+    },
+    localStorage: storage,
+    navigator: { userAgent: "DadKit test browser" },
+    setTimeout,
+    clearTimeout,
+  });
+  return storage;
+}
+
 afterEach(() => {
+  resetAndroidUpdateSessionState();
   vi.unstubAllGlobals();
 });
 
@@ -179,20 +234,106 @@ describe("android update progress states", () => {
 
 describe("android update prompt wiring", () => {
   it("declares the bridge and progress callback on window", () => {
-    expect(promptSource).toContain("declare global");
-    expect(promptSource).toContain("DadKitAndroidUpdate");
+    expect(updateCoreSource).toContain("declare global");
+    expect(updateCoreSource).toContain("DadKitAndroidUpdate");
     expect(promptSource).toContain("window.__dadkitUpdateProgress");
-    expect(promptSource).toContain("window.location.origin");
-    expect(promptSource).toContain("onClick={startDownload}");
+    expect(updateCoreSource).toContain("window.location.origin");
+    expect(promptSource).toContain("startNativeUpdateDownload(release)");
     expect(promptSource).toContain("disabled={busy}");
   });
 
   it("keeps the 6-hour check interval and version storage keys", () => {
-    expect(promptSource).toContain(
+    expect(updateCoreSource).toContain(
       "ANDROID_UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000",
     );
-    expect(promptSource).toContain("dadkit:android-version-code");
-    expect(promptSource).toContain("dadkit:android-version-checked-at");
+    expect(updateCoreSource).toContain("dadkit:android-version-code");
+    expect(updateCoreSource).toContain("dadkit:android-version-checked-at");
+    expect(ANDROID_UPDATE_CHECK_INTERVAL_MS).toBe(21_600_000);
+  });
+
+  it("adds a persistent version and forced manual-check surface to settings", () => {
+    expect(settingsPageSource).toContain('href: "/settings/about"');
+    expect(settingsPageSource).toContain("当前版本");
+    expect(aboutPageSource).toContain("<AndroidUpdateSettingsCard");
+    expect(settingsCardSource).toContain("关于 DadKit");
+    expect(settingsCardSource).toContain("当前版本");
+    expect(settingsCardSource).toContain("检查更新");
+    expect(settingsCardSource).toContain("checkForAndroidUpdate({ force: true })");
+    expect(settingsCardSource).toContain("已是最新版");
+    expect(settingsCardSource).toContain("检查失败，请确认网络后重试");
+    expect(settingsCardSource).toContain("androidUpdateProgressLabel(progress)");
+  });
+});
+
+describe("android version checks", () => {
+  it("captures the APK version from the launch URL for later settings pages", () => {
+    const storage = stubAndroidWindow({
+      search: "?source=apk&appVersionCode=17",
+    });
+
+    expect(captureCurrentAndroidVersionCode()).toBe(17);
+    expect(storage.getItem(ANDROID_VERSION_STORAGE_KEY)).toBe("17");
+  });
+
+  it("recovers the current version from the native user agent on a deep page", () => {
+    const storage = createLocalStorage({
+      [ANDROID_VERSION_STORAGE_KEY]: "17",
+    });
+    vi.stubGlobal("window", {
+      location: { origin: "https://dadkit.505f.com", search: "" },
+      localStorage: storage,
+      navigator: { userAgent: "Android WebView DadKitAndroid/19" },
+    });
+
+    expect(captureCurrentAndroidVersionCode()).toBe(19);
+    expect(storage.getItem(ANDROID_VERSION_STORAGE_KEY)).toBe("19");
+  });
+
+  it("keeps automatic checks throttled within six hours", async () => {
+    const now = Date.now();
+    stubAndroidWindow({
+      storage: createLocalStorage({
+        [ANDROID_VERSION_STORAGE_KEY]: "17",
+        [ANDROID_UPDATE_CHECKED_AT_STORAGE_KEY]: String(now),
+      }),
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(checkForAndroidUpdate()).resolves.toEqual({
+      status: "skipped",
+      currentVersionCode: 17,
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("lets a manual check bypass the interval and report a newer release", async () => {
+    const now = Date.now();
+    stubAndroidWindow({
+      storage: createLocalStorage({
+        [ANDROID_VERSION_STORAGE_KEY]: "17",
+        [ANDROID_UPDATE_CHECKED_AT_STORAGE_KEY]: String(now),
+      }),
+    });
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ...RELEASE, versionCode: 18 }), {
+        headers: { "content-type": "application/json" },
+        status: 200,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      checkForAndroidUpdate({ force: true }),
+    ).resolves.toMatchObject({
+      status: "available",
+      currentVersionCode: 17,
+      release: { versionCode: 18 },
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/app-version",
+      expect.objectContaining({ cache: "no-store" }),
+    );
   });
 });
 

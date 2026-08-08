@@ -47,6 +47,7 @@ describe("settings information architecture", () => {
     expect(settingsPage).toContain('href: "/settings/family"');
     expect(settingsPage).toContain('href: "/settings/checklist"');
     expect(settingsPage).toContain('href: "/settings/backup"');
+    expect(settingsPage).toContain('href: "/settings/about"');
     expect(settingsPage).not.toContain("登录");
     expect(settingsPage).not.toContain("心愿单");
   });
