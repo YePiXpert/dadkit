@@ -6,6 +6,19 @@ import { useEffect, useState } from "react";
 import { PwaRegister } from "@/components/PwaRegister";
 import { startCrossTabSync } from "@/lib/data/cross-tab-sync";
 
+const ANDROID_MIGRATION_COMPLETE_EVENT = "dadkit:android-migration-complete";
+const IS_ANDROID_BUNDLE =
+  process.env.NEXT_PUBLIC_DADKIT_ANDROID_BUNDLE === "1";
+
+const AndroidNativeMigration = IS_ANDROID_BUNDLE
+  ? dynamic(
+      () =>
+        import("@/components/AndroidNativeMigration").then(
+          (module) => module.AndroidNativeMigration,
+        ),
+      { ssr: false },
+    )
+  : () => null;
 const AndroidUpdatePrompt = dynamic(
   () =>
     import("@/components/AndroidUpdatePrompt").then(
@@ -13,6 +26,7 @@ const AndroidUpdatePrompt = dynamic(
     ),
   { ssr: false },
 );
+
 export function BackgroundTasks() {
   const [idle, setIdle] = useState(false);
 
@@ -20,15 +34,13 @@ export function BackgroundTasks() {
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let idleCallback: number | undefined;
-    const stopCrossTabSync = startCrossTabSync();
+    let stopCrossTabSync: () => void = () => undefined;
 
     const start = () => {
       if (cancelled) return;
       setIdle(true);
       void import("@/lib/sync/auto-sync").then(({ startAutoSync }) => {
-        if (!cancelled) {
-          startAutoSync();
-        }
+        if (!cancelled) startAutoSync();
       });
       void import("@/lib/persistence-status")
         .then(({ checkStorageCapacity }) => checkStorageCapacity())
@@ -36,12 +48,8 @@ export function BackgroundTasks() {
       void Promise.all([import("@/lib/item-photos"), import("@/lib/store")])
         .then(([photoLibrary, storeModule]) => {
           if (cancelled) return;
-
           const state = storeModule.useDadKitStore.getState();
-
-          // 未水合(例如直接落在设置页)时没有可信的清单快照,本轮跳过清理。
           if (!state.hydrated) return;
-
           return photoLibrary.pruneOrphanedPhotos(
             state.checklist.map((item) => item.id),
           );
@@ -49,27 +57,41 @@ export function BackgroundTasks() {
         .catch(() => undefined);
     };
 
-    if ("requestIdleCallback" in window) {
-      idleCallback = window.requestIdleCallback(start, { timeout: 1_500 });
+    const scheduleBackgroundWork = () => {
+      if (cancelled) return;
+      stopCrossTabSync = startCrossTabSync();
+      if ("requestIdleCallback" in window) {
+        idleCallback = window.requestIdleCallback(start, { timeout: 1_500 });
+      } else {
+        timer = setTimeout(start, 800);
+      }
+    };
+
+    if (IS_ANDROID_BUNDLE) {
+      window.addEventListener(
+        ANDROID_MIGRATION_COMPLETE_EVENT,
+        scheduleBackgroundWork,
+        { once: true },
+      );
     } else {
-      timer = setTimeout(start, 800);
+      scheduleBackgroundWork();
     }
 
     return () => {
       cancelled = true;
-      if (idleCallback !== undefined) {
-        window.cancelIdleCallback(idleCallback);
-      }
-      if (timer !== undefined) {
-        clearTimeout(timer);
-      }
+      window.removeEventListener(
+        ANDROID_MIGRATION_COMPLETE_EVENT,
+        scheduleBackgroundWork,
+      );
+      if (idleCallback !== undefined) window.cancelIdleCallback(idleCallback);
+      if (timer !== undefined) clearTimeout(timer);
       stopCrossTabSync();
     };
   }, []);
 
   return (
     <>
-      <PwaRegister />
+      {IS_ANDROID_BUNDLE ? <AndroidNativeMigration /> : <PwaRegister />}
       {idle ? <AndroidUpdatePrompt /> : null}
     </>
   );

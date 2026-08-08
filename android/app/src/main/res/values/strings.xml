@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">DadKit</string>
+    <string name="choose_photo">选择物品照片</string>
+    <string name="no_external_app">没有可打开此链接的应用</string>
+    <string name="no_photo_app">没有可选择照片的应用</string>
 </resources>

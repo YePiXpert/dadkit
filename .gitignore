@@ -42,6 +42,10 @@ test-results/
 # android build output, bundled web assets and signing keys
 android/.gradle/
 android/app/build/
+android/app/src/main/assets/www/
+!android/app/src/main/assets/www/
+android/app/src/main/assets/www/*
+!android/app/src/main/assets/www/.gitkeep
 android/build/
 android/local.properties
 android/*.keystore

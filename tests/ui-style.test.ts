@@ -57,6 +57,7 @@ const pwaRegister = readSource("components", "PwaRegister.tsx");
 const button = readSource("components", "ui", "button.tsx");
 const card = readSource("components", "ui", "card.tsx");
 const nextConfig = readSource("next.config.ts");
+const androidBundleScript = readSource("scripts", "build-android-web.mjs");
 const tailwindConfig = readSource("tailwind.config.ts");
 const packageJson = JSON.parse(readSource("package.json")) as {
   dependencies?: Record<string, string>;
@@ -130,7 +131,7 @@ describe("V3 PWA visual and navigation contract", () => {
     }
   });
 
-  it("ships standalone web and a dependency-light native Android surface", () => {
+  it("ships standalone web and the same PWA surface in Android", () => {
     const dependencyNames = Object.keys({
       ...packageJson.dependencies,
       ...packageJson.devDependencies,
@@ -142,10 +143,14 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(Object.keys(packageJson.scripts).some((name) => name.startsWith("mobile:"))).toBe(
       false,
     );
-    expect(nextConfig).toContain('output: "standalone"');
-    expect(nextConfig).toContain("trailingSlash: false");
-    expect(nextConfig).not.toContain("process.env.");
+    expect(nextConfig).toContain('output: isAndroidBundle ? "export" : "standalone"');
+    expect(nextConfig).toContain("trailingSlash: isAndroidBundle");
+    expect(nextConfig).toContain('DADKIT_BUILD_TARGET === "android"');
     expect(nextConfig).not.toContain("DADKIT_CAPACITOR_EXPORT");
+    expect(androidBundleScript).toContain('"app"');
+    expect(androidBundleScript).toContain('"components"');
+    expect(androidBundleScript).toContain('"lib"');
+    expect(androidBundleScript).toContain('"public"');
     expect(pwaRegister).not.toContain("gesturestart");
     expect(pwaRegister).not.toContain("preventDoubleTapZoom");
   });

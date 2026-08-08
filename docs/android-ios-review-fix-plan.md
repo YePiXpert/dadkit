@@ -1,4 +1,6 @@
-# DadKit 双端 Review 修复计划 — Codex 执行版
+# DadKit 双端 Review 修复计划（3.4.2 历史归档）
+
+> 此文档记录 3.4.2 的原生 Compose 尝试，已被 3.4.3 的全端同源方案取代，不再是当前施工依据。当前 Android 使用 `scripts/build-android-web.mjs` 将完整 PWA 打包进 APK；`scripts/validate-android-release.mjs` 校验全部页面、144 张物品图、33 张成长图，并逐文件比对 `public/`。3.4.2 原生数据通过 `DadKitAndroidMigration` 在首次启动时合并迁移。
 
 本文档是「安卓转原生 App + iOS 仍 PWA」双端 review 的修复计划，交给 Codex 执行。问题已由 Kimi 完成排查与定位，按优先级排成 5 个阶段，每个阶段独立可交付、独立验收。
 

@@ -36,6 +36,14 @@ export function isIosInstallGuideAvailable() {
   );
 }
 
+export function isBundledAndroidApp() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.navigator.userAgent.includes("DadKitAndroid/");
+}
+
 export function isIosSafariBrowser() {
   if (typeof window === "undefined" || !isIosInstallGuideAvailable()) {
     return false;
@@ -46,7 +54,10 @@ export function isIosSafariBrowser() {
 }
 
 export function isPwaInstallAvailable() {
-  return installPromptAvailableThisSession || isIosInstallGuideAvailable();
+  return (
+    !isBundledAndroidApp() &&
+    (installPromptAvailableThisSession || isIosInstallGuideAvailable())
+  );
 }
 
 export function setPwaInstallPromptAvailable(available: boolean) {

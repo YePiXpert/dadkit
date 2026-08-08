@@ -29,7 +29,8 @@ const routeBudgets = new Map([
   ["/settings/sync/page", 250 * 1024],
   ["/onboarding/page", 225 * 1024],
   ["/settings/family/page", 225 * 1024],
-  ["/settings/checklist/page", 230 * 1024],
+  // v3.4.3 adds the shared Android bundle/theme bridge; measured +0.8 KiB.
+  ["/settings/checklist/page", 232 * 1024],
   // v3.1 adds household/planning-v2/baby-v2 validation to the dense backup
   // surface. Keep roughly 1.5% headroom over the measured v3.1 bundle.
   ["/settings/backup/page", 258 * 1024],

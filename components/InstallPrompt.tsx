@@ -9,6 +9,7 @@ import {
   clearPwaInstalledSession,
   INSTALL_PROMPT_DISMISS_KEY,
   INSTALL_STATUS_CHANGED_EVENT,
+  isBundledAndroidApp,
   isIosInstallGuideAvailable,
   isIosSafariBrowser,
   isPwaInstallAvailable,
@@ -41,6 +42,14 @@ export function InstallPrompt() {
   ).length;
 
   useEffect(() => {
+    if (isBundledAndroidApp()) {
+      setPwaInstallPromptAvailable(false);
+      setDeferredPrompt(null);
+      setShowIosGuide(false);
+      setShowPrompt(false);
+      return;
+    }
+
     hydrate();
   }, [hydrate]);
 
@@ -79,6 +88,7 @@ export function InstallPrompt() {
 
     function handleManualOpen() {
       if (
+        isBundledAndroidApp() ||
         isPwaInstalled() ||
         !isPwaInstallAvailable()
       ) {
@@ -116,6 +126,7 @@ export function InstallPrompt() {
     if (
       !hydrated ||
       completedCount < AUTO_PROMPT_COMPLETION_COUNT ||
+      isBundledAndroidApp() ||
       isPwaInstalled() ||
       window.localStorage.getItem(INSTALL_PROMPT_DISMISS_KEY) === "1"
     ) {

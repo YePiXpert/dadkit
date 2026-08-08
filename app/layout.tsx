@@ -75,7 +75,7 @@ export const viewport: Viewport = {
 };
 
 // 构建期注入共享 key；对应值见 lib/theme.ts，避免客户端 hook 与首屏脚本漂移。
-const themeInitScript = `(function(){try{var p=window.localStorage.getItem("${THEME_STORAGE_KEY}");if(p!=="light"&&p!=="dark"){p=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.classList.toggle("dark",p==="dark");}catch(e){}})();`;
+const themeInitScript = `(function(){try{var p=window.localStorage.getItem("${THEME_STORAGE_KEY}");if(p!=="light"&&p!=="dark"){p=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}var d=p==="dark";document.documentElement.classList.toggle("dark",d);if(window.DadKitAndroidShell){window.DadKitAndroidShell.setDarkTheme(d);}}catch(e){}})();`;
 
 export default function RootLayout({
   children,

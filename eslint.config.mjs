@@ -15,6 +15,9 @@ const eslintConfig = [
     ignores: [
       ".android-static-build/**",
       ".next/**",
+      "android/app/build/**",
+      "android/app/src/main/assets/www/**",
+      "android/build/**",
       "coverage/**",
       "next-env.d.ts",
       "node_modules/**",

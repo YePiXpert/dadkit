@@ -30,10 +30,13 @@ export function resolveTheme(preference: ThemePreference): ResolvedTheme {
 }
 
 export function applyThemePreference(preference: ThemePreference) {
-  document.documentElement.classList.toggle(
-    "dark",
-    resolveTheme(preference) === "dark",
-  );
+  const dark = resolveTheme(preference) === "dark";
+  document.documentElement.classList.toggle("dark", dark);
+  (
+    window as Window & {
+      DadKitAndroidShell?: { setDarkTheme(dark: boolean): void };
+    }
+  ).DadKitAndroidShell?.setDarkTheme(dark);
 }
 
 export function useTheme() {
@@ -42,6 +45,7 @@ export function useTheme() {
 
   useEffect(() => {
     const initial = getThemePreference();
+    applyThemePreference(initial);
     setPreferenceState(initial);
     setResolvedTheme(resolveTheme(initial));
   }, []);
@@ -50,7 +54,10 @@ export function useTheme() {
     if (preference !== "system") return;
 
     const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = () => setResolvedTheme(resolveTheme("system"));
+    const handleChange = () => {
+      applyThemePreference("system");
+      setResolvedTheme(resolveTheme("system"));
+    };
 
     media.addEventListener("change", handleChange);
     return () => media.removeEventListener("change", handleChange);

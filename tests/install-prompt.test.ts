@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   clearPwaInstalledSession,
+  isBundledAndroidApp,
   isIosSafariBrowser,
   isPwaInstallAvailable,
   isPwaInstalled,
@@ -103,6 +104,17 @@ describe("PWA install status", () => {
     setPwaInstallPromptAvailable(false);
     stubWindow("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)");
     expect(isPwaInstallAvailable()).toBe(true);
+  });
+
+  it("recognizes the bundled Android app and suppresses PWA installation", () => {
+    expect(isBundledAndroidApp()).toBe(false);
+
+    stubWindow("Mozilla/5.0 DadKitAndroid/16");
+    setPwaInstallPromptAvailable(true);
+    expect(isBundledAndroidApp()).toBe(true);
+    expect(isPwaInstallAvailable()).toBe(false);
+    expect(installPrompt).toContain("isBundledAndroidApp()");
+    expect(settingsEntry).toContain("isBundledAndroidApp()");
   });
 
   it("hides the settings entry after standalone or app installation", () => {

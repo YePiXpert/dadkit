@@ -39,7 +39,7 @@ describe("release endpoints and product surface", () => {
       }>;
     };
 
-    expect(packageJson.version).toBe("3.4.2");
+    expect(packageJson.version).toBe("3.4.3");
     expect(manifest.name).toBe("DadKit 待产包清单");
     expect(manifest.description).toContain("待产包");
     expect(manifest.description).toContain("宝宝记录");
@@ -92,7 +92,7 @@ describe("release endpoints and product surface", () => {
     expect(readme).not.toContain("公开 APK、日志和仓库不得包含");
   });
 
-  it("ships a traditional native Android app without WebView or TWA dependencies", () => {
+  it("ships the full PWA surface inside the Android APK", () => {
     const manifest = readSource(
       "android",
       "app",
@@ -109,53 +109,34 @@ describe("release endpoints and product surface", () => {
       "com",
       "dadkit",
       "mobile",
-      "MainActivity.kt",
+      "LauncherActivity.java",
     );
-    const app = readSource(
-      "android",
-      "app",
-      "src",
-      "main",
-      "java",
-      "com",
-      "dadkit",
-      "mobile",
-      "ui",
-      "DadKitApp.kt",
-    );
-    const syncClient = readSource(
-      "android",
-      "app",
-      "src",
-      "main",
-      "java",
-      "com",
-      "dadkit",
-      "mobile",
-      "sync",
-      "NativeSyncClient.kt",
-    );
+    const bundleScript = readSource("scripts", "build-android-web.mjs");
+    const validator = readSource("scripts", "validate-android-release.mjs");
 
     expect(manifest).toContain("android.permission.INTERNET");
     expect(manifest).not.toContain("trusted");
     expect(manifest).not.toContain("asset_statements");
-    expect(manifest).toContain('android:name=".MainActivity"');
-    expect(activity).toContain(": ComponentActivity()");
-    expect(activity).toContain("setContent");
-    expect(app).toContain('BottomDestination(Screen.HOME, "首页"');
-    expect(app).toContain('BottomDestination(Screen.CHECKLIST, "清单"');
-    expect(app).toContain("ActivityResultContracts.CreateDocument");
-    expect(syncClient).toContain('"/api/sync/pull"');
-    expect(syncClient).toContain('"/api/sync/push"');
-    expect([activity, app, syncClient].join("\n")).not.toContain("WebView");
-    expect(existsSync(join(process.cwd(), "android", "app", "src", "main", "assets", "www"))).toBe(false);
+    expect(manifest).toContain('android:name=".LauncherActivity"');
+    expect(activity).toContain("extends Activity");
+    expect(activity).toContain("new WebView(this)");
+    expect(activity).toContain('getAssets().open("www/" + assetPath)');
+    expect(activity).toContain("DadKitAndroidMigration");
+    expect(activity).toContain("appVersionCode=16");
+    expect(bundleScript).toContain('DADKIT_BUILD_TARGET: "android"');
+    expect(bundleScript).toContain('"public"');
+    expect(bundleScript).toContain('"assets",\n  "www"');
+    expect(validator).toContain("144 bundled item illustrations");
+    expect(validator).toContain("33 bundled growth illustrations");
+    expect(validator).toContain("bundled public asset matches PWA");
+    expect(existsSync(join(process.cwd(), "scripts", "prepare-native-android.mjs"))).toBe(false);
     expect(packageJson.devDependencies).not.toHaveProperty("@bubblewrap/cli");
   });
 
   it("keeps the Android tag release strict and verifies the signed APK", () => {
     const workflow = readSource(".github", "workflows", "android-release.yml");
 
-    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.4.2"');
+    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.4.3"');
     expect(workflow).toContain(
       'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
     );
@@ -163,6 +144,8 @@ describe("release endpoints and product surface", () => {
     expect(workflow).toContain("apksigner");
     expect(workflow).toContain("actions/upload-artifact@v4");
     expect(workflow).toContain("retention-days: 30");
+    expect(workflow).toContain('= "144"');
+    expect(workflow).toContain('= "33"');
     expect(workflow).toContain('gh release create "$GITHUB_REF_NAME"');
   });
 
@@ -277,7 +260,7 @@ describe("release endpoints and product surface", () => {
   it("pre-caches all core offline routes during install", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.2-pwa-r1"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.3-pwa-r1"');
     for (const route of [
       "/",
       "/checklist",
