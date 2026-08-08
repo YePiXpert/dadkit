@@ -29,6 +29,9 @@ const sourceId = createSourceId();
 let sequence = 0;
 let channel: BroadcastChannel | undefined;
 let initialized = false;
+const deliveredMessageIds = new Set<string>();
+const deliveredMessageOrder: string[] = [];
+const MAX_DELIVERED_MESSAGE_IDS = 128;
 
 export function publishDataChange(domain: DataDomain, entityId?: string) {
   if (typeof window === "undefined") return;
@@ -51,12 +54,14 @@ export function publishDataChange(domain: DataDomain, entityId?: string) {
   if (channel) {
     try {
       channel.postMessage(message);
-      return;
     } catch {
-      // Fall through to the storage-event transport.
+      // The storage-event transport below remains available.
     }
   }
 
+  // WebKit can expose BroadcastChannel while intermittently dropping a
+  // message under load. Publish the small signal through both transports;
+  // receivers deduplicate the identical message before refreshing storage.
   try {
     window.localStorage.setItem(DATA_CHANGE_SIGNAL_KEY, JSON.stringify(message));
   } catch {
@@ -102,6 +107,15 @@ function ensureInitialized() {
 
 function deliver(value: unknown) {
   if (!isDataChangeMessage(value) || value.sourceId === sourceId) return;
+  const messageId = `${value.sourceId}:${value.version}`;
+  if (deliveredMessageIds.has(messageId)) return;
+  deliveredMessageIds.add(messageId);
+  deliveredMessageOrder.push(messageId);
+  if (deliveredMessageOrder.length > MAX_DELIVERED_MESSAGE_IDS) {
+    const oldest = deliveredMessageOrder.shift();
+    if (oldest) deliveredMessageIds.delete(oldest);
+  }
+
   for (const listener of listeners) {
     try {
       listener(value);

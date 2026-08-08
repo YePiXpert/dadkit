@@ -10,6 +10,7 @@ Android：versionCode 18 / `com.dadkit.mobile`
 - 统一处理静态导出路径的末尾斜杠，`/checklist/` 不再被误判为清单详情页。
 - 所有清单分类页恢复常驻五项底部菜单，并保持「清单」入口高亮。
 - 分类页增加底部导航安全区，新增物品按钮固定在菜单上方，不再遮挡菜单或卡片操作。
+- WebKit 跨标签刷新同时发送 BroadcastChannel 与 storage 信号，并对重复消息去重，降低高负载下偶发漏刷新的概率。
 - 删除已无调用方的无导航浮动按钮样式。
 
 ## APK/PWA 一致性
@@ -22,9 +23,9 @@ Android：versionCode 18 / `com.dadkit.mobile`
 
 - 335×745 Android 手机视口实测：图片由约 268×201 缩至 268×151，底部菜单可见且「清单」正确高亮。
 - ESLint、TypeScript 类型检查通过。
-- Vitest：93 个测试文件、611 项用例通过。
+- Vitest：93 个测试文件、612 项用例通过。
 - Web 生产构建及全部性能预算通过。
-- Playwright：Chromium 35 项通过；WebKit 34 项通过、1 项按设计跳过，跨标签一致性用例首次偶发超时后单独重跑通过。
+- Playwright：Chromium/WebKit 共 69 项通过、1 项按设计跳过；修复后的 WebKit 跨标签完整链路另连续重跑 3 次通过。
 - `npm run android:bundle`、Android 发布资源校验和 Gradle APK 构建通过。
 
 ## 发布后真机检查

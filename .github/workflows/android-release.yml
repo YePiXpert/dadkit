@@ -135,6 +135,7 @@ jobs:
           - 修复 Android 窄屏单列清单中物品图片过高的问题，低于 360px 时使用更紧凑的 16:9 图片比例
           - 修复 APK 静态导出路径带末尾斜杠时，清单首页被误判为详情页而隐藏底部菜单的问题
           - 所有清单分类页恢复常驻五项底部菜单，并将新增物品按钮移到菜单上方
+          - WebKit 跨标签刷新同时使用 BroadcastChannel 与 storage 信号并去重，降低高负载下的消息丢失概率
           - APK 继续内置完整 PWA 页面、144 张物品图、33 张成长图和全部离线资源
           - Android 包名为 com.dadkit.mobile，versionCode 为 18
           EOF

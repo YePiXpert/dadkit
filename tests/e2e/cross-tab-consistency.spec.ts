@@ -32,12 +32,19 @@ test("双标签实时同步清单、分工、宝宝记录和物品照片", async
     await page.getByRole("button", { name: "新增物品" }).click();
     await page.locator("#add-item-name").fill(itemName);
     await page.getByRole("button", { name: "加入清单" }).click();
-    await expect(otherPage.getByText(itemName, { exact: true })).toBeVisible();
 
     const itemCard = page.locator("article").filter({ hasText: itemName });
     const otherItemCard = otherPage
       .locator("article")
       .filter({ hasText: itemName });
+    await expect(otherItemCard).toHaveCount(1);
+    // Cards use content-visibility:auto. A synchronized custom item can be at
+    // the end of the long list and is intentionally not painted until scrolled
+    // near the viewport, so assert DOM arrival before checking visibility.
+    await otherItemCard.scrollIntoViewIfNeeded();
+    await expect(
+      otherItemCard.getByRole("heading", { name: itemName, exact: true }),
+    ).toBeVisible();
     await itemCard.getByRole("button", { name: "详情" }).click();
     await otherItemCard.getByRole("button", { name: "详情" }).click();
     await page
