@@ -540,7 +540,7 @@ describe("strict v3, v4, v5 and v6 import boundary", () => {
     expect(exportData()).not.toHaveProperty("futureBackupField");
   });
 
-  it("rejects unknown top-level structures in a v6 backup", () => {
+  it("accepts future top-level fields on a backup but strips them before saving", () => {
     installBrowserStorage();
 
     const result = importData(
@@ -550,7 +550,7 @@ describe("strict v3, v4, v5 and v6 import boundary", () => {
       }),
     );
 
-    expect(result.ok).toBe(false);
+    expect(result.ok).toBe(true);
     expect(exportData()).not.toHaveProperty("__protoPollutionAttempt");
   });
 

@@ -28,6 +28,7 @@ import {
   loadSyncClientState,
   loadSyncSession,
 } from "@/lib/data/settings-repository";
+import { formatFamilyInviteShareText, shareText } from "@/lib/share";
 import {
   createRandomSyncSpace,
   createSyncInviteLink,
@@ -196,8 +197,9 @@ export function SyncSettingsWorkspace() {
 
   async function shareInvite() {
     if (!freshInvite) return;
-    if (navigator.share) await navigator.share({ title: "DadKit 家庭同步邀请", text: freshInvite.link });
-    else await copyInvite();
+    await shareText(
+      formatFamilyInviteShareText(space?.displayName ?? "我们的家", freshInvite.link),
+    );
   }
 
   const localState = loadSyncClientState();

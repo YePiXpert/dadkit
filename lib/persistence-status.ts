@@ -131,6 +131,20 @@ export function dismissStorageWarning() {
   notifyChecklistPersistenceStatus();
 }
 
+// 启动时申请持久化存储,降低浏览器在配额紧张时自动清理本机数据的概率。
+// 属于尽力而为的浏览器能力,被拒绝或不支持都不影响后续容量检查。
+export async function requestPersistentStorage() {
+  if (typeof navigator === "undefined" || !navigator.storage) {
+    return;
+  }
+
+  try {
+    await navigator.storage.persist?.();
+  } catch {
+    // Storage persistence is a best-effort browser capability.
+  }
+}
+
 export async function checkStorageCapacity() {
   if (typeof navigator === "undefined" || !navigator.storage) {
     return;

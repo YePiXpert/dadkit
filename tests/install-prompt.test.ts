@@ -109,7 +109,7 @@ describe("PWA install status", () => {
   it("recognizes the bundled Android app and suppresses PWA installation", () => {
     expect(isBundledAndroidApp()).toBe(false);
 
-    stubWindow("Mozilla/5.0 DadKitAndroid/16");
+    stubWindow("Mozilla/5.0 DadKitAndroid/17");
     setPwaInstallPromptAvailable(true);
     expect(isBundledAndroidApp()).toBe(true);
     expect(isPwaInstallAvailable()).toBe(false);
@@ -151,5 +151,31 @@ describe("mobile form control text", () => {
     expect(quantityStepper).toContain("text-center text-base");
     expect(checklistWorkspace).toContain("p-3 text-base leading-6");
     expect(growthWorkspace).toContain("text-center text-base font-semibold");
+  });
+});
+
+const settingsPage = readSource("app", "settings", "page.tsx");
+
+describe("install prompt timing and settings re-entry", () => {
+  it("waits for real engagement before auto-showing the install prompt", () => {
+    expect(installPrompt).toContain("AUTO_PROMPT_COMPLETION_COUNT = 3");
+    expect(installPrompt).toContain(
+      "completedCount < AUTO_PROMPT_COMPLETION_COUNT",
+    );
+    expect(installPrompt).toContain(
+      'localStorage.getItem(INSTALL_PROMPT_DISMISS_KEY) === "1"',
+    );
+    expect(installPrompt).toContain(
+      'localStorage.setItem(INSTALL_PROMPT_DISMISS_KEY, "1")',
+    );
+  });
+
+  it("lets the settings entry reopen the guide after the prompt is dismissed", () => {
+    expect(installPrompt).toContain(
+      "OPEN_INSTALL_PROMPT_EVENT, handleManualOpen",
+    );
+    expect(settingsEntry).toContain("openInstallPrompt");
+    expect(settingsEntry).toContain("安装到桌面");
+    expect(settingsPage).toContain("<InstallPromptSettingsEntry />");
   });
 });

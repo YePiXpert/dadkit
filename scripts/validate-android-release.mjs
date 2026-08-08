@@ -4,9 +4,9 @@ import path from "node:path";
 
 const root = process.cwd();
 const expected = {
-  tag: "v3.4.3",
-  versionName: "3.4.3",
-  versionCode: 16,
+  tag: "v3.4.4",
+  versionName: "3.4.4",
+  versionCode: 17,
   packageId: "com.dadkit.mobile",
   host: "dadkit.505f.com",
 };
@@ -38,6 +38,8 @@ assert(gradle.includes(`versionCode ${expected.versionCode}`), "Gradle versionCo
 assert(gradle.includes(`versionName "${expected.versionName}"`), "Gradle versionName");
 assert(gradle.includes('ignoreAssetsPattern = "default_checklist.json"'), "retired native asset exclusion");
 assert(manifest.includes("android.permission.INTERNET"), "Internet permission");
+assert(manifest.includes("android.permission.REQUEST_INSTALL_PACKAGES"), "APK install permission");
+assert(manifest.includes("androidx.core.content.FileProvider"), "APK FileProvider");
 assert(manifest.includes('android:name=".LauncherActivity"'), "bundled launcher activity");
 assert(manifest.includes('android:allowBackup="false"'), "private app data");
 assert(!manifest.includes("trusted"), "TWA manifest entries must be absent");
@@ -50,6 +52,13 @@ assert(activity.includes(`DadKitAndroid/${expected.versionCode}`), "APK user age
 assert(activity.includes('getAssets().open("www/" + assetPath)'), "APK asset loader");
 assert(activity.includes('path.startsWith("/api/")'), "production API passthrough");
 assert(activity.includes("DadKitAndroidMigration"), "native-to-web data migration bridge");
+assert(activity.includes("DadKitAndroidUpdate"), "in-app Android update bridge");
+assert(activity.includes('MessageDigest.getInstance("SHA-256")'), "downloaded APK checksum");
+assert(activity.includes("Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES"), "unknown-app install settings");
+assert(activity.includes("FileProvider.getUriForFile"), "system APK installer handoff");
+assert(activity.includes('"(?i)^[0-9a-f]{64}$"'), "mandatory update checksum");
+assert(activity.includes('"/api/app-version/apk".equals'), "restricted update endpoint");
+assert(activity.includes("UPDATE_MAX_BYTES"), "download size limit");
 
 for (const retiredPath of [
   "android/app/src/main/java/com/dadkit/mobile/MainActivity.kt",

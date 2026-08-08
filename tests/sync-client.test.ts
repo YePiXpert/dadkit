@@ -23,6 +23,10 @@ import {
 } from "@/lib/storage";
 import { mergeExportData } from "@/lib/sync/merge";
 import { getSyncClockTimelineInitialized } from "@/lib/sync-clock";
+import {
+  clearSyncSessionExpired,
+  getSyncSessionStatus,
+} from "@/lib/sync-session-status";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
@@ -82,6 +86,7 @@ function resetStores() {
     lastSyncAt: undefined,
     lastError: undefined,
   });
+  clearSyncSessionExpired();
   useHospitalProfileStore.setState({
     hydrated: false,
     profile: createEmptyHospitalProfile(),
@@ -524,6 +529,10 @@ describe("family sync client", () => {
     expect(loadSyncSession()).toBeUndefined();
     expect(useSyncStatusStore.getState().joined).toBe(false);
     expect(useSyncStatusStore.getState().lastError).toContain("会话已失效");
+    expect(getSyncSessionStatus()).toEqual({
+      expired: true,
+      message: "家庭同步会话已失效，请重新加入后继续同步。",
+    });
   });
 
   it("keeps the local session when the server cannot confirm leaving", async () => {

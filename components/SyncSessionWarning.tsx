@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 
 import {
+  dismissSyncSessionExpired,
   getSyncSessionStatus,
   SYNC_SESSION_STATUS_EVENT,
   type SyncSessionStatus,
@@ -20,7 +22,7 @@ export function SyncSessionWarning() {
     return () => window.removeEventListener(SYNC_SESSION_STATUS_EVENT, refresh);
   }, []);
 
-  if (!status?.expired) {
+  if (!status?.expired || status.dismissed) {
     return null;
   }
 
@@ -36,6 +38,14 @@ export function SyncSessionWarning() {
       >
         重新加入
       </Link>
+      <button
+        aria-label="关闭同步断开提示"
+        className="shrink-0 rounded-full p-2 text-warning-foreground/80 transition-colors hover:bg-warning-foreground/10 hover:text-warning-foreground"
+        onClick={() => dismissSyncSessionExpired()}
+        type="button"
+      >
+        <X aria-hidden className="h-4 w-4" />
+      </button>
     </aside>
   );
 }

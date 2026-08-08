@@ -30,7 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$GITHUB_REF_NAME" = "v3.4.3"
+          test "$GITHUB_REF_NAME" = "v3.4.4"
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
@@ -113,15 +113,15 @@ jobs:
             echo "Retired native checklist asset must not be packaged." >&2
             exit 1
           fi
-          cp "$APK" DadKit-3.4.3.apk
-          sha256sum DadKit-3.4.3.apk > DadKit-3.4.3.apk.sha256
-          cp "$AAB" DadKit-3.4.3.aab
+          cp "$APK" DadKit-3.4.4.apk
+          sha256sum DadKit-3.4.4.apk > DadKit-3.4.4.apk.sha256
+          cp "$AAB" DadKit-3.4.4.aab
 
       - name: Store AAB privately for 30 days
         uses: actions/upload-artifact@v4
         with:
-          name: DadKit-3.4.3-aab
-          path: DadKit-3.4.3.aab
+          name: DadKit-3.4.4-aab
+          path: DadKit-3.4.4.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -130,18 +130,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          DadKit 3.4.3
+          DadKit 3.4.4
 
-          - Android 恢复与 PWA 完全相同的界面、体验和功能内容
-          - APK 内置全部页面、144 张物品图、33 张成长图、字体与离线资源
-          - 修复 3.4.2 原生版缺图、功能缺失和双端视觉不一致问题
-          - 首次启动自动合并迁移 3.4.2 原生版数据与家庭同步会话
-          - Android 包名为 com.dadkit.mobile，versionCode 为 16
-          - iPhone PWA、Android APK 与 Web 均由同一套 Next.js 源码构建
+          - APK 内检测新版本后可在应用内下载，显示进度并校验 SHA-256
+          - 校验通过后直接调起 Android 系统安装界面；旧 APK 和浏览器保留外链下载兜底
+          - 家庭邀请统一分享完整加入链接，同步断连提示支持关闭
+          - 启动时申请持久化存储，存量 localStorage 恢复点自动迁移到 IndexedDB
+          - v6-v9 备份兼容未来新增顶层字段，旧客户端可继续导入新备份
+          - APK 继续内置完整 PWA 页面、144 张物品图、33 张成长图和全部离线资源
+          - Android 包名为 com.dadkit.mobile，versionCode 为 17
           EOF
           gh release create "$GITHUB_REF_NAME" \
-            DadKit-3.4.3.apk \
-            DadKit-3.4.3.apk.sha256 \
+            DadKit-3.4.4.apk \
+            DadKit-3.4.4.apk.sha256 \
             --verify-tag \
-            --title "DadKit 3.4.3" \
+            --title "DadKit 3.4.4" \
             --notes-file release-notes.md

@@ -17,7 +17,7 @@ describe("DadKit v9 portable format", () => {
     expect(latest.baby.care.events[0].recordedByMemberId).toBeNull();
   });
 
-  it("round trips strict v9 and projects legal v8", () => {
+  it("round trips v9, tolerates unknown top-level fields and projects legal v8", () => {
     const latest = portableV9();
     expect(isDadKitImportData(JSON.parse(JSON.stringify(latest)))).toBe(true);
     const v8 = projectExportDataForVersion(latest, 8);
@@ -27,7 +27,7 @@ describe("DadKit v9 portable format", () => {
     expect(v8.planning.version).toBe(1);
     expect(v8.baby.version).toBe(1);
     expect(isDadKitImportData(v8)).toBe(true);
-    expect(isDadKitImportData({ ...latest, unexpected: true })).toBe(false);
+    expect(isDadKitImportData({ ...latest, unexpected: true })).toBe(true);
   });
 
   it("includes household, multi assignees and recorder in stable checksums", () => {

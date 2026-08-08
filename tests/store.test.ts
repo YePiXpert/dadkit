@@ -16,6 +16,11 @@ import {
   STORAGE_KEYS,
   exportData,
 } from "@/lib/storage";
+import {
+  loadChecklistMilestones,
+  markHalfwayMilestone,
+  markSectionClearedMilestone,
+} from "@/lib/checklist-milestones";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
 import { createEmptyItemPlanning, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
@@ -111,6 +116,21 @@ describe("v3 checklist store", () => {
     );
     expect(state.checklist.find((item) => item.id === custom.itemId)).toBeDefined();
     expect(state.customItems.find((item) => item.id === custom.itemId)).toBeDefined();
+  });
+
+  it("clears one-time milestone marks when the checklist is rebuilt", async () => {
+    installBrowserStorage();
+    useDadKitStore.getState().hydrate();
+    markHalfwayMilestone();
+    markSectionClearedMilestone("mom");
+    expect(loadChecklistMilestones().reachedHalfway).toBe(true);
+
+    await useDadKitStore.getState().resetChecklist();
+
+    expect(loadChecklistMilestones()).toEqual({
+      reachedHalfway: false,
+      clearedSectionIds: [],
+    });
   });
 
   it("rebuilds the checklist only after saving a recovery snapshot", async () => {

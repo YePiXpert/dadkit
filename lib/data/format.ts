@@ -169,17 +169,6 @@ export function hasExactKeys(
   return expected.every((key) => key in value);
 }
 
-function hasOnlyKeys(
-  value: Record<string, unknown>,
-  expected: readonly string[],
-) {
-  const keys = Object.keys(value);
-  return (
-    keys.length === expected.length &&
-    keys.every((key) => expected.includes(key))
-  );
-}
-
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   if (!isRecord(value)) return false;
   const prototype = Object.getPrototypeOf(value);
@@ -567,6 +556,8 @@ export function migrateHiddenStamps(
   );
 }
 
+// 顶层只校验必需字段:未来版本新增的顶层字段允许通过校验,
+// 由 sanitizeDadKitImportData 在进入运行时前丢弃,保证跨版本导入/同步不断链。
 export function isDadKitImportData(value: unknown): value is DadKitImportData {
   if (!isRecord(value)) {
     return false;
@@ -602,7 +593,7 @@ export function isDadKitImportData(value: unknown): value is DadKitImportData {
   if (value.version === 6) {
     return (
     isPlainRecord(value) &&
-    hasOnlyKeys(value, V6_EXPORT_KEYS) &&
+    hasExactKeys(value, V6_EXPORT_KEYS) &&
     hasValidPortableChecklistData(value) &&
     validateGrowthPortableData(value.growth) &&
     isHiddenTemplateItemStamps(value.hiddenTemplateItemStamps) &&
@@ -616,7 +607,7 @@ export function isDadKitImportData(value: unknown): value is DadKitImportData {
   if (value.version === 7) {
     return (
     isPlainRecord(value) &&
-    hasOnlyKeys(value, V7_EXPORT_KEYS) &&
+    hasExactKeys(value, V7_EXPORT_KEYS) &&
     hasValidPortableChecklistData(value) &&
     validateGrowthPortableData(value.growth) &&
     isHiddenTemplateItemStamps(value.hiddenTemplateItemStamps) &&
@@ -631,7 +622,7 @@ export function isDadKitImportData(value: unknown): value is DadKitImportData {
   if (value.version === 8) return (
     value.version === 8 &&
     isPlainRecord(value) &&
-    hasOnlyKeys(value, V8_EXPORT_KEYS) &&
+    hasExactKeys(value, V8_EXPORT_KEYS) &&
     hasValidPortableChecklistData(value) &&
     validateGrowthPortableData(value.growth) &&
     isHiddenTemplateItemStamps(value.hiddenTemplateItemStamps) &&
@@ -646,7 +637,7 @@ export function isDadKitImportData(value: unknown): value is DadKitImportData {
   return (
     value.version === 9 &&
     isPlainRecord(value) &&
-    hasOnlyKeys(value, V9_EXPORT_KEYS) &&
+    hasExactKeys(value, V9_EXPORT_KEYS) &&
     hasValidPortableChecklistData(value) &&
     validateGrowthPortableData(value.growth) &&
     isHiddenTemplateItemStamps(value.hiddenTemplateItemStamps) &&

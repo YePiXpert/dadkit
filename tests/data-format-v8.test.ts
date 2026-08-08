@@ -51,8 +51,8 @@ describe("DadKit v8 portable format", () => {
     expect(canonical).toEqual(before);
   });
 
-  it("strictly rejects unknown v8 fields", () => {
-    expect(isDadKitImportData({ ...portableV8(), unexpected: true })).toBe(false);
+  it("tolerates unknown top-level v8 fields", () => {
+    expect(isDadKitImportData({ ...portableV8(), unexpected: true })).toBe(true);
   });
 
   it("keeps event order stable and includes edits and tombstones in checksums", () => {

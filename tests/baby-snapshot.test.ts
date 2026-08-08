@@ -78,6 +78,46 @@ describe("baby snapshots and compensated import rollback", () => {
     expect(baby.profile.clearedAt).toBe(baby.care.clearedAt);
   });
 
+  it("migrates legacy localStorage snapshots into IndexedDB and clears the old key", async () => {
+    const storage = installBrowserStorage();
+    saveSnapshots([{
+      id: "legacy-v7",
+      createdAt: "2026-08-01T00:00:00.000Z",
+      reason: "旧恢复点",
+      data: portableV7(),
+    }]);
+
+    const snapshots = await loadSnapshotsAsync();
+
+    expect(snapshots.map((snapshot) => snapshot.id)).toEqual(["legacy-v7"]);
+    expect(storage.removals).toContain(STORAGE_KEYS.snapshots);
+    expect(storage.localValues.has(STORAGE_KEYS.snapshots)).toBe(false);
+    expect(
+      (await repository.loadSnapshots()).map((snapshot) => snapshot.id),
+    ).toEqual(["legacy-v7"]);
+
+    // 迁移后恢复走 IndexedDB,旧快照不丢。
+    const restored = await restoreSnapshotAsync("legacy-v7", { snapshotBeforeRestore: false });
+    expect(restored.ok).toBe(true);
+  });
+
+  it("keeps localStorage snapshots untouched when the IndexedDB migration fails", async () => {
+    const storage = installBrowserStorage();
+    saveSnapshots([{
+      id: "legacy-v7",
+      createdAt: "2026-08-01T00:00:00.000Z",
+      reason: "旧恢复点",
+      data: portableV7(),
+    }]);
+    repository.failNextWrite = true;
+
+    const snapshots = await loadSnapshotsAsync();
+
+    expect(snapshots.map((snapshot) => snapshot.id)).toEqual(["legacy-v7"]);
+    expect(storage.removals).not.toContain(STORAGE_KEYS.snapshots);
+    expect(storage.localValues.has(STORAGE_KEYS.snapshots)).toBe(true);
+  });
+
   it("rolls back localStorage and baby IndexedDB when the baby write fails", async () => {
     const oldChecklist = [portableTestItem("old-item")];
     saveChecklist(oldChecklist);

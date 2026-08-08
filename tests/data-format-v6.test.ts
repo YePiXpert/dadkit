@@ -112,11 +112,17 @@ describe("DadKit v6 compatibility inside the v7 portable format", () => {
         hospital: { version: 1, fields: { __proto__: {} } },
       }),
     ).toBe(false);
-    expect(
-      isDadKitImportData({
-        ...portableV6(),
-        unexpected: { nested: true },
-      }),
-    ).toBe(false);
+  });
+
+  it("tolerates unknown top-level v6 fields and strips them before saving", () => {
+    const withFutureField = {
+      ...portableV6(),
+      unexpected: { nested: true },
+    };
+
+    expect(isDadKitImportData(withFutureField)).toBe(true);
+    expect(sanitizeDadKitImportData(withFutureField)).not.toHaveProperty(
+      "unexpected",
+    );
   });
 });

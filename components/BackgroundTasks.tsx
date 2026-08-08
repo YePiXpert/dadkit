@@ -43,7 +43,12 @@ export function BackgroundTasks() {
         if (!cancelled) startAutoSync();
       });
       void import("@/lib/persistence-status")
-        .then(({ checkStorageCapacity }) => checkStorageCapacity())
+        .then(
+          async ({ checkStorageCapacity, requestPersistentStorage }) => {
+            await requestPersistentStorage();
+            return checkStorageCapacity();
+          },
+        )
         .catch(() => undefined);
       void Promise.all([import("@/lib/item-photos"), import("@/lib/store")])
         .then(([photoLibrary, storeModule]) => {

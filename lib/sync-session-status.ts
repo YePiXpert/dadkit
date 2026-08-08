@@ -1,6 +1,7 @@
 export type SyncSessionStatus = {
   expired: boolean;
   message?: string;
+  dismissed?: boolean;
 };
 
 export const SYNC_SESSION_STATUS_EVENT = "dadkit:sync-session-status";
@@ -21,6 +22,15 @@ function notify() {
 
 export function markSyncSessionExpired(message?: string) {
   status = { expired: true, message };
+  notify();
+}
+
+export function dismissSyncSessionExpired() {
+  if (!status.expired || status.dismissed) {
+    return;
+  }
+
+  status = { ...status, dismissed: true };
   notify();
 }
 

@@ -68,8 +68,8 @@ describe("DadKit v7 portable format", () => {
     expect(isDadKitImportData(clean)).toBe(true);
   });
 
-  it("strictly rejects unknown v7 fields and malformed planning", () => {
-    expect(isDadKitImportData({ ...portableV7(), unexpected: true })).toBe(false);
+  it("rejects malformed v7 planning while tolerating unknown top-level fields", () => {
+    expect(isDadKitImportData({ ...portableV7(), unexpected: true })).toBe(true);
     expect(
       isDadKitImportData({
         ...portableV7(),

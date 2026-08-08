@@ -53,8 +53,8 @@ export async function shareText(text: string, title = "DadKit"):
   return "failed";
 }
 
-export function formatFamilyInviteShareText(name: string, code: string) {
-  return `邀请你加入「${name}」的 DadKit 家庭同步。打开 DadKit 后选择“加入家庭”，输入口令：${code}`;
+export function formatFamilyInviteShareText(name: string, link: string) {
+  return `邀请你加入「${name}」的 DadKit 家庭同步，打开链接即可加入：${link}`;
 }
 
 export function formatChecklistShareText(percent: number) {

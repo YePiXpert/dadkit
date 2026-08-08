@@ -108,7 +108,7 @@ V3 的目标：在 V2「打开就知道还差什么」的基础上，把界面�
 ## 发布链路
 
 - Web/PWA：manifest、Service Worker、离线页和安装入口必须可独立工作；新版本需更新 Service Worker cache name。
-- Android：`android/` 是承载完整 PWA 静态导出的轻量 WebView 壳；`scripts/build-android-web.mjs` 必须从当前 `app/`、`components/`、`lib/` 和 `public/` 构建 `assets/www`，确保网页、iPhone PWA 与 APK 的视觉、交互、页面和图片资源同源。发布走 `scripts/release-apk.sh` 与 `scripts/validate-android-release.mjs`，校验器会逐文件核对 `public/` 资源。
+- Android：`android/` 是承载完整 PWA 静态导出的轻量 WebView 壳；`scripts/build-android-web.mjs` 必须从当前 `app/`、`components/`、`lib/` 和 `public/` 构建 `assets/www`，确保网页、iPhone PWA 与 APK 的视觉、交互、页面和图片资源同源。3.4.4 起，更新提示优先通过 `DadKitAndroidUpdate` 桥在应用内下载 APK、显示进度、校验 SHA-256，再以 `FileProvider` 调起系统安装；桥不可用时必须保留普通链接下载兜底。发布走 `scripts/release-apk.sh` 与 `scripts/validate-android-release.mjs`，校验器会逐文件核对 `public/` 资源及更新桥关键能力。
 
 ## 边界
 

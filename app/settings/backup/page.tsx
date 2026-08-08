@@ -582,7 +582,7 @@ export default function BackupSettingsPage() {
 
         <details className="group overflow-hidden rounded-card bg-card shadow-sm">
           <summary className="flex min-h-20 cursor-pointer list-none items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary">
+            <span className="icon-tile">
               <Cloud className="size-4" />
             </span>
             <span className="min-w-0 flex-1">

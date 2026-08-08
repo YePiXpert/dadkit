@@ -1698,7 +1698,30 @@ export function clearSnapshots() {
   }
 }
 
+// 早期版本把恢复点全量存在 localStorage,是 QuotaExceeded 的主要来源。
+// 读到时搬进 IndexedDB 并清掉旧 key;迁移失败则保留 localStorage 原件,下次再试。
+async function migrateLegacySnapshotsToRepository() {
+  const legacy = loadSnapshots();
+
+  if (legacy.length === 0) {
+    return;
+  }
+
+  const repository = getBabyRepository();
+
+  for (const snapshot of legacy) {
+    await repository.saveSnapshot(snapshot);
+  }
+
+  clearSnapshots();
+}
+
 export async function loadSnapshotsAsync(): Promise<DadKitSnapshot[]> {
+  try {
+    await migrateLegacySnapshotsToRepository();
+  } catch {
+    // 迁移失败不影响读取:下面的合并视图仍会包含 localStorage 里的恢复点。
+  }
   const repositorySnapshots = await getBabyRepository().loadSnapshots();
   const combined = [
     ...repositorySnapshots.map((snapshot) => snapshot as DadKitSnapshot),

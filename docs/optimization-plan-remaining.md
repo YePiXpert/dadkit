@@ -2,6 +2,8 @@
 
 本文档是全维度优化的剩余计划，交给 Codex 执行。阶段 1（性能/网速/内存）已由 Kimi 完成并验证，不要重复做。
 
+> 2026-08-08 / v3.4.4 复核：文档中的大部分项目已在 3.4.3 实现；本轮补齐家庭邀请分享、备份页样式、可关闭同步断连提示、持久化存储申请、localStorage 快照迁移 IndexedDB、v6-v9 未知顶层字段兼容，并新增 APK 应用内下载、进度、SHA-256 校验与系统安装链路。最终验收和发布边界见 `docs/release-v3.4.4.md`。
+
 ## 项目速览
 
 - DadKit：local-first 待产准备应用；Web、iPhone PWA 与 Android APK 统一使用 Next.js PWA 界面，Android 在 APK 中内置同一次静态导出的全部页面和资源。
