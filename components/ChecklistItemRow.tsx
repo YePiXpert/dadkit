@@ -150,13 +150,13 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
     <article
       ref={articleRef}
       className={cn(
-        "flex min-w-0 flex-col overflow-hidden rounded-card bg-card p-2.5 shadow-sm transition-shadow hover:shadow-md [content-visibility:auto] [contain-intrinsic-size:auto_26rem]",
+        "flex min-w-0 flex-col overflow-hidden rounded-card bg-card p-2.5 shadow-sm transition-shadow hover:shadow-md [content-visibility:auto] [contain-intrinsic-size:auto_22rem]",
         itemState === "ready" && "bg-secondary/35 ring-1 ring-primary/30",
         itemState === "packed" && "bg-secondary/55 ring-1 ring-primary/35",
         itemState === "not_needed" && "bg-muted/50 ring-1 ring-border/60",
       )}
     >
-      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-inset bg-muted/75">
+      <div className="relative flex aspect-[16/9] items-center justify-center overflow-hidden rounded-inset bg-muted/75 xs:aspect-[4/3]">
         {!mediaEnabled || itemPhoto.loading ? (
           <div
             aria-hidden="true"

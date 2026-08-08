@@ -39,7 +39,7 @@ describe("release endpoints and product surface", () => {
       }>;
     };
 
-    expect(packageJson.version).toBe("3.4.4");
+    expect(packageJson.version).toBe("3.4.5");
     expect(manifest.name).toBe("DadKit 待产包清单");
     expect(manifest.description).toContain("待产包");
     expect(manifest.description).toContain("宝宝记录");
@@ -122,7 +122,7 @@ describe("release endpoints and product surface", () => {
     expect(activity).toContain("new WebView(this)");
     expect(activity).toContain('getAssets().open("www/" + assetPath)');
     expect(activity).toContain("DadKitAndroidMigration");
-    expect(activity).toContain("appVersionCode=17");
+    expect(activity).toContain("appVersionCode=18");
     expect(manifest).toContain("android.permission.REQUEST_INSTALL_PACKAGES");
     expect(manifest).toContain("androidx.core.content.FileProvider");
     expect(activity).toContain("DadKitAndroidUpdate");
@@ -144,7 +144,7 @@ describe("release endpoints and product surface", () => {
   it("keeps the Android tag release strict and verifies the signed APK", () => {
     const workflow = readSource(".github", "workflows", "android-release.yml");
 
-    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.4.4"');
+    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.4.5"');
     expect(workflow).toContain(
       'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
     );
@@ -268,7 +268,7 @@ describe("release endpoints and product surface", () => {
   it("pre-caches all core offline routes during install", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.4-pwa-r1"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.5-pwa-r1"');
     for (const route of [
       "/",
       "/checklist",

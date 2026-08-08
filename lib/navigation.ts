@@ -62,9 +62,11 @@ function routeMatches(pathname: string, route: string) {
 }
 
 export function showsMobileNavigation(pathname: string) {
+  const normalizedPathname =
+    pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+
   return !(
-    pathname === "/onboarding" ||
-    pathname.startsWith("/checklist/") ||
-    pathname.startsWith("/settings/")
+    normalizedPathname === "/onboarding" ||
+    normalizedPathname.startsWith("/settings/")
   );
 }

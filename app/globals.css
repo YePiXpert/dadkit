@@ -221,11 +221,6 @@
     bottom: calc(6.5rem + env(safe-area-inset-bottom));
   }
 
-  /* 无底部导航的页面使用的 FAB 安全区；路由与导航可见性的对应关系见 lib/navigation.ts */
-  .safe-bottom-fab-no-nav {
-    bottom: calc(1.25rem + env(safe-area-inset-bottom));
-  }
-
   .safe-bottom-toast {
     bottom: calc(11.25rem + env(safe-area-inset-bottom));
   }

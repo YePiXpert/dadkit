@@ -105,12 +105,19 @@ describe("checklist section routes", () => {
     expect(styles).not.toMatch(/\.item-card-grid[^}]*grid-cols-3/);
   });
 
-  it("hides the mobile footer only on checklist detail routes", () => {
+  it("keeps the mobile footer and safe spacing on every checklist route", () => {
     const navigation = readSource("lib", "navigation.ts");
     const mobileNav = readSource("components", "MobileNav.tsx");
+    const workspace = readSource(
+      "components",
+      "ChecklistSectionWorkspace.tsx",
+    );
 
-    expect(navigation).toContain('pathname.startsWith("/checklist/")');
+    expect(navigation).not.toContain('pathname.startsWith("/checklist/")');
     expect(mobileNav).toContain("showsMobileNavigation");
     expect(mobileNav).toContain("return null");
+    expect(workspace).toContain("page-shell page-shell-with-nav");
+    expect(workspace).toContain("safe-bottom-fab fixed");
+    expect(workspace).not.toContain("safe-bottom-fab-no-nav");
   });
 });

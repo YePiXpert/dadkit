@@ -90,7 +90,7 @@ export function ChecklistSectionWorkspace({
   }
 
   return (
-    <div className="page-shell">
+    <div className="page-shell page-shell-with-nav">
       <section className="mobile-shell grid gap-4">
         <PageHeader
           title={section.label}
@@ -177,7 +177,7 @@ export function ChecklistSectionWorkspace({
         trigger={
           <button
             aria-label={`在${section.label}中新增物品`}
-            className="safe-bottom-fab-no-nav fixed right-4 z-40 flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glow transition-transform active:scale-95 sm:right-[max(1rem,calc(50%_-_21rem_-_5rem))]"
+            className="safe-bottom-fab fixed right-4 z-40 flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glow transition-transform active:scale-95 sm:right-[max(1rem,calc(50%_-_21rem_-_5rem))]"
             type="button"
           >
             <Plus className="size-7" strokeWidth={2.2} />
@@ -190,7 +190,10 @@ export function ChecklistSectionWorkspace({
 
 export function ChecklistSectionWorkspaceSkeleton() {
   return (
-    <div className="page-shell" aria-label="正在准备分类清单">
+    <div
+      className="page-shell page-shell-with-nav"
+      aria-label="正在准备分类清单"
+    >
       <section className="mobile-shell grid gap-3">
         <Skeleton className="h-20 rounded-card" />
         <Skeleton className="h-16 rounded-card" />

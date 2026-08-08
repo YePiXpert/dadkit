@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v3.4.4-pwa-r1";
+const CACHE_NAME = "dadkit-v3.4.5-pwa-r1";
 const PRECACHE_ROUTES = [
   "/",
   "/checklist",

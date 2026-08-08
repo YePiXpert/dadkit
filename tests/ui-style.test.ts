@@ -200,8 +200,13 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(isPrimaryNavigationItemActive("/", mineNav)).toBe(false);
 
     expect(showsMobileNavigation("/onboarding")).toBe(false);
-    expect(showsMobileNavigation("/checklist/mom")).toBe(false);
+    expect(showsMobileNavigation("/onboarding/")).toBe(false);
+    expect(showsMobileNavigation("/checklist/")).toBe(true);
+    expect(showsMobileNavigation("/checklist/mom")).toBe(true);
+    expect(showsMobileNavigation("/checklist/mom/")).toBe(true);
+    expect(showsMobileNavigation("/settings/")).toBe(true);
     expect(showsMobileNavigation("/settings/backup")).toBe(false);
+    expect(showsMobileNavigation("/settings/backup/")).toBe(false);
     expect(showsMobileNavigation("/")).toBe(true);
     expect(showsMobileNavigation("/growth")).toBe(true);
     expect(showsMobileNavigation("/tools")).toBe(true);
@@ -248,6 +253,9 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(checklistSectionWorkspace).toContain('className="item-card-grid"');
     expect(globals).toContain("xs:grid-cols-2");
     expect(checklistItemRow).toContain("ChecklistItemArt");
+    expect(checklistItemRow).toContain(
+      "aspect-[16/9] items-center justify-center overflow-hidden rounded-inset bg-muted/75 xs:aspect-[4/3]",
+    );
     expect(button).toContain("rounded-full");
     expect(button).toContain("shadow-glow");
     expect(card).toContain("rounded-card");
