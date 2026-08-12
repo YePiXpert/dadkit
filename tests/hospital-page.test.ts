@@ -108,11 +108,15 @@ describe("hospital profile page and entry points", () => {
 
   it("asks the active service worker to cache a first-visited route", () => {
     expect(pwaRegister).toContain('type: "CACHE_ROUTE"');
+    expect(pwaRegister).toContain('type: "CACHE_BACKGROUND_ROUTES"');
+    expect(pwaRegister).toContain("scheduleRegistration();");
+    expect(pwaRegister).not.toContain('addEventListener("load", scheduleRegistration');
     expect(pwaRegister).toContain("window.location.pathname");
     expect(pwaRegister).toContain("稍后");
     expect(pwaRegister).toContain("setWaitingWorker(undefined)");
     expect(serviceWorker).toContain('event.data?.type === "CACHE_ROUTE"');
     expect(serviceWorker).toContain('event.data?.type === "CACHE_ASSETS"');
+    expect(serviceWorker).toContain('event.data?.type === "CACHE_BACKGROUND_ROUTES"');
     expect(serviceWorker).toContain('typeof event.data.url === "string"');
     expect(serviceWorker).toContain("fetchAndCacheRoute");
     expect(serviceWorker).toContain('!url.pathname.startsWith("/api/")');

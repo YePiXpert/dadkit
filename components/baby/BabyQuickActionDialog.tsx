@@ -29,6 +29,7 @@ import { useDeviceIdentityStore } from "@/lib/device-identity/store";
 import { getActiveHouseholdMembers, householdMemberLabel } from "@/lib/household/selectors";
 import { useHouseholdStore } from "@/lib/household/store";
 import type { BottleMilkType, CareEvent, CareEventType, DiaperKind, PumpingSide } from "@/lib/baby/types";
+import { useOpenDraftInitializer } from "@/lib/use-open-draft";
 
 type QuickAction = CareEventType;
 
@@ -77,8 +78,7 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
     hydrateIdentity();
   }, [hydrateHousehold, hydrateIdentity]);
 
-  useEffect(() => {
-    if (!open) return;
+  useOpenDraftInitializer(open, action, () => {
     setNote("");
     setAmount("");
     setOccurredAt(localDateTimeInputValue());
@@ -92,7 +92,7 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
     setRecordedByMemberId(
       activeEvent?.recordedByMemberId ?? (currentIsActive ? currentMemberId : null),
     );
-  }, [open, action, currentMemberId, household, activeEvent]);
+  });
 
   useEffect(() => {
     if (!open || (!breastfeeding && !pumping && !sleep)) return;

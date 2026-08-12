@@ -20,6 +20,8 @@ import { GrowthAnalogyIllustration } from "@/components/GrowthAnalogyIllustratio
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { showAppToast } from "@/lib/app-toast";
 import {
   DEFAULT_GROWTH_WEEK,
   GROWTH_MEDICAL_DISCLAIMER,
@@ -105,15 +107,24 @@ export function GrowthWorkspace() {
   }, [current.week, currentPregnancyWeek]);
 
   function updateDueDate(value: string) {
-    setDueDate(value);
+    try {
+      setDueDate(value);
 
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      setLastViewedWeek(getCurrentGrowthWeekFromDueDate(value));
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        setLastViewedWeek(getCurrentGrowthWeekFromDueDate(value));
+      }
+    } catch (error) {
+      showGrowthStorageError(error);
     }
   }
 
   function selectWeek(week: number, scrollToDetail = false) {
-    setLastViewedWeek(week);
+    try {
+      setLastViewedWeek(week);
+    } catch (error) {
+      showGrowthStorageError(error);
+      return;
+    }
 
     if (scrollToDetail) {
       window.requestAnimationFrame(() => {
@@ -123,6 +134,16 @@ export function GrowthWorkspace() {
       });
     }
   }
+
+  function toggleTask(taskId: string) {
+    try {
+      toggleCompletedTask(taskId);
+    } catch (error) {
+      showGrowthStorageError(error);
+    }
+  }
+
+  if (!hydrated) return <GrowthWorkspaceSkeleton />;
 
   return (
     <div className="page-shell page-shell-with-nav">
@@ -300,7 +321,7 @@ export function GrowthWorkspace() {
             <Button
               aria-pressed={currentTaskDone}
               className="mt-4 w-full"
-              onClick={() => toggleCompletedTask(current.checkupTaskId)}
+              onClick={() => toggleTask(current.checkupTaskId)}
               variant={currentTaskDone ? "secondary" : "default"}
             >
               {currentTaskDone ? <Check /> : <Circle />}
@@ -460,7 +481,7 @@ export function GrowthWorkspace() {
                             ? "ring-primary bg-secondary text-primary"
                             : "ring-border bg-card text-muted-foreground hover:bg-muted",
                         )}
-                        onClick={() => toggleCompletedTask(entry.checkupTaskId)}
+                        onClick={() => toggleTask(entry.checkupTaskId)}
                         type="button"
                       >
                         {taskDone ? (
@@ -513,6 +534,29 @@ export function GrowthWorkspace() {
       </section>
     </div>
   );
+}
+
+function GrowthWorkspaceSkeleton() {
+  return (
+    <div className="page-shell page-shell-with-nav">
+      <section className="mobile-shell grid gap-5" aria-label="正在读取成长记录">
+        <Skeleton className="h-20 rounded-card" />
+        <Skeleton className="h-16 rounded-card" />
+        <Skeleton className="h-80 rounded-card" />
+        <Skeleton className="h-48 rounded-card" />
+      </section>
+    </div>
+  );
+}
+
+function showGrowthStorageError(error: unknown) {
+  showAppToast({
+    message:
+      error instanceof Error && error.message
+        ? `成长记录保存失败：${error.message}`
+        : "成长记录保存失败，请清理本机空间后重试。",
+    tone: "warning",
+  });
 }
 
 function Metric({

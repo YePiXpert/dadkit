@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyBabyProfile } from "@/lib/baby/defaults";
 import { MemoryBabyRepository, setBabyRepositoryForTests } from "@/lib/baby/repository";
@@ -36,6 +36,25 @@ afterEach(() => {
 });
 
 describe("baby store", () => {
+  it("keeps hydration retryable after a repository read failure", async () => {
+    const read = vi.spyOn(repository, "getAllBabyData");
+    read.mockRejectedValueOnce(new Error("temporary IndexedDB failure"));
+
+    await useBabyStore.getState().hydrate();
+    expect(useBabyStore.getState()).toMatchObject({
+      hydrated: false,
+      loading: false,
+      repositoryError: "temporary IndexedDB failure",
+    });
+
+    await useBabyStore.getState().hydrate();
+    expect(useBabyStore.getState()).toMatchObject({
+      hydrated: true,
+      loading: false,
+      repositoryError: undefined,
+    });
+  });
+
   it("persists timer actions, hydrates active timers and never ticks the change token", async () => {
     await useBabyStore.getState().hydrate();
     expect(useBabyStore.getState().changeToken).toBe(0);
@@ -88,6 +107,22 @@ describe("baby store", () => {
     await useBabyStore.getState().applyRemoteBabyData(oldData);
     expect((await repository.getAllBabyData()).care.events).toEqual([]);
     expect(useBabyStore.getState().changeToken).toBe(tokenBeforeRemote);
+  });
+
+  it("serializes concurrent starts so only one timer of each type is created", async () => {
+    await useBabyStore.getState().hydrate();
+
+    const results = await Promise.all([
+      useBabyStore.getState().startSleep(),
+      useBabyStore.getState().startSleep(),
+    ]);
+
+    expect(results.filter((result) => result.ok)).toHaveLength(1);
+    expect(
+      (await repository.getAllEventsForPortableExport()).filter(
+        (event) => event.type === "sleep" && event.endAt === null,
+      ),
+    ).toHaveLength(1);
   });
 
   it("updates state only after a repository write succeeds", async () => {

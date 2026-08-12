@@ -34,6 +34,7 @@ coverage
 .visual-screenshots
 playwright-report/
 test-results/
+/output/
 *.tsbuildinfo
 
 # 本地运行时家庭同步数据(DADKIT_DATA_DIR 默认 ./data)
@@ -41,6 +42,7 @@ test-results/
 
 # android build output, bundled web assets and signing keys
 android/.gradle/
+android/.gradle-codex/
 android/app/build/
 android/app/src/main/assets/www/
 !android/app/src/main/assets/www/

@@ -3,6 +3,7 @@ import {
   assertWebDavProxyEnabled,
   assertWebDavProxyRequest,
   parseProxyPayload,
+  parseProxyV2Metadata,
   requestPinnedWebDav,
   sanitizeProxyHeaders,
   sanitizeProxyResponseHeaders,
@@ -15,15 +16,20 @@ import {
   createConcurrencyLimiter as createWebDavProxyConcurrencyLimiter,
   createRateLimiter as createWebDavProxyRateLimiter,
 } from "@/lib/http/rate-limit";
+import {
+  LEGACY_WEBDAV_PROXY_REQUEST_BYTES,
+  MAX_WEBDAV_BACKUP_BYTES,
+  WEBDAV_PROXY_METADATA_HEADER,
+  WEBDAV_PROXY_VERSION_HEADER,
+  WEBDAV_REQUEST_TIMEOUT_MS,
+} from "@/lib/webdav/limits";
 
 export const runtime = "nodejs";
 
-const MAX_PROXY_REQUEST_BYTES = 3 * 1024 * 1024;
-const MAX_PROXY_REQUEST_DURATION_MS = 30_000;
 const PROXY_HEADER = "x-dadkit-webdav-proxy";
 const PROXY_ERROR_HEADER = "x-dadkit-webdav-proxy-error";
 const proxyRateLimiter = createWebDavProxyRateLimiter(60, 60_000);
-const proxyConcurrencyLimiter = createWebDavProxyConcurrencyLimiter(8, 2);
+const proxyConcurrencyLimiter = createWebDavProxyConcurrencyLimiter(2, 1);
 
 export async function OPTIONS() {
   return new Response(null, {
@@ -49,12 +55,20 @@ export async function POST(request: Request) {
     }
 
     releaseConcurrency = proxyConcurrencyLimiter.acquire(clientKey);
+    const isV2 = request.headers.get(WEBDAV_PROXY_VERSION_HEADER) === "2";
     const rawBody = await readLimitedRequestText(
       request,
-      MAX_PROXY_REQUEST_BYTES,
-      MAX_PROXY_REQUEST_DURATION_MS,
+      isV2 ? MAX_WEBDAV_BACKUP_BYTES : LEGACY_WEBDAV_PROXY_REQUEST_BYTES,
+      WEBDAV_REQUEST_TIMEOUT_MS,
     );
-    const payload = parseProxyPayload(rawBody);
+    const payload = isV2
+      ? {
+          ...parseProxyV2Metadata(
+            request.headers.get(WEBDAV_PROXY_METADATA_HEADER) ?? "",
+          ),
+          body: rawBody || undefined,
+        }
+      : parseProxyPayload(rawBody);
     let targetUrl: URL;
 
     try {
@@ -70,6 +84,7 @@ export async function POST(request: Request) {
       headers: sanitizeProxyHeaders(payload.headers, targetUrl),
       body: payload.body,
       signal: request.signal,
+      maxResponseBytes: MAX_WEBDAV_BACKUP_BYTES,
     });
 
     const headers = sanitizeProxyResponseHeaders(upstream.headers);

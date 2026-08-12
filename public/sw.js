@@ -1,5 +1,6 @@
-const CACHE_NAME = "dadkit-v3.4.6-pwa-r1";
-const PRECACHE_ROUTES = [
+const CACHE_NAME = "dadkit-v3.4.7-pwa-r1";
+const PRECACHE_ROUTES = ["/"];
+const BACKGROUND_ROUTES = [
   "/",
   "/checklist",
   "/onboarding",
@@ -39,7 +40,14 @@ const RUNTIME_CACHE_LIMITS = [
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(precacheAppShell());
+  event.waitUntil(
+    (async () => {
+      await precacheAppShell();
+      if (!self.registration?.active) {
+        await self.skipWaiting();
+      }
+    })(),
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -79,6 +87,15 @@ self.addEventListener("message", (event) => {
       );
 
     replyWhenSettled(event, work);
+    event.waitUntil(work);
+    return;
+  }
+
+  if (event.data?.type === "CACHE_BACKGROUND_ROUTES") {
+    const work = caches
+      .open(CACHE_NAME)
+      .then((cache) => cacheRoutesInBackground(cache));
+
     event.waitUntil(work);
     return;
   }
@@ -205,15 +222,24 @@ function replyWhenSettled(event, work) {
 
 async function precacheAppShell() {
   const cache = await caches.open(CACHE_NAME);
-  // 核心页面都在安装时缓存，首次离线打开仍停留在目标路由。
-  const routeHtml = await Promise.all(
-    PRECACHE_ROUTES.map((route) => fetchAndCacheRoute(cache, route)),
-  );
+  const routeHtml = [];
+
+  for (const route of PRECACHE_ROUTES) {
+    try {
+      routeHtml.push(await fetchAndCacheRoute(cache, route));
+    } catch {
+      // Runtime caching retries the current route after activation.
+    }
+  }
 
   await Promise.all(
-    [...new Set(routeHtml.flatMap(extractBuildAssets))].map((asset) =>
-      fetchAndCacheAsset(cache, asset),
-    ),
+    [...new Set(routeHtml.flatMap(extractBuildAssets))].map(async (asset) => {
+      try {
+        await fetchAndCacheAsset(cache, asset);
+      } catch {
+        // A single optional chunk must not abort worker installation.
+      }
+    }),
   );
 
   await Promise.all(
@@ -225,6 +251,31 @@ async function precacheAppShell() {
       }
     }),
   );
+}
+
+async function cacheRoutesInBackground(cache) {
+  for (const route of BACKGROUND_ROUTES) {
+    try {
+      const cached = await cache.match(route, { ignoreSearch: true });
+
+      if (cached?.ok) {
+        continue;
+      }
+
+      const html = await fetchAndCacheRoute(cache, route);
+      const assets = extractBuildAssets(html);
+
+      for (const asset of assets) {
+        const cachedAsset = await cache.match(asset);
+
+        if (!cachedAsset?.ok) {
+          await fetchAndCacheAsset(cache, asset);
+        }
+      }
+    } catch {
+      // Background completion is best-effort; visited routes still cache on demand.
+    }
+  }
 }
 
 async function fetchAndCacheRoute(cache, route) {

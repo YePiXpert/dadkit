@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import {
   CHECKLIST_PERSISTENCE_EVENT,
+  dismissCapacityWarning,
   dismissStorageWarning,
   getPersistenceOverview,
   retryPendingPersistence,
@@ -26,7 +27,10 @@ export function PersistenceWarning() {
     };
   }, []);
 
-  const message = status?.failure?.lastError ?? status?.storageWarning;
+  const message =
+    status?.failure?.lastError ??
+    status?.storageWarning ??
+    status?.capacityWarning;
 
   if (!message) {
     return null;
@@ -44,8 +48,10 @@ export function PersistenceWarning() {
         onClick={() => {
           if (status?.failure) {
             retryPendingPersistence(status.failure.domain);
-          } else {
+          } else if (status?.storageWarning) {
             dismissStorageWarning();
+          } else {
+            dismissCapacityWarning();
           }
           setStatus(getPersistenceOverview());
         }}

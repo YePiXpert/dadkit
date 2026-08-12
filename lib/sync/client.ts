@@ -24,8 +24,6 @@ import {
   saveSyncSession,
   type SyncSessionLocalV2,
 } from "@/lib/data/settings-repository";
-import { useGrowthStore } from "@/lib/growth-store";
-import { generateChecklist } from "@/lib/rules";
 import {
   estimateSyncClockOffset,
   getSyncClockOffset,
@@ -399,36 +397,43 @@ function alignBabyDataToServerTime(
   };
 }
 
-async function applyMerged(data: DadKitExportData) {
-  const checklist = generateChecklist({
-    currentItems: data.checklist,
-    customItems: data.customItems,
-    hiddenTemplateItemIds: data.hiddenTemplateItemIds,
-  });
+async function applyMerged(data: DadKitExportData, alignOffset?: number) {
+  const latestExport = await buildLatestPortableData();
+  const latestLocal = alignOffset === undefined
+    ? latestExport
+    : alignExportDataToServerTime(latestExport, alignOffset);
+  const rebased = mergeExportData(latestLocal, data);
 
   applyingRemote = true;
 
   try {
-    const result = await applyImportDataAsync(data);
+    const result = await applyImportDataAsync(rebased);
 
     if (!result.ok) {
       throw new Error(result.message);
     }
-
-    useDadKitStore.setState((state) => ({
-      checklist,
-      customItems: data.customItems,
-      hiddenTemplateItemIds: data.hiddenTemplateItemIds,
-      changeOrigin: "remote",
-      changeRevision: state.changeRevision + 1,
-    }));
-    useGrowthStore.setState({
-      ...data.growth.profile,
-      ...data.growth.progress,
-    });
+    return rebased;
   } finally {
     applyingRemote = false;
   }
+}
+
+function isCurrentSyncSession(expected: ReturnType<typeof loadSyncSession>) {
+  const current = loadSyncSession();
+  if (!expected || !current) return false;
+
+  if (isLegacySyncSession(expected) || isLegacySyncSession(current)) {
+    return (
+      isLegacySyncSession(expected) &&
+      isLegacySyncSession(current) &&
+      expected.token === current.token
+    );
+  }
+
+  return (
+    expected.spaceId === current.spaceId &&
+    expected.sessionId === current.sessionId
+  );
 }
 
 function clearRetrySchedule() {
@@ -494,6 +499,7 @@ async function doSync(): Promise<SyncOutcome> {
       isLegacySyncSession(session) ? session.token : undefined,
       { acceptNotModified: true },
     );
+    if (!isCurrentSyncSession(session)) return { ok: false };
     const observedOffset = observeServerTime(
       pulled.serverTime ?? pulled.data?.serverTime,
       pulled.requestStartedAt,
@@ -503,10 +509,13 @@ async function doSync(): Promise<SyncOutcome> {
     const shouldAlignTimeline =
       !getSyncClockTimelineInitialized() &&
       (observedOffset ?? getSyncClockOffset()) !== undefined;
+    const alignmentOffset = shouldAlignTimeline
+      ? observedOffset ?? getSyncClockOffset() ?? 0
+      : undefined;
     const local = shouldAlignTimeline
       ? alignExportDataToServerTime(
           localExport,
-          observedOffset ?? getSyncClockOffset() ?? 0,
+          alignmentOffset!,
         )
       : localExport;
     let merged = local;
@@ -530,12 +539,12 @@ async function doSync(): Promise<SyncOutcome> {
       merged = mergeExportData(local, remoteData);
 
       if (shouldAlignTimeline || checksumOf(merged) !== checksumOf(local)) {
-        await applyMerged(merged);
+        merged = await applyMerged(merged, alignmentOffset);
       }
     } else if (shouldAlignTimeline) {
       // The first server-time observation may arrive with a 304 response. Apply
       // the shifted local timeline before the next write is compared or pushed.
-      await applyMerged(merged);
+      merged = await applyMerged(merged, alignmentOffset);
     }
 
     if (shouldAlignTimeline) {
@@ -548,11 +557,13 @@ async function doSync(): Promise<SyncOutcome> {
       : !remoteData || mergedChecksum !== checksumOf(remoteData);
 
     if (localHasNews) {
+      if (!isCurrentSyncSession(session)) return { ok: false };
       const pushed = await apiRequest<SpaceSnapshotPayload>(
         "/api/sync/push",
         { method: "POST", body: JSON.stringify({ data: merged }) },
         isLegacySyncSession(session) ? session.token : undefined,
       );
+      if (!isCurrentSyncSession(session)) return { ok: false };
 
       latestEtag = pushed.etag ?? latestEtag;
       observeServerTime(
@@ -569,10 +580,11 @@ async function doSync(): Promise<SyncOutcome> {
         // A legacy-compatible response may omit hospital and/or planning.
         // Merge its supported fields instead of treating absence as a clear.
         merged = mergeExportData(merged, pushed.data.data);
-        await applyMerged(merged);
+        merged = await applyMerged(merged);
       }
     }
 
+    if (!isCurrentSyncSession(session)) return { ok: false };
     const lastSyncAt = new Date().toISOString();
 
     saveSyncClientState({
@@ -594,6 +606,8 @@ async function doSync(): Promise<SyncOutcome> {
   } catch (error) {
     const message =
       error instanceof Error && error.message ? error.message : "同步失败。";
+
+    if (!isCurrentSyncSession(session)) return { ok: false };
 
     if (error instanceof SyncApiError && error.status === 401) {
       clearRetrySchedule();

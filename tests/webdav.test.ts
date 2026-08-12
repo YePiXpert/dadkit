@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import {
   exportData,
@@ -25,8 +27,15 @@ import {
   isBlockedHostname,
   isPrivateIpAddress,
   parseProxyPayload,
+  parseProxyV2Metadata,
   sanitizeProxyHeaders,
 } from "@/lib/webdav/proxy";
+import {
+  WEBDAV_PROXY_METADATA_HEADER,
+  WEBDAV_PROXY_VERSION_HEADER,
+  encodeWebDavProxyMetadata,
+  decodeWebDavProxyMetadata,
+} from "@/lib/webdav/limits";
 import {
   buildAuthHeader,
   buildDadKitWebDavBackup,
@@ -35,6 +44,7 @@ import {
   importDadKitWebDavBackup,
   joinWebDavPath,
   normalizeWebDavEndpoint,
+  readLimitedWebDavResponseText,
   selectWebDavTransport,
   testWebDavConnection,
   uploadWebDavBackup,
@@ -108,10 +118,20 @@ function hospitalProfile(
 
 afterEach(() => {
   setBabyRepositoryForTests(undefined);
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
 describe("webdav helpers", () => {
+  it("keeps the plaintext credential warning next to the remember switch", () => {
+    const backupPage = readFileSync(
+      join(process.cwd(), "app", "settings", "backup", "page.tsx"),
+      "utf8",
+    );
+    expect(backupPage).toContain("开启后会明文保存在此设备的本地存储");
+    expect(DEFAULT_WEBDAV_CONFIG.rememberSecret).toBe(false);
+  });
+
   it("normalizes endpoint trailing slashes", () => {
     expect(normalizeWebDavEndpoint(" https://example.com/dav/// ")).toBe(
       "https://example.com/dav",
@@ -567,16 +587,72 @@ describe("webdav helpers", () => {
       "secret",
     );
     const [url, init = {}] = fetchMock.mock.calls[0]!;
-    const payload = JSON.parse(String(init.body));
+    const headers = new Headers(init.headers);
+    const payload = decodeWebDavProxyMetadata(
+      headers.get(WEBDAV_PROXY_METADATA_HEADER) ?? "",
+    ) as { url: string; method: string; headers: Record<string, string> };
 
     expect(result).toEqual({ ok: true, message: "WebDAV 连接成功" });
     expect(url).toBe("/api/webdav");
+    expect(headers.get(WEBDAV_PROXY_VERSION_HEADER)).toBe("2");
+    expect(init.body).toBeUndefined();
     expect(payload).toMatchObject({
       url: "https://example.com/dav/DadKit",
       method: "PROPFIND",
     });
     expect(payload.headers.authorization).toBe(buildAuthHeader("dad", "secret"));
     expect(payload.headers.depth).toBe("0");
+  });
+
+  it("parses the v2 proxy metadata without embedding the backup body", () => {
+    const payload = parseProxyV2Metadata(encodeWebDavProxyMetadata({
+      url: "https://example.com/dav/backup.json",
+      method: "PUT",
+      headers: { authorization: "Basic secret" },
+    }));
+
+    expect(payload).toEqual({
+      url: "https://example.com/dav/backup.json",
+      method: "PUT",
+      headers: { authorization: "Basic secret" },
+      body: undefined,
+    });
+  });
+
+  it("rejects oversized responses before or during streaming", async () => {
+    await expect(readLimitedWebDavResponseText(new Response("small", {
+      headers: { "content-length": "6" },
+    }), 5)).rejects.toThrow("超过 32 MiB");
+
+    const streamed = new Response(new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode("abc"));
+        controller.enqueue(new TextEncoder().encode("def"));
+        controller.close();
+      },
+    }));
+    await expect(readLimitedWebDavResponseText(streamed, 5)).rejects.toThrow("超过 32 MiB");
+  });
+
+  it("aborts a browser proxy request after 30 seconds", async () => {
+    installStorage();
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", vi.fn((_url: string | URL | Request, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+      }),
+    ));
+
+    const resultPromise = testWebDavConnection(
+      { ...DEFAULT_WEBDAV_CONFIG, endpoint: "https://example.com/dav", username: "dad" },
+      "secret",
+    );
+    await vi.advanceTimersByTimeAsync(30_000);
+    await expect(resultPromise).resolves.toMatchObject({
+      ok: false,
+      message: expect.stringContaining("等待超过 30 秒"),
+    });
+    vi.useRealTimers();
   });
 
   it("selects only browser proxy or server-side direct fetch", () => {

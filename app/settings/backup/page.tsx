@@ -123,7 +123,7 @@ export default function BackupSettingsPage() {
   const [jsonBackupMessage, setJsonBackupMessage] = useState("");
   const [jsonBackupMessageOk, setJsonBackupMessageOk] = useState<boolean>();
   const [pendingJsonBackup, setPendingJsonBackup] = useState<string>();
-  const syncStatus = useSyncStatusStore();
+  const syncJoined = useSyncStatusStore((state) => state.joined);
   const recentSnapshots = snapshots.slice(0, 2);
   const webDavConfigured = Boolean(
     webDavConfig.endpoint.trim() && webDavConfig.username.trim(),
@@ -155,10 +155,6 @@ export default function BackupSettingsPage() {
 
   async function restoreLocalSnapshot(id: string) {
     const result = await restoreSnapshotAsync(id);
-
-    if (result.ok) {
-      hydrate();
-    }
 
     await refreshSnapshots();
     setSnapshotMessage(result.message);
@@ -342,7 +338,6 @@ export default function BackupSettingsPage() {
     if (result.ok) {
       const timestamp = new Date().toISOString();
 
-      hydrate();
       updateWebDavSyncState({
         lastDownloadAt: timestamp,
         lastSyncAt: timestamp,
@@ -433,7 +428,6 @@ export default function BackupSettingsPage() {
     const result = await importDataAsync(pendingJsonBackup);
     setPendingJsonBackup(undefined);
     setJsonBackupBusy(false);
-    if (result.ok) hydrate();
     await refreshSnapshots();
     setJsonBackupMessage(result.message);
     setJsonBackupMessageOk(result.ok);
@@ -498,7 +492,7 @@ export default function BackupSettingsPage() {
             <div className="rounded-2xl bg-card/75 px-4 py-3 shadow-sm">
               <p className="text-[13px] text-muted-foreground">家庭同步</p>
               <p className="mt-1 text-lg font-bold">
-                {syncStatus.joined ? "已连接" : "未连接"}
+                {syncJoined ? "已连接" : "未连接"}
               </p>
             </div>
             <div className="rounded-2xl bg-card/75 px-4 py-3 shadow-sm">

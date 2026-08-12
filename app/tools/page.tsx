@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import {
   CarFront,
   ChevronRight,
@@ -6,6 +7,11 @@ import {
   Sprout,
   Users,
 } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "工具 | DadKit",
+  description: "使用孕期成长、准备出发、医院档案和家庭分工工具。",
+};
 
 const TOOL_ENTRIES = [
   {

@@ -68,6 +68,7 @@ import {
 import { hasAnyEffectiveItemPlanning } from "@/lib/planning/selectors";
 import { useItemPlanningStore } from "@/lib/planning/store";
 import { getSyncAdjustedNow } from "@/lib/sync-clock";
+import { CHECKLIST_MILESTONES_KEY } from "@/lib/checklist-milestones";
 import {
   DEFAULT_WEBDAV_CONFIG,
   type WebDavConfig,
@@ -77,6 +78,7 @@ import {
   markChecklistStateDirty,
   recordChecklistPersistenceError,
   recordChecklistStatePersisted,
+  recordStorageWarning,
   registerChecklistStateSaveRetryHandler,
   resetChecklistPersistenceStatus,
 } from "@/lib/persistence-status";
@@ -129,6 +131,7 @@ const DATA_STORAGE_KEYS = [
   GROWTH_STORAGE_KEYS.profile,
   GROWTH_STORAGE_KEYS.progress,
   GROWTH_STORAGE_KEYS.view,
+  CHECKLIST_MILESTONES_KEY,
 ] as const;
 
 export type {
@@ -702,6 +705,21 @@ function writeChecklistStateNow({
 }
 
 export function saveChecklistState(payload: ChecklistStatePayload) {
+  saveChecklistStateWithMetadata(payload);
+}
+
+export type ChecklistStateMetadata = {
+  deletedCustomItems?: DeletedCustomItemStamps;
+  hiddenTemplateItemStamps?: HiddenTemplateItemStamps;
+  planning?: ReturnType<typeof loadItemPlanning>;
+  resetMilestones?: boolean;
+  retryOnFailure?: boolean;
+};
+
+export function saveChecklistStateWithMetadata(
+  payload: ChecklistStatePayload,
+  metadata: ChecklistStateMetadata = {},
+) {
   cancelPendingChecklistStateSave();
 
   if (!canUseLocalStorage()) {
@@ -710,19 +728,66 @@ export function saveChecklistState(payload: ChecklistStatePayload) {
 
   const revision = markChecklistStateDirty();
   const next = cloneChecklistState(payload);
+  const previousLatest = latestChecklistState;
 
   latestChecklistState = next;
 
+  const mutations: StorageMutation[] = [
+    { key: STORAGE_KEYS.checklist, value: JSON.stringify(next.checklist) },
+    { key: STORAGE_KEYS.customItems, value: JSON.stringify(next.customItems) },
+    {
+      key: STORAGE_KEYS.hiddenTemplateItems,
+      value: JSON.stringify(next.hiddenTemplateItemIds),
+    },
+  ];
+  if (metadata.hiddenTemplateItemStamps) {
+    mutations.push({
+      key: STORAGE_KEYS.hiddenTemplateStamps,
+      value: JSON.stringify(metadata.hiddenTemplateItemStamps),
+    });
+  }
+  if (metadata.deletedCustomItems) {
+    mutations.push({
+      key: STORAGE_KEYS.deletedCustomItems,
+      value: JSON.stringify(metadata.deletedCustomItems),
+    });
+  }
+  if (metadata.planning) {
+    mutations.push({
+      key: STORAGE_KEYS.planning,
+      value: JSON.stringify(metadata.planning),
+    });
+  }
+  if (metadata.resetMilestones) {
+    mutations.push({ key: CHECKLIST_MILESTONES_KEY, value: null });
+  }
+
   try {
-    writeChecklistStateNow(next);
+    applyStorageMutations(mutations);
+    if (metadata.planning) {
+      useItemPlanningStore.setState({
+        hydrated: true,
+        planning: metadata.planning,
+      });
+    }
     recordChecklistStatePersisted(revision);
+    publishDataChange("checklist");
   } catch (error) {
-    pendingChecklistStateSave = { payload: next, revision };
-    recordChecklistPersistenceError(
-      error instanceof Error && error.message
-        ? error.message
-        : "本机存储写入失败。",
-    );
+    latestChecklistState = previousLatest;
+    if (metadata.retryOnFailure) {
+      pendingChecklistStateSave = { payload: next, revision };
+      recordChecklistPersistenceError(
+        error instanceof Error && error.message
+          ? error.message
+          : "本机存储写入失败。",
+      );
+    } else {
+      recordStorageWarning(
+        error instanceof Error && error.message
+          ? `本机数据未保存：${error.message}`
+          : "本机数据未保存，请清理空间后重试。",
+      );
+    }
     throw error;
   }
 }
@@ -1078,74 +1143,19 @@ export function isSyncSessionV2(
 
 /** Builds the complete v9 document from localStorage plus IndexedDB baby data. */
 export async function buildLatestPortableData(): Promise<DadKitExportData> {
-  const base = exportData();
   const baby = await getBabyRepository().getAllBabyData();
+  // Read synchronous localStorage domains after the async IndexedDB read so a
+  // checklist edit made while the baby repository is responding is included.
+  const base = exportData();
   return { ...base, version: 9, baby: cloneBabyData(baby) };
 }
 
 export function saveChecklistStateAndClearPlanning(
   payload: ChecklistStatePayload,
+  metadata: Omit<ChecklistStateMetadata, "planning"> = {},
 ) {
-  saveChecklistStateTransaction(payload, { clearPlanning: true });
-}
-
-export function saveChecklistStateTransaction(
-  payload: ChecklistStatePayload,
-  options: {
-    clearPlanning?: boolean;
-    deletedCustomItems?: DeletedCustomItemStamps;
-    hiddenTemplateItemStamps?: HiddenTemplateItemStamps;
-  } = {},
-) {
-  cancelPendingChecklistStateSave();
-
-  if (!canUseLocalStorage()) {
-    return;
-  }
-
-  const revision = markChecklistStateDirty();
-  const next = cloneChecklistState(payload);
-  const planning = options.clearPlanning ? planningClearForLegacyImport() : undefined;
-
-  try {
-    const mutations: StorageMutation[] = [
-      { key: STORAGE_KEYS.checklist, value: JSON.stringify(next.checklist) },
-      { key: STORAGE_KEYS.customItems, value: JSON.stringify(next.customItems) },
-      {
-        key: STORAGE_KEYS.hiddenTemplateItems,
-        value: JSON.stringify(next.hiddenTemplateItemIds),
-      },
-    ];
-    if (planning) {
-      mutations.push({ key: STORAGE_KEYS.planning, value: JSON.stringify(planning) });
-    }
-    if (options.hiddenTemplateItemStamps) {
-      mutations.push({
-        key: STORAGE_KEYS.hiddenTemplateStamps,
-        value: JSON.stringify(options.hiddenTemplateItemStamps),
-      });
-    }
-    if (options.deletedCustomItems) {
-      mutations.push({
-        key: STORAGE_KEYS.deletedCustomItems,
-        value: JSON.stringify(options.deletedCustomItems),
-      });
-    }
-    applyStorageMutations(mutations);
-    latestChecklistState = next;
-    if (planning) {
-      useItemPlanningStore.setState({ hydrated: true, planning });
-    }
-    recordChecklistStatePersisted(revision);
-    publishDataChange("checklist");
-  } catch (error) {
-    recordChecklistPersistenceError(
-      error instanceof Error && error.message
-        ? error.message
-        : "本机存储写入失败。",
-    );
-    throw error;
-  }
+  const planning = planningClearForLegacyImport();
+  saveChecklistStateWithMetadata(payload, { ...metadata, planning });
 }
 
 export function validateImportData(rawJson: string): ImportValidationResult {

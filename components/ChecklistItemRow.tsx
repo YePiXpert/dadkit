@@ -113,9 +113,9 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
       return;
     }
 
-    return observeRowVisibility(element, (visible) =>
-      setMediaEnabled(visible),
-    );
+    return observeRowVisibility(element, (visible) => {
+      if (visible) setMediaEnabled(true);
+    });
   }, []);
 
   useEffect(() => {

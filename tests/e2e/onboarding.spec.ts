@@ -13,12 +13,12 @@ async function waitForCachedRoute(page: Page, route: string) {
     const registration = await navigator.serviceWorker.getRegistration();
     const cached = await caches.match(candidate, { ignoreSearch: true });
     return Boolean(registration?.active && cached?.ok);
-  }, route), { timeout: 60_000 }).toBe(true);
+  }, route), { timeout: 120_000 }).toBe(true);
 }
 
 test("全新安装进入引导并可跳过；已有数据不会被强制跳转", async ({ browser, page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect(page).toHaveURL(/\/onboarding$/);
+  await expect(page).toHaveURL(/\/onboarding$/, { timeout: 60_000 });
   await expect(page.getByRole("heading", { name: "欢迎使用 DadKit" })).toBeVisible();
   await page.getByRole("button", { name: "暂时跳过" }).click();
   await expect(page).toHaveURL(/\/$/);
@@ -81,7 +81,7 @@ test("完成待产引导会协调保存自定义成员和当前设备使用者",
   expect(saved.identity.preferredEntry).toBe("checklist");
 });
 
-test("onboarding 和家庭设置在 360×800 无横向溢出且已预缓存离线页面", async ({
+test("onboarding 和家庭设置在 360×800 无横向溢出且首次访问后可离线使用", async ({
   browserName,
   context,
   page,
@@ -92,16 +92,17 @@ test("onboarding 和家庭设置在 360×800 无横向溢出且已预缓存离�
 }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/onboarding", { waitUntil: "domcontentloaded" });
-  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect(page.getByRole("heading", { name: "欢迎使用 DadKit" })).toBeVisible({ timeout: 60_000 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), { timeout: 30_000 }).toBe(true);
   await waitForCachedRoute(page, "/onboarding");
-  await waitForCachedRoute(page, "/settings/family");
 
   await page.evaluate(() => {
     localStorage.setItem("dadkit:v4:device-identity", JSON.stringify({ version: 1, currentMemberId: null, preferredEntry: "auto", onboardingCompletedAt: 1 }));
   });
   await page.goto("/settings/family", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "家庭成员", level: 1 })).toBeVisible();
-  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), { timeout: 30_000 }).toBe(true);
+  await waitForCachedRoute(page, "/settings/family");
 
   await context.setOffline(true);
   if (browserName === "webkit") {

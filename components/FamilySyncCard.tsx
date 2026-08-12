@@ -21,7 +21,10 @@ import {
 } from "@/lib/sync/client";
 
 export function FamilySyncCard() {
-  const status = useSyncStatusStore();
+  const joined = useSyncStatusStore((state) => state.joined);
+  const syncing = useSyncStatusStore((state) => state.syncing);
+  const lastSyncAt = useSyncStatusStore((state) => state.lastSyncAt);
+  const lastError = useSyncStatusStore((state) => state.lastError);
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -59,7 +62,7 @@ export function FamilySyncCard() {
         <CardTitle className="flex items-center gap-2"><Cloud className="size-5" />家庭同步</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4">
-        {status.joined && session ? (
+        {joined && session ? (
           <>
             <div className="rounded-xl bg-muted/35 p-3 text-sm leading-6 shadow-sm">
               <p className="font-semibold">{label}</p>
@@ -68,10 +71,10 @@ export function FamilySyncCard() {
                   ? "现有会话仍可同步，可前往管理页安全升级。"
                   : `${session.deviceName} · ${session.role === "owner" ? "管理员" : "成员"}`}
               </p>
-              <p className="text-muted-foreground">上次同步：{status.lastSyncAt ? new Date(status.lastSyncAt).toLocaleString("zh-CN") : "暂无"}</p>
+              <p className="text-muted-foreground">上次同步：{lastSyncAt ? new Date(lastSyncAt).toLocaleString("zh-CN") : "暂无"}</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <Button disabled={busy || status.syncing} onClick={() => void sync()} variant="outline"><RefreshCw className="size-4" />{status.syncing ? "同步中…" : "立即同步"}</Button>
+              <Button disabled={busy || syncing} onClick={() => void sync()} variant="outline"><RefreshCw className="size-4" />{syncing ? "同步中…" : "立即同步"}</Button>
               <Button asChild><Link href="/settings/sync">同步管理</Link></Button>
             </div>
           </>
@@ -92,7 +95,7 @@ export function FamilySyncCard() {
             </details>
           </>
         )}
-        <Feedback message={message || status.lastError || ""} ok={ok} />
+        <Feedback message={message || lastError || ""} ok={ok} />
         <p className="text-[13px] leading-5 text-muted-foreground">同步数据保存在所连接的服务器上，当前不提供端到端加密。请使用 HTTPS 并妥善保管邀请链接。</p>
       </CardContent>
     </Card>

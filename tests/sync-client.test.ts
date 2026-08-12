@@ -15,12 +15,15 @@ import {
 } from "@/lib/sync/client";
 import {
   exportData,
+  buildLatestPortableData,
   loadSnapshotsAsync,
   loadSyncClientState,
   loadSyncSession,
   saveChecklist,
   STORAGE_KEYS,
 } from "@/lib/storage";
+import { MemoryBabyRepository, setBabyRepositoryForTests } from "@/lib/baby/repository";
+import type { DadKitExportData } from "@/lib/data/format";
 import { mergeExportData } from "@/lib/sync/merge";
 import { getSyncClockTimelineInitialized } from "@/lib/sync-clock";
 import {
@@ -43,6 +46,7 @@ import { createEmptyItemPlanning, createEmptyItemPlanningRecord } from "@/lib/pl
 import { loadItemPlanning, saveItemPlanning } from "@/lib/planning/repository";
 import { DADKIT_DATA_VERSION_HEADER } from "@/lib/sync/data-version";
 import { portableV5 } from "@/tests/helpers/portable-data";
+import { generateChecklist } from "@/lib/rules";
 
 function testItem(id: string, patch: Partial<ChecklistItem> = {}): ChecklistItem {
   return {
@@ -94,6 +98,7 @@ function resetStores() {
 }
 
 afterEach(() => {
+  setBabyRepositoryForTests(undefined);
   resetStores();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -555,5 +560,93 @@ describe("family sync client", () => {
     expect(outcome.ok).toBe(false);
     expect(loadSyncSession()).toBeDefined();
     expect(useSyncStatusStore.getState().joined).toBe(true);
+  });
+
+  it("rebases a local edit made after the first sync snapshot", async () => {
+    installBrowserStorage({
+      "dadkit:v3:sync-session": JSON.stringify({
+        token: "space.race",
+        joinedAt: "2026-08-05T00:00:00.000Z",
+      }),
+    });
+    const repository = new MemoryBabyRepository();
+    setBabyRepositoryForTests(repository);
+    const baseChecklist = generateChecklist();
+    const raceItem = { ...baseChecklist[0]!, status: "todo" as const, updatedAt: 10 };
+    const localChecklist = baseChecklist.map((item, index) => index === 0 ? raceItem : item);
+    saveChecklist(localChecklist);
+    useDadKitStore.setState({ hydrated: true, checklist: localChecklist });
+    const remote = await buildLatestPortableData();
+    remote.checklist = remote.checklist.map((item) =>
+      item.id === raceItem.id ? { ...item, status: "bought", updatedAt: 20 } : item,
+    );
+
+    const originalRead = repository.getAllBabyData.bind(repository);
+    let readCount = 0;
+    let releaseSecondRead!: () => void;
+    let secondReadStarted!: () => void;
+    const secondReadGate = new Promise<void>((resolve) => { releaseSecondRead = resolve; });
+    const secondReadSignal = new Promise<void>((resolve) => { secondReadStarted = resolve; });
+    vi.spyOn(repository, "getAllBabyData").mockImplementation(async () => {
+      readCount += 1;
+      if (readCount === 2) {
+        secondReadStarted();
+        await secondReadGate;
+      }
+      return originalRead();
+    });
+
+    let pushed: DadKitExportData | undefined;
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/sync/pull") return jsonResponse({ version: 1, data: remote });
+      if (url === "/api/sync/push") {
+        pushed = (JSON.parse(init?.body as string) as { data: DadKitExportData }).data;
+        return jsonResponse({ version: 2, data: pushed });
+      }
+      throw new Error(`unexpected url ${url}`);
+    }));
+
+    const syncing = syncNow();
+    await secondReadSignal;
+    useDadKitStore.getState().updateItem(raceItem.id, { status: "packed" });
+    releaseSecondRead();
+    await expect(syncing).resolves.toMatchObject({ ok: true });
+
+    expect(useDadKitStore.getState().checklist.find((item) => item.id === raceItem.id)?.status).toBe("packed");
+    expect(pushed?.checklist.find((item) => item.id === raceItem.id)?.status).toBe("packed");
+  });
+
+  it("does not let an in-flight sync restore status after leaving", async () => {
+    installBrowserStorage({
+      "dadkit:v3:sync-session": JSON.stringify({
+        token: "space.leave-race",
+        joinedAt: "2026-08-05T00:00:00.000Z",
+      }),
+    });
+    useDadKitStore.setState({ hydrated: true });
+    refreshSyncStatus();
+    let releasePull!: () => void;
+    let pullStarted!: () => void;
+    const pullGate = new Promise<void>((resolve) => { releasePull = resolve; });
+    const pullSignal = new Promise<void>((resolve) => { pullStarted = resolve; });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/sync/pull") {
+        pullStarted();
+        await pullGate;
+        return jsonResponse({ version: 1, data: null });
+      }
+      if (url === "/api/sync/leave") return jsonResponse({ ok: true });
+      throw new Error(`unexpected url ${url}`);
+    }));
+
+    const syncing = syncNow();
+    await pullSignal;
+    await expect(leaveSpace()).resolves.toMatchObject({ ok: true });
+    releasePull();
+    await syncing;
+
+    expect(loadSyncSession()).toBeUndefined();
+    expect(useSyncStatusStore.getState().joined).toBe(false);
+    expect(loadSyncClientState()).toEqual({});
   });
 });

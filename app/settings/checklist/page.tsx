@@ -152,7 +152,14 @@ export default function ChecklistSettingsPage() {
                         : "text-muted-foreground",
                     )}
                     key={mode.value}
-                    onClick={() => setChecklistMode(mode.value)}
+                    onClick={() => {
+                      try {
+                        setChecklistMode(mode.value);
+                      } catch {
+                        setMessage("清单显示范围保存失败，请清理本机空间后重试。");
+                        setMessageOk(false);
+                      }
+                    }}
                     type="button"
                   >
                     <span className="block text-sm font-semibold">{mode.label}</span>

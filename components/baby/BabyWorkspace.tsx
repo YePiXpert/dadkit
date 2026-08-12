@@ -4,6 +4,7 @@ import { Baby } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { BabyDashboard } from "@/components/baby/BabyDashboard";
+import { BabyRepositoryErrorState } from "@/components/baby/BabyRepositoryErrorState";
 import { BabyProfileDialog } from "@/components/baby/BabyProfileDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
@@ -28,14 +29,15 @@ export function BabyWorkspace() {
 
   useEffect(() => { void hydrate(); hydrateHousehold(); }, [hydrate, hydrateHousehold]);
 
+  if (repositoryError && !hydrated && !loading) {
+    return <BabyRepositoryErrorState error={repositoryError} onRetry={() => void hydrate()} />;
+  }
   if (!hydrated || loading) return <BabyWorkspaceSkeleton />;
 
   return (
     <div className="page-shell page-shell-with-nav">
       <section className="mobile-shell grid gap-4">
-        {repositoryError && !hasBabyMode(profile) ? (
-          <div className="grid gap-3 rounded-card bg-card p-5 shadow-sm"><h1 className="text-lg font-bold">宝宝记录暂不可用</h1><p className="text-sm text-muted-foreground">{repositoryError}</p><p className="text-sm">DadKit 不会静默退回 localStorage，以免让你误以为记录已经保存。</p><Button onClick={() => window.location.reload()} variant="outline">重新尝试</Button></div>
-        ) : hasBabyMode(profile) ? (
+        {hasBabyMode(profile) ? (
           <BabyDashboard onEditProfile={() => setProfileOpen(true)} />
         ) : (
           <>

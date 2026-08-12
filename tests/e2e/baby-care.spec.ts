@@ -41,8 +41,10 @@ test("宝宝资料、主导航和计时在刷新后可恢复", async ({ page }) 
   await expect(page.getByRole("heading", { name: "E2E宝宝", exact: true })).toBeVisible();
   await openQuickAction(page, "亲喂");
   await expect(page.getByText("当前左侧", { exact: true })).toBeVisible();
+  await page.locator("#baby-care-note").fill("切侧时保留这段备注");
   await page.getByRole("button", { name: "切换右侧" }).click();
   await expect(page.getByText("当前右侧", { exact: true })).toBeVisible();
+  await expect(page.locator("#baby-care-note")).toHaveValue("切侧时保留这段备注");
   await page.getByRole("button", { name: "结束亲喂" }).click();
   await expect(page.getByText("亲喂记录已保存。")).toBeVisible();
 

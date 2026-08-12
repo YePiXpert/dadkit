@@ -3,7 +3,6 @@
 import { create } from "zustand";
 
 import { showAppToast } from "@/lib/app-toast";
-import { clearChecklistMilestones } from "@/lib/checklist-milestones";
 import { clearItemPhotos, deleteItemPhoto } from "@/lib/item-photos";
 import { generateChecklist, normalizeChecklistItem } from "@/lib/rules";
 import { getSyncAdjustedNow } from "@/lib/sync-clock";
@@ -24,7 +23,8 @@ import {
   saveChecklist,
   saveChecklistMode,
   saveChecklistState,
-  saveChecklistStateTransaction,
+  saveChecklistStateAndClearPlanning,
+  saveChecklistStateWithMetadata,
   saveChecklistStateSoon,
 } from "@/lib/data/local-repository";
 import type {
@@ -256,7 +256,7 @@ function commitPendingRemoval(id: string) {
         tombstones[removed.item.id] = now;
       }
     }
-    saveChecklistStateTransaction(committed, {
+    saveChecklistStateWithMetadata(committed, {
       hiddenTemplateItemStamps: stamps,
       deletedCustomItems: tombstones,
     });
@@ -375,18 +375,17 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       tombstones[item.id] = now;
     }
     try {
-      saveChecklistStateTransaction(
+      saveChecklistStateAndClearPlanning(
         { checklist, customItems: [], hiddenTemplateItemIds: [] },
         {
-          clearPlanning: true,
           hiddenTemplateItemStamps: stamps,
           deletedCustomItems: tombstones,
+          resetMilestones: true,
         },
       );
     } catch {
       throw new Error("清单重建失败，原有清单已保留。");
     }
-    clearChecklistMilestones();
     clearAllPendingRemovals();
     set((current) => ({
       checklist,
@@ -418,7 +417,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     for (const id of state.hiddenTemplateItemIds) {
       stamps[id] = { hidden: false, updatedAt: now };
     }
-    saveChecklistStateTransaction(
+    saveChecklistStateWithMetadata(
       {
         checklist,
         customItems: state.customItems,
@@ -700,7 +699,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     };
 
     try {
-      saveChecklistState(restored);
+      saveChecklistStateWithMetadata(restored, { retryOnFailure: true });
     } catch {
       showAppToast({
         message: "撤销结果尚未保存，将继续自动重试。",
@@ -727,7 +726,6 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     }
 
     clearAllPendingRemovals();
-    clearChecklistMilestones();
     set((current) => ({
       hydrated: true,
       checklist,

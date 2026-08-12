@@ -63,7 +63,16 @@ export function DepartureWorkspace() {
   function confirmCurrentGroup() {
     if (!confirmGroup || confirmIds.length === 0) return;
 
-    const changed = markItemsPacked(confirmIds);
+    let changed: number;
+    try {
+      changed = markItemsPacked(confirmIds);
+    } catch (error) {
+      showAppToast({
+        message: error instanceof Error && error.message ? error.message : "批量确认失败，请稍后重试。",
+        tone: "warning",
+      });
+      return;
+    }
 
     if (changed > 0) {
       showAppToast({

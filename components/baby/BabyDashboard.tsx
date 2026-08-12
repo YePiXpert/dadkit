@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Baby, BedDouble, Container, Droplets, Milk, Pencil } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { BabyQuickActionDialog } from "@/components/baby/BabyQuickActionDialog";
 import { CurrentDeviceMemberCard } from "@/components/household/CurrentDeviceMemberCard";
@@ -24,7 +24,15 @@ export function BabyDashboard({ onEditProfile }: { onEditProfile(): void }) {
   const careClearedAt = useBabyStore((state) => state.careClearedAt);
   const [action, setAction] = useState<CareEventType>();
   const household = useHouseholdStore((state) => state.household);
-  const now = Date.now();
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = window.setInterval(
+      () => setNow(Date.now()),
+      activeEvents.length > 0 ? 1_000 : 60_000,
+    );
+    return () => window.clearInterval(timer);
+  }, [activeEvents.length]);
   const events = useMemo(() => {
     const map = new Map([...recentEvents, ...activeEvents].map((event) => [event.id, event]));
     return [...map.values()];

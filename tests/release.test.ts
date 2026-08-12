@@ -39,7 +39,7 @@ describe("release endpoints and product surface", () => {
       }>;
     };
 
-    expect(packageJson.version).toBe("3.4.6");
+    expect(packageJson.version).toBe("3.4.7");
     expect(manifest.name).toBe("DadKit 待产包清单");
     expect(manifest.description).toContain("待产包");
     expect(manifest.description).toContain("宝宝记录");
@@ -122,7 +122,7 @@ describe("release endpoints and product surface", () => {
     expect(activity).toContain("new WebView(this)");
     expect(activity).toContain('getAssets().open("www/" + assetPath)');
     expect(activity).toContain("DadKitAndroidMigration");
-    expect(activity).toContain("appVersionCode=19");
+    expect(activity).toContain("appVersionCode=20");
     expect(manifest).toContain("android.permission.REQUEST_INSTALL_PACKAGES");
     expect(manifest).toContain("androidx.core.content.FileProvider");
     expect(activity).toContain("DadKitAndroidUpdate");
@@ -133,7 +133,7 @@ describe("release endpoints and product surface", () => {
     expect(activity).toContain("UPDATE_MAX_BYTES");
     expect(bundleScript).toContain('DADKIT_BUILD_TARGET: "android"');
     expect(bundleScript).toContain('"public"');
-    expect(bundleScript).toContain('"assets",\n  "www"');
+    expect(bundleScript).toMatch(/"assets",\r?\n\s+"www"/);
     expect(validator).toContain("144 bundled item illustrations");
     expect(validator).toContain("33 bundled growth illustrations");
     expect(validator).toContain("bundled public asset matches PWA");
@@ -144,7 +144,7 @@ describe("release endpoints and product surface", () => {
   it("keeps the Android tag release strict and verifies the signed APK", () => {
     const workflow = readSource(".github", "workflows", "android-release.yml");
 
-    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.4.6"');
+    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.4.7"');
     expect(workflow).toContain(
       'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
     );
@@ -265,10 +265,12 @@ describe("release endpoints and product surface", () => {
     );
   });
 
-  it("pre-caches all core offline routes during install", () => {
+  it("installs the entry shell, then keeps all core routes in the background cache list", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.6-pwa-r1"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.7-pwa-r1"');
+    expect(sw).toContain('const PRECACHE_ROUTES = ["/"]');
+    expect(sw).toContain("BACKGROUND_ROUTES");
     for (const route of [
       "/",
       "/checklist",
@@ -290,8 +292,6 @@ describe("release endpoints and product surface", () => {
     ]) {
       expect(sw).toContain(`"${route}"`);
     }
-    expect(sw).not.toContain("CORE_ROUTES");
-
     for (const route of REMOVED_PRODUCT_ROUTES) {
       expect(sw).not.toContain(`"/${route}"`);
     }
@@ -452,7 +452,7 @@ describe("release endpoints and product surface", () => {
     expect(reply?.ok).toBe(true);
   });
 
-  it("pre-caches entry routes while tolerating optional media failure", async () => {
+  it("pre-caches the entry shell, then fills routes in background", async () => {
     const sw = readSource("public", "sw.js");
     const cachedUrls: string[] = [];
     class FakeRequest {
@@ -473,6 +473,9 @@ describe("release endpoints and product surface", () => {
       }
     }
     const cache = {
+      async match() {
+        return undefined;
+      },
       async put(request: FakeRequest) {
         cachedUrls.push(request.url);
       },
@@ -498,27 +501,32 @@ describe("release endpoints and product surface", () => {
     } as Record<string, unknown>;
 
     runInNewContext(
-      `${sw}\n;globalThis.__precacheAppShell = precacheAppShell;`,
+      `${sw}\n;globalThis.__precacheAppShell = precacheAppShell;globalThis.__cacheRoutesInBackground = cacheRoutesInBackground;`,
       context,
     );
     const precacheAppShell = context.__precacheAppShell as () => Promise<void>;
+    const cacheRoutesInBackground = context.__cacheRoutesInBackground as (
+      target: object,
+    ) => Promise<void>;
 
     await expect(precacheAppShell()).resolves.toBeUndefined();
     expect(cachedUrls).toContain("/");
+    expect(cachedUrls).toContain("/_next/static/chunks/root.js");
+    expect(cachedUrls).toContain("/icon-192.png");
+    expect(cachedUrls).not.toContain("/manifest.webmanifest");
+    expect(cachedUrls).not.toContain("/checklist/mom");
+
+    await expect(cacheRoutesInBackground(cache)).resolves.toBeUndefined();
     expect(cachedUrls).toContain("/checklist");
     expect(cachedUrls).toContain("/onboarding");
     expect(cachedUrls).toContain("/settings/family");
     expect(cachedUrls).toContain("/settings/about");
     expect(cachedUrls).toContain("/join");
     expect(cachedUrls).toContain("/settings/sync");
-    expect(cachedUrls).toContain("/_next/static/chunks/root.js");
-    expect(cachedUrls).toContain("/icon-192.png");
-    expect(cachedUrls).not.toContain("/manifest.webmanifest");
     expect(cachedUrls).toContain("/settings");
     expect(cachedUrls).toContain("/growth");
     expect(cachedUrls).toContain("/baby/timeline");
     expect(cachedUrls).toContain("/hospital");
-    expect(cachedUrls).not.toContain("/checklist/mom");
 
     for (const route of REMOVED_PRODUCT_ROUTES) {
       expect(cachedUrls).not.toContain(`/${route}`);

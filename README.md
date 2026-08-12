@@ -97,6 +97,6 @@ Android APK 升级：
 4. 旧 APK 或浏览器环境会自动回退到外链下载；也可以随时打开[最新 Release](https://github.com/YePiXpert/dadkit/releases/latest)手动下载 `DadKit-*.apk`。
 5. 包名保持 `com.dadkit.mobile`，`versionCode` 按版本递增，可直接覆盖安装旧版本。
 
-本次版本的详细变更与验收结果见 [DadKit 3.4.6 发布说明](docs/release-v3.4.6.md)。
+本次版本的详细变更与验收结果见 [DadKit 3.4.7 发布说明](docs/release-v3.4.7.md)。
 
 浏览器 PWA 会随网站和 Service Worker 自动更新；必要时关闭并重新打开应用。

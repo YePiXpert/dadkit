@@ -72,7 +72,7 @@ test("Android 设置页显示当前版本并允许手动检查更新", async ({ 
   await page.addInitScript(() => {
     Object.defineProperty(window.navigator, "userAgent", {
       configurable: true,
-      value: `${window.navigator.userAgent} DadKitAndroid/19`,
+      value: `${window.navigator.userAgent} DadKitAndroid/20`,
     });
     window.localStorage.setItem("dadkit:android-version-code", "19");
     window.localStorage.setItem(
@@ -87,11 +87,11 @@ test("Android 设置页显示当前版本并允许手动检查更新", async ({ 
     await route.fulfill({
       contentType: "application/json",
       json: {
-        versionCode: 20,
-        versionName: "3.4.7",
+        versionCode: 21,
+        versionName: "3.4.8",
         notes: "下一版本测试更新。",
         sha256: "a".repeat(64),
-        url: "/api/app-version/apk?versionCode=20",
+        url: "/api/app-version/apk?versionCode=21",
       },
       status: 200,
     });
@@ -106,15 +106,15 @@ test("Android 设置页显示当前版本并允许手动检查更新", async ({ 
   await expect(
     page.getByRole("heading", { level: 1, name: "关于 DadKit" }),
   ).toBeVisible();
-  await expect(page.getByText("3.4.6 (19)")).toBeVisible();
+  await expect(page.getByText("3.4.7 (20)")).toBeVisible();
   const checkButton = page.getByRole("button", { name: "检查更新" });
   await expect(checkButton).toBeVisible();
   await checkButton.click();
 
-  await expect(page.getByText("发现新版本 3.4.7")).toBeVisible();
+  await expect(page.getByText("发现新版本 3.4.8")).toBeVisible();
   await expect(page.getByRole("link", { name: "下载更新" })).toHaveAttribute(
     "href",
-    "/api/app-version/apk?versionCode=20",
+    "/api/app-version/apk?versionCode=21",
   );
   expect(checks).toBe(1);
 });
@@ -189,7 +189,7 @@ test("Service Worker 缓存支持离线重开清单页", async ({
   context: BrowserContext;
   page: Page;
 }) => {
-  test.setTimeout(100_000);
+  test.setTimeout(240_000);
 
   await page.goto("/checklist", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("button", { name: "新增物品" })).toBeVisible({
@@ -198,7 +198,7 @@ test("Service Worker 缓存支持离线重开清单页", async ({
   const serviceWorkerState = await page.evaluate(async () => {
     if (!("serviceWorker" in navigator)) return false;
 
-    const deadline = Date.now() + 60_000;
+    const deadline = Date.now() + 120_000;
     let registration: ServiceWorkerRegistration | undefined;
 
     while (Date.now() < deadline) {

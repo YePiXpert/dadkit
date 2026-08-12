@@ -10,6 +10,7 @@ import {
   ITEM_PHOTO_JPEG_QUALITY,
   ITEM_PHOTO_MAX_EDGE,
   normalizeItemPhotoCompressionOptions,
+  serializeItemPhotoWrite,
 } from "@/lib/item-photos";
 
 const indexedDbDescriptor = Object.getOwnPropertyDescriptor(
@@ -73,6 +74,29 @@ describe("item photo compression helpers", () => {
 
   it("makes clear a safe no-op when IndexedDB is unavailable", async () => {
     await expect(clearItemPhotos()).resolves.toBeUndefined();
+  });
+
+  it("serializes writes for the same item while allowing the later write to win", async () => {
+    const order: string[] = [];
+    let releaseFirst!: () => void;
+    const firstGate = new Promise<void>((resolve) => { releaseFirst = resolve; });
+
+    const first = serializeItemPhotoWrite("same-item", async () => {
+      order.push("first-start");
+      await firstGate;
+      order.push("first-end");
+      return "first";
+    });
+    const second = serializeItemPhotoWrite("same-item", async () => {
+      order.push("second");
+      return "second";
+    });
+
+    await Promise.resolve();
+    expect(order).toEqual(["first-start"]);
+    releaseFirst();
+    await expect(Promise.all([first, second])).resolves.toEqual(["first", "second"]);
+    expect(order).toEqual(["first-start", "first-end", "second"]);
   });
 });
 

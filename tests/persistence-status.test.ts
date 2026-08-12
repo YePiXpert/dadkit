@@ -40,17 +40,28 @@ describe("local persistence warnings", () => {
     vi.stubGlobal("navigator", { storage: { persist, estimate } });
     await checkStorageCapacity();
 
-    expect(getChecklistPersistenceStatus().storageWarning).toContain("存储空间已接近上限");
+    expect(getChecklistPersistenceStatus().capacityWarning).toContain("存储空间已接近上限");
     expect(persist).not.toHaveBeenCalled();
 
     estimate.mockResolvedValueOnce({ usage: 40, quota: 100 });
     await checkStorageCapacity();
 
-    expect(getChecklistPersistenceStatus().storageWarning).toBeUndefined();
+    expect(getChecklistPersistenceStatus().capacityWarning).toBeUndefined();
   });
 
   it("keeps write failures visible through the shared warning surface", () => {
     recordStorageWarning("成长记尚未写入本机存储：存储空间不足");
+
+    expect(getChecklistPersistenceStatus().storageWarning).toContain("成长记");
+  });
+
+  it("does not clear a write failure when the capacity estimate recovers", async () => {
+    recordStorageWarning("成长记尚未写入本机存储：存储空间不足");
+    vi.stubGlobal("navigator", {
+      storage: { estimate: vi.fn(async () => ({ usage: 40, quota: 100 })) },
+    });
+
+    await checkStorageCapacity();
 
     expect(getChecklistPersistenceStatus().storageWarning).toContain("成长记");
   });

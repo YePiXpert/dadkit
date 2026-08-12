@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import {
   ChevronRight,
   ClipboardCheck,
@@ -12,6 +13,11 @@ import { AppearanceCard } from "@/components/AppearanceCard";
 import { InstallPromptSettingsEntry } from "@/components/InstallPromptSettingsEntry";
 import { FamilySetupPrompt } from "@/components/household/FamilySetupPrompt";
 import packageJson from "@/package.json";
+
+export const metadata: Metadata = {
+  title: "我的设置 | DadKit",
+  description: "管理家庭同步、成员、清单显示方式、外观与本机备份。",
+};
 
 const SETTINGS_ENTRIES = [
   {

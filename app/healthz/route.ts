@@ -15,6 +15,9 @@ export async function GET() {
       syncProtocolVersion: DADKIT_SYNC_PROTOCOL_VERSION,
       syncSpaceSchemaVersion: SYNC_SPACE_SCHEMA_VERSION,
       storageWritable,
+      ...(process.env.DADKIT_E2E_RUN_ID
+        ? { e2eRunId: process.env.DADKIT_E2E_RUN_ID }
+        : {}),
     },
     {
       status: storageWritable ? 200 : 503,

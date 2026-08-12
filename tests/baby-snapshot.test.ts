@@ -19,6 +19,8 @@ import { loadDeviceIdentity, saveDeviceIdentity } from "@/lib/device-identity/re
 import { createEmptyHousehold } from "@/lib/household/defaults";
 import { loadHousehold, saveHousehold } from "@/lib/household/repository";
 import { createEmptyItemPlanningRecordV1 } from "@/lib/planning/defaults";
+import { useDadKitStore } from "@/lib/store";
+import { generateChecklist } from "@/lib/rules";
 
 let repository: MemoryBabyRepository;
 
@@ -30,6 +32,14 @@ beforeEach(() => {
   installBrowserStorage();
   repository = new MemoryBabyRepository();
   setBabyRepositoryForTests(repository);
+  useDadKitStore.setState({
+    hydrated: false,
+    checklist: [],
+    checklistMode: "lean",
+    customItems: [],
+    hiddenTemplateItemIds: [],
+    pendingRemovalIds: [],
+  });
 });
 
 afterEach(() => {
@@ -121,6 +131,7 @@ describe("baby snapshots and compensated import rollback", () => {
   it("rolls back localStorage and baby IndexedDB when the baby write fails", async () => {
     const oldChecklist = [portableTestItem("old-item")];
     saveChecklist(oldChecklist);
+    useDadKitStore.setState({ hydrated: true, checklist: oldChecklist });
     const oldHousehold = createEmptyHousehold();
     oldHousehold.members["member-a"] = {
       id: "member-a",
@@ -144,6 +155,11 @@ describe("baby snapshots and compensated import rollback", () => {
 
     expect(result).toEqual({ ok: false, message: "导入失败，本地数据已回滚。" });
     expect(loadChecklist().map((item) => item.id)).toEqual(["old-item"]);
+    expect(useDadKitStore.getState().checklist).toEqual(generateChecklist({
+      currentItems: oldChecklist,
+      customItems: [],
+      hiddenTemplateItemIds: [],
+    }));
     expect(await repository.getAllBabyData()).toEqual(beforeBaby);
     expect(loadHousehold()).toEqual(oldHousehold);
     expect(loadDeviceIdentity()).toEqual(oldIdentity);
@@ -172,6 +188,12 @@ describe("baby snapshots and compensated import rollback", () => {
 
     const result = await applyImportDataAsync(incoming);
     expect(result.ok).toBe(true);
+    expect(useDadKitStore.getState().hydrated).toBe(true);
+    expect(useDadKitStore.getState().checklist).toEqual(generateChecklist({
+      currentItems: incoming.checklist,
+      customItems: incoming.customItems,
+      hiddenTemplateItemIds: incoming.hiddenTemplateItemIds,
+    }));
     const household = loadHousehold();
     expect(household.members["custom-before"]).toBeUndefined();
     expect(household.members["legacy-dad-v1"].createdAt).toBeGreaterThan(household.clearedAt);

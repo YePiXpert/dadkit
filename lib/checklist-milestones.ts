@@ -1,6 +1,8 @@
 "use client";
 
-const CHECKLIST_MILESTONES_KEY = "dadkit:v3:checklist-milestones";
+import { recordStorageWarning } from "@/lib/persistence-status";
+
+export const CHECKLIST_MILESTONES_KEY = "dadkit:v3:checklist-milestones";
 
 export type ChecklistMilestones = {
   reachedHalfway: boolean;
@@ -38,12 +40,28 @@ export function saveChecklistMilestones(value: ChecklistMilestones) {
     return;
   }
 
-  window.localStorage.setItem(CHECKLIST_MILESTONES_KEY, JSON.stringify(value));
+  try {
+    window.localStorage.setItem(CHECKLIST_MILESTONES_KEY, JSON.stringify(value));
+  } catch (error) {
+    recordStorageWarning(
+      error instanceof Error && error.message
+        ? `清单里程碑尚未保存：${error.message}`
+        : "清单里程碑尚未保存。",
+    );
+  }
 }
 
 export function clearChecklistMilestones() {
   if (typeof window !== "undefined") {
-    window.localStorage.removeItem(CHECKLIST_MILESTONES_KEY);
+    try {
+      window.localStorage.removeItem(CHECKLIST_MILESTONES_KEY);
+    } catch (error) {
+      recordStorageWarning(
+        error instanceof Error && error.message
+          ? `清单里程碑尚未清除：${error.message}`
+          : "清单里程碑尚未清除。",
+      );
+    }
   }
 }
 
@@ -53,14 +71,18 @@ export function markHalfwayMilestone() {
 }
 
 export function markSectionClearedMilestone(sectionId: string) {
-  const current = loadChecklistMilestones();
+  markSectionClearedMilestones([sectionId]);
+}
 
-  if (current.clearedSectionIds.includes(sectionId)) {
-    return;
-  }
+export function markSectionClearedMilestones(sectionIds: string[]) {
+  const current = loadChecklistMilestones();
+  const nextIds = sectionIds.filter(
+    (sectionId) => !current.clearedSectionIds.includes(sectionId),
+  );
+  if (nextIds.length === 0) return;
 
   saveChecklistMilestones({
     ...current,
-    clearedSectionIds: [...current.clearedSectionIds, sectionId],
+    clearedSectionIds: [...current.clearedSectionIds, ...nextIds],
   });
 }

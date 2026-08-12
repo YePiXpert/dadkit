@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { CareEventDialog } from "@/components/baby/CareEventDialog";
+import { BabyRepositoryErrorState } from "@/components/baby/BabyRepositoryErrorState";
 import { CareEventRow } from "@/components/baby/CareEventRow";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
@@ -22,6 +23,8 @@ import type { CareEvent, CareEventType } from "@/lib/baby/types";
 export function CareTimelineWorkspace() {
   const hydrate = useBabyStore((state) => state.hydrate);
   const hydrated = useBabyStore((state) => state.hydrated);
+  const loading = useBabyStore((state) => state.loading);
+  const repositoryError = useBabyStore((state) => state.repositoryError);
   const activeEvents = useBabyStore((state) => state.activeEvents);
   const timelineEvents = useBabyStore((state) => state.timelineEvents);
   const careClearedAt = useBabyStore((state) => state.careClearedAt);
@@ -56,6 +59,10 @@ export function CareTimelineWorkspace() {
     visible.filter((event) => !activeVisible.some((active) => active.id === event.id)),
     careClearedAt,
   );
+
+  if (repositoryError && !hydrated && !loading) {
+    return <BabyRepositoryErrorState backHref="/baby" error={repositoryError} onRetry={() => void hydrate()} />;
+  }
 
   return (
     <div className="page-shell page-shell-with-nav">

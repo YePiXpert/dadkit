@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Feedback } from "@/components/ui/feedback";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { loadSyncSession } from "@/lib/data/settings-repository";
 import { parsePastedInvite, takeInviteFromLocation } from "@/lib/sync/client-invite";
 
 export function JoinSyncWorkspace() {
@@ -33,21 +34,19 @@ export function JoinSyncWorkspace() {
       setInviteToken(fromFragment);
       setPasted("已读取邀请链接");
     }
-    void import("@/lib/data/settings-repository")
-      .then(({ loadSyncSession }) => {
-        const session = loadSyncSession();
-        setHasExistingSession(Boolean(session));
-        setExistingName(
-          session && "displayName" in session
-            ? session.displayName
-            : session?.spaceName,
-        );
-        setSessionChecked(true);
-      })
-      .catch(() => {
-        setMessage("无法检查当前同步空间，请刷新页面后重试。");
-        setOk(false);
-      });
+    try {
+      const session = loadSyncSession();
+      setHasExistingSession(Boolean(session));
+      setExistingName(
+        session && "displayName" in session
+          ? session.displayName
+          : session?.spaceName,
+      );
+      setSessionChecked(true);
+    } catch {
+      setMessage("无法检查当前同步空间，请刷新页面后重试。");
+      setOk(false);
+    }
     const updateOnline = () => setOnline(navigator.onLine);
     updateOnline();
     window.addEventListener("online", updateOnline);

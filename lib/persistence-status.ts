@@ -9,6 +9,7 @@ export type ChecklistPersistenceStatus = {
   persistedRevision: number;
   lastError?: string;
   storageWarning?: string;
+  capacityWarning?: string;
 };
 
 export type PersistenceDomain =
@@ -31,12 +32,14 @@ export type DomainPersistenceStatus = {
 export type PersistenceOverview = {
   failure?: DomainPersistenceStatus;
   storageWarning?: string;
+  capacityWarning?: string;
 };
 
 export const CHECKLIST_PERSISTENCE_EVENT = "dadkit:persistence-status";
 
 const domainStatuses = new Map<PersistenceDomain, DomainPersistenceStatus>();
 let storageWarning: string | undefined;
+let capacityWarning: string | undefined;
 
 export function getChecklistPersistenceStatus(): ChecklistPersistenceStatus {
   const status = getPersistenceStatus("checklist");
@@ -45,6 +48,7 @@ export function getChecklistPersistenceStatus(): ChecklistPersistenceStatus {
     persistedRevision: status.persistedRevision,
     lastError: status.lastError,
     storageWarning,
+    capacityWarning,
   };
 }
 
@@ -64,6 +68,7 @@ export function getPersistenceOverview(): PersistenceOverview {
   return {
     ...(failure ? { failure: { ...failure } } : {}),
     storageWarning,
+    capacityWarning,
   };
 }
 
@@ -145,6 +150,11 @@ export async function requestPersistentStorage() {
   }
 }
 
+export function dismissCapacityWarning() {
+  capacityWarning = undefined;
+  notifyChecklistPersistenceStatus();
+}
+
 export async function checkStorageCapacity() {
   if (typeof navigator === "undefined" || !navigator.storage) {
     return;
@@ -159,11 +169,12 @@ export async function checkStorageCapacity() {
       estimate.quota > 0 &&
       estimate.usage / estimate.quota >= 0.8
     ) {
-      recordStorageWarning("本机存储空间已接近上限，请先导出备份或清理不需要的照片。");
+      capacityWarning = "本机存储空间已接近上限，请先导出备份或清理不需要的照片。";
+      notifyChecklistPersistenceStatus();
       return;
     }
 
-    dismissStorageWarning();
+    dismissCapacityWarning();
   } catch {
     // Storage persistence is a best-effort browser capability.
   }
@@ -172,6 +183,7 @@ export async function checkStorageCapacity() {
 export function resetChecklistPersistenceStatus() {
   domainStatuses.clear();
   storageWarning = undefined;
+  capacityWarning = undefined;
 }
 
 type PersistenceRetryHandler = () => boolean;

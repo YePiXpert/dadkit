@@ -34,6 +34,18 @@ export default defineConfig({
     },
     {
       name: "webkit-mobile",
+      grepInvert: /@isolated-pwa/,
+      use: {
+        browserName: "webkit",
+        deviceScaleFactor: 2,
+        hasTouch: true,
+        isMobile: true,
+        viewport: { width: 390, height: 844 },
+      },
+    },
+    {
+      name: "webkit-pwa",
+      grep: /@isolated-pwa/,
       use: {
         browserName: "webkit",
         deviceScaleFactor: 2,

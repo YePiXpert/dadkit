@@ -16,8 +16,12 @@ function isThemePreference(value: string | null): value is ThemePreference {
 export function getThemePreference(): ThemePreference {
   if (typeof window === "undefined") return "system";
 
-  const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-  return isThemePreference(stored) ? stored : "system";
+  try {
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+    return isThemePreference(stored) ? stored : "system";
+  } catch {
+    return "system";
+  }
 }
 
 export function resolveTheme(preference: ThemePreference): ResolvedTheme {
@@ -64,7 +68,19 @@ export function useTheme() {
   }, [preference]);
 
   const setPreference = useCallback((next: ThemePreference) => {
-    window.localStorage.setItem(THEME_STORAGE_KEY, next);
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, next);
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? `外观偏好尚未写入本机存储：${error.message}`
+          : "外观偏好尚未写入本机存储。";
+      void import("@/lib/persistence-status")
+        .then(({ recordStorageWarning }) => {
+          recordStorageWarning(message);
+        })
+        .catch(() => undefined);
+    }
     applyThemePreference(next);
     setPreferenceState(next);
     setResolvedTheme(resolveTheme(next));

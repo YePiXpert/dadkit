@@ -8,10 +8,13 @@ import { generateChecklist } from "@/lib/rules";
 import {
   loadChecklist,
   loadDeletedCustomItems,
+  loadHiddenTemplateItemIds,
   loadHiddenTemplateItemStamps,
   loadSnapshotsAsync,
   resetAllData,
   saveChecklist,
+  saveChecklistState,
+  saveDeletedCustomItems,
   saveHiddenTemplateItemStamps,
   STORAGE_KEYS,
   exportData,
@@ -192,6 +195,48 @@ describe("v3 checklist store", () => {
     );
     expect(loadChecklist()).toEqual(before);
     expect(loadItemPlanning()).toEqual(planning);
+  });
+
+  it("rolls back checklist, planning, merge metadata and milestones as one reset transaction", async () => {
+    installBrowserStorage();
+    const custom = testItem("atomic-custom", { status: "packed" });
+    const beforeChecklist = [custom];
+    saveChecklistState({
+      checklist: beforeChecklist,
+      customItems: [custom],
+      hiddenTemplateItemIds: ["mom-id-card"],
+    });
+    const planning = createEmptyItemPlanning();
+    planning.items[custom.id] = createEmptyItemPlanningRecord();
+    saveItemPlanning(planning);
+    useItemPlanningStore.setState({ hydrated: true, planning });
+    saveHiddenTemplateItemStamps({
+      "mom-id-card": { hidden: true, updatedAt: 10 },
+    });
+    saveDeletedCustomItems({ "older-custom": 5 });
+    markSectionClearedMilestone("mom");
+    useDadKitStore.setState({
+      hydrated: true,
+      checklist: beforeChecklist,
+      customItems: [custom],
+      hiddenTemplateItemIds: ["mom-id-card"],
+      pendingRemovalIds: [],
+    });
+    failNextStorageWrite(STORAGE_KEYS.hiddenTemplateStamps);
+
+    await expect(useDadKitStore.getState().resetChecklist()).rejects.toThrow(
+      "清单重建失败，原有清单已保留。",
+    );
+
+    expect(loadChecklist()).toEqual(beforeChecklist);
+    expect(loadHiddenTemplateItemIds()).toEqual(["mom-id-card"]);
+    expect(loadItemPlanning()).toEqual(planning);
+    expect(loadHiddenTemplateItemStamps()).toEqual({
+      "mom-id-card": { hidden: true, updatedAt: 10 },
+    });
+    expect(loadDeletedCustomItems()).toEqual({ "older-custom": 5 });
+    expect(loadChecklistMilestones().clearedSectionIds).toEqual(["mom"]);
+    expect(useDadKitStore.getState().checklist).toEqual(beforeChecklist);
   });
 
   it("aborts rebuild when the recovery snapshot cannot be persisted", async () => {

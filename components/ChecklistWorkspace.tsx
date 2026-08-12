@@ -26,7 +26,7 @@ import { formatChecklistAsText } from "@/lib/checklist-text";
 import {
   loadChecklistMilestones,
   markHalfwayMilestone,
-  markSectionClearedMilestone,
+  markSectionClearedMilestones,
 } from "@/lib/checklist-milestones";
 import { matchesChecklistSearch } from "@/lib/checklist-search";
 import { showAppToast } from "@/lib/app-toast";
@@ -161,18 +161,22 @@ export function ChecklistWorkspace() {
       showAppToast({ message: "待产包已经准备过半，继续稳稳推进。", tone: "success" });
     }
 
-    const newlyClearedSection = [...completedSectionIds].find(
+    const newlyClearedSections = [...completedSectionIds].filter(
       (sectionId) =>
         !previousSections.has(sectionId) &&
         !milestones.clearedSectionIds.includes(sectionId),
     );
-    if (newlyClearedSection) {
-      markSectionClearedMilestone(newlyClearedSection);
-      const label = allSections.find(
-        (section) => section.id === newlyClearedSection,
-      )?.label;
+    if (newlyClearedSections.length > 0) {
+      markSectionClearedMilestones(newlyClearedSections);
+      const labels = newlyClearedSections.map(
+        (sectionId) =>
+          allSections.find((section) => section.id === sectionId)?.label ?? "一个分类",
+      );
       showAppToast({
-        message: `${label ?? "一个分类"}已经准备完成，真棒。`,
+        message:
+          labels.length === 1
+            ? `${labels[0]}已经准备完成，真棒。`
+            : `同时完成 ${labels.length} 个分类：${labels.slice(0, 3).join("、")}${labels.length > 3 ? "等" : ""}。`,
         tone: "success",
       });
     }
@@ -198,7 +202,16 @@ export function ChecklistWorkspace() {
   }
 
   function confirmBulkPack() {
-    const changed = markItemsPacked(bulkPackingIds);
+    let changed: number;
+    try {
+      changed = markItemsPacked(bulkPackingIds);
+    } catch (error) {
+      showAppToast({
+        message: error instanceof Error && error.message ? error.message : "批量装包失败，请稍后重试。",
+        tone: "warning",
+      });
+      return;
+    }
     if (changed > 0) {
       showAppToast({ message: `已将 ${changed} 件物品标记为已装包。`, tone: "success" });
     }

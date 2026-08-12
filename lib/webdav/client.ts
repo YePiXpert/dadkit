@@ -8,6 +8,14 @@ import {
 } from "@/lib/storage";
 import { mergeExportData } from "@/lib/sync/merge";
 import { calculateChecksum } from "@/lib/webdav/checksum";
+import {
+  MAX_WEBDAV_BACKUP_BYTES,
+  WEBDAV_PROXY_METADATA_HEADER,
+  WEBDAV_PROXY_VERSION_HEADER,
+  WEBDAV_REQUEST_TIMEOUT_MS,
+  encodeWebDavProxyMetadata,
+  utf8ByteLength,
+} from "@/lib/webdav/limits";
 import type {
   DadKitWebDavBackup,
   WebDavConfig,
@@ -24,7 +32,6 @@ function dadKitContentChecksum(data: { exportedAt: string }) {
   return calculateChecksum({ ...data, exportedAt: "" });
 }
 
-const MAX_BACKUP_BYTES = 32 * 1024 * 1024;
 const WEB_DAV_PROXY_PATH = "/api/webdav";
 const PROXY_HEADER = "x-dadkit-webdav-proxy";
 const PROXY_ERROR_HEADER = "x-dadkit-webdav-proxy-error";
@@ -137,6 +144,10 @@ export async function uploadWebDavBackup(
       mergedData,
       options.deviceId ?? "unknown-device",
     );
+    const serializedBackup = JSON.stringify(backup, null, 2);
+    if (utf8ByteLength(serializedBackup) > MAX_WEBDAV_BACKUP_BYTES) {
+      return { ok: false, message: "WebDAV 备份超过 32 MiB，未上传。" };
+    }
 
     await ensureRemoteDir(config, secret);
     const response = await webDavFetch(backupUrl(config), {
@@ -145,7 +156,7 @@ export async function uploadWebDavBackup(
         Authorization: buildAuthHeader(config.username, secret),
         "Content-Type": "application/json; charset=utf-8",
       },
-      body: JSON.stringify(backup, null, 2),
+      body: serializedBackup,
     });
 
     if (!response.ok) {
@@ -195,11 +206,7 @@ export async function downloadWebDavBackup(
       };
     }
 
-    const text = await response.text();
-
-    if (text.length > MAX_BACKUP_BYTES) {
-      return { ok: false, message: "远端备份过大，未下载。" };
-    }
+    const text = await readLimitedWebDavResponseText(response);
 
     const parsed = JSON.parse(text) as unknown;
 
@@ -320,9 +327,7 @@ async function webDavFetch(
   }
 
   try {
-    return await fetch(input, {
-      ...init,
-    });
+    return await fetchWithTimeout(input, init);
   } catch (error) {
     if (error instanceof TypeError) {
       throw new Error("网络连接失败，请检查 WebDAV 地址、HTTPS 和网络后重试。");
@@ -347,17 +352,23 @@ async function browserProxyWebDavFetch(
   init: RequestInit,
 ): Promise<Response> {
   try {
-    const response = await fetch(WEB_DAV_PROXY_PATH, {
+    const body = typeof init.body === "string" ? init.body : undefined;
+    if (body && utf8ByteLength(body) > MAX_WEBDAV_BACKUP_BYTES) {
+      throw new Error("WebDAV 备份超过 32 MiB，未发送到同源代理。");
+    }
+    const response = await fetchWithTimeout(WEB_DAV_PROXY_PATH, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json; charset=utf-8",
+        "Content-Type": "application/octet-stream",
+        [WEBDAV_PROXY_VERSION_HEADER]: "2",
+        [WEBDAV_PROXY_METADATA_HEADER]: encodeWebDavProxyMetadata({
+          url: input,
+          method: init.method ?? "GET",
+          headers: headersToRecord(init.headers),
+        }),
       },
-      body: JSON.stringify({
-        url: input,
-        method: init.method ?? "GET",
-        headers: headersToRecord(init.headers),
-        body: typeof init.body === "string" ? init.body : undefined,
-      }),
+      body,
+      signal: init.signal,
     });
 
     if (response.headers.get(PROXY_HEADER) !== "1") {
@@ -379,6 +390,68 @@ async function browserProxyWebDavFetch(
     }
 
     throw error;
+  }
+}
+
+async function fetchWithTimeout(input: string, init: RequestInit) {
+  const controller = new AbortController();
+  let timedOut = false;
+  const abortFromCaller = () => controller.abort(init.signal?.reason);
+  if (init.signal?.aborted) abortFromCaller();
+  else init.signal?.addEventListener("abort", abortFromCaller, { once: true });
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, WEBDAV_REQUEST_TIMEOUT_MS);
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (timedOut) {
+      throw new Error("WebDAV 请求等待超过 30 秒，已取消，请稍后重试。");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+    init.signal?.removeEventListener("abort", abortFromCaller);
+  }
+}
+
+export async function readLimitedWebDavResponseText(
+  response: Response,
+  maxBytes = MAX_WEBDAV_BACKUP_BYTES,
+) {
+  const contentLength = response.headers.get("content-length");
+  if (
+    contentLength &&
+    /^\d+$/.test(contentLength) &&
+    Number(contentLength) > maxBytes
+  ) {
+    await response.body?.cancel().catch(() => undefined);
+    throw new Error("远端备份超过 32 MiB，已停止下载。");
+  }
+
+  if (!response.body) return "";
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  let totalBytes = 0;
+  let text = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        throw new Error("远端备份超过 32 MiB，已停止下载。");
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+    text += decoder.decode();
+    return text;
+  } finally {
+    reader.releaseLock();
   }
 }
 

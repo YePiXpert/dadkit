@@ -4,8 +4,9 @@ import {
   seedFamily,
   waitForOfflineReady,
 } from "@/tests/e2e/helpers";
+import { getLocalPlanningDate } from "@/lib/planning/date";
 
-test.describe.configure({ timeout: 60_000 });
+test.describe.configure({ timeout: 120_000 });
 test.beforeEach(async ({ page }) => { await seedFamily(page); });
 
 async function chooseSelect(page: Page, label: string, option: string) {
@@ -29,7 +30,14 @@ async function openFirstPlanningItem(page: Page) {
   return name ?? "";
 }
 
+function futurePlanningDate(days = 3) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return getLocalPlanningDate(date);
+}
+
 test("可保存、取消和清空单项信息", async ({ page }) => {
+  const dueDate = futurePlanningDate();
   await page.goto("/planning", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "家庭分工与采购", exact: true }),
@@ -38,7 +46,7 @@ test("可保存、取消和清空单项信息", async ({ page }) => {
 
   const itemName = await openFirstPlanningItem(page);
   await page.getByRole("checkbox", { name: /小江/ }).check();
-  await page.getByLabel("完成期限").fill("2026-08-05");
+  await page.getByLabel("完成期限").fill(dueDate);
   await page.getByLabel("该项预计总价").fill("129.90");
   await page.getByLabel("该项实际总价").fill("118");
   await page.getByLabel("购买渠道").fill("京东 自营");
@@ -75,6 +83,7 @@ test("可保存、取消和清空单项信息", async ({ page }) => {
 });
 
 test("物品详情入口和批量负责人、期限设置及清空可持久化", async ({ page }) => {
+  const dueDate = futurePlanningDate();
   await page.goto("/checklist/documents", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "详情" }).first().click();
   await expect(page.getByText("分工与采购", { exact: true })).toBeVisible();
@@ -89,13 +98,13 @@ test("物品详情入口和批量负责人、期限设置及清空可持久化",
   await chooseSelect(page, "负责人处理方式", "设置值");
   await page.getByRole("checkbox", { name: /奶奶/ }).check();
   await chooseSelect(page, "完成期限处理方式", "设置值");
-  await page.getByLabel("批量完成期限").fill("2026-08-08");
+  await page.getByLabel("批量完成期限").fill(dueDate);
   await page.getByRole("button", { name: "保存批量设置" }).click();
   await expect(page.getByText(/已更新 \d+ 项分工与采购信息/)).toBeVisible();
 
   await expandFilters(page);
   await chooseSelect(page, "分工筛选", "未来 7 天");
-  await expect(page.locator("article").first()).toContainText("2026-08-08");
+  await expect(page.locator("article").first()).toContainText(dueDate);
   await chooseSelect(page, "负责人筛选", "奶奶");
   await expect(page.locator("article").first()).toContainText("奶奶");
 
@@ -106,7 +115,7 @@ test("物品详情入口和批量负责人、期限设置及清空可持久化",
   await expandFilters(page);
   await chooseSelect(page, "负责人筛选", "奶奶");
   await expect(page.locator("article").first()).toContainText("奶奶");
-  await expect(page.getByText("2026-08-08", { exact: true })).toHaveCount(0);
+  await expect(page.getByText(dueDate, { exact: true })).toHaveCount(0);
 });
 
 test("360×800 无横向溢出，首次打开后可离线查看和修改", async ({

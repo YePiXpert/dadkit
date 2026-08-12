@@ -70,14 +70,23 @@ export function AddItemDialog({ defaultCategory = "mom_labor", trigger }: AddIte
       return;
     }
 
-    const result = addCustomItem({
-      name,
-      category,
-      priority: "recommended",
-      preparationKind,
-      quantity: quantity || undefined,
-      note: note || undefined,
-    });
+    let result;
+    try {
+      result = addCustomItem({
+        name,
+        category,
+        priority: "recommended",
+        preparationKind,
+        quantity: quantity || undefined,
+        note: note || undefined,
+      });
+    } catch (error) {
+      showAppToast({
+        message: error instanceof Error && error.message ? error.message : "物品保存失败，请稍后重试。",
+        tone: "warning",
+      });
+      return;
+    }
     if (result.merged) {
       showAppToast({ message: "已与现有物品合并", tone: "success" });
     }

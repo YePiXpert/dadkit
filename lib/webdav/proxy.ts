@@ -4,6 +4,11 @@ import { request as httpsRequest, type RequestOptions } from "node:https";
 import { BlockList, isIP, type LookupFunction } from "node:net";
 import { domainToASCII } from "node:url";
 
+import {
+  WEBDAV_PROXY_VERSION_HEADER,
+  decodeWebDavProxyMetadata,
+} from "@/lib/webdav/limits";
+
 const ALLOWED_METHODS = new Set([
   "GET",
   "HEAD",
@@ -134,9 +139,13 @@ export function assertWebDavProxyRequest(
     ?.trim()
     .toLowerCase();
 
-  if (mediaType !== "application/json") {
+  const isV2 = request.headers.get(WEBDAV_PROXY_VERSION_HEADER) === "2";
+  if (
+    (!isV2 && mediaType !== "application/json") ||
+    (isV2 && mediaType !== "application/octet-stream")
+  ) {
     throw new WebDavProxyError(
-      "WebDAV 代理只接受 application/json 请求。",
+      "WebDAV 代理请求类型不受支持。",
       415,
     );
   }
@@ -317,6 +326,18 @@ export function parseProxyPayload(rawBody: string): WebDavProxyPayload {
     headers: isStringRecord(parsed.headers) ? parsed.headers : undefined,
     body: parsed.body,
   };
+}
+
+export function parseProxyV2Metadata(encoded: string): WebDavProxyPayload {
+  let parsed: unknown;
+  try {
+    parsed = decodeWebDavProxyMetadata(encoded);
+  } catch {
+    throw new WebDavProxyError("WebDAV 代理元数据格式不正确。", 400);
+  }
+
+  const payload = parseProxyPayload(JSON.stringify(parsed));
+  return { ...payload, body: undefined };
 }
 
 export function isWebDavHostAllowed(

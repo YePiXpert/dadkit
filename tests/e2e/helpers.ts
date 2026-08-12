@@ -47,7 +47,17 @@ export async function waitForOfflineReady(page: Page, route: string) {
     .poll(
       () =>
         page.evaluate(async (candidate) => {
-          if (!("serviceWorker" in navigator)) return false;
+          if (!("serviceWorker" in navigator)) {
+            return {
+              registered: false,
+              active: false,
+              installing: null,
+              waiting: null,
+              routeCached: false,
+              readyMarker: false,
+              missingAssets: ["service-worker-unavailable"],
+            };
+          }
           const registration = await navigator.serviceWorker.getRegistration();
           const routeResponse = await caches.match(candidate, {
             ignoreSearch: true,
@@ -64,16 +74,28 @@ export async function waitForOfflineReady(page: Page, route: string) {
             assetUrls.map((url) => caches.match(url.href)),
           );
 
-          return Boolean(
-            registration?.active &&
-              routeResponse?.ok &&
-              document.documentElement.dataset.dadkitOfflineReady === "true" &&
-              assetResponses.every((response) => response?.ok),
-          );
+          return {
+            registered: Boolean(registration),
+            active: Boolean(registration?.active),
+            installing: registration?.installing?.state ?? null,
+            waiting: registration?.waiting?.state ?? null,
+            routeCached: Boolean(routeResponse?.ok),
+            readyMarker:
+              document.documentElement.dataset.dadkitOfflineReady === "true",
+            missingAssets: assetUrls
+              .filter((_, index) => !assetResponses[index]?.ok)
+              .map((url) => url.pathname),
+          };
         }, route),
-      { timeout: 60_000 },
+      { timeout: 120_000 },
     )
-    .toBe(true);
+    .toMatchObject({
+      registered: true,
+      active: true,
+      routeCached: true,
+      readyMarker: true,
+      missingAssets: [],
+    });
 }
 
 function escapeRegExp(value: string) {

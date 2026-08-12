@@ -117,7 +117,7 @@ export const useBabyStore = create<BabyState>((set, get) => ({
       });
     } catch (error) {
       set({
-        hydrated: true,
+        hydrated: false,
         loading: false,
         repositoryError: errorMessage(error),
       });
@@ -252,7 +252,7 @@ export const useBabyStore = create<BabyState>((set, get) => ({
     return isCareEvent(next) ? next : fail("修改后的记录无效。");
   }),
 
-  deleteEvent: async (eventId) => write(async () => {
+  deleteEvent: async (eventId) => enqueueCareWrite(() => write(async () => {
     const repository = getBabyRepository();
     const data = await repository.getAllBabyData();
     const current = data.care.events.find((event) => event.id === eventId);
@@ -263,7 +263,7 @@ export const useBabyStore = create<BabyState>((set, get) => ({
     publishDataChange("baby", eventId);
     await refreshEventState(true);
     return ok();
-  }),
+  })),
 
   loadRecentEvents: async () => { await refreshEventState(false); },
 
@@ -303,7 +303,7 @@ export const useBabyStore = create<BabyState>((set, get) => ({
 async function writeEvent(
   build: (data: BabyPortableData, timestamp: number) => Promise<CareEvent | CareActionResult> | CareEvent | CareActionResult,
 ) {
-  return write(async () => {
+  return enqueueCareWrite(() => write(async () => {
     const repository = getBabyRepository();
     const data = await repository.getAllBabyData();
     const timestamp = await nextTimestamp(data);
@@ -314,7 +314,18 @@ async function writeEvent(
     publishDataChange("baby", built.id);
     await refreshEventState(true);
     return ok();
-  });
+  }));
+}
+
+let careWriteTail: Promise<unknown> = Promise.resolve();
+
+function enqueueCareWrite<T>(operation: () => Promise<T>): Promise<T> {
+  const result = careWriteTail.then(operation, operation);
+  careWriteTail = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
 }
 
 async function refreshEventState(changed: boolean) {

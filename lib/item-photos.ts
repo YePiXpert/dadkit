@@ -324,44 +324,70 @@ function createPhotoUrlLease(
   };
 }
 
-export async function saveItemPhoto(itemId: string, sourceBlob: Blob) {
-  const normalizedItemId = normalizeItemId(itemId);
-  const compressed = await compressItemPhoto(sourceBlob);
-  const database = await requireItemPhotoDatabase();
-  const record: ItemPhotoRecord = {
-    itemId: normalizedItemId,
-    blob: compressed.blob,
-    width: compressed.width,
-    height: compressed.height,
-    updatedAt: new Date().toISOString(),
-  };
-  const storedRecord = await toStoredItemPhotoRecord(record);
-  const transaction = database.transaction(ITEM_PHOTO_STORE, "readwrite");
-  const completion = waitForTransaction(transaction);
-  const request = transaction.objectStore(ITEM_PHOTO_STORE).put(storedRecord);
+const itemPhotoWriteTails = new Map<string, Promise<void>>();
 
-  await Promise.all([waitForRequest(request), completion]);
-  emitItemPhotoChange(normalizedItemId);
-
-  return record;
+export function serializeItemPhotoWrite<T>(
+  itemId: string,
+  operation: () => Promise<T>,
+) {
+  const previous = itemPhotoWriteTails.get(itemId) ?? Promise.resolve();
+  const result = previous.then(operation, operation);
+  const tail = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  itemPhotoWriteTails.set(itemId, tail);
+  void tail.then(() => {
+    if (itemPhotoWriteTails.get(itemId) === tail) {
+      itemPhotoWriteTails.delete(itemId);
+    }
+  });
+  return result;
 }
 
-export async function deleteItemPhoto(itemId: string) {
+export function saveItemPhoto(itemId: string, sourceBlob: Blob) {
   const normalizedItemId = normalizeItemId(itemId);
-  const database = await openItemPhotoDatabase();
-
-  if (database) {
+  return serializeItemPhotoWrite(normalizedItemId, async () => {
+    const compressed = await compressItemPhoto(sourceBlob);
+    const database = await requireItemPhotoDatabase();
+    const record: ItemPhotoRecord = {
+      itemId: normalizedItemId,
+      blob: compressed.blob,
+      width: compressed.width,
+      height: compressed.height,
+      updatedAt: new Date().toISOString(),
+    };
+    const storedRecord = await toStoredItemPhotoRecord(record);
     const transaction = database.transaction(ITEM_PHOTO_STORE, "readwrite");
     const completion = waitForTransaction(transaction);
+    const request = transaction.objectStore(ITEM_PHOTO_STORE).put(storedRecord);
 
-    transaction.objectStore(ITEM_PHOTO_STORE).delete(normalizedItemId);
-    await completion;
-  }
+    await Promise.all([waitForRequest(request), completion]);
+    emitItemPhotoChange(normalizedItemId);
 
-  emitItemPhotoChange(normalizedItemId);
+    return record;
+  });
+}
+
+export function deleteItemPhoto(itemId: string) {
+  const normalizedItemId = normalizeItemId(itemId);
+  return serializeItemPhotoWrite(normalizedItemId, async () => {
+    const database = await openItemPhotoDatabase();
+
+    if (database) {
+      const transaction = database.transaction(ITEM_PHOTO_STORE, "readwrite");
+      const completion = waitForTransaction(transaction);
+
+      transaction.objectStore(ITEM_PHOTO_STORE).delete(normalizedItemId);
+      await completion;
+    }
+
+    emitItemPhotoChange(normalizedItemId);
+  });
 }
 
 export async function clearItemPhotos() {
+  await Promise.all(itemPhotoWriteTails.values());
   const database = await openItemPhotoDatabase();
 
   if (database) {

@@ -15,6 +15,7 @@ import { useHouseholdStore } from "@/lib/household/store";
 export function BabyHomeCard() {
   const hydrate = useBabyStore((state) => state.hydrate);
   const hydrated = useBabyStore((state) => state.hydrated);
+  const repositoryError = useBabyStore((state) => state.repositoryError);
   const profile = useBabyStore((state) => state.profile);
   const recentEvents = useBabyStore((state) => state.recentEvents);
   const todayEvents = useBabyStore((state) => state.todayEvents);
@@ -51,7 +52,9 @@ export function BabyHomeCard() {
         <span className="mt-1 block break-words text-[13px] leading-5 text-muted-foreground">
           {enabled
             ? `${lastFeeding ? `上次喂养${formatCareRelativeTime(lastFeeding.type === "bottle" ? lastFeeding.occurredAt : lastFeeding.startAt, now)}` : "还没有喂养记录"} · 今日 ${summary.totalRecordCount} 条${activeEvents.length ? ` · ${activeEvents.some((event) => event.type === "breastfeeding") ? "亲喂" : "睡眠/吸奶"}计时中` : ""}`
-            : hydrated
+            : repositoryError
+              ? "宝宝记录暂不可用，点此重新尝试。"
+              : hydrated
               ? `宝宝出生后，可快速记录喂养、尿布和睡眠。${currentDeviceText}`
               : "正在读取宝宝记录…"}
           {enabled ? currentDeviceText : ""}

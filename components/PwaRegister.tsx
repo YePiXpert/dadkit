@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const OFFLINE_READY_ATTRIBUTE = "data-dadkit-offline-ready";
+const WORKER_CACHE_TIMEOUT_MS = 60_000;
+const BACKGROUND_CACHE_DELAY_MS = 5 * 60_000;
 
 function getNextStaticAssets(entries: PerformanceEntry[]) {
   return entries
@@ -28,7 +31,7 @@ function requestWorkerCache(
     const timeout = window.setTimeout(() => {
       channel.port1.close();
       reject(new Error("Service Worker cache request timed out."));
-    }, 15_000);
+    }, WORKER_CACHE_TIMEOUT_MS);
 
     channel.port1.onmessage = (event: MessageEvent<{ ok?: boolean }>) => {
       window.clearTimeout(timeout);
@@ -41,6 +44,7 @@ function requestWorkerCache(
 }
 
 export function PwaRegister() {
+  const pathname = usePathname();
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker>();
 
   useEffect(() => {
@@ -85,6 +89,21 @@ export function PwaRegister() {
   }, []);
 
   useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+
+    void navigator.serviceWorker.ready
+      .then((registration) => {
+        registration.active?.postMessage({
+          type: "CACHE_ROUTE",
+          url: pathname,
+        });
+      })
+      .catch(() => {
+        // Runtime route caching is best-effort.
+      });
+  }, [pathname]);
+
+  useEffect(() => {
     if (!("serviceWorker" in navigator)) {
       return;
     }
@@ -92,9 +111,11 @@ export function PwaRegister() {
     let refreshing = false;
     let cacheSequence = 0;
     let cacheWork = Promise.resolve();
+    const shouldFillBackgroundCache = window.location.pathname === "/";
     let assetObserver: PerformanceObserver | undefined;
     let activeWorker: ServiceWorker | undefined;
     let registrationTimer: number | undefined;
+    let backgroundCacheTimer: number | undefined;
     const hadController = Boolean(navigator.serviceWorker.controller);
     const root = document.documentElement;
     const pendingAssets = new Set<string>();
@@ -217,6 +238,12 @@ export function PwaRegister() {
           }
         });
 
+        if (shouldFillBackgroundCache) {
+          backgroundCacheTimer = window.setTimeout(() => {
+            worker.postMessage({ type: "CACHE_BACKGROUND_ROUTES" });
+          }, BACKGROUND_CACHE_DELAY_MS);
+        }
+
         // 浏览器自身会定期检查 Service Worker 更新，不再每次加载强制 update()。
         })
         .catch(() => {
@@ -228,17 +255,15 @@ export function PwaRegister() {
       registrationTimer = window.setTimeout(startRegistration, 3_000);
     }
 
-    if (document.readyState === "complete") {
-      scheduleRegistration();
-    } else {
-      window.addEventListener("load", scheduleRegistration, { once: true });
-    }
+    scheduleRegistration();
 
     return () => {
       assetObserver?.disconnect();
-      window.removeEventListener("load", scheduleRegistration);
       if (registrationTimer !== undefined) {
         window.clearTimeout(registrationTimer);
+      }
+      if (backgroundCacheTimer !== undefined) {
+        window.clearTimeout(backgroundCacheTimer);
       }
       root.removeAttribute(OFFLINE_READY_ATTRIBUTE);
       navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);

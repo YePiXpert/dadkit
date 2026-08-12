@@ -19,7 +19,7 @@ export {
   saveChecklistMode,
   saveChecklistState,
   saveChecklistStateAndClearPlanning,
-  saveChecklistStateTransaction,
+  saveChecklistStateWithMetadata,
   saveChecklistStateSoon,
   saveCustomItems,
   saveDeletedCustomItems,
@@ -28,4 +28,5 @@ export {
   saveHiddenTemplateItemStamps,
   type ChecklistPersistenceStatus,
   type ChecklistStatePayload,
+  type ChecklistStateMetadata,
 } from "@/lib/storage";

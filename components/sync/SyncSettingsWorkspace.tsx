@@ -68,7 +68,11 @@ function roleLabel(role: SyncSpaceRole) {
 }
 
 export function SyncSettingsWorkspace() {
-  const syncStatus = useSyncStatusStore();
+  const syncing = useSyncStatusStore((state) => state.syncing);
+  const lastSyncAt = useSyncStatusStore((state) => state.lastSyncAt);
+  const lastError = useSyncStatusStore((state) => state.lastError);
+  const retryAt = useSyncStatusStore((state) => state.retryAt);
+  const syncStatus = { syncing, lastSyncAt, lastError, retryAt };
   const [online, setOnline] = useState(true);
   const [service, setService] = useState<SyncServiceInfo>();
   const [serviceError, setServiceError] = useState("");

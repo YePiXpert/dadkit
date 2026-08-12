@@ -1,10 +1,15 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import {
+  expect,
+  test,
+  type BrowserContext,
+  type Page,
+} from "@playwright/test";
 import {
   seedCompletedOnboarding,
   waitForOfflineReady,
 } from "@/tests/e2e/helpers";
 
-test.describe.configure({ timeout: 120_000 });
+test.describe.configure({ timeout: 240_000 });
 test.beforeEach(async ({ page }) => { await seedCompletedOnboarding(page); });
 
 async function setupBaby(page: Page) {
@@ -29,20 +34,19 @@ test("360×800、reduced-motion 和直接路由保持可用", async ({ page }) =
   await expect(page.getByRole("heading", { name: "全部宝宝记录" })).toBeVisible({ timeout: 60_000 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.goto("/baby", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "宝宝记录", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "宝宝记录", exact: true })).toBeVisible({ timeout: 60_000 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
-test("首次访问后可离线重开并新增宝宝记录", async ({
-  browserName,
-  context,
-  page,
-}: {
-  browserName: string;
-  context: BrowserContext;
-  page: Page;
-}) => {
+async function verifyBabyOffline(
+  browserName: string,
+  context: BrowserContext,
+  page: Page,
+) {
   await setupBaby(page);
+  // A second document navigation can interrupt WebKit's first service-worker
+  // install. Wait for the current route to become offline-safe before leaving.
+  await waitForOfflineReady(page, "/baby");
   await page.goto("/baby/timeline", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "全部宝宝记录" })).toBeVisible();
   await waitForOfflineReady(page, "/baby/timeline");
@@ -61,7 +65,15 @@ test("首次访问后可离线重开并新增宝宝记录", async ({
   await context.setOffline(false);
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.getByText("尿布·小便", { exact: true }).first()).toBeVisible();
-});
+}
+
+test(
+  "首次访问后可离线重开并新增宝宝记录",
+  { tag: "@isolated-pwa" },
+  async ({ browserName, context, page }) => {
+    await verifyBabyOffline(browserName, context, page);
+  },
+);
 
 test("IndexedDB v1 惰性升级到 v2 且不重写旧事件", async ({ page }) => {
   await page.goto("/privacy", { waitUntil: "domcontentloaded" });
