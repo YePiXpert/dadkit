@@ -70,12 +70,17 @@ export function publishDataChange(domain: DataDomain, entityId?: string) {
 }
 
 export function subscribeToDataChanges(listener: DataChangeListener) {
+  // Register first so the retained-signal catch-up reaches this subscriber.
+  // Without it, both the
+  // BroadcastChannel message and the storage event are already gone by the
+  // time a throttled background tab installs its listener.
+  listeners.add(listener);
   try {
     ensureInitialized();
   } catch {
     // Keep the in-process subscription usable even without browser event APIs.
   }
-  listeners.add(listener);
+  deliverRetainedSignal();
   return () => listeners.delete(listener);
 }
 
@@ -105,8 +110,26 @@ function ensureInitialized() {
   });
 }
 
+function deliverRetainedSignal() {
+  if (typeof window === "undefined") return;
+  // Storage events only fire for writes made after their listener exists. Read
+  // the retained signal whenever a consumer subscribes so a late subscriber
+  // still refreshes even if the bus itself was initialized earlier. A
+  // concurrent storage event is harmless because deliver() deduplicates it.
+  try {
+    const retainedSignal = window.localStorage.getItem(DATA_CHANGE_SIGNAL_KEY);
+    if (retainedSignal) deliver(JSON.parse(retainedSignal));
+  } catch {
+    // Missing/blocked storage leaves the live transports available.
+  }
+}
+
 function deliver(value: unknown) {
   if (!isDataChangeMessage(value) || value.sourceId === sourceId) return;
+  // A live transport can arrive after the bus is initialized but before the
+  // application subscriber mounts. Leave that message unconsumed so the
+  // retained-signal catch-up can deliver it when a listener is available.
+  if (listeners.size === 0) return;
   const messageId = `${value.sourceId}:${value.version}`;
   if (deliveredMessageIds.has(messageId)) return;
   deliveredMessageIds.add(messageId);
