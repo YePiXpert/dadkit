@@ -23,12 +23,14 @@ type DataChangeListener = (message: DataChangeMessage) => void;
 export const DATA_CHANGE_SIGNAL_KEY = "dadkit:v3:data-change-signal";
 export const SYNC_SETTINGS_CHANGE_EVENT = "dadkit:sync-settings-change";
 const DATA_CHANGE_CHANNEL = "dadkit:data-change:v1";
+const DATA_CHANGE_REPLAY_INTERVAL_MS = 1_000;
 
 const listeners = new Set<DataChangeListener>();
 const sourceId = createSourceId();
 let sequence = 0;
 let channel: BroadcastChannel | undefined;
 let initialized = false;
+let replayTimer: number | undefined;
 const deliveredMessageIds = new Set<string>();
 const deliveredMessageOrder: string[] = [];
 const MAX_DELIVERED_MESSAGE_IDS = 128;
@@ -63,7 +65,12 @@ export function publishDataChange(domain: DataDomain, entityId?: string) {
   // message under load. Publish the small signal through both transports;
   // receivers deduplicate the identical message before refreshing storage.
   try {
-    window.localStorage.setItem(DATA_CHANGE_SIGNAL_KEY, JSON.stringify(message));
+    const serialized = JSON.stringify(message);
+    // Keep the legacy shared key for already-open older clients, and retain a
+    // durable slot per domain so an unrelated change cannot overwrite the only
+    // recoverable hospital/checklist/etc. notification.
+    window.localStorage.setItem(DATA_CHANGE_SIGNAL_KEY, serialized);
+    window.localStorage.setItem(domainSignalKey(domain), serialized);
   } catch {
     // Cross-tab refresh is best effort and must never make a successful write fail.
   }
@@ -80,8 +87,12 @@ export function subscribeToDataChanges(listener: DataChangeListener) {
   } catch {
     // Keep the in-process subscription usable even without browser event APIs.
   }
-  deliverRetainedSignal();
-  return () => listeners.delete(listener);
+  deliverRetainedSignals();
+  ensureReplayTimer();
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) stopReplayTimer();
+  };
 }
 
 function ensureInitialized() {
@@ -101,7 +112,7 @@ function ensureInitialized() {
   }
 
   window.addEventListener("storage", (event: StorageEvent) => {
-    if (event.key !== DATA_CHANGE_SIGNAL_KEY || !event.newValue) return;
+    if (!isSignalKey(event.key) || !event.newValue) return;
     try {
       deliver(JSON.parse(event.newValue));
     } catch {
@@ -110,18 +121,50 @@ function ensureInitialized() {
   });
 }
 
-function deliverRetainedSignal() {
+function deliverRetainedSignals() {
   if (typeof window === "undefined") return;
   // Storage events only fire for writes made after their listener exists. Read
-  // the retained signal whenever a consumer subscribes so a late subscriber
-  // still refreshes even if the bus itself was initialized earlier. A
-  // concurrent storage event is harmless because deliver() deduplicates it.
-  try {
-    const retainedSignal = window.localStorage.getItem(DATA_CHANGE_SIGNAL_KEY);
-    if (retainedSignal) deliver(JSON.parse(retainedSignal));
-  } catch {
-    // Missing/blocked storage leaves the live transports available.
+  // retained signals when subscribing and periodically thereafter. This also
+  // recovers from WebKit dropping every live transport while under load.
+  for (const key of [
+    DATA_CHANGE_SIGNAL_KEY,
+    ...[...DATA_DOMAINS].map(domainSignalKey),
+  ]) {
+    try {
+      const retainedSignal = window.localStorage.getItem(key);
+      if (retainedSignal) deliver(JSON.parse(retainedSignal));
+    } catch {
+      // Missing/blocked storage leaves the live transports available.
+    }
   }
+}
+
+function ensureReplayTimer() {
+  if (
+    replayTimer !== undefined ||
+    typeof window === "undefined" ||
+    typeof window.setInterval !== "function"
+  ) {
+    return;
+  }
+  replayTimer = window.setInterval(
+    deliverRetainedSignals,
+    DATA_CHANGE_REPLAY_INTERVAL_MS,
+  );
+}
+
+function stopReplayTimer() {
+  if (replayTimer === undefined) return;
+  window.clearInterval(replayTimer);
+  replayTimer = undefined;
+}
+
+function domainSignalKey(domain: DataDomain) {
+  return `${DATA_CHANGE_SIGNAL_KEY}:${domain}`;
+}
+
+function isSignalKey(key: string | null) {
+  return key === DATA_CHANGE_SIGNAL_KEY || key?.startsWith(`${DATA_CHANGE_SIGNAL_KEY}:`);
 }
 
 function deliver(value: unknown) {

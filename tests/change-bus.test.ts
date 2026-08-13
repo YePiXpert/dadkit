@@ -8,6 +8,7 @@ import {
 } from "@/lib/data/change-bus";
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -96,9 +97,15 @@ describe("cross-tab data change bus", () => {
     changeBus.publishDataChange("checklist", "item-a");
 
     expect(postMessage).toHaveBeenCalledTimes(1);
-    expect(setItem).toHaveBeenCalledTimes(1);
-    expect(setItem).toHaveBeenCalledWith(
+    expect(setItem).toHaveBeenCalledTimes(2);
+    expect(setItem).toHaveBeenNthCalledWith(
+      1,
       changeBus.DATA_CHANGE_SIGNAL_KEY,
+      expect.any(String),
+    );
+    expect(setItem).toHaveBeenNthCalledWith(
+      2,
+      `${changeBus.DATA_CHANGE_SIGNAL_KEY}:checklist`,
       expect.any(String),
     );
 
@@ -171,6 +178,60 @@ describe("cross-tab data change bus", () => {
       { ...retained, entityId: "late-item", version: 84 },
       retained,
     ]);
+    unsubscribe();
+  });
+
+  it("polls per-domain retained signals after every live transport was missed", async () => {
+    vi.resetModules();
+    vi.useFakeTimers();
+    const retained = new Map<string, string>();
+    let storageListener:
+      | ((event: { key: string; newValue: string }) => void)
+      | undefined;
+
+    vi.stubGlobal("BroadcastChannel", undefined);
+    vi.stubGlobal("window", {
+      addEventListener: vi.fn((type: string, listener: typeof storageListener) => {
+        if (type === "storage") storageListener = listener;
+      }),
+      clearInterval,
+      setInterval,
+      localStorage: {
+        getItem: vi.fn((key: string) => retained.get(key) ?? null),
+        setItem: vi.fn((key: string, value: string) => retained.set(key, value)),
+      },
+    });
+
+    const changeBus = await import("@/lib/data/change-bus");
+    const received: DataChangeMessage[] = [];
+    const unsubscribe = changeBus.subscribeToDataChanges((message) =>
+      received.push(message),
+    );
+    const hospital: DataChangeMessage = {
+      domain: "hospital",
+      sourceId: "background-tab",
+      version: 91,
+    };
+    const checklist: DataChangeMessage = {
+      domain: "checklist",
+      sourceId: "background-tab",
+      version: 92,
+    };
+
+    // Simulate durable writes whose BroadcastChannel and storage events were
+    // both dropped. Separate slots ensure neither domain overwrites the other.
+    retained.set(
+      `${changeBus.DATA_CHANGE_SIGNAL_KEY}:hospital`,
+      JSON.stringify(hospital),
+    );
+    retained.set(
+      `${changeBus.DATA_CHANGE_SIGNAL_KEY}:checklist`,
+      JSON.stringify(checklist),
+    );
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(received).toEqual([checklist, hospital]);
+    expect(storageListener).toBeTypeOf("function");
     unsubscribe();
   });
 });
