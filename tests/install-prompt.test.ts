@@ -109,7 +109,7 @@ describe("PWA install status", () => {
   it("recognizes the bundled Android app and suppresses PWA installation", () => {
     expect(isBundledAndroidApp()).toBe(false);
 
-    stubWindow("Mozilla/5.0 DadKitAndroid/20");
+    stubWindow("Mozilla/5.0 DadKitAndroid/21");
     setPwaInstallPromptAvailable(true);
     expect(isBundledAndroidApp()).toBe(true);
     expect(isPwaInstallAvailable()).toBe(false);

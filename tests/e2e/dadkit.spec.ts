@@ -72,7 +72,7 @@ test("Android 设置页显示当前版本并允许手动检查更新", async ({ 
   await page.addInitScript(() => {
     Object.defineProperty(window.navigator, "userAgent", {
       configurable: true,
-      value: `${window.navigator.userAgent} DadKitAndroid/20`,
+      value: `${window.navigator.userAgent} DadKitAndroid/21`,
     });
     window.localStorage.setItem("dadkit:android-version-code", "19");
     window.localStorage.setItem(
@@ -87,11 +87,11 @@ test("Android 设置页显示当前版本并允许手动检查更新", async ({ 
     await route.fulfill({
       contentType: "application/json",
       json: {
-        versionCode: 21,
-        versionName: "3.4.8",
+        versionCode: 22,
+        versionName: "3.4.9",
         notes: "下一版本测试更新。",
         sha256: "a".repeat(64),
-        url: "/api/app-version/apk?versionCode=21",
+        url: "/api/app-version/apk?versionCode=22",
       },
       status: 200,
     });
@@ -106,15 +106,15 @@ test("Android 设置页显示当前版本并允许手动检查更新", async ({ 
   await expect(
     page.getByRole("heading", { level: 1, name: "关于 DadKit" }),
   ).toBeVisible();
-  await expect(page.getByText("3.4.7 (20)")).toBeVisible();
+  await expect(page.getByText("3.4.8 (21)")).toBeVisible();
   const checkButton = page.getByRole("button", { name: "检查更新" });
   await expect(checkButton).toBeVisible();
   await checkButton.click();
 
-  await expect(page.getByText("发现新版本 3.4.8")).toBeVisible();
+  await expect(page.getByText("发现新版本 3.4.9")).toBeVisible();
   await expect(page.getByRole("link", { name: "下载更新" })).toHaveAttribute(
     "href",
-    "/api/app-version/apk?versionCode=21",
+    "/api/app-version/apk?versionCode=22",
   );
   expect(checks).toBe(1);
 });
