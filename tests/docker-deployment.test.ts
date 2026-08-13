@@ -12,6 +12,11 @@ describe("VPS Docker deployment", () => {
     const compose = workspaceFile("docker-compose.yml");
 
     expect(compose).toContain(
+      'image: "${DADKIT_IMAGE:-ghcr.io/yepixpert/dadkit:latest}"',
+    );
+    expect(compose).not.toContain("build:");
+    expect(compose).not.toContain("DADKIT_BUILD_TIME:");
+    expect(compose).toContain(
       "${DADKIT_BIND_ADDRESS:-127.0.0.1}:${DADKIT_PORT:-3333}:3333",
     );
     expect(compose).toContain('PORT: "3333"');
@@ -120,7 +125,14 @@ describe("VPS Docker deployment", () => {
     expect(workflow).toContain("cache-from: type=gha");
   });
 
-  it("pulls the prebuilt image by default with a local-build escape hatch", () => {
+  it("pulls the prebuilt image and forbids implicit VPS builds", () => {
+    const compose = workspaceFile("docker-compose.yml");
+    const localBuild = workspaceFile("docker-compose.build.yml");
+
+    expect(compose).not.toContain("build:");
+    expect(localBuild).toContain("build:");
+    expect(localBuild).toContain('image: "${DADKIT_IMAGE:-dadkit:local}"');
+
     for (const scriptPath of [
       "scripts/docker-deploy.sh",
       "scripts/docker-upgrade.sh",
@@ -132,8 +144,13 @@ describe("VPS Docker deployment", () => {
       );
       expect(script).toContain("export DADKIT_IMAGE");
       expect(script).toContain("compose pull dadkit");
-      expect(script).toContain('DADKIT_BUILD_LOCAL="${DADKIT_BUILD_LOCAL:-0}"');
-      expect(script).toContain("DADKIT_BUILD_LOCAL=1");
+      expect(script).toContain("compose up -d --no-build");
+      expect(script).not.toContain("DADKIT_BUILD_LOCAL");
     }
+
+    const readme = workspaceFile("README.md");
+    expect(readme).toContain("docker compose pull dadkit");
+    expect(readme).toContain("docker compose up -d --no-build");
+    expect(readme).not.toContain("docker compose up -d --build");
   });
 });

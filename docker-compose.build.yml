@@ -1,0 +1,8 @@
+services:
+  dadkit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DADKIT_BUILD_TIME: "${DADKIT_BUILD_TIME:-unknown}"
+    image: "${DADKIT_IMAGE:-dadkit:local}"

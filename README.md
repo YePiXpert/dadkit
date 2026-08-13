@@ -42,7 +42,9 @@ DadKit 是一个本地优先的家庭待产与新生儿记录工具，支持网�
 
 ## 部署方式
 
-推荐使用 Docker，并通过 HTTPS 反向代理公开服务。
+推荐直接拉取 GitHub Actions 已构建并测试通过的
+`ghcr.io/yepixpert/dadkit:latest`，再通过 HTTPS 反向代理公开服务。
+VPS 不需要运行 `npm`、`next build` 或 `docker build`。
 
 ```dotenv
 DADKIT_BIND_ADDRESS=127.0.0.1
@@ -58,11 +60,22 @@ DADKIT_SYNC_REQUIRE_HTTPS=true
 ```
 
 ```bash
-git clone https://github.com/YePiXpert/dadkit.git
-cd dadkit
-docker compose up -d --build
+git clone --depth 1 https://github.com/YePiXpert/dadkit.git /opt/dadkit
+cd /opt/dadkit
+cp .env.example .env
+# 按实际域名编辑 .env 后：
+docker compose pull dadkit
+docker compose up -d --no-build --remove-orphans --wait
 curl -fsS http://127.0.0.1:3333/healthz
 ```
+
+这里克隆仓库只用于取得 Compose 配置和升级脚本；应用镜像直接从 GHCR
+下载，不会在 VPS 本地编译。也可以使用 `sh scripts/docker-deploy.sh` 完成
+首次部署，它执行相同的“拉镜像后启动”流程。
+
+如需在开发机显式构建，可使用
+`docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`；
+生产部署不要附加该 override 文件。
 
 家庭同步的数据目录必须挂载到持久化卷（可用 `DADKIT_DATA_DIR` 指定）。当前服务使用单实例文件存储、进程内空间锁和单实例内存限流，不支持多个应用副本同时写同一个数据目录，也不提供共享限流。多实例部署属于后续版本范围。
 
@@ -83,11 +96,13 @@ curl -fsS http://127.0.0.1:3333/healthz
 网站升级：
 
 ```bash
-cd dadkit
-git pull --ff-only origin main
-docker compose up -d --build
+cd /opt/dadkit
+sh scripts/docker-upgrade.sh
 curl -fsS http://127.0.0.1:3333/healthz
 ```
+
+升级脚本只更新 Compose/脚本、执行 `docker compose pull dadkit`，再用
+`--no-build` 重建容器，不会占用 VPS 资源编译应用。
 
 Android APK 升级：
 
