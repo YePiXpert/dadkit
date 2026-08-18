@@ -17,13 +17,11 @@ import {
   flushPendingChecklistStateSave,
 } from "@/lib/data/local-repository";
 import {
-  isLegacySyncSession,
-  isSyncSessionV2,
   loadSyncClientState,
   loadSyncSession,
   saveSyncClientState,
   saveSyncSession,
-  type SyncSessionLocalV2,
+  type SyncSession,
 } from "@/lib/data/settings-repository";
 import {
   estimateSyncClockOffset,
@@ -38,7 +36,6 @@ import {
   DADKIT_SYNC_PROTOCOL_HEADER,
   DADKIT_SYNC_PROTOCOL_VERSION,
 } from "@/lib/sync/protocol-version";
-import { normalizeSyncSpaceName } from "@/lib/sync/space-name";
 import {
   clearSyncSessionExpired,
   markSyncSessionExpired,
@@ -50,15 +47,6 @@ export type SyncOutcome = {
   ok: boolean;
   message?: string;
   deferred?: boolean;
-};
-
-export type SyncInvite = {
-  code: string;
-  expiresAt: string;
-};
-
-export type SyncInviteOutcome = SyncOutcome & {
-  invite?: SyncInvite;
 };
 
 export type SyncJoinDataMode = "remote" | "merge";
@@ -163,7 +151,6 @@ async function parseApiResponse<T>(response: Response): Promise<T> {
 export async function apiRequest<T>(
   path: string,
   init: RequestInit = {},
-  token?: string,
   options: { acceptNotModified?: boolean } = {},
 ): Promise<ApiResult<T>> {
   const controller = new AbortController();
@@ -175,9 +162,6 @@ export async function apiRequest<T>(
 
   if (init.body && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
-  }
-  if (token) {
-    headers.set("authorization", `Bearer ${token}`);
   }
   headers.set(DADKIT_DATA_VERSION_HEADER, "9");
   headers.set(DADKIT_SYNC_PROTOCOL_HEADER, String(DADKIT_SYNC_PROTOCOL_VERSION));
@@ -444,15 +428,6 @@ async function replaceLocalWithRemote(
 function isCurrentSyncSession(expected: ReturnType<typeof loadSyncSession>) {
   const current = loadSyncSession();
   if (!expected || !current) return false;
-
-  if (isLegacySyncSession(expected) || isLegacySyncSession(current)) {
-    return (
-      isLegacySyncSession(expected) &&
-      isLegacySyncSession(current) &&
-      expected.token === current.token
-    );
-  }
-
   return (
     expected.spaceId === current.spaceId &&
     expected.sessionId === current.sessionId
@@ -520,7 +495,6 @@ async function doSync(): Promise<SyncOutcome> {
     const pulled = await apiRequest<SpaceSnapshotPayload>(
       "/api/sync/pull",
       { headers: pullHeaders },
-      isLegacySyncSession(session) ? session.token : undefined,
       { acceptNotModified: true },
     );
     if (!isCurrentSyncSession(session)) return { ok: false };
@@ -593,7 +567,6 @@ async function doSync(): Promise<SyncOutcome> {
       const pushed = await apiRequest<SpaceSnapshotPayload>(
         "/api/sync/push",
         { method: "POST", body: JSON.stringify({ data: merged }) },
-        isLegacySyncSession(session) ? session.token : undefined,
       );
       if (!isCurrentSyncSession(session)) return { ok: false };
 
@@ -697,145 +670,6 @@ export function syncNow(): Promise<SyncOutcome> {
   return syncInFlight;
 }
 
-export async function joinSpace(
-  name: string,
-  code: string,
-): Promise<SyncOutcome> {
-  const spaceName = normalizeSyncSpaceName(name);
-
-  try {
-    const result = await apiRequest<{ token: string }>("/api/sync/join", {
-      method: "POST",
-      body: JSON.stringify({ name: spaceName, code, existingOnly: true }),
-    });
-
-    if (!result.data?.token) {
-      throw new SyncApiError("同步服务没有返回有效会话。", 502);
-    }
-
-    clearRetrySchedule();
-    saveSyncClientState({});
-    saveSyncSession({
-      token: result.data.token,
-      joinedAt: new Date().toISOString(),
-      spaceName,
-    });
-    useSyncStatusStore.setState({ joined: true });
-    clearSyncSessionExpired();
-
-    const synced = await syncNow();
-
-    return synced.deferred ? { ok: true } : synced;
-  } catch (error) {
-    return {
-      ok: false,
-      message:
-        error instanceof Error && error.message
-          ? error.message
-          : "加入家庭同步失败。",
-    };
-  }
-}
-
-export async function createSpace(
-  name: string,
-): Promise<SyncInviteOutcome> {
-  const spaceName = normalizeSyncSpaceName(name);
-
-  try {
-    const result = await apiRequest<{
-      token: string;
-      invite: SyncInvite;
-    }>("/api/sync/create", {
-      method: "POST",
-      body: JSON.stringify({ name: spaceName }),
-    });
-
-    if (!result.data?.token || !result.data.invite) {
-      throw new SyncApiError("同步服务没有返回有效会话。", 502);
-    }
-
-    clearRetrySchedule();
-    saveSyncClientState({});
-    saveSyncSession({
-      token: result.data.token,
-      joinedAt: new Date().toISOString(),
-      spaceName,
-    });
-    useSyncStatusStore.setState({ joined: true });
-    clearSyncSessionExpired();
-
-    const synced = await syncNow();
-
-    return {
-      ok: true,
-      invite: result.data.invite,
-      message: synced.ok || synced.deferred ? undefined : synced.message,
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      message:
-        error instanceof Error && error.message
-          ? error.message
-          : "创建家庭同步失败。",
-    };
-  }
-}
-
-export async function createInvite(
-  name: string,
-): Promise<SyncInviteOutcome> {
-  const session = loadSyncSession();
-  const spaceName = normalizeSyncSpaceName(name);
-
-  if (!session) {
-    return { ok: false, message: "请先加入家庭同步。" };
-  }
-  if (!isLegacySyncSession(session)) {
-    return { ok: false, message: "请在同步管理页生成邀请链接。" };
-  }
-
-  try {
-    const result = await apiRequest<SyncInvite>(
-      "/api/sync/invite",
-      {
-        method: "POST",
-        body: JSON.stringify({ name: spaceName }),
-      },
-      session.token,
-    );
-
-    if (!result.data?.code || !result.data.expiresAt) {
-      throw new SyncApiError("同步服务没有返回有效口令。", 502);
-    }
-
-    saveSyncSession({ ...session, spaceName });
-    return { ok: true, invite: result.data };
-  } catch (error) {
-    const message =
-      error instanceof Error && error.message
-        ? error.message
-        : "生成加入口令失败。";
-
-    if (error instanceof SyncApiError && error.status === 401) {
-      clearRetrySchedule();
-      saveSyncSession(undefined);
-      markSyncSessionExpired("家庭同步会话已失效，请重新加入后继续同步。");
-      saveSyncClientState({ lastError: message });
-      useSyncStatusStore.setState({
-        joined: false,
-        syncing: false,
-        lastError: message,
-        retryAt: undefined,
-        retryAttempt: undefined,
-      });
-    }
-
-    return { ok: false, message };
-  }
-}
-
 export async function leaveSpace(): Promise<SyncOutcome> {
   const session = loadSyncSession();
   if (session) {
@@ -843,7 +677,6 @@ export async function leaveSpace(): Promise<SyncOutcome> {
       await apiRequest(
         "/api/sync/leave",
         { method: "POST" },
-        isLegacySyncSession(session) ? session.token : undefined,
       );
     } catch (error) {
       return {
@@ -886,12 +719,12 @@ export type SyncSessionMetadata = {
   lastSeenAt: string;
   deviceName: string;
   role: SyncSpaceRole;
-  protocolVersion: 1 | 2;
+  protocolVersion: 2;
 };
 
 export type SyncSpaceMetadata = {
   spaceId: string;
-  kind: "legacy-name" | "random";
+  kind: "random";
   displayName: string;
   dataRevision: number;
   metadataRevision: number;
@@ -926,7 +759,7 @@ export type SyncServiceInfo = {
 function localSessionFromSpace(
   space: SyncSpaceMetadata,
   joinedAt = new Date().toISOString(),
-): SyncSessionLocalV2 {
+): SyncSession {
   return {
     version: 2,
     protocolVersion: 2,
@@ -988,7 +821,7 @@ export async function createRandomSyncSpace(displayName: string, deviceName: str
 }
 
 export async function joinSyncSpaceByInvite(
-  inviteToken: string,
+  inviteCredential: string,
   deviceName: string,
   options: {
     replaceExisting: boolean;
@@ -1006,8 +839,10 @@ export async function joinSyncSpaceByInvite(
     await createSnapshotAsync("加入家庭同步前");
     const result = await apiRequest<{ space: SyncSpaceMetadata }>(
       "/api/sync/v2/join",
-      { method: "POST", body: JSON.stringify({ inviteToken, deviceName }) },
-      isLegacySyncSession(existing) ? existing.token : undefined,
+      {
+        method: "POST",
+        body: JSON.stringify({ inviteCredential, deviceName }),
+      },
     );
     if (!result.data?.space) throw new SyncApiError("同步服务没有返回空间信息。", 502);
     clearRetrySchedule();
@@ -1023,34 +858,6 @@ export async function joinSyncSpaceByInvite(
     };
   } catch (error) {
     return { ok: false as const, message: messageOf(error, "加入家庭同步失败。") };
-  }
-}
-
-export async function upgradeLegacySyncSession(deviceName = "这台设备") {
-  const legacy = loadSyncSession();
-  if (!isLegacySyncSession(legacy)) return { ok: false as const, message: "没有需要升级的旧同步会话。" };
-  try {
-    const upgraded = await apiRequest<{ space: SyncSpaceMetadata }>(
-      "/api/sync/v2/session/upgrade",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          displayName: legacy.spaceName ?? "家庭同步",
-          deviceName,
-        }),
-      },
-      legacy.token,
-    );
-    if (!upgraded.data?.space) throw new SyncApiError("同步会话升级响应不完整。", 502);
-
-    // 只有 Cookie 独立通过一次认证后，才删除本机原始 token。
-    const verified = await apiRequest<{ space: SyncSpaceMetadata }>("/api/sync/v2/space");
-    if (!verified.data?.space) throw new SyncApiError("Cookie 会话验证失败。", 401);
-    saveSyncSession(localSessionFromSpace(verified.data.space, legacy.joinedAt));
-    return { ok: true as const, space: verified.data.space };
-  } catch (error) {
-    // 保留旧 token；原有 pull/push 仍可继续使用。
-    return { ok: false as const, message: messageOf(error, "旧同步会话暂时无法升级。") };
   }
 }
 
@@ -1074,7 +881,7 @@ export async function updateSyncSession(
     );
     if (result.data?.session.current) {
       const local = loadSyncSession();
-      if (isSyncSessionV2(local)) {
+      if (local) {
         saveSyncSession({
           ...local,
           deviceName: result.data.session.deviceName,
@@ -1109,7 +916,7 @@ export async function listSyncInvites() {
 export async function createSyncInviteLink(ttlMinutes: number) {
   try {
     const result = await apiRequest<{
-      invite: { id: string; token: string; expiresAt: string };
+      invite: { id: string; token: string; code: string; expiresAt: string };
     }>("/api/sync/v2/invites", {
       method: "POST",
       body: JSON.stringify({ ttlMinutes }),
@@ -1146,7 +953,7 @@ export async function renameSyncSpace(displayName: string) {
     });
     if (result.data?.space) {
       const local = loadSyncSession();
-      if (isSyncSessionV2(local)) saveSyncSession({ ...local, displayName: result.data.space.displayName });
+      if (local) saveSyncSession({ ...local, displayName: result.data.space.displayName });
     }
     return { ok: true as const, space: result.data?.space };
   } catch (error) {

@@ -13,7 +13,7 @@ import {
   getRequestedDataVersion,
   syncDataVersionResponseHeaders,
 } from "@/lib/sync/data-version";
-import { requestCredentials } from "@/lib/sync/request-auth";
+import { requestCredential } from "@/lib/sync/request-auth";
 import { rejectInvalidMutationOrigin, syncStoreErrorResponse } from "@/lib/sync/route-utils";
 
 export const runtime = "nodejs";
@@ -23,20 +23,18 @@ const pushRateLimiter = createWebDavProxyRateLimiter(30, 60_000);
 const pushConcurrency = createConcurrencyLimiter(8, 2);
 
 export async function POST(request: Request) {
-  const credentials = requestCredentials(request);
-  const sessionRateKey = credentials[0]?.token.split(".")[0];
+  const credential = requestCredential(request);
+  const sessionRateKey = credential?.token.split(".")[0];
   const rateLimit = pushRateLimiter.consume(sessionRateKey ? `space:${sessionRateKey}` : proxyClientKey(request.headers));
 
   if (!rateLimit.allowed) {
     return syncError("操作过于频繁，请稍后再试。", 429, rateLimitHeaders(rateLimit));
   }
 
-  if (!credentials.length) {
+  if (!credential) {
     return syncError("缺少同步会话。", 401);
   }
-  const originError = rejectInvalidMutationOrigin(request, {
-    requireHeader: credentials.some((credential) => credential.source === "cookie") && !credentials.some((credential) => credential.source === "bearer"),
-  });
+  const originError = rejectInvalidMutationOrigin(request, { requireHeader: true });
   if (originError) return originError;
 
   let release: () => void;
@@ -64,14 +62,10 @@ export async function POST(request: Request) {
       return syncError("同步数据格式无效。", 400);
     }
     const dataVersion = getRequestedDataVersion(request.headers);
-    let snapshot;
-    for (const credential of credentials) {
-      snapshot = await pushSpace(credential.token, payload, dataVersion);
-      if (snapshot) break;
-    }
+    const snapshot = await pushSpace(credential.token, payload, dataVersion);
 
     if (!snapshot) {
-      return syncError("同步会话已失效，请重新输入同步码。", 401);
+      return syncError("同步会话已失效，请重新加入家庭。", 401);
     }
 
     return syncJson(snapshot, 200, {

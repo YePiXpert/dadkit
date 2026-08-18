@@ -147,13 +147,7 @@ export type {
   HiddenTemplateItemStamps,
 } from "@/lib/data/format";
 
-export type LegacySyncSession = {
-  token: string;
-  joinedAt: string;
-  spaceName?: string;
-};
-
-export type SyncSessionLocalV2 = {
+export type SyncSession = {
   version: 2;
   protocolVersion: 2;
   spaceId: string;
@@ -162,13 +156,7 @@ export type SyncSessionLocalV2 = {
   deviceName: string;
   role: "owner" | "member";
   joinedAt: string;
-  /** Protocol 2 secrets live only in the HttpOnly cookie. */
-  token?: undefined;
-  /** Kept absent so old callers can feature-detect without exposing secrets. */
-  spaceName?: undefined;
 };
-
-export type SyncSession = LegacySyncSession | SyncSessionLocalV2;
 
 export type SyncClientState = {
   lastSyncAt?: string;
@@ -561,26 +549,6 @@ export function loadSyncSession(): SyncSession | undefined {
       deviceName: value.deviceName,
       role: value.role,
       joinedAt: value.joinedAt,
-    };
-  }
-
-  if (
-    isRecord(value) &&
-    typeof value.token === "string" &&
-    value.token.length > 0 &&
-    typeof value.joinedAt === "string"
-  ) {
-    const spaceName =
-      typeof value.spaceName === "string" &&
-      value.spaceName.length >= 2 &&
-      value.spaceName.length <= 32
-        ? value.spaceName
-        : undefined;
-
-    return {
-      token: value.token,
-      joinedAt: value.joinedAt,
-      ...(spaceName ? { spaceName } : {}),
     };
   }
 
@@ -1132,18 +1100,6 @@ export function exportData(): DadKitExportData {
     baby: createEmptyBabyData(),
     household: loadHousehold(),
   };
-}
-
-export function isLegacySyncSession(
-  session: SyncSession | undefined,
-): session is LegacySyncSession {
-  return Boolean(session && "token" in session);
-}
-
-export function isSyncSessionV2(
-  session: SyncSession | undefined,
-): session is SyncSessionLocalV2 {
-  return Boolean(session && "protocolVersion" in session && session.protocolVersion === 2);
 }
 
 /** Builds the complete v9 document from localStorage plus IndexedDB baby data. */

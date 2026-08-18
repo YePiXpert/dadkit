@@ -3,11 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { installBrowserStorage } from "@/tests/helpers/browser-storage";
 import {
   alignExportDataToServerTime,
-  createInvite,
-  createSpace,
   getSyncRetryDelay,
   joinSyncSpaceByInvite,
-  joinSpace,
   leaveSpace,
   refreshSyncStatus,
   syncNow,
@@ -105,6 +102,19 @@ function joinedV2Space() {
   };
 }
 
+function localSyncSession(displayName = "测试家庭") {
+  return {
+    version: 2,
+    protocolVersion: 2,
+    spaceId: "a".repeat(64),
+    displayName,
+    sessionId: "b".repeat(64),
+    deviceName: "测试设备",
+    role: "owner",
+    joinedAt: "2026-08-01T00:00:00.000Z",
+  };
+}
+
 function resetStores() {
   useDadKitStore.setState({
     hydrated: false,
@@ -187,7 +197,7 @@ describe("family sync client", () => {
       const { localValues } = installBrowserStorage();
       localValues.set(
         "dadkit:v3:sync-session",
-        JSON.stringify({ token: "space.clock", joinedAt: new Date().toISOString() }),
+        JSON.stringify({ ...localSyncSession(), joinedAt: new Date().toISOString() }),
       );
       saveChecklist([
         testItem("clocked", { updatedAt: Date.now() + 100 }),
@@ -249,10 +259,7 @@ describe("family sync client", () => {
 
   it("defers sync while a removal is waiting for undo confirmation", async () => {
     installBrowserStorage({
-      "dadkit:v3:sync-session": JSON.stringify({
-        token: "space.pending",
-        joinedAt: "2026-07-26T00:00:00.000Z",
-      }),
+      "dadkit:v3:sync-session": JSON.stringify(localSyncSession()),
     });
     useDadKitStore.setState({
       hydrated: true,
@@ -400,109 +407,9 @@ describe("family sync client", () => {
     expect(loadSyncClientState().initialDataMode).toBeUndefined();
   });
 
-  it("joins a space while a removal is waiting and treats deferred sync as success", async () => {
-    installBrowserStorage();
-    useDadKitStore.setState({
-      hydrated: true,
-      checklist: [],
-      customItems: [],
-      hiddenTemplateItemIds: [],
-      pendingRemovalIds: ["item-1"],
-    });
-
-    const fetchMock = vi.fn(async (url: string) => {
-      if (url === "/api/sync/join") {
-        return jsonResponse({ token: "space.deferred" });
-      }
-      throw new Error(`unexpected url ${url}`);
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const outcome = await joinSpace("我们的家", "家庭暗号-1");
-
-    expect(outcome.ok).toBe(true);
-    expect(outcome.message).toBeUndefined();
-    expect(loadSyncSession()?.token).toBe("space.deferred");
-    expect(useSyncStatusStore.getState().joined).toBe(true);
-  });
-
-  it("creates a space while a removal is waiting and treats deferred sync as success", async () => {
-    installBrowserStorage();
-    useDadKitStore.setState({
-      hydrated: true,
-      checklist: [],
-      customItems: [],
-      hiddenTemplateItemIds: [],
-      pendingRemovalIds: ["item-1"],
-    });
-
-    const fetchMock = vi.fn(async (url: string) => {
-      if (url === "/api/sync/create") {
-        return jsonResponse({
-          token: "space.deferred",
-          invite: { code: "7K9M-3XQF", expiresAt: "2026-07-29T12:10:00.000Z" },
-        });
-      }
-      throw new Error(`unexpected url ${url}`);
-    });
-    vi.stubGlobal("fetch", fetchMock);
-
-    const outcome = await createSpace("新的家庭");
-
-    expect(outcome.ok).toBe(true);
-    expect(outcome.message).toBeUndefined();
-    expect(outcome.invite).toMatchObject({ code: "7K9M-3XQF" });
-    expect(loadSyncSession()?.token).toBe("space.deferred");
-    expect(useSyncStatusStore.getState().joined).toBe(true);
-  });
-
-  it("joins a space, seeds local data and records sync state", async () => {
-    installBrowserStorage();
-    saveChecklist([testItem("seed", { status: "packed", updatedAt: 10 })]);
-    useDadKitStore.setState({ hydrated: true });
-
-    const requests: Array<{ url: string; body?: string }> = [];
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      requests.push({ url, body: typeof init?.body === "string" ? init.body : undefined });
-
-      if (url === "/api/sync/join") {
-        return jsonResponse({ token: "space.secret", version: 0, updatedAt: "", data: null });
-      }
-
-      if (url === "/api/sync/pull") {
-        return jsonResponse({ version: 1, updatedAt: "", data: null });
-      }
-
-      if (url === "/api/sync/push") {
-        const payload = JSON.parse(init?.body as string) as { data: unknown };
-        return jsonResponse({ version: 1, updatedAt: "", data: payload.data });
-      }
-
-      throw new Error(`unexpected url ${url}`);
-    });
-
-    vi.stubGlobal("fetch", fetchMock);
-
-    const outcome = await joinSpace("我们的家", "家庭暗号-1");
-
-    expect(outcome.ok).toBe(true);
-    expect(loadSyncSession()?.token).toBe("space.secret");
-    expect(loadSyncSession()?.spaceName).toBe("我们的家");
-    expect(loadSyncClientState().lastSyncAt).toBeTruthy();
-    expect(requests[0]?.body).toContain('"existingOnly":true');
-
-    const push = requests.find((request) => request.url === "/api/sync/push");
-
-    expect(push?.body).toContain("seed");
-    expect(useSyncStatusStore.getState().joined).toBe(true);
-  });
-
   it("sends version 7 and preserves hospital and planning on a v5 response", async () => {
     const { localValues } = installBrowserStorage({
-      "dadkit:v3:sync-session": JSON.stringify({
-        token: "space.compat",
-        joinedAt: "2026-08-01T00:00:00.000Z",
-      }),
+      "dadkit:v3:sync-session": JSON.stringify(localSyncSession()),
     });
     const hospital = createEmptyHospitalProfile();
     const hospitalValues = hospitalValuesFromPortable(hospital);
@@ -551,96 +458,6 @@ describe("family sync client", () => {
     expect(loadItemPlanning().items.seed.assigneeIds.value).toEqual(["legacy-dad-v1"]);
   });
 
-  it("creates a family, stores its name and returns the first invite", async () => {
-    installBrowserStorage();
-    useDadKitStore.setState({ hydrated: true });
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      if (url === "/api/sync/create") {
-        expect(init?.body).toBe(JSON.stringify({ name: "新的家庭" }));
-        return jsonResponse(
-          {
-            token: "space.created",
-            invite: {
-              code: "7K9M-3XQF",
-              expiresAt: "2026-07-29T12:10:00.000Z",
-            },
-          },
-          201,
-        );
-      }
-      if (url === "/api/sync/pull") {
-        return jsonResponse({ version: 0, updatedAt: "", data: null });
-      }
-      if (url === "/api/sync/push") {
-        const payload = JSON.parse(init?.body as string) as { data: unknown };
-        return jsonResponse({ version: 1, updatedAt: "", data: payload.data });
-      }
-
-      throw new Error(`unexpected url ${url}`);
-    });
-
-    vi.stubGlobal("fetch", fetchMock);
-
-    const outcome = await createSpace(" 新的家庭 ");
-
-    expect(outcome).toMatchObject({
-      ok: true,
-      invite: { code: "7K9M-3XQF" },
-    });
-    expect(loadSyncSession()).toMatchObject({
-      token: "space.created",
-      spaceName: "新的家庭",
-    });
-    expect(useSyncStatusStore.getState().joined).toBe(true);
-  });
-
-  it("generates a replacement invite for an existing session", async () => {
-    const { localValues } = installBrowserStorage();
-    localValues.set(
-      "dadkit:v3:sync-session",
-      JSON.stringify({
-        token: "space.secret",
-        joinedAt: "2026-07-29T00:00:00.000Z",
-      }),
-    );
-    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-      expect(url).toBe("/api/sync/invite");
-      expect(new Headers(init?.headers).get("authorization")).toBe(
-        "Bearer space.secret",
-      );
-      expect(init?.body).toBe(JSON.stringify({ name: "现有家庭" }));
-      return jsonResponse({
-        code: "ABCD-2345",
-        expiresAt: "2026-07-29T12:10:00.000Z",
-      });
-    });
-
-    vi.stubGlobal("fetch", fetchMock);
-
-    const outcome = await createInvite("现有家庭");
-
-    expect(outcome).toMatchObject({
-      ok: true,
-      invite: { code: "ABCD-2345" },
-    });
-    expect(loadSyncSession()?.spaceName).toBe("现有家庭");
-  });
-
-  it("rejects a wrong code without storing a session", async () => {
-    installBrowserStorage();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => jsonResponse({ error: "同步码不正确。" }, 401)),
-    );
-
-    const outcome = await joinSpace("我们的家", "错误暗号");
-
-    expect(outcome.ok).toBe(false);
-    expect(outcome.message).toBe("同步码不正确。");
-    expect(loadSyncSession()).toBeUndefined();
-    expect(useSyncStatusStore.getState().joined).toBe(false);
-  });
-
   it("clears the session when the server reports it expired", async () => {
     installBrowserStorage();
     useDadKitStore.setState({ hydrated: true });
@@ -649,12 +466,12 @@ describe("family sync client", () => {
     const { localValues } = installBrowserStorage();
     localValues.set(
       "dadkit:v3:sync-session",
-      JSON.stringify({ token: "space.expired", joinedAt: "2026-07-26T00:00:00.000Z" }),
+      JSON.stringify(localSyncSession()),
     );
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>
-        jsonResponse({ error: "同步会话已失效，请重新输入同步码。" }, 401),
+        jsonResponse({ error: "同步会话已失效，请重新加入家庭。" }, 401),
       ),
     );
 
@@ -675,7 +492,7 @@ describe("family sync client", () => {
     const { localValues } = installBrowserStorage();
     localValues.set(
       "dadkit:v3:sync-session",
-      JSON.stringify({ token: "space.secret", joinedAt: "2026-07-26T00:00:00.000Z" }),
+      JSON.stringify(localSyncSession()),
     );
     refreshSyncStatus();
     vi.stubGlobal(
@@ -694,10 +511,7 @@ describe("family sync client", () => {
 
   it("rebases a local edit made after the first sync snapshot", async () => {
     installBrowserStorage({
-      "dadkit:v3:sync-session": JSON.stringify({
-        token: "space.race",
-        joinedAt: "2026-08-05T00:00:00.000Z",
-      }),
+      "dadkit:v3:sync-session": JSON.stringify(localSyncSession()),
     });
     const repository = new MemoryBabyRepository();
     setBabyRepositoryForTests(repository);
@@ -748,10 +562,7 @@ describe("family sync client", () => {
 
   it("does not let an in-flight sync restore status after leaving", async () => {
     installBrowserStorage({
-      "dadkit:v3:sync-session": JSON.stringify({
-        token: "space.leave-race",
-        joinedAt: "2026-08-05T00:00:00.000Z",
-      }),
+      "dadkit:v3:sync-session": JSON.stringify(localSyncSession()),
     });
     useDadKitStore.setState({ hydrated: true });
     refreshSyncStatus();

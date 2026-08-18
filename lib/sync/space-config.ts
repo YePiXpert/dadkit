@@ -4,7 +4,6 @@ export type SyncRegistrationMode = "open" | "closed";
 
 export type SyncSpaceConfig = {
   registrationMode: SyncRegistrationMode;
-  legacyCreateEnabled: boolean;
   maxSpaceBytes: number;
   maxDevices: number;
   maxActiveInvites: number;
@@ -63,10 +62,6 @@ export function getSyncSpaceConfig(): SyncSpaceConfig {
 
   return {
     registrationMode,
-    legacyCreateEnabled: booleanEnv(
-      "DADKIT_SYNC_LEGACY_CREATE_ENABLED",
-      true,
-    ),
     maxSpaceBytes: integerEnv(
       "DADKIT_SYNC_MAX_SPACE_BYTES",
       24 * MIB,

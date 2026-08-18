@@ -48,13 +48,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class LauncherActivity extends Activity {
     private static final String APP_HOST = "dadkit.505f.com";
     private static final String START_URL =
-            "https://" + APP_HOST + "/?source=apk&appVersionCode=22";
+            "https://" + APP_HOST + "/?source=apk&appVersionCode=23";
     private static final int FILE_CHOOSER_REQUEST = 201;
     private static final String NATIVE_DATA_PREFERENCES = "dadkit_native_data";
     private static final String NATIVE_DOCUMENT_KEY = "family_document";
     private static final String NATIVE_RECORDED_BY_KEY = "recorded_by_member_id";
     private static final String NATIVE_MIGRATION_COMPLETE_KEY = "web_migration_complete";
-    private static final String NATIVE_SYNC_PREFERENCES = "dadkit_native_sync";
     private static final String UPDATE_FILE_PROVIDER_AUTHORITY =
             "com.dadkit.mobile.fileprovider";
     private static final int UPDATE_MAX_REDIRECTS = 5;
@@ -94,7 +93,7 @@ public class LauncherActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setSupportZoom(false);
         settings.setUserAgentString(
-                settings.getUserAgentString() + " DadKitAndroid/22"
+                settings.getUserAgentString() + " DadKitAndroid/23"
         );
 
         CookieManager.getInstance().setAcceptCookie(true);
@@ -428,18 +427,6 @@ public class LauncherActivity extends Activity {
                 return "";
             }
             return preferences.getString(NATIVE_DOCUMENT_KEY, "");
-        }
-
-        @JavascriptInterface
-        public String getNativeSyncToken() {
-            return getSharedPreferences(NATIVE_SYNC_PREFERENCES, MODE_PRIVATE)
-                    .getString("session_token", "");
-        }
-
-        @JavascriptInterface
-        public String getNativeFamilyName() {
-            return getSharedPreferences(NATIVE_SYNC_PREFERENCES, MODE_PRIVATE)
-                    .getString("family_name", "");
         }
 
         @JavascriptInterface

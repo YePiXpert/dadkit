@@ -15,7 +15,7 @@ import { parsePastedInvite, takeInviteFromLocation } from "@/lib/sync/client-inv
 
 export function JoinSyncWorkspace() {
   const router = useRouter();
-  const [inviteToken, setInviteToken] = useState("");
+  const [inviteCredential, setInviteCredential] = useState("");
   const [pasted, setPasted] = useState("");
   const [deviceName, setDeviceName] = useState("这台设备");
   const [hasExistingSession, setHasExistingSession] = useState(false);
@@ -32,17 +32,13 @@ export function JoinSyncWorkspace() {
     // 凭据只进入内存，并在任何网络请求前立即清除地址栏 fragment。
     const fromFragment = takeInviteFromLocation(window.location, window.history);
     if (fromFragment) {
-      setInviteToken(fromFragment);
+      setInviteCredential(fromFragment);
       setPasted("已读取邀请链接");
     }
     try {
       const session = loadSyncSession();
       setHasExistingSession(Boolean(session));
-      setExistingName(
-        session && "displayName" in session
-          ? session.displayName
-          : session?.spaceName,
-      );
+      setExistingName(session?.displayName);
       setSessionChecked(true);
     } catch {
       setMessage("无法检查当前同步空间，请刷新页面后重试。");
@@ -61,9 +57,9 @@ export function JoinSyncWorkspace() {
   function parseManual(value: string) {
     setPasted(value);
     const parsed = parsePastedInvite(value);
-    setInviteToken(parsed ?? "");
+    setInviteCredential(parsed ?? "");
     if (value && !parsed) {
-      setMessage("邀请链接或邀请 token 格式不正确。");
+      setMessage("邀请链接或短口令格式不正确。");
       setOk(false);
     } else {
       setMessage("");
@@ -76,7 +72,7 @@ export function JoinSyncWorkspace() {
       setOk(false);
       return;
     }
-    if (!inviteToken || !deviceName.trim()) {
+    if (!inviteCredential || !deviceName.trim()) {
       setMessage("请填写有效邀请和设备名称。");
       setOk(false);
       return;
@@ -88,7 +84,7 @@ export function JoinSyncWorkspace() {
     }
     setBusy(true);
     const { joinSyncSpaceByInvite } = await import("@/lib/sync/client");
-    const result = await joinSyncSpaceByInvite(inviteToken, deviceName.trim(), {
+    const result = await joinSyncSpaceByInvite(inviteCredential, deviceName.trim(), {
       replaceExisting: replaceConfirmed,
       initialDataMode,
     });
@@ -98,7 +94,7 @@ export function JoinSyncWorkspace() {
       setOk(false);
       return;
     }
-    setInviteToken("");
+    setInviteCredential("");
     setPasted("");
     setMessage(`已加入“${result.space.displayName}”，正在返回首页。`);
     setOk(true);
@@ -118,8 +114,8 @@ export function JoinSyncWorkspace() {
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="sync-invite">邀请链接或邀请 token</Label>
-              <Input autoComplete="off" id="sync-invite" onChange={(event) => parseManual(event.target.value)} placeholder="粘贴邀请链接" value={pasted} />
+              <Label htmlFor="sync-invite">邀请链接或短口令</Label>
+              <Input autoComplete="off" id="sync-invite" onChange={(event) => parseManual(event.target.value)} placeholder="粘贴邀请链接或输入 XXXX-XXXX" value={pasted} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="join-device-name">设备名称</Label>
@@ -146,13 +142,13 @@ export function JoinSyncWorkspace() {
               </label>
             ) : null}
             <Feedback message={message} ok={ok} />
-            <Button disabled={busy || !online || !sessionChecked || !inviteToken || !deviceName.trim() || Boolean(hasExistingSession && !replaceConfirmed)} onClick={() => void join()}>
+            <Button disabled={busy || !online || !sessionChecked || !inviteCredential || !deviceName.trim() || Boolean(hasExistingSession && !replaceConfirmed)} onClick={() => void join()}>
               {busy ? "正在加入…" : "加入家庭同步"}
             </Button>
             {!online ? <WifiOff className="mx-auto size-5 text-muted-foreground" /> : null}
           </CardContent>
         </Card>
-        <p className="px-2 text-[13px] leading-5 text-muted-foreground">邀请链接属于敏感凭据，请勿公开发布。家庭同步会把数据保存到你的同步服务器，当前不提供端到端加密。</p>
+        <p className="px-2 text-[13px] leading-5 text-muted-foreground">邀请链接和短口令都属于敏感凭据，请勿公开发布。家庭同步会把数据保存到你的同步服务器，当前不提供端到端加密。</p>
       </section>
     </div>
   );

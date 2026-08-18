@@ -13,7 +13,7 @@
   - `ui/DadKitApp.kt`（约 1050 行，全部界面）
   - `data/DadKitRepository.kt`（本地文档读写 + 快照解码，文档存单条 SharedPreferences）
   - `data/NativeModels.kt`（模型 + `categoryLabels`）
-  - `sync/NativeSyncClient.kt`（pull→merge→push，Bearer token 来自创建/加入时的 Set-Cookie）
+  - 家庭同步统一由 Web 应用通过 HttpOnly Cookie 执行，原生层不再保存或转发同步凭据。
   - `sync/JsonDocumentMerger.kt`
   - 构建：`android/app/build.gradle`（versionCode 15 / versionName 3.4.2，`SYNC_BASE_URL` 由 `DADKIT_PUBLIC_ORIGIN` 注入，默认 `https://dadkit.505f.com`）
 

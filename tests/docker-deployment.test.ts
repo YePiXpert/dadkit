@@ -31,7 +31,6 @@ describe("VPS Docker deployment", () => {
     );
     for (const variable of [
       "DADKIT_SYNC_REGISTRATION_MODE",
-      "DADKIT_SYNC_LEGACY_CREATE_ENABLED",
       "DADKIT_SYNC_MAX_SPACE_BYTES",
       "DADKIT_SYNC_MAX_DEVICES",
       "DADKIT_SYNC_MAX_ACTIVE_INVITES",

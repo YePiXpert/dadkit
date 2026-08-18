@@ -6,8 +6,6 @@ const COMPLETE_EVENT = "dadkit:android-migration-complete";
 
 type NativeDataMigrationBridge = {
   getNativeData(): string;
-  getNativeSyncToken(): string;
-  getNativeFamilyName(): string;
   getRecordedByMemberId(): string;
   markMigrationComplete(): void;
 };
@@ -74,18 +72,6 @@ async function migrateNativeAndroidData(
   const result = await storage.applyImportDataAsync(merged);
 
   if (!result.ok) return false;
-
-  const token = bridge.getNativeSyncToken().trim();
-  const familyName = bridge.getNativeFamilyName().trim();
-  if (token) {
-    storage.saveSyncSession({
-      token,
-      joinedAt: new Date().toISOString(),
-      ...(familyName.length >= 2 && familyName.length <= 32
-        ? { spaceName: familyName }
-        : {}),
-    });
-  }
 
   const memberId = bridge.getRecordedByMemberId().trim();
   if (memberId) {

@@ -30,7 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$GITHUB_REF_NAME" = "v3.4.9"
+          test "$GITHUB_REF_NAME" = "v3.4.10"
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
@@ -114,15 +114,15 @@ jobs:
             echo "Retired native checklist asset must not be packaged." >&2
             exit 1
           fi
-          cp "$APK" DadKit-3.4.9.apk
-          sha256sum DadKit-3.4.9.apk > DadKit-3.4.9.apk.sha256
-          cp "$AAB" DadKit-3.4.9.aab
+          cp "$APK" DadKit-3.4.10.apk
+          sha256sum DadKit-3.4.10.apk > DadKit-3.4.10.apk.sha256
+          cp "$AAB" DadKit-3.4.10.aab
 
       - name: Store AAB privately for 30 days
         uses: actions/upload-artifact@v4
         with:
-          name: DadKit-3.4.9-aab
-          path: DadKit-3.4.9.aab
+          name: DadKit-3.4.10-aab
+          path: DadKit-3.4.10.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -131,18 +131,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          DadKit 3.4.9
+          DadKit 3.4.10
 
-          - 加入家庭时默认使用远端家庭数据，避免新设备本机数据未经确认上传到家庭空间
-          - 新增“合并本机数据”选项，只有主动选择后才会合并并上传本机业务数据
-          - 加入前自动创建恢复点，并保留本机设备偏好和物品照片
-          - 修正生产环境 Origin 校验，支持主域名与精确配置的可信别名
+          - 每条邀请同时提供邀请链接和 8 位短口令，任一方式加入后另一种方式立即失效
+          - 短口令仅保存加盐哈希，并继续受加入接口限流保护
+          - 加入时可选择使用远端家庭数据或合并本机数据，操作前自动创建恢复点
+          - 删除旧家庭名同步码、Bearer 会话和旧会话升级接口，统一使用 HttpOnly Cookie
           - APK 继续内置完整 PWA 页面、144 张物品图、33 张成长图和全部离线资源
-          - Android 包名为 com.dadkit.mobile，versionCode 为 22
+          - Android 包名为 com.dadkit.mobile，versionCode 为 23
           EOF
           gh release create "$GITHUB_REF_NAME" \
-            DadKit-3.4.9.apk \
-            DadKit-3.4.9.apk.sha256 \
+            DadKit-3.4.10.apk \
+            DadKit-3.4.10.apk.sha256 \
             --verify-tag \
-            --title "DadKit 3.4.9" \
+            --title "DadKit 3.4.10" \
             --notes-file release-notes.md

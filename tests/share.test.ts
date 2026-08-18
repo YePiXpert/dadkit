@@ -27,9 +27,12 @@ describe("sharing helpers", () => {
     const invite = formatFamilyInviteShareText(
       "小林家",
       "https://dadkit.example/join?token=abc123",
+      "ABCD-2345",
     );
     expect(invite).toContain("小林家");
     expect(invite).toContain("https://dadkit.example/join?token=abc123");
+    expect(invite).toContain("ABCD-2345");
+    expect(invite).toContain("同一条一次性邀请");
     expect(formatChecklistShareText(64)).toContain("64%");
     expect(formatGrowthShareText(24, "玉米", 64)).toContain("孕 24 周");
     expect(formatGrowthShareText(24, "玉米", 64)).toContain("玉米");

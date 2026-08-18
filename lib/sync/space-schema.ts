@@ -9,13 +9,16 @@ export type SyncSpaceSessionV2 = {
   lastSeenAt: string;
   deviceName: string;
   role: SyncSpaceRole;
-  protocolVersion: 1 | 2;
+  protocolVersion: 2;
 };
 
 export type SyncSpaceInviteV2 = {
   id: string;
   codeSalt: string;
   codeHash: string;
+  shortCodeSalt?: string;
+  shortCodeHash?: string;
+  shortCodeLookup?: string;
   createdAt: string;
   expiresAt: string;
   createdBySessionId: string;
@@ -24,17 +27,10 @@ export type SyncSpaceInviteV2 = {
   revokedAt: string | null;
 };
 
-export type SyncSpaceLegacyAuth = {
-  codeSalt: string;
-  codeHash: string;
-  joinEnabled: boolean;
-  normalizedNameHash?: string;
-};
-
 export type SyncSpaceFileV2 = {
   schemaVersion: 2;
   spaceId: string;
-  kind: "legacy-name" | "random";
+  kind: "random";
   displayName: string;
   createdAt: string;
   dataRevision: number;
@@ -42,7 +38,6 @@ export type SyncSpaceFileV2 = {
   dataUpdatedAt: string;
   metadataUpdatedAt: string;
   data: DadKitImportData | null;
-  legacyAuth?: SyncSpaceLegacyAuth;
   sessions: Record<string, SyncSpaceSessionV2>;
   invites: Record<string, SyncSpaceInviteV2>;
 };

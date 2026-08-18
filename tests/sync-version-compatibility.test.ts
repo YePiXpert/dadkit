@@ -17,7 +17,13 @@ import {
 } from "@/lib/data/format";
 import { hospitalValuesFromPortable, updateHospitalProfile } from "@/lib/hospital/portable";
 import { getRequestedDataVersion } from "@/lib/sync/data-version";
-import { joinSpace, pullSpace, pushSpace } from "@/lib/sync/server-store";
+import {
+  createRandomSpace,
+  createV2Invite,
+  joinWithInvite,
+  pullSpace,
+  pushSpace,
+} from "@/lib/sync/server-store";
 import {
   portableTestItem,
   portableV5,
@@ -40,8 +46,9 @@ function withHospital(
 }
 
 async function twoDevices(name: string) {
-  const first = await joinSpace(name, "兼容同步码", false, 6);
-  const second = await joinSpace(name, "兼容同步码", false, 5);
+  const first = await createRandomSpace(name, "v6 设备");
+  const invite = await createV2Invite(first.token, 60);
+  const second = await joinWithInvite(invite!.code, "v5 设备");
 
   if (!first || !second) {
     throw new Error("测试同步空间创建失败");

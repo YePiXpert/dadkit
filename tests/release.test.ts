@@ -39,7 +39,7 @@ describe("release endpoints and product surface", () => {
       }>;
     };
 
-    expect(packageJson.version).toBe("3.4.9");
+    expect(packageJson.version).toBe("3.4.10");
     expect(manifest.name).toBe("DadKit 待产包清单");
     expect(manifest.description).toContain("待产包");
     expect(manifest.description).toContain("宝宝记录");
@@ -79,7 +79,7 @@ describe("release endpoints and product surface", () => {
     expect(readme).toContain("WebDAV 备份");
     expect(readme).toContain("宝宝成长记");
     expect(readme).toContain("医院档案");
-    expect(readme).toContain("兼容既有备份和旧版家庭同步设备");
+    expect(readme).toContain("兼容既有备份和较旧的数据格式");
     expect(readme).toContain("通用家庭档案");
     expect(readme).toContain("当前设备使用者");
     expect(readme).toContain("亲喂、瓶喂、吸奶、尿布和睡眠");
@@ -122,7 +122,7 @@ describe("release endpoints and product surface", () => {
     expect(activity).toContain("new WebView(this)");
     expect(activity).toContain('getAssets().open("www/" + assetPath)');
     expect(activity).toContain("DadKitAndroidMigration");
-    expect(activity).toContain("appVersionCode=22");
+    expect(activity).toContain("appVersionCode=23");
     expect(manifest).toContain("android.permission.REQUEST_INSTALL_PACKAGES");
     expect(manifest).toContain("androidx.core.content.FileProvider");
     expect(activity).toContain("DadKitAndroidUpdate");
@@ -144,7 +144,7 @@ describe("release endpoints and product surface", () => {
   it("keeps the Android tag release strict and verifies the signed APK", () => {
     const workflow = readSource(".github", "workflows", "android-release.yml");
 
-    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.4.9"');
+    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.4.10"');
     expect(workflow).toContain(
       'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
     );
@@ -268,7 +268,7 @@ describe("release endpoints and product surface", () => {
   it("installs the entry shell, then keeps all core routes in the background cache list", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.9-pwa-r1"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.10-pwa-r1"');
     expect(sw).toContain('const PRECACHE_ROUTES = ["/"]');
     expect(sw).toContain("BACKGROUND_ROUTES");
     for (const route of [

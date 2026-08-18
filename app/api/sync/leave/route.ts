@@ -25,9 +25,7 @@ export async function POST(request: Request) {
   if (!credential) {
     return syncJson({ ok: true }, 200, { "set-cookie": clearSessionCookie(request) });
   }
-  const originError = rejectInvalidMutationOrigin(request, {
-    requireHeader: credential.source === "cookie",
-  });
+  const originError = rejectInvalidMutationOrigin(request, { requireHeader: true });
   if (originError) return originError;
 
   try {

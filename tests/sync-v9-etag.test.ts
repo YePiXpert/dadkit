@@ -4,8 +4,6 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { POST as createRoute } from "@/app/api/sync/create/route";
-import { POST as joinRoute } from "@/app/api/sync/join/route";
 import { GET as pullRoute } from "@/app/api/sync/pull/route";
 import { POST as pushRoute } from "@/app/api/sync/push/route";
 import type { DadKitSyncDataVersion } from "@/lib/data/format";
@@ -13,14 +11,14 @@ import {
   DADKIT_DATA_VERSION_HEADER,
   createSyncEtag,
 } from "@/lib/sync/data-version";
-import { joinSpace, pullSpace, pushSpace } from "@/lib/sync/server-store";
+import { createRandomSpace, pullSpace, pushSpace } from "@/lib/sync/server-store";
 import { portableV5, portableV6, portableV7, portableV8, portableV9 } from "@/tests/helpers/portable-data";
 
 let dataDir: string;
 
 function pullRequest(token: string, version: DadKitSyncDataVersion, etag?: string) {
   const headers = new Headers({
-    authorization: `Bearer ${token}`,
+    cookie: `dadkit_sync_session=${encodeURIComponent(token)}`,
     [DADKIT_DATA_VERSION_HEADER]: String(version),
     "x-forwarded-for": `203.0.113.${90 + version}`,
   });
@@ -40,7 +38,7 @@ afterEach(() => {
 
 describe("v9 representation ETags", () => {
   it("returns 304 for v5-v9 only when the requested representation matches", async () => {
-    const device = await joinSpace("v9 ETag 家庭", "v9 ETag 同步码", false, 9);
+    const device = await createRandomSpace("v9 ETag 家庭", "v9 设备");
     if (!device) throw new Error("测试同步空间创建失败");
     await pushSpace(device.token, portableV9(), 9);
 
@@ -63,28 +61,11 @@ describe("v9 representation ETags", () => {
     expect((await pullRoute(pullRequest(device.token, 8, etags.get(9)))).status).toBe(200);
   });
 
-  it("adds v9 ETag and Vary to create, join and push", async () => {
-    const createResponse = await createRoute(new Request("https://dadkit.test/api/sync/create", {
-      method: "POST",
-      headers: { "content-type": "application/json", [DADKIT_DATA_VERSION_HEADER]: "9", "x-forwarded-for": "203.0.113.101" },
-      body: JSON.stringify({ name: "v9 响应头家庭" }),
-    }));
-    const created = await createResponse.json() as { invite: { code: string }; token: string; version: number };
-    expect(createResponse.headers.get("etag")).toBe(createSyncEtag(created.version, 9));
-    expect(createResponse.headers.get("vary")).toBe(DADKIT_DATA_VERSION_HEADER);
-
-    const joinResponse = await joinRoute(new Request("https://dadkit.test/api/sync/join", {
-      method: "POST",
-      headers: { "content-type": "application/json", [DADKIT_DATA_VERSION_HEADER]: "9", "x-forwarded-for": "203.0.113.102" },
-      body: JSON.stringify({ name: "v9 响应头家庭", code: created.invite.code, existingOnly: true }),
-    }));
-    const joined = await joinResponse.json() as { version: number };
-    expect(joinResponse.headers.get("etag")).toBe(createSyncEtag(joined.version, 9));
-    expect(joinResponse.headers.get("vary")).toBe(DADKIT_DATA_VERSION_HEADER);
-
+  it("adds v9 ETag and Vary to push", async () => {
+    const device = await createRandomSpace("v9 响应头家庭", "v9 设备");
     const pushResponse = await pushRoute(new Request("https://dadkit.test/api/sync/push", {
       method: "POST",
-      headers: { authorization: `Bearer ${created.token}`, "content-type": "application/json", [DADKIT_DATA_VERSION_HEADER]: "9", "x-forwarded-for": "203.0.113.103" },
+      headers: { cookie: `dadkit_sync_session=${encodeURIComponent(device.token)}`, origin: "https://dadkit.test", "content-type": "application/json", [DADKIT_DATA_VERSION_HEADER]: "9", "x-forwarded-for": "203.0.113.103" },
       body: JSON.stringify({ data: portableV9() }),
     }));
     const pushed = await pushResponse.json() as { version: number };
@@ -93,7 +74,7 @@ describe("v9 representation ETags", () => {
   });
 
   it("preserves a canonical recorder when an actual v8 device edits the event", async () => {
-    const device = await joinSpace("v8 记录人兼容家庭", "v8 记录人同步码", false, 9);
+    const device = await createRandomSpace("v8 记录人兼容家庭", "v9 设备");
     if (!device) throw new Error("测试同步空间创建失败");
     const canonical = portableV9();
     canonical.household.members["member-a"] = {
@@ -131,7 +112,7 @@ describe("v9 representation ETags", () => {
   });
 
   it("preserves household after v5, v6, v7 and v8 pushes", async () => {
-    const device = await joinSpace("旧设备 household 兼容家庭", "旧设备 household 同步码", false, 9);
+    const device = await createRandomSpace("旧设备 household 兼容家庭", "v9 设备");
     if (!device) throw new Error("测试同步空间创建失败");
     const canonical = portableV9();
     canonical.household.members["member-custom"] = {

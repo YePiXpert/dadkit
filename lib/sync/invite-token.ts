@@ -2,6 +2,7 @@ import { randomBytes as nodeRandomBytes } from "node:crypto";
 
 const INVITE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const INVITE_SECRET_LENGTH = 20;
+const INVITE_CODE_LENGTH = 8;
 const SPACE_ID_PATTERN = /^[0-9a-f]{64}$/;
 
 export type ParsedSyncInviteToken = {
@@ -9,22 +10,35 @@ export type ParsedSyncInviteToken = {
   secret: string;
 };
 
-export function generateInviteSecret(
+function generateInviteValue(
+  length: number,
   randomBytes: (size: number) => Buffer = nodeRandomBytes,
 ) {
-  let secret = "";
+  let value = "";
   const unbiasedLimit =
     Math.floor(256 / INVITE_ALPHABET.length) * INVITE_ALPHABET.length;
 
-  while (secret.length < INVITE_SECRET_LENGTH) {
+  while (value.length < length) {
     for (const byte of randomBytes(32)) {
       if (byte >= unbiasedLimit) continue;
-      secret += INVITE_ALPHABET[byte % INVITE_ALPHABET.length];
-      if (secret.length === INVITE_SECRET_LENGTH) break;
+      value += INVITE_ALPHABET[byte % INVITE_ALPHABET.length];
+      if (value.length === length) break;
     }
   }
 
-  return secret;
+  return value;
+}
+
+export function generateInviteSecret(
+  randomBytes: (size: number) => Buffer = nodeRandomBytes,
+) {
+  return generateInviteValue(INVITE_SECRET_LENGTH, randomBytes);
+}
+
+export function generateInviteCode(
+  randomBytes: (size: number) => Buffer = nodeRandomBytes,
+) {
+  return formatInviteCode(generateInviteValue(INVITE_CODE_LENGTH, randomBytes));
 }
 
 export function formatInviteSecret(secret: string) {
@@ -34,6 +48,20 @@ export function formatInviteSecret(secret: string) {
 export function normalizeInviteSecret(value: string) {
   const normalized = value.toUpperCase().replace(/[\s-]/g, "");
   return new RegExp(`^[${INVITE_ALPHABET}]{${INVITE_SECRET_LENGTH}}$`).test(
+    normalized,
+  )
+    ? normalized
+    : undefined;
+}
+
+export function formatInviteCode(code: string) {
+  const normalized = code.toUpperCase().replace(/[\s-]/g, "");
+  return `${normalized.slice(0, 4)}-${normalized.slice(4)}`;
+}
+
+export function normalizeInviteCode(value: string) {
+  const normalized = value.toUpperCase().replace(/[\s-]/g, "");
+  return new RegExp(`^[${INVITE_ALPHABET}]{${INVITE_CODE_LENGTH}}$`).test(
     normalized,
   )
     ? normalized

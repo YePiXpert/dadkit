@@ -8,10 +8,12 @@ export function parsePastedInvite(value: string) {
   } catch {
     return undefined;
   }
-  return /^DK2\.[0-9a-f]{64}\.[23456789ABCDEFGHJKLMNPQRSTUVWXYZ-]{20,24}$/.test(
-    candidate,
-  )
-    ? candidate
+  if (/^DK2\.[0-9a-f]{64}\.[23456789ABCDEFGHJKLMNPQRSTUVWXYZ-]{20,24}$/.test(candidate)) {
+    return candidate;
+  }
+  const normalizedCode = candidate.toUpperCase().replace(/[\s-]/g, "");
+  return /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{8}$/.test(normalizedCode)
+    ? `${normalizedCode.slice(0, 4)}-${normalizedCode.slice(4)}`
     : undefined;
 }
 

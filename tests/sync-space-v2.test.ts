@@ -17,7 +17,6 @@ import {
   renameSpace,
   revokeSession,
   updateSession,
-  upgradeSession,
 } from "@/lib/sync/server-store";
 import { portableTestItem, portableV9 } from "@/tests/helpers/portable-data";
 
@@ -77,13 +76,16 @@ describe("random sync spaces", () => {
     const owner = await createRandomSpace("邀请家庭", "管理员手机");
     const invite = await createV2Invite(owner.token, 60);
     expect(invite?.token).toMatch(/^DK2\.[0-9a-f]{64}\.[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{20}$/);
+    expect(invite?.code).toMatch(/^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/);
     const secret = invite!.token.split(".")[2]!;
     const storedBefore = readFileSync(path.join(directory, readdirSync(directory)[0]!), "utf8");
     expect(storedBefore).not.toContain(secret);
+    expect(storedBefore).not.toContain(invite!.code);
+    expect(storedBefore).not.toContain(invite!.code.replace("-", ""));
 
     const results = await Promise.all([
       joinWithInvite(invite!.token, "设备 A"),
-      joinWithInvite(invite!.token, "设备 B"),
+      joinWithInvite(invite!.code.toLowerCase().replace("-", " "), "设备 B"),
     ]);
     expect(results.filter(Boolean)).toHaveLength(1);
     expect(results.find(Boolean)?.space.currentSession.role).toBe("member");
@@ -97,7 +99,6 @@ describe("random sync spaces", () => {
     const memberId = devices!.find((device) => device.deviceName === "副设备")!.id;
 
     await expect(createV2Invite(member!.token, 60)).rejects.toMatchObject({ status: 403 });
-    expect((await upgradeSession(member!.token, "恶意改名", "副设备新名称"))?.displayName).toBe("设备家庭");
     await expect(updateSession(owner.token, owner.space.currentSession.id, { role: "member" }))
       .rejects.toMatchObject({ code: "LAST_OWNER_REQUIRED" });
 

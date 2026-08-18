@@ -9,35 +9,31 @@ import {
   getRequestedDataVersion,
   syncDataVersionResponseHeaders,
 } from "@/lib/sync/data-version";
-import { requestCredentials } from "@/lib/sync/request-auth";
+import { requestCredential } from "@/lib/sync/request-auth";
 
 export const runtime = "nodejs";
 
 const pullRateLimiter = createWebDavProxyRateLimiter(120, 60_000);
 
 export async function GET(request: Request) {
-  const credentials = requestCredentials(request);
-  const sessionRateKey = credentials[0]?.token.split(".")[0];
+  const credential = requestCredential(request);
+  const sessionRateKey = credential?.token.split(".")[0];
   const rateLimit = pullRateLimiter.consume(sessionRateKey ? `space:${sessionRateKey}` : proxyClientKey(request.headers));
 
   if (!rateLimit.allowed) {
     return syncError("操作过于频繁，请稍后再试。", 429, rateLimitHeaders(rateLimit));
   }
 
-  if (!credentials.length) {
+  if (!credential) {
     return syncError("缺少同步会话。", 401);
   }
 
   try {
     const dataVersion = getRequestedDataVersion(request.headers);
-    let snapshot;
-    for (const credential of credentials) {
-      snapshot = await pullSpace(credential.token, dataVersion);
-      if (snapshot) break;
-    }
+    const snapshot = await pullSpace(credential.token, dataVersion);
 
     if (!snapshot) {
-      return syncError("同步会话已失效，请重新输入同步码。", 401);
+      return syncError("同步会话已失效，请重新加入家庭。", 401);
     }
 
     const versionedHeaders = syncDataVersionResponseHeaders(

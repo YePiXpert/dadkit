@@ -68,20 +68,20 @@ describe("HttpOnly sync sessions", () => {
     const joined = await joinRoute(new Request(`${origin}/api/sync/v2/join`, {
       method: "POST",
       headers: { origin, "content-type": "application/json" },
-      body: JSON.stringify({ inviteToken: invite!.token, deviceName: "备用管理员" }),
+      body: JSON.stringify({ inviteCredential: invite!.code, deviceName: "备用管理员" }),
     }));
     expect(joined.headers.get("set-cookie")).toContain("HttpOnly");
     const joinedBody = await joined.json() as { space: { currentSession: { id: string } } };
     expect(JSON.stringify(joinedBody)).not.toMatch(/token|secret/i);
     await updateSession(ownerToken, joinedBody.space.currentSession.id, { role: "owner" });
 
-    const bearerFallback = await pullRoute(new Request(`${origin}/api/sync/pull`, {
+    const bearerRejected = await pullRoute(new Request(`${origin}/api/sync/pull`, {
       headers: {
         cookie: "dadkit_sync_session=invalid.cookie",
         authorization: `Bearer ${ownerToken}`,
       },
     }));
-    expect(bearerFallback.status).toBe(200);
+    expect(bearerRejected.status).toBe(401);
 
     const left = await leaveRoute(new Request(`${origin}/api/sync/leave`, {
       method: "POST",

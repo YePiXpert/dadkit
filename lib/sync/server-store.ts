@@ -28,7 +28,9 @@ import {
 import { SYNC_ERROR_CODES, type SyncErrorCode } from "@/lib/sync/error-codes";
 import {
   createInviteToken,
+  generateInviteCode,
   generateInviteSecret,
+  normalizeInviteCode,
   normalizeInviteSecret,
   parseInviteToken,
 } from "@/lib/sync/invite-token";
@@ -42,17 +44,13 @@ import {
   type SyncSpaceSessionV2,
   type SyncSpaceUsage,
 } from "@/lib/sync/space-schema";
-import {
-  legacySyncSpaceName,
-  normalizeSyncSpaceName,
-} from "@/lib/sync/space-name";
 import { canonicalDataBytes, isInviteActive, syncSpaceUsage } from "@/lib/sync/usage";
 
 const SESSION_RENEW_THROTTLE_MS = 60 * 60 * 1000;
 const SPACE_BACKUP_COUNT = 5;
-const LEGACY_INVITE_TTL_MS = 10 * 60 * 1000;
-const LEGACY_INVITE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 const RANDOM_SPACE_ATTEMPTS = 8;
+const INVITE_CODE_ATTEMPTS = 8;
+const INVITE_CODE_LOCK = "invite-code-generation";
 const scrypt = promisify(scryptCallback) as (
   password: string,
   salt: string,
@@ -75,19 +73,6 @@ export class SyncStoreError extends Error {
   }
 }
 
-type LegacySpaceSession = { createdAt: string; lastSeenAt: string };
-type LegacySpaceInvite = { codeSalt: string; codeHash: string; expiresAt: string };
-type LegacySpaceFile = {
-  codeSalt: string;
-  codeHash: string;
-  legacyJoinEnabled?: boolean;
-  invite?: LegacySpaceInvite;
-  version: number;
-  updatedAt: string;
-  data: DadKitImportData | null;
-  sessions: Record<string, LegacySpaceSession>;
-};
-
 export type SyncSpaceSnapshot = {
   version: number;
   updatedAt: string;
@@ -96,15 +81,15 @@ export type SyncSpaceSnapshot = {
 };
 
 export type SyncJoinResult = SyncSpaceSnapshot & { token: string };
-export type SyncInvite = { code: string; expiresAt: string };
-export type SyncCreateResult = SyncJoinResult & { invite: SyncInvite };
-
 export type SyncSessionPublic = SyncSpaceSessionV2 & {
   id: string;
   current: boolean;
 };
 
-export type SyncInvitePublic = Omit<SyncSpaceInviteV2, "codeSalt" | "codeHash">;
+export type SyncInvitePublic = Omit<
+  SyncSpaceInviteV2,
+  "codeSalt" | "codeHash" | "shortCodeSalt" | "shortCodeHash" | "shortCodeLookup"
+>;
 
 export type SyncSpaceMetadata = {
   spaceId: string;
@@ -126,6 +111,7 @@ export type SyncRandomCreateResult = {
 export type SyncInviteV2Result = {
   id: string;
   token: string;
+  code: string;
   expiresAt: string;
 };
 
@@ -188,7 +174,7 @@ function isSessionV2(value: unknown): value is SyncSpaceSessionV2 {
     value.deviceName.length >= 1 &&
     value.deviceName.length <= 60 &&
     isRole(value.role) &&
-    (value.protocolVersion === 1 || value.protocolVersion === 2)
+    value.protocolVersion === 2
   );
 }
 
@@ -201,6 +187,21 @@ function isInviteV2(value: unknown): value is SyncSpaceInviteV2 {
     /^[0-9a-f]{32}$/.test(value.codeSalt) &&
     typeof value.codeHash === "string" &&
     /^[0-9a-f]{64}$/.test(value.codeHash) &&
+    (value.shortCodeSalt === undefined ||
+      (typeof value.shortCodeSalt === "string" &&
+        /^[0-9a-f]{32}$/.test(value.shortCodeSalt))) &&
+    (value.shortCodeHash === undefined ||
+      (typeof value.shortCodeHash === "string" &&
+        /^[0-9a-f]{64}$/.test(value.shortCodeHash))) &&
+    (value.shortCodeLookup === undefined ||
+      (typeof value.shortCodeLookup === "string" &&
+        /^[0-9a-f]{64}$/.test(value.shortCodeLookup))) &&
+    ((value.shortCodeSalt === undefined &&
+      value.shortCodeHash === undefined &&
+      value.shortCodeLookup === undefined) ||
+      (value.shortCodeSalt !== undefined &&
+        value.shortCodeHash !== undefined &&
+        value.shortCodeLookup !== undefined)) &&
     isValidDateString(value.createdAt) &&
     isValidDateString(value.expiresAt) &&
     typeof value.createdBySessionId === "string" &&
@@ -216,7 +217,7 @@ function isSpaceFileV2(value: unknown): value is SyncSpaceFileV2 {
     value.schemaVersion === SYNC_SPACE_SCHEMA_VERSION &&
     typeof value.spaceId === "string" &&
     /^[0-9a-f]{64}$/.test(value.spaceId) &&
-    (value.kind === "legacy-name" || value.kind === "random") &&
+    value.kind === "random" &&
     typeof value.displayName === "string" &&
     value.displayName.length >= 1 &&
     value.displayName.length <= 40 &&
@@ -228,16 +229,6 @@ function isSpaceFileV2(value: unknown): value is SyncSpaceFileV2 {
     isValidDateString(value.dataUpdatedAt) &&
     isValidDateString(value.metadataUpdatedAt) &&
     (value.data === null || isDadKitImportData(value.data)) &&
-    (value.legacyAuth === undefined ||
-      (isRecord(value.legacyAuth) &&
-        typeof value.legacyAuth.codeSalt === "string" &&
-        /^[0-9a-f]{32}$/.test(value.legacyAuth.codeSalt) &&
-        typeof value.legacyAuth.codeHash === "string" &&
-        /^[0-9a-f]{64}$/.test(value.legacyAuth.codeHash) &&
-        typeof value.legacyAuth.joinEnabled === "boolean" &&
-        (value.legacyAuth.normalizedNameHash === undefined ||
-          (typeof value.legacyAuth.normalizedNameHash === "string" &&
-            /^[0-9a-f]{64}$/.test(value.legacyAuth.normalizedNameHash))))) &&
     isRecord(value.sessions) &&
     Object.entries(value.sessions).every(
       ([id, session]) => /^[0-9a-f]{64}$/.test(id) && isSessionV2(session),
@@ -249,101 +240,6 @@ function isSpaceFileV2(value: unknown): value is SyncSpaceFileV2 {
   );
 }
 
-function isLegacySession(value: unknown): value is LegacySpaceSession {
-  return (
-    isRecord(value) &&
-    isValidDateString(value.createdAt) &&
-    isValidDateString(value.lastSeenAt)
-  );
-}
-
-function isLegacyInvite(value: unknown): value is LegacySpaceInvite {
-  return (
-    isRecord(value) &&
-    typeof value.codeSalt === "string" &&
-    /^[0-9a-f]{32}$/.test(value.codeSalt) &&
-    typeof value.codeHash === "string" &&
-    /^[0-9a-f]{64}$/.test(value.codeHash) &&
-    isValidDateString(value.expiresAt)
-  );
-}
-
-function isLegacySpaceFile(value: unknown): value is LegacySpaceFile {
-  return (
-    isRecord(value) &&
-    typeof value.codeSalt === "string" &&
-    /^[0-9a-f]{32}$/.test(value.codeSalt) &&
-    typeof value.codeHash === "string" &&
-    /^[0-9a-f]{64}$/.test(value.codeHash) &&
-    (value.legacyJoinEnabled === undefined || typeof value.legacyJoinEnabled === "boolean") &&
-    (value.invite === undefined || isLegacyInvite(value.invite)) &&
-    Number.isInteger(value.version) &&
-    (value.version as number) >= 0 &&
-    isValidDateString(value.updatedAt) &&
-    (value.data === null || isDadKitImportData(value.data)) &&
-    isRecord(value.sessions) &&
-    Object.entries(value.sessions).every(
-      ([id, session]) => /^[0-9a-f]{64}$/.test(id) && isLegacySession(session),
-    )
-  );
-}
-
-export function migrateLegacySpaceFile(
-  spaceId: string,
-  legacy: LegacySpaceFile,
-): SyncSpaceFileV2 {
-  const sessions = Object.fromEntries(
-    Object.entries(legacy.sessions).map(([id, session]) => [
-      id,
-      {
-        ...session,
-        deviceName: "旧设备",
-        role: "owner" as const,
-        protocolVersion: 1 as const,
-      },
-    ]),
-  );
-  const firstSessionId = Object.keys(sessions).sort()[0] ?? "legacy";
-  const invites: Record<string, SyncSpaceInviteV2> = {};
-  if (legacy.invite) {
-    const id = sha256(`legacy-invite:${legacy.invite.codeHash}`).slice(0, 32);
-    invites[id] = {
-      id,
-      ...legacy.invite,
-      createdAt: legacy.updatedAt,
-      createdBySessionId: firstSessionId,
-      role: "member",
-      usedAt: null,
-      revokedAt: null,
-    };
-  }
-  const createdAt =
-    Object.values(legacy.sessions)
-      .map((session) => session.createdAt)
-      .sort()[0] ?? legacy.updatedAt;
-
-  return {
-    schemaVersion: 2,
-    spaceId,
-    kind: "legacy-name",
-    displayName: "家庭同步",
-    createdAt,
-    dataRevision: legacy.version,
-    metadataRevision: 0,
-    dataUpdatedAt: legacy.updatedAt,
-    metadataUpdatedAt: legacy.updatedAt,
-    data: legacy.data,
-    legacyAuth: {
-      codeSalt: legacy.codeSalt,
-      codeHash: legacy.codeHash,
-      joinEnabled: legacy.legacyJoinEnabled !== false,
-      normalizedNameHash: spaceId,
-    },
-    sessions,
-    invites,
-  };
-}
-
 async function readSpace(spaceId: string): Promise<SyncSpaceFileV2 | undefined> {
   try {
     const parsed = JSON.parse(await readFile(spacePath(spaceId), "utf8")) as unknown;
@@ -351,13 +247,62 @@ async function readSpace(spaceId: string): Promise<SyncSpaceFileV2 | undefined> 
       if (parsed.spaceId !== spaceId) throw new SyncStoreError("同步空间数据结构无效。");
       return parsed;
     }
-    if (isLegacySpaceFile(parsed)) return migrateLegacySpaceFile(spaceId, parsed);
     throw new SyncStoreError("同步空间数据结构无效。");
   } catch (error) {
     if (isRecord(error) && error.code === "ENOENT") return undefined;
     if (error instanceof SyncStoreError) throw error;
     throw new SyncStoreError("同步空间数据读取失败。");
   }
+}
+
+async function listSpaceIds() {
+  try {
+    return (await readdir(dataDir()))
+      .map((entry) => /^space-([0-9a-f]{64})\.json$/.exec(entry)?.[1])
+      .filter((spaceId): spaceId is string => Boolean(spaceId));
+  } catch (error) {
+    if (isRecord(error) && error.code === "ENOENT") return [];
+    throw new SyncStoreError("同步空间目录读取失败。");
+  }
+}
+
+async function findSpaceIdsByInviteCode(normalizedCode: string) {
+  const lookup = sha256(normalizedCode);
+  const matches: string[] = [];
+  for (const spaceId of await listSpaceIds()) {
+    let space: SyncSpaceFileV2 | undefined;
+    try {
+      space = await readSpace(spaceId);
+    } catch (error) {
+      if (error instanceof SyncStoreError) continue;
+      throw error;
+    }
+    if (
+      space &&
+      Object.values(space.invites).some(
+        (invite) =>
+          isInviteActive(invite, Date.now()) && invite.shortCodeLookup === lookup,
+      )
+    ) {
+      matches.push(spaceId);
+    }
+  }
+  return matches;
+}
+
+async function generateUniqueInviteCode() {
+  for (let attempt = 0; attempt < INVITE_CODE_ATTEMPTS; attempt += 1) {
+    const code = generateInviteCode();
+    const normalized = normalizeInviteCode(code)!;
+    if ((await findSpaceIdsByInviteCode(normalized)).length === 0) {
+      return { code, normalized };
+    }
+  }
+  throw new SyncStoreError(
+    "无法生成唯一邀请口令，请稍后重试。",
+    SYNC_ERROR_CODES.storageUnavailable,
+    503,
+  );
 }
 
 async function rotateSpaceBackups(filePath: string) {
@@ -442,12 +387,17 @@ function issueSession(
   now: string,
   deviceName: string,
   role: SyncSpaceRole,
-  protocolVersion: 1 | 2,
   randomBytes: (size: number) => Buffer = nodeRandomBytes,
 ) {
   const secret = randomBytes(24).toString("hex");
   const id = sha256(secret);
-  space.sessions[id] = { createdAt: now, lastSeenAt: now, deviceName, role, protocolVersion };
+  space.sessions[id] = {
+    createdAt: now,
+    lastSeenAt: now,
+    deviceName,
+    role,
+    protocolVersion: 2,
+  };
   return { token: `${space.spaceId}.${secret}`, sessionId: id };
 }
 
@@ -522,191 +472,6 @@ function requireOwner(session: SyncSpaceSessionV2) {
   if (session.role !== "owner") {
     throw new SyncStoreError("需要同步空间管理员权限。", SYNC_ERROR_CODES.ownerRequired, 403);
   }
-}
-
-function generateLegacyInviteCode() {
-  const bytes = nodeRandomBytes(16);
-  let code = "";
-  const limit = Math.floor(256 / LEGACY_INVITE_ALPHABET.length) * LEGACY_INVITE_ALPHABET.length;
-  for (const byte of bytes) {
-    if (byte >= limit) continue;
-    code += LEGACY_INVITE_ALPHABET[byte % LEGACY_INVITE_ALPHABET.length];
-    if (code.length === 8) break;
-  }
-  if (code.length < 8) return generateLegacyInviteCode();
-  return `${code.slice(0, 4)}-${code.slice(4)}`;
-}
-
-function normalizeLegacyInviteCode(code: string) {
-  const normalized = code.toUpperCase().replace(/[\s-]/g, "");
-  return new RegExp(`^[${LEGACY_INVITE_ALPHABET}]{8}$`).test(normalized)
-    ? normalized
-    : undefined;
-}
-
-async function setLegacyInvite(space: SyncSpaceFileV2, sessionId: string): Promise<SyncInvite> {
-  for (const invite of Object.values(space.invites)) {
-    if (isInviteActive(invite, Date.now())) invite.revokedAt = new Date().toISOString();
-  }
-  const code = generateLegacyInviteCode();
-  const normalized = normalizeLegacyInviteCode(code)!;
-  const now = new Date().toISOString();
-  const codeSalt = nodeRandomBytes(16).toString("hex");
-  const expiresAt = new Date(Date.now() + LEGACY_INVITE_TTL_MS).toISOString();
-  const id = nodeRandomBytes(16).toString("hex");
-  space.invites[id] = {
-    id,
-    codeSalt,
-    codeHash: await hashCode(normalized, codeSalt),
-    createdAt: now,
-    expiresAt,
-    createdBySessionId: sessionId,
-    role: "member",
-    usedAt: null,
-    revokedAt: null,
-  };
-  touchMetadata(space, now);
-  return { code, expiresAt };
-}
-
-export async function joinSpace(
-  name: string,
-  code: string,
-  existingOnly = false,
-  targetVersion: DadKitSyncDataVersion = 9,
-): Promise<SyncJoinResult | undefined> {
-  const normalizedName = normalizeSyncSpaceName(name);
-  const legacyName = legacySyncSpaceName(name);
-  const normalizedSpaceId = sha256(normalizedName);
-  const legacySpaceId = sha256(legacyName);
-
-  return withSpaceLock(normalizedSpaceId, async () => {
-    const now = new Date().toISOString();
-    let spaceId = normalizedSpaceId;
-    let space = await readSpace(spaceId);
-    if (!space && legacySpaceId !== normalizedSpaceId) {
-      space = await readSpace(legacySpaceId);
-      spaceId = legacySpaceId;
-    }
-
-    if (!space) {
-      if (existingOnly) return undefined;
-      const codeSalt = nodeRandomBytes(16).toString("hex");
-      space = {
-        schemaVersion: 2,
-        spaceId,
-        kind: "legacy-name",
-        displayName: sanitizeSyncDisplayName(name) || "家庭同步",
-        createdAt: now,
-        dataRevision: 0,
-        metadataRevision: 0,
-        dataUpdatedAt: now,
-        metadataUpdatedAt: now,
-        data: null,
-        legacyAuth: {
-          codeSalt,
-          codeHash: await hashCode(code.trim(), codeSalt),
-          joinEnabled: true,
-          normalizedNameHash: normalizedSpaceId,
-        },
-        sessions: {},
-        invites: {},
-      };
-    } else {
-      let authenticated = false;
-      const inviteCode = normalizeLegacyInviteCode(code);
-      if (inviteCode) {
-        for (const invite of Object.values(space.invites)) {
-          if (!isInviteActive(invite, Date.now())) continue;
-          const candidate = await hashCode(inviteCode, invite.codeSalt);
-          if (safeHashMatch(candidate, invite.codeHash)) {
-            invite.usedAt = now;
-            authenticated = true;
-            if (space.legacyAuth) space.legacyAuth.joinEnabled = false;
-            break;
-          }
-        }
-      }
-      if (!authenticated && space.legacyAuth?.joinEnabled !== false) {
-        const candidate = await hashCode(code.trim(), space.legacyAuth!.codeSalt);
-        authenticated = safeHashMatch(candidate, space.legacyAuth!.codeHash);
-      }
-      if (!authenticated) return undefined;
-      pruneExpiredSessions(space, Date.now());
-      if (Object.keys(space.sessions).length >= getSyncSpaceConfig().maxDevices) {
-        throw new SyncStoreError("同步设备数量已达到上限。", SYNC_ERROR_CODES.deviceLimitReached, 409);
-      }
-    }
-
-    const issued = issueSession(space, now, "旧设备", "owner", 1);
-    touchMetadata(space, now);
-    await writeSpace(space);
-    return { token: issued.token, ...snapshotOf(space, targetVersion) };
-  });
-}
-
-export async function createSpace(
-  name: string,
-  targetVersion: DadKitSyncDataVersion = 9,
-): Promise<SyncCreateResult | undefined> {
-  if (!getSyncSpaceConfig().legacyCreateEnabled) return undefined;
-  const normalizedName = normalizeSyncSpaceName(name);
-  const legacyName = legacySyncSpaceName(name);
-  const spaceId = sha256(normalizedName);
-  const legacySpaceId = sha256(legacyName);
-  return withSpaceLock(spaceId, async () => {
-    if (
-      (await readSpace(spaceId)) ||
-      (legacySpaceId !== spaceId && (await readSpace(legacySpaceId)))
-    ) return undefined;
-    const now = new Date().toISOString();
-    const codeSalt = nodeRandomBytes(16).toString("hex");
-    const retiredCode = nodeRandomBytes(32).toString("hex");
-    const space: SyncSpaceFileV2 = {
-      schemaVersion: 2,
-      spaceId,
-      kind: "legacy-name",
-      displayName: sanitizeSyncDisplayName(name) || "家庭同步",
-      createdAt: now,
-      dataRevision: 0,
-      metadataRevision: 0,
-      dataUpdatedAt: now,
-      metadataUpdatedAt: now,
-      data: null,
-      legacyAuth: {
-        codeSalt,
-        codeHash: await hashCode(retiredCode, codeSalt),
-        joinEnabled: false,
-        normalizedNameHash: spaceId,
-      },
-      sessions: {},
-      invites: {},
-    };
-    const issued = issueSession(space, now, "旧设备", "owner", 1);
-    const invite = await setLegacyInvite(space, issued.sessionId);
-    await writeSpace(space);
-    return { token: issued.token, invite, ...snapshotOf(space, targetVersion) };
-  });
-}
-
-export async function createInvite(
-  token: string,
-  name: string,
-): Promise<SyncInvite | null | undefined> {
-  const parsed = parseSessionToken(token);
-  if (!parsed) return undefined;
-  if (
-    sha256(normalizeSyncSpaceName(name)) !== parsed.spaceId &&
-    sha256(legacySyncSpaceName(name)) !== parsed.spaceId
-  ) return null;
-  return withSpaceLock(parsed.spaceId, async () => {
-    const auth = await authenticateLocked(parsed.spaceId, parsed.secret);
-    if (!auth) return undefined;
-    requireOwner(auth.session);
-    const invite = await setLegacyInvite(auth.space, auth.sessionId);
-    await writeSpace(auth.space);
-    return invite;
-  });
 }
 
 export async function pullSpace(
@@ -845,7 +610,7 @@ export async function createRandomSpace(
         sessions: {},
         invites: {},
       };
-      const issued = issueSession(space, now, cleanDeviceName, "owner", 2, randomBytes);
+      const issued = issueSession(space, now, cleanDeviceName, "owner", randomBytes);
       touchMetadata(space, now);
       await writeSpace(space);
       return { token: issued.token, space: metadataOf(space, issued.sessionId) };
@@ -861,7 +626,7 @@ export async function createV2Invite(
 ): Promise<SyncInviteV2Result | undefined> {
   const parsed = parseSessionToken(token);
   if (!parsed) return undefined;
-  return withSpaceLock(parsed.spaceId, async () => {
+  return withSpaceLock(INVITE_CODE_LOCK, () => withSpaceLock(parsed.spaceId, async () => {
     const auth = await authenticateLocked(parsed.spaceId, parsed.secret);
     if (!auth) return undefined;
     requireOwner(auth.session);
@@ -876,6 +641,8 @@ export async function createV2Invite(
     }
     const secret = generateInviteSecret();
     const salt = nodeRandomBytes(16).toString("hex");
+    const shortCode = await generateUniqueInviteCode();
+    const shortCodeSalt = nodeRandomBytes(16).toString("hex");
     const id = nodeRandomBytes(16).toString("hex");
     const now = new Date().toISOString();
     const expiresAt = new Date(Date.now() + ttl * 60_000).toISOString();
@@ -883,6 +650,9 @@ export async function createV2Invite(
       id,
       codeSalt: salt,
       codeHash: await hashCode(secret, salt),
+      shortCodeSalt,
+      shortCodeHash: await hashCode(shortCode.normalized, shortCodeSalt),
+      shortCodeLookup: sha256(shortCode.normalized),
       createdAt: now,
       expiresAt,
       createdBySessionId: auth.sessionId,
@@ -892,43 +662,67 @@ export async function createV2Invite(
     };
     touchMetadata(auth.space, now);
     await writeSpace(auth.space);
-    return { id, token: createInviteToken(auth.space.spaceId, secret), expiresAt };
-  });
+    return {
+      id,
+      token: createInviteToken(auth.space.spaceId, secret),
+      code: shortCode.code,
+      expiresAt,
+    };
+  }));
 }
 
 export async function joinWithInvite(
-  inviteToken: string,
+  inviteCredential: string,
   deviceName: string,
 ): Promise<SyncRandomCreateResult | undefined> {
-  const parsed = parseInviteToken(inviteToken);
+  const parsed = parseInviteToken(inviteCredential);
+  const normalizedCode = normalizeInviteCode(inviteCredential);
   const cleanDeviceName = sanitizeDeviceName(deviceName);
-  if (!parsed || cleanDeviceName.length < 1 || cleanDeviceName.length > 60) return undefined;
-  return withSpaceLock(parsed.spaceId, async () => {
-    const space = await readSpace(parsed.spaceId);
-    if (!space) return undefined;
-    pruneExpiredSessions(space, Date.now());
-    const config = getSyncSpaceConfig();
-    let matched: SyncSpaceInviteV2 | undefined;
-    const secret = normalizeInviteSecret(parsed.secret)!;
-    for (const invite of Object.values(space.invites)) {
-      if (!isInviteActive(invite, Date.now())) continue;
-      const candidate = await hashCode(secret, invite.codeSalt);
-      if (safeHashMatch(candidate, invite.codeHash)) {
-        matched = invite;
-        break;
+  if ((!parsed && !normalizedCode) || cleanDeviceName.length < 1 || cleanDeviceName.length > 60) {
+    return undefined;
+  }
+  const spaceIds = parsed
+    ? [parsed.spaceId]
+    : await findSpaceIdsByInviteCode(normalizedCode!);
+  for (const spaceId of spaceIds) {
+    const result = await withSpaceLock(spaceId, async () => {
+      const space = await readSpace(spaceId);
+      if (!space) return undefined;
+      pruneExpiredSessions(space, Date.now());
+      const config = getSyncSpaceConfig();
+      let matched: SyncSpaceInviteV2 | undefined;
+      for (const invite of Object.values(space.invites)) {
+        if (!isInviteActive(invite, Date.now())) continue;
+        const salt = parsed ? invite.codeSalt : invite.shortCodeSalt;
+        const expected = parsed ? invite.codeHash : invite.shortCodeHash;
+        const credential = parsed
+          ? normalizeInviteSecret(parsed.secret)!
+          : normalizedCode!;
+        if (!salt || !expected) continue;
+        const candidate = await hashCode(credential, salt);
+        if (safeHashMatch(candidate, expected)) {
+          matched = invite;
+          break;
+        }
       }
-    }
-    if (!matched) return undefined;
-    if (Object.keys(space.sessions).length >= config.maxDevices) {
-      throw new SyncStoreError("同步设备数量已达到上限。", SYNC_ERROR_CODES.deviceLimitReached, 409);
-    }
-    const now = new Date().toISOString();
-    matched.usedAt = now;
-    const issued = issueSession(space, now, cleanDeviceName, "member", 2);
-    touchMetadata(space, now);
-    await writeSpace(space);
-    return { token: issued.token, space: metadataOf(space, issued.sessionId) };
-  });
+      if (!matched) return undefined;
+      if (Object.keys(space.sessions).length >= config.maxDevices) {
+        throw new SyncStoreError(
+          "同步设备数量已达到上限。",
+          SYNC_ERROR_CODES.deviceLimitReached,
+          409,
+        );
+      }
+      const now = new Date().toISOString();
+      matched.usedAt = now;
+      const issued = issueSession(space, now, cleanDeviceName, "member");
+      touchMetadata(space, now);
+      await writeSpace(space);
+      return { token: issued.token, space: metadataOf(space, issued.sessionId) };
+    });
+    if (result) return result;
+  }
+  return undefined;
 }
 
 export async function getSpaceMetadata(token: string) {
@@ -937,43 +731,6 @@ export async function getSpaceMetadata(token: string) {
   return withSpaceLock(parsed.spaceId, async () => {
     const auth = await authenticateLocked(parsed.spaceId, parsed.secret);
     return auth ? metadataOf(auth.space, auth.sessionId) : undefined;
-  });
-}
-
-export async function upgradeSession(
-  token: string,
-  displayName: string,
-  deviceName: string,
-) {
-  const parsed = parseSessionToken(token);
-  if (!parsed) return undefined;
-  const cleanDisplayName = sanitizeSyncDisplayName(displayName);
-  const cleanDeviceName = sanitizeDeviceName(deviceName);
-  if (cleanDisplayName.length < 1 || cleanDisplayName.length > 40 || cleanDeviceName.length < 1 || cleanDeviceName.length > 60) {
-    throw new SyncStoreError("家庭或设备名称不正确。", SYNC_ERROR_CODES.storageUnavailable, 400);
-  }
-  return withSpaceLock(parsed.spaceId, async () => {
-    const auth = await authenticateLocked(parsed.spaceId, parsed.secret);
-    if (!auth) return undefined;
-    let changed = false;
-    if (
-      auth.space.kind === "legacy-name" &&
-      auth.session.role === "owner" &&
-      auth.space.displayName !== cleanDisplayName
-    ) {
-      auth.space.displayName = cleanDisplayName;
-      changed = true;
-    }
-    if (auth.session.deviceName !== cleanDeviceName || auth.session.protocolVersion !== 2) {
-      auth.session.deviceName = cleanDeviceName;
-      auth.session.protocolVersion = 2;
-      changed = true;
-    }
-    if (changed) {
-      touchMetadata(auth.space);
-      await writeSpace(auth.space);
-    }
-    return metadataOf(auth.space, auth.sessionId);
   });
 }
 

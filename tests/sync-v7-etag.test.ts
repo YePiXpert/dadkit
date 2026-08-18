@@ -12,14 +12,14 @@ import {
   DADKIT_DATA_VERSION_HEADER,
   createSyncEtag,
 } from "@/lib/sync/data-version";
-import { joinSpace, pushSpace } from "@/lib/sync/server-store";
+import { createRandomSpace, pushSpace } from "@/lib/sync/server-store";
 import { portableV7 } from "@/tests/helpers/portable-data";
 
 let dataDir: string;
 
 function request(token: string, dataVersion: 5 | 6 | 7, etag?: string) {
   const headers = new Headers({
-    authorization: `Bearer ${token}`,
+    cookie: `dadkit_sync_session=${encodeURIComponent(token)}`,
     [DADKIT_DATA_VERSION_HEADER]: String(dataVersion),
     "x-forwarded-for": "203.0.113.77",
   });
@@ -39,7 +39,7 @@ afterEach(() => {
 
 describe("v7 representation ETags", () => {
   it("returns 200 for cross-version ETags and 304 only for v7", async () => {
-    const device = await joinSpace("v7 ETag家庭", "v7 ETag同步码", false, 7);
+    const device = await createRandomSpace("v7 ETag家庭", "v7 设备");
     if (!device) throw new Error("测试同步空间创建失败");
     const data = portableV7();
     data.planning.items.bag = {
@@ -77,7 +77,7 @@ describe("v7 representation ETags", () => {
   });
 
   it("returns a v7 ETag and Vary header after a v7 push", async () => {
-    const device = await joinSpace("v7 push ETag家庭", "v7 push同步码", false, 7);
+    const device = await createRandomSpace("v7 push ETag家庭", "v7 设备");
     if (!device) throw new Error("测试同步空间创建失败");
     const data = portableV7();
     data.planning.items.bag = {
@@ -88,7 +88,8 @@ describe("v7 representation ETags", () => {
       new Request("https://dadkit.test/api/sync/push", {
         method: "POST",
         headers: {
-          authorization: `Bearer ${device.token}`,
+          cookie: `dadkit_sync_session=${encodeURIComponent(device.token)}`,
+          origin: "https://dadkit.test",
           "content-type": "application/json",
           [DADKIT_DATA_VERSION_HEADER]: "7",
           "x-forwarded-for": "203.0.113.78",

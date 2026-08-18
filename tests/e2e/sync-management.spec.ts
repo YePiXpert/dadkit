@@ -41,12 +41,18 @@ test("随机空间、邀请、设备角色和永久删除完成闭环", async ({
   const inviteLink = (await inviteText.textContent())!;
   expect(inviteLink).toContain("#invite=");
   expect(inviteLink).not.toContain("?invite=");
+  const inviteCodeText = page.getByText(
+    /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{4}$/,
+  );
+  await expect(inviteCodeText).toBeVisible();
+  const inviteCode = (await inviteCodeText.textContent())!;
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 
   const memberContext = await browser.newContext({ viewport: { width: 360, height: 800 } });
   const memberPage = await memberContext.newPage();
   await seedCompletedOnboarding(memberPage);
-  await memberPage.goto(inviteLink);
-  await expect(memberPage).toHaveURL(/\/join$/);
+  await memberPage.goto("/join");
+  await memberPage.getByLabel("邀请链接或短口令").fill(inviteCode);
   await memberPage.getByLabel("设备名称").fill("副设备");
   await memberPage.getByRole("button", { name: "加入家庭同步" }).click();
   await expect(memberPage).toHaveURL(/\/$/);

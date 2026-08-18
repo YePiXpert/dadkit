@@ -4,8 +4,6 @@ export {
   clearWebDavSettings,
   loadSyncClientState,
   loadSyncSession,
-  isLegacySyncSession,
-  isSyncSessionV2,
   loadWebDavConfig,
   loadWebDavSecret,
   loadWebDavSyncState,
@@ -16,6 +14,4 @@ export {
   saveWebDavSyncState,
   type SyncClientState,
   type SyncSession,
-  type LegacySyncSession,
-  type SyncSessionLocalV2,
 } from "@/lib/storage";

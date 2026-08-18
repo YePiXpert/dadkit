@@ -282,11 +282,11 @@ describe("android version checks", () => {
     vi.stubGlobal("window", {
       location: { origin: "https://dadkit.505f.com", search: "" },
       localStorage: storage,
-      navigator: { userAgent: "Android WebView DadKitAndroid/22" },
+      navigator: { userAgent: "Android WebView DadKitAndroid/23" },
     });
 
-    expect(captureCurrentAndroidVersionCode()).toBe(22);
-    expect(storage.getItem(ANDROID_VERSION_STORAGE_KEY)).toBe("22");
+    expect(captureCurrentAndroidVersionCode()).toBe(23);
+    expect(storage.getItem(ANDROID_VERSION_STORAGE_KEY)).toBe("23");
   });
 
   it("keeps automatic checks throttled within six hours", async () => {

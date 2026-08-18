@@ -24,7 +24,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SYNC_SETTINGS_CHANGE_EVENT } from "@/lib/data/change-bus";
 import {
-  isLegacySyncSession,
   loadSyncClientState,
   loadSyncSession,
 } from "@/lib/data/settings-repository";
@@ -43,7 +42,6 @@ import {
   revokeSyncSession,
   syncNow,
   updateSyncSession,
-  upgradeLegacySyncSession,
   useSyncStatusStore,
   type SyncInviteMetadata,
   type SyncServiceInfo,
@@ -81,12 +79,16 @@ export function SyncSettingsWorkspace() {
   const [hasSession, setHasSession] = useState(false);
   const [sessions, setSessions] = useState<SyncSessionMetadata[]>([]);
   const [invites, setInvites] = useState<SyncInviteMetadata[]>([]);
-  const [legacy, setLegacy] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [deviceName, setDeviceName] = useState("这台设备");
   const [rename, setRename] = useState("");
   const [ttlMinutes, setTtlMinutes] = useState(60);
-  const [freshInvite, setFreshInvite] = useState<{ id: string; link: string; expiresAt: string }>();
+  const [freshInvite, setFreshInvite] = useState<{
+    id: string;
+    link: string;
+    code: string;
+    expiresAt: string;
+  }>();
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -96,7 +98,6 @@ export function SyncSettingsWorkspace() {
     setRefreshing(true);
     const local = loadSyncSession();
     setHasSession(Boolean(local));
-    setLegacy(isLegacySyncSession(local));
     const serviceResult = await fetchSyncServiceInfo();
     if (serviceResult.ok) {
       setService(serviceResult.data);
@@ -104,7 +105,7 @@ export function SyncSettingsWorkspace() {
     } else {
       setServiceError(serviceResult.message);
     }
-    if (!local || isLegacySyncSession(local)) {
+    if (!local) {
       setSpace(undefined);
       setRefreshing(false);
       return;
@@ -172,10 +173,6 @@ export function SyncSettingsWorkspace() {
     }
   }
 
-  async function upgrade() {
-    await run(() => upgradeLegacySyncSession(deviceName.trim()), "旧同步会话已安全升级。原始 token 已从本机移除。");
-  }
-
   async function createInvite() {
     if (!online) return;
     setBusy(true);
@@ -199,10 +196,21 @@ export function SyncSettingsWorkspace() {
     setMessageOk(true);
   }
 
+  async function copyInviteCode() {
+    if (!freshInvite) return;
+    await navigator.clipboard.writeText(freshInvite.code);
+    setMessage("邀请口令已复制。请只发送给信任的家人。");
+    setMessageOk(true);
+  }
+
   async function shareInvite() {
     if (!freshInvite) return;
     await shareText(
-      formatFamilyInviteShareText(space?.displayName ?? "我们的家", freshInvite.link),
+      formatFamilyInviteShareText(
+        space?.displayName ?? "我们的家",
+        freshInvite.link,
+        freshInvite.code,
+      ),
     );
   }
 
@@ -245,16 +253,9 @@ export function SyncSettingsWorkspace() {
             </Card>
             <Card>
               <CardHeader><CardTitle className="flex items-center gap-2"><Link2 className="size-5" />通过邀请加入</CardTitle></CardHeader>
-              <CardContent className="grid gap-3"><p className="text-sm leading-6 text-muted-foreground">粘贴邀请链接即可加入，不需要输入与创建者相同的家庭名称。</p><Button asChild><Link href="/join">打开加入页面</Link></Button><details className="text-sm text-muted-foreground"><summary className="cursor-pointer py-2 font-medium text-foreground">使用旧同步码</summary><p className="py-2">旧同步码入口仍保留在“备份与恢复”的家庭同步区域，供已有家庭继续使用。</p><Button asChild size="sm" variant="outline"><Link href="/settings/backup#family-sync">打开兼容入口</Link></Button></details></CardContent>
+              <CardContent className="grid gap-3"><p className="text-sm leading-6 text-muted-foreground">粘贴邀请链接或输入短口令即可加入，不需要输入与创建者相同的家庭名称。</p><Button asChild><Link href="/join">打开加入页面</Link></Button></CardContent>
             </Card>
           </>
-        ) : null}
-
-        {legacy ? (
-          <Card>
-            <CardHeader><CardTitle>升级现有同步会话</CardTitle></CardHeader>
-            <CardContent className="grid gap-4"><p className="text-sm leading-6 text-muted-foreground">升级后改用受浏览器保护的 Cookie，并启用设备管理。升级验证失败时旧会话会保留，不会掉线。</p><div className="grid gap-2"><Label htmlFor="upgrade-device-name">设备名称</Label><Input id="upgrade-device-name" maxLength={60} onChange={(event) => setDeviceName(event.target.value)} value={deviceName} /></div><Button disabled={busy || !online || !deviceName.trim()} onClick={() => void upgrade()}>安全升级</Button></CardContent>
-          </Card>
         ) : null}
 
         {space ? (
@@ -282,7 +283,7 @@ export function SyncSettingsWorkspace() {
             {space.currentSession.role === "owner" ? (
               <Card>
                 <CardHeader><CardTitle className="flex items-center gap-2"><Link2 className="size-5" />邀请</CardTitle></CardHeader>
-                <CardContent className="grid gap-4"><div className="grid gap-2 sm:grid-cols-[1fr_auto]"><select aria-label="邀请有效期" className="min-h-11 rounded-xl border border-input bg-background px-3 text-sm" onChange={(event) => setTtlMinutes(Number(event.target.value))} value={ttlMinutes}>{(service?.inviteTtlOptions ?? [10, 60, 1440]).map((minutes) => <option key={minutes} value={minutes}>{minutes === 1440 ? "24 小时" : minutes === 60 ? "1 小时" : `${minutes} 分钟`}</option>)}</select><Button disabled={busy || !online} onClick={() => void createInvite()}>生成邀请</Button></div>{freshInvite ? <div className="grid gap-3 rounded-xl bg-secondary/50 p-3 shadow-sm ring-1 ring-primary/30"><p className="break-all text-sm">{freshInvite.link}</p><p className="text-[13px] text-muted-foreground">到期：{formatDate(freshInvite.expiresAt)}。离开本页后无法再次显示原始邀请。</p><div className="grid grid-cols-2 gap-2"><Button onClick={() => void copyInvite()} variant="outline"><Copy className="size-4" />复制</Button><Button onClick={() => void shareInvite()} variant="outline"><Share2 className="size-4" />分享</Button></div></div> : null}<div className="grid gap-2">{invites.length ? invites.map((invite) => <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/35 p-3 text-sm shadow-sm" key={invite.id}><span>{invite.usedAt ? "已使用" : invite.revokedAt ? "已撤销" : new Date(invite.expiresAt).getTime() <= Date.now() ? "已过期" : "有效至"} {formatDate(invite.usedAt ?? invite.revokedAt ?? invite.expiresAt)}</span>{!invite.usedAt && !invite.revokedAt && new Date(invite.expiresAt).getTime() > Date.now() ? <Button disabled={busy || !online} onClick={() => void run(() => revokeSyncInvite(invite.id), "邀请已撤销。") } size="sm" variant="outline">撤销</Button> : null}</div>) : <p className="text-sm text-muted-foreground">暂无邀请记录。</p>}</div></CardContent>
+                <CardContent className="grid gap-4"><div className="grid gap-2 sm:grid-cols-[1fr_auto]"><select aria-label="邀请有效期" className="min-h-11 rounded-xl border border-input bg-background px-3 text-sm" onChange={(event) => setTtlMinutes(Number(event.target.value))} value={ttlMinutes}>{(service?.inviteTtlOptions ?? [10, 60, 1440]).map((minutes) => <option key={minutes} value={minutes}>{minutes === 1440 ? "24 小时" : minutes === 60 ? "1 小时" : `${minutes} 分钟`}</option>)}</select><Button disabled={busy || !online} onClick={() => void createInvite()}>生成邀请</Button></div>{freshInvite ? <div className="grid gap-3 rounded-xl bg-secondary/50 p-3 shadow-sm ring-1 ring-primary/30"><div><p className="text-[13px] text-muted-foreground">短口令</p><p className="font-mono text-2xl font-semibold tracking-[0.18em]">{freshInvite.code}</p></div><div><p className="text-[13px] text-muted-foreground">邀请链接</p><p className="break-all text-sm">{freshInvite.link}</p></div><p className="text-[13px] text-muted-foreground">到期：{formatDate(freshInvite.expiresAt)}。链接和口令属于同一条一次性邀请，任一方式加入后都会同时失效。</p><div className="grid grid-cols-2 gap-2"><Button onClick={() => void copyInvite()} variant="outline"><Copy className="size-4" />复制链接</Button><Button onClick={() => void copyInviteCode()} variant="outline"><Copy className="size-4" />复制口令</Button><Button className="col-span-2" onClick={() => void shareInvite()} variant="outline"><Share2 className="size-4" />分享链接和口令</Button></div></div> : null}<div className="grid gap-2">{invites.length ? invites.map((invite) => <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/35 p-3 text-sm shadow-sm" key={invite.id}><span>{invite.usedAt ? "已使用" : invite.revokedAt ? "已撤销" : new Date(invite.expiresAt).getTime() <= Date.now() ? "已过期" : "有效至"} {formatDate(invite.usedAt ?? invite.revokedAt ?? invite.expiresAt)}</span>{!invite.usedAt && !invite.revokedAt && new Date(invite.expiresAt).getTime() > Date.now() ? <Button disabled={busy || !online} onClick={() => void run(() => revokeSyncInvite(invite.id), "邀请已撤销。") } size="sm" variant="outline">撤销</Button> : null}</div>) : <p className="text-sm text-muted-foreground">暂无邀请记录。</p>}</div></CardContent>
               </Card>
             ) : null}
 

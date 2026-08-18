@@ -28,7 +28,9 @@ export async function POST(request: Request) {
     const previous = requestCredential(request);
     if (previous) await assertCanLeaveSpace(previous.token);
     const result = await joinWithInvite(
-      typeof payload.inviteToken === "string" ? payload.inviteToken : "",
+      typeof payload.inviteCredential === "string"
+        ? payload.inviteCredential
+        : "",
       typeof payload.deviceName === "string" ? payload.deviceName : "",
     );
     if (!result) {

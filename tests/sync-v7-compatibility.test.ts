@@ -11,7 +11,13 @@ import type {
   DadKitExportDataV7,
 } from "@/lib/data/format";
 import { createEmptyItemPlanningRecordV1 } from "@/lib/planning/defaults";
-import { joinSpace, pullSpace, pushSpace } from "@/lib/sync/server-store";
+import {
+  createRandomSpace,
+  createV2Invite,
+  joinWithInvite,
+  pullSpace,
+  pushSpace,
+} from "@/lib/sync/server-store";
 import {
   portableTestItem,
   portableV5,
@@ -33,9 +39,11 @@ function canonicalV7() {
 }
 
 async function devices(name: string) {
-  const v7 = await joinSpace(name, "v7兼容同步码", false, 7);
-  const v6 = await joinSpace(name, "v7兼容同步码", false, 6);
-  const v5 = await joinSpace(name, "v7兼容同步码", false, 5);
+  const v7 = await createRandomSpace(name, "v7 设备");
+  const v6Invite = await createV2Invite(v7.token, 60);
+  const v6 = await joinWithInvite(v6Invite!.code, "v6 设备");
+  const v5Invite = await createV2Invite(v7.token, 60);
+  const v5 = await joinWithInvite(v5Invite!.code, "v5 设备");
   if (!v7 || !v6 || !v5) throw new Error("测试同步空间创建失败");
   return { v7, v6, v5 };
 }

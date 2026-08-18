@@ -106,7 +106,7 @@ test("Android 设置页显示当前版本并允许手动检查更新", async ({ 
   await expect(
     page.getByRole("heading", { level: 1, name: "关于 DadKit" }),
   ).toBeVisible();
-  await expect(page.getByText("3.4.9 (22)")).toBeVisible();
+  await expect(page.getByText("3.4.10 (22)")).toBeVisible();
   const checkButton = page.getByRole("button", { name: "检查更新" });
   await expect(checkButton).toBeVisible();
   await checkButton.click();
@@ -171,13 +171,12 @@ test("照片保存在当前浏览器且备份页不再提供设备迁移", async
   await expect(page.getByText("加密设备迁移")).toHaveCount(0);
 });
 
-test("家庭同步摘要提供新入口和旧同步码兼容入口", async ({ page }: { page: Page }) => {
+test("家庭同步摘要只提供新邀请入口", async ({ page }: { page: Page }) => {
   await page.goto("/settings/backup", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("link", { name: "创建同步空间" })).toHaveAttribute("href", "/settings/sync");
   await expect(page.getByRole("link", { name: "通过邀请加入" })).toHaveAttribute("href", "/join");
-  await page.getByText("使用旧同步码", { exact: true }).click();
-  await expect(page.locator("#legacy-sync-name")).toBeVisible();
-  await expect(page.locator("#legacy-sync-code")).toBeVisible();
+  await expect(page.getByText("使用旧同步码", { exact: true })).toHaveCount(0);
+  await expect(page.getByText(/邀请链接、短口令/)).toBeVisible();
 });
 
 test("Service Worker 缓存支持离线重开清单页", async ({

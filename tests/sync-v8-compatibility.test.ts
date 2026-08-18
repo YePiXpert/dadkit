@@ -11,7 +11,13 @@ import type {
   DadKitExportDataV7,
 } from "@/lib/data/format";
 import { createEmptyItemPlanningRecordV1 } from "@/lib/planning/defaults";
-import { joinSpace, pullSpace, pushSpace } from "@/lib/sync/server-store";
+import {
+  createRandomSpace,
+  createV2Invite,
+  joinWithInvite,
+  pullSpace,
+  pushSpace,
+} from "@/lib/sync/server-store";
 import type { CareEventV1 } from "@/lib/baby/types";
 import {
   portableTestItem,
@@ -50,10 +56,13 @@ function canonicalV8() {
 }
 
 async function devices(name: string) {
-  const v8 = await joinSpace(name, "v8兼容同步码", false, 8);
-  const v7 = await joinSpace(name, "v8兼容同步码", false, 7);
-  const v6 = await joinSpace(name, "v8兼容同步码", false, 6);
-  const v5 = await joinSpace(name, "v8兼容同步码", false, 5);
+  const v8 = await createRandomSpace(name, "v8 设备");
+  const v7Invite = await createV2Invite(v8.token, 60);
+  const v7 = await joinWithInvite(v7Invite!.code, "v7 设备");
+  const v6Invite = await createV2Invite(v8.token, 60);
+  const v6 = await joinWithInvite(v6Invite!.code, "v6 设备");
+  const v5Invite = await createV2Invite(v8.token, 60);
+  const v5 = await joinWithInvite(v5Invite!.code, "v5 设备");
   if (!v8 || !v7 || !v6 || !v5) throw new Error("测试同步空间创建失败");
   return { v8, v7, v6, v5 };
 }

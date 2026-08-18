@@ -4,8 +4,6 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { POST as createRoute } from "@/app/api/sync/create/route";
-import { POST as joinRoute } from "@/app/api/sync/join/route";
 import { GET as pullRoute } from "@/app/api/sync/pull/route";
 import { POST as pushRoute } from "@/app/api/sync/push/route";
 import {
@@ -21,7 +19,7 @@ import {
   DADKIT_DATA_VERSION_HEADER,
   createSyncEtag,
 } from "@/lib/sync/data-version";
-import { joinSpace, pullSpace, pushSpace } from "@/lib/sync/server-store";
+import { createRandomSpace, pullSpace, pushSpace } from "@/lib/sync/server-store";
 import {
   portableTestItem,
   portableV5,
@@ -52,7 +50,7 @@ function syncRequest(
   } = {},
 ) {
   const headers = new Headers({
-    authorization: `Bearer ${token}`,
+    cookie: `dadkit_sync_session=${encodeURIComponent(token)}`,
     "x-forwarded-for": "203.0.113.21",
   });
 
@@ -64,6 +62,7 @@ function syncRequest(
   }
   if (options.body) {
     headers.set("content-type", "application/json");
+    headers.set("origin", "https://dadkit.test");
   }
 
   return new Request(`https://dadkit.test${pathname}`, {
@@ -85,7 +84,7 @@ afterEach(() => {
 
 describe("version-negotiated sync ETags", () => {
   it("does not let a v5 ETag produce 304 after the client upgrades to v6", async () => {
-    const device = await joinSpace("ETag 升级家庭", "升级同步码", false, 6);
+    const device = await createRandomSpace("ETag 升级家庭", "v6 设备");
     if (!device) throw new Error("测试同步空间创建失败");
 
     await pushSpace(device.token, canonicalHospital(), 6);
@@ -155,7 +154,7 @@ describe("version-negotiated sync ETags", () => {
   });
 
   it("returns representation-specific ETags for v5 and v6 pushes", async () => {
-    const device = await joinSpace("ETag 推送家庭", "推送同步码", false, 6);
+    const device = await createRandomSpace("ETag 推送家庭", "v6 设备");
     if (!device) throw new Error("测试同步空间创建失败");
 
     await pushSpace(device.token, canonicalHospital(), 6);
@@ -218,53 +217,4 @@ describe("version-negotiated sync ETags", () => {
     expect(v6Response.headers.get("vary")).toBe(DADKIT_DATA_VERSION_HEADER);
   });
 
-  it("adds versioned ETag and Vary headers to create and join responses", async () => {
-    const createResponse = await createRoute(
-      new Request("https://dadkit.test/api/sync/create", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          [DADKIT_DATA_VERSION_HEADER]: "6",
-          "x-forwarded-for": "203.0.113.31",
-        },
-        body: JSON.stringify({ name: "响应头家庭" }),
-      }),
-    );
-    const created = (await createResponse.json()) as {
-      invite: { code: string };
-      version: number;
-    };
-
-    expect(createResponse.status).toBe(201);
-    expect(createResponse.headers.get("etag")).toBe(
-      createSyncEtag(created.version, 6),
-    );
-    expect(createResponse.headers.get("vary")).toBe(
-      DADKIT_DATA_VERSION_HEADER,
-    );
-
-    const joinResponse = await joinRoute(
-      new Request("https://dadkit.test/api/sync/join", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-forwarded-for": "203.0.113.32",
-        },
-        body: JSON.stringify({
-          name: "响应头家庭",
-          code: created.invite.code,
-          existingOnly: true,
-        }),
-      }),
-    );
-    const joined = (await joinResponse.json()) as { version: number };
-
-    expect(joinResponse.status).toBe(200);
-    expect(joinResponse.headers.get("etag")).toBe(
-      createSyncEtag(joined.version, 5),
-    );
-    expect(joinResponse.headers.get("vary")).toBe(
-      DADKIT_DATA_VERSION_HEADER,
-    );
-  });
 });
