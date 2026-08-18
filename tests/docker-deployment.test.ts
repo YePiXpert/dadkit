@@ -24,6 +24,9 @@ describe("VPS Docker deployment", () => {
     expect(compose).toMatch(/cap_drop:\s*\n\s*- ALL/);
     expect(compose).toContain('DADKIT_PUBLIC_ORIGIN: "${DADKIT_PUBLIC_ORIGIN:-}"');
     expect(compose).toContain(
+      'DADKIT_TRUSTED_ORIGINS: "${DADKIT_TRUSTED_ORIGINS:-}"',
+    );
+    expect(compose).toContain(
       'DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS: "${DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS:-}"',
     );
     for (const variable of [
@@ -52,6 +55,7 @@ describe("VPS Docker deployment", () => {
     expect(readme).toContain("DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS");
     expect(exampleEnv).toContain("DADKIT_BIND_ADDRESS=127.0.0.1");
     expect(exampleEnv).toContain("DADKIT_PUBLIC_ORIGIN=https://dadkit.505f.com");
+    expect(exampleEnv).toMatch(/^DADKIT_TRUSTED_ORIGINS=$/m);
     expect(exampleEnv).toMatch(/^DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS=$/m);
     expect(exampleEnv).toContain(
       "# Example: webdav.example.com,dav.example.com:8443",
@@ -86,16 +90,20 @@ describe("VPS Docker deployment", () => {
       expect(script).not.toMatch(/^DADKIT_PORT="\$\{DADKIT_PORT:-/m);
       expect(script).not.toMatch(/^DADKIT_BIND_ADDRESS="\$\{DADKIT_BIND_ADDRESS:-/m);
       expect(script).not.toMatch(/^DADKIT_PUBLIC_ORIGIN="\$\{DADKIT_PUBLIC_ORIGIN:-/m);
+      expect(script).not.toMatch(/^DADKIT_TRUSTED_ORIGINS="\$\{DADKIT_TRUSTED_ORIGINS:-/m);
       expect(script).not.toMatch(
         /^DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS="\$\{DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS:-/m,
       );
       expect(script).not.toMatch(
-        /^export DADKIT_(?:PORT|BIND_ADDRESS|PUBLIC_ORIGIN|WEBDAV_PROXY_ALLOWED_HOSTS)$/m,
+        /^export DADKIT_(?:PORT|BIND_ADDRESS|PUBLIC_ORIGIN|TRUSTED_ORIGINS|WEBDAV_PROXY_ALLOWED_HOSTS)$/m,
       );
       expect(script).toContain(
-        "unset DADKIT_PORT DADKIT_BIND_ADDRESS DADKIT_PUBLIC_ORIGIN DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS",
+        "unset DADKIT_PORT DADKIT_BIND_ADDRESS DADKIT_PUBLIC_ORIGIN DADKIT_TRUSTED_ORIGINS DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS",
       );
       expect(script).toContain('DADKIT_PORT_WAS_SET="${DADKIT_PORT+x}"');
+      expect(script).toContain(
+        'DADKIT_TRUSTED_ORIGINS_WAS_SET="${DADKIT_TRUSTED_ORIGINS+x}"',
+      );
       expect(script).toContain("if [ -e .env ] || [ -L .env ]; then");
       expect(script).toContain(": > .env");
       expect(script).toContain("chmod 600 .env");

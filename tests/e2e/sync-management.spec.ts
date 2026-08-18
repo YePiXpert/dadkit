@@ -132,6 +132,12 @@ test("已有同步会话时加入按钮等待检查并要求替换确认", async
 
   await page.goto(`/join#invite=${invite}`, { waitUntil: "domcontentloaded" });
   const joinButton = page.getByRole("button", { name: "加入家庭同步" });
+  const useFamilyData = page.getByRole("radio", { name: /使用家庭数据/ });
+  const mergeLocalData = page.getByRole("radio", { name: /合并本机数据/ });
+  await expect(useFamilyData).toBeChecked();
+  await expect(mergeLocalData).not.toBeChecked();
+  await mergeLocalData.check();
+  await expect(mergeLocalData).toBeChecked();
   await expect(page.getByText(/当前连接“现有家庭”/)).toBeVisible({ timeout: 30_000 });
   await expect(joinButton).toBeDisabled();
   await page.getByRole("checkbox").check();

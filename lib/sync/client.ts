@@ -9,6 +9,7 @@ import {
 } from "@/lib/data/backup";
 import {
   isDadKitImportData,
+  upgradeExportDataToLatest,
   type DadKitExportData,
   type DadKitImportData,
 } from "@/lib/data/format";
@@ -59,6 +60,8 @@ export type SyncInvite = {
 export type SyncInviteOutcome = SyncOutcome & {
   invite?: SyncInvite;
 };
+
+export type SyncJoinDataMode = "remote" | "merge";
 
 type SyncStatus = {
   joined: boolean;
@@ -418,6 +421,26 @@ async function applyMerged(data: DadKitExportData, alignOffset?: number) {
   }
 }
 
+async function replaceLocalWithRemote(
+  data: DadKitImportData,
+  localChecklistMode: DadKitExportData["checklistMode"],
+) {
+  const replacement: DadKitExportData = {
+    ...upgradeExportDataToLatest(data),
+    // 清单显示模式是设备偏好，不随家庭数据覆盖。
+    checklistMode: localChecklistMode,
+  };
+
+  applyingRemote = true;
+  try {
+    const result = await applyImportDataAsync(replacement);
+    if (!result.ok) throw new Error(result.message);
+    return replacement;
+  } finally {
+    applyingRemote = false;
+  }
+}
+
 function isCurrentSyncSession(expected: ReturnType<typeof loadSyncSession>) {
   const current = loadSyncSession();
   if (!expected || !current) return false;
@@ -487,6 +510,7 @@ async function doSync(): Promise<SyncOutcome> {
   try {
     flushPendingChecklistStateSave();
     const previousState = loadSyncClientState();
+    const initialDataMode = previousState.initialDataMode;
     const pullHeaders = new Headers();
 
     if (previousState.lastEtag) {
@@ -536,11 +560,17 @@ async function doSync(): Promise<SyncOutcome> {
       isDadKitImportData(pulled.data.data)
     ) {
       remoteData = pulled.data.data;
-      merged = mergeExportData(local, remoteData);
+      if (initialDataMode === "remote") {
+        merged = await replaceLocalWithRemote(remoteData, local.checklistMode);
+      } else {
+        merged = mergeExportData(local, remoteData);
 
-      if (shouldAlignTimeline || checksumOf(merged) !== checksumOf(local)) {
-        merged = await applyMerged(merged, alignmentOffset);
+        if (shouldAlignTimeline || checksumOf(merged) !== checksumOf(local)) {
+          merged = await applyMerged(merged, alignmentOffset);
+        }
       }
+    } else if (initialDataMode === "remote") {
+      throw new Error("家庭数据尚未准备好，请让创建者先完成一次同步后重试。");
     } else if (shouldAlignTimeline) {
       // The first server-time observation may arrive with a 304 response. Apply
       // the shifted local timeline before the next write is compared or pushed.
@@ -552,9 +582,11 @@ async function doSync(): Promise<SyncOutcome> {
     }
 
     const mergedChecksum = checksumOf(merged);
-    const localHasNews = pulled.notModified
-      ? mergedChecksum !== previousState.lastSyncedChecksum
-      : !remoteData || mergedChecksum !== checksumOf(remoteData);
+    const localHasNews = initialDataMode === "remote"
+      ? false
+      : pulled.notModified
+        ? mergedChecksum !== previousState.lastSyncedChecksum
+        : !remoteData || mergedChecksum !== checksumOf(remoteData);
 
     if (localHasNews) {
       if (!isCurrentSyncSession(session)) return { ok: false };
@@ -958,7 +990,10 @@ export async function createRandomSyncSpace(displayName: string, deviceName: str
 export async function joinSyncSpaceByInvite(
   inviteToken: string,
   deviceName: string,
-  options: { replaceExisting: boolean },
+  options: {
+    replaceExisting: boolean;
+    initialDataMode: SyncJoinDataMode;
+  },
 ) {
   try {
     const existing = loadSyncSession();
@@ -976,7 +1011,7 @@ export async function joinSyncSpaceByInvite(
     );
     if (!result.data?.space) throw new SyncApiError("同步服务没有返回空间信息。", 502);
     clearRetrySchedule();
-    saveSyncClientState({});
+    saveSyncClientState({ initialDataMode: options.initialDataMode });
     saveSyncSession(localSessionFromSpace(result.data.space));
     useSyncStatusStore.setState({ joined: true });
     clearSyncSessionExpired();

@@ -50,6 +50,7 @@ VPS 不需要运行 `npm`、`next build` 或 `docker build`。
 DADKIT_BIND_ADDRESS=127.0.0.1
 DADKIT_PORT=3333
 DADKIT_PUBLIC_ORIGIN=https://dadkit.505f.com
+DADKIT_TRUSTED_ORIGINS=https://dadkit.liyanpeng.com
 DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS=
 DADKIT_SYNC_REGISTRATION_MODE=open
 DADKIT_SYNC_MAX_SPACE_BYTES=25165824
@@ -68,6 +69,10 @@ docker compose pull dadkit
 docker compose up -d --no-build --remove-orphans --wait
 curl -fsS http://127.0.0.1:3333/healthz
 ```
+
+`DADKIT_PUBLIC_ORIGIN` 是主入口；同一实例如需保留旧域名，可用
+`DADKIT_TRUSTED_ORIGINS` 配置逗号分隔的精确 HTTPS Origin。该列表不支持通配符，
+也不会开放跨站 CORS，只允许这些入口发起带会话的同源同步写操作。
 
 这里克隆仓库只用于取得 Compose 配置和升级脚本；应用镜像直接从 GHCR
 下载，不会在 VPS 本地编译。也可以使用 `sh scripts/docker-deploy.sh` 完成
@@ -112,6 +117,6 @@ Android APK 升级：
 4. 旧 APK 或浏览器环境会自动回退到外链下载；也可以随时打开[最新 Release](https://github.com/YePiXpert/dadkit/releases/latest)手动下载 `DadKit-*.apk`。
 5. 包名保持 `com.dadkit.mobile`，`versionCode` 按版本递增，可直接覆盖安装旧版本。
 
-本次版本的详细变更与验收结果见 [DadKit 3.4.8 发布说明](docs/release-v3.4.8.md)。
+本次版本的详细变更与验收结果见 [DadKit 3.4.9 发布说明](docs/release-v3.4.9.md)。
 
 浏览器 PWA 会随网站和 Service Worker 自动更新；必要时关闭并重新打开应用。

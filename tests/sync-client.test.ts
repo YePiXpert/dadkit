@@ -20,6 +20,7 @@ import {
   loadSyncClientState,
   loadSyncSession,
   saveChecklist,
+  saveCustomItems,
   STORAGE_KEYS,
 } from "@/lib/storage";
 import { MemoryBabyRepository, setBabyRepositoryForTests } from "@/lib/baby/repository";
@@ -45,7 +46,7 @@ import { useHospitalProfileStore } from "@/lib/hospital/store";
 import { createEmptyItemPlanning, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
 import { loadItemPlanning, saveItemPlanning } from "@/lib/planning/repository";
 import { DADKIT_DATA_VERSION_HEADER } from "@/lib/sync/data-version";
-import { portableV5 } from "@/tests/helpers/portable-data";
+import { portableV5, portableV9 } from "@/tests/helpers/portable-data";
 import { generateChecklist } from "@/lib/rules";
 
 function testItem(id: string, patch: Partial<ChecklistItem> = {}): ChecklistItem {
@@ -73,6 +74,35 @@ function jsonResponse(body: unknown, status = 200, headers: HeadersInit = {}) {
     status,
     headers: { "content-type": "application/json", ...headers },
   });
+}
+
+function joinedV2Space() {
+  return {
+    spaceId: "a".repeat(64),
+    kind: "random",
+    displayName: "测试家庭",
+    dataRevision: 1,
+    metadataRevision: 1,
+    dataUpdatedAt: "2026-08-18T00:00:00.000Z",
+    metadataUpdatedAt: "2026-08-18T00:00:00.000Z",
+    currentSession: {
+      id: "b".repeat(64),
+      current: true,
+      deviceName: "新设备",
+      role: "member",
+      protocolVersion: 2,
+      createdAt: "2026-08-18T00:00:00.000Z",
+      lastSeenAt: "2026-08-18T00:00:00.000Z",
+    },
+    usage: {
+      dataBytes: 1,
+      dataLimitBytes: 1024,
+      deviceCount: 2,
+      deviceLimit: 12,
+      activeInviteCount: 0,
+      activeInviteLimit: 5,
+    },
+  };
 }
 
 function resetStores() {
@@ -263,11 +293,111 @@ describe("family sync client", () => {
 
     const outcome = await joinSyncSpaceByInvite("DK2.invite", "新设备", {
       replaceExisting: false,
+      initialDataMode: "remote",
     });
 
     expect(outcome).toMatchObject({ ok: false });
     expect(outcome.message).toContain("确认切换同步空间");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("replaces local business data from the family on first v2 join without pushing", async () => {
+    installBrowserStorage({
+      [STORAGE_KEYS.checklistMode]: JSON.stringify("full"),
+    });
+    setBabyRepositoryForTests(new MemoryBabyRepository());
+    const local = testItem("local-only", { updatedAt: 300 });
+    const remote = testItem("remote-only", { updatedAt: 100 });
+    saveChecklist([local]);
+    saveCustomItems([local]);
+    useDadKitStore.setState({
+      hydrated: true,
+      checklist: [local],
+      checklistMode: "full",
+      customItems: [local],
+    });
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      urls.push(url);
+      if (url === "/api/sync/v2/join") {
+        return jsonResponse({ space: joinedV2Space() });
+      }
+      if (url === "/api/sync/pull") {
+        return jsonResponse({
+          version: 1,
+          updatedAt: "2026-08-18T00:00:00.000Z",
+          data: portableV9({ checklist: [remote], customItems: [remote] }),
+        });
+      }
+      throw new Error(`unexpected url ${url}`);
+    }));
+
+    const outcome = await joinSyncSpaceByInvite("DK2.invite", "新设备", {
+      replaceExisting: false,
+      initialDataMode: "remote",
+    });
+
+    expect(outcome.ok).toBe(true);
+    expect(urls).toEqual(["/api/sync/v2/join", "/api/sync/pull"]);
+    const replacedIds = useDadKitStore.getState().checklist.map((item) => item.id);
+    expect(replacedIds).toContain("remote-only");
+    expect(replacedIds).not.toContain("local-only");
+    expect(useDadKitStore.getState().checklistMode).toBe("full");
+    expect(loadSyncClientState().initialDataMode).toBeUndefined();
+    expect((await loadSnapshotsAsync()).some((snapshot) =>
+      snapshot.reason === "加入家庭同步前"
+    )).toBe(true);
+  });
+
+  it("merges and uploads local business data when explicitly selected", async () => {
+    installBrowserStorage();
+    setBabyRepositoryForTests(new MemoryBabyRepository());
+    const local = testItem("local-only", { updatedAt: 300 });
+    const remote = testItem("remote-only", { updatedAt: 100 });
+    saveChecklist([local]);
+    saveCustomItems([local]);
+    useDadKitStore.setState({
+      hydrated: true,
+      checklist: [local],
+      customItems: [local],
+    });
+    let pushedIds: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/sync/v2/join") {
+        return jsonResponse({ space: joinedV2Space() });
+      }
+      if (url === "/api/sync/pull") {
+        return jsonResponse({
+          version: 1,
+          updatedAt: "2026-08-18T00:00:00.000Z",
+          data: portableV9({ checklist: [remote], customItems: [remote] }),
+        });
+      }
+      if (url === "/api/sync/push") {
+        const body = JSON.parse(init?.body as string) as {
+          data: DadKitExportData;
+        };
+        pushedIds = body.data.checklist.map((item) => item.id).sort();
+        return jsonResponse({
+          version: 2,
+          updatedAt: "2026-08-18T00:00:01.000Z",
+          data: body.data,
+        });
+      }
+      throw new Error(`unexpected url ${url}`);
+    }));
+
+    const outcome = await joinSyncSpaceByInvite("DK2.invite", "新设备", {
+      replaceExisting: false,
+      initialDataMode: "merge",
+    });
+
+    expect(outcome.ok).toBe(true);
+    expect(pushedIds).toEqual(expect.arrayContaining(["local-only", "remote-only"]));
+    expect(useDadKitStore.getState().checklist.map((item) => item.id)).toEqual(
+      expect.arrayContaining(["local-only", "remote-only"]),
+    );
+    expect(loadSyncClientState().initialDataMode).toBeUndefined();
   });
 
   it("joins a space while a removal is waiting and treats deferred sync as success", async () => {

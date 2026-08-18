@@ -89,4 +89,34 @@ describe("HttpOnly sync sessions", () => {
     }));
     expect(left.headers.get("set-cookie")).toContain("Max-Age=0");
   });
+
+  it("allows an exact trusted alias without weakening origin rejection", async () => {
+    const alias = "https://legacy.dadkit.test";
+    vi.stubEnv("DADKIT_TRUSTED_ORIGINS", alias);
+    const created = await createRoute(new Request(`${alias}/api/sync/v2/spaces`, {
+      method: "POST",
+      headers: { origin: alias, "content-type": "application/json" },
+      body: JSON.stringify({ displayName: "旧域名家庭", deviceName: "旧 PWA" }),
+    }));
+
+    expect(created.status).toBe(201);
+    const cookie = cookiePair(created);
+    const accepted = await pushRoute(new Request(`${alias}/api/sync/push`, {
+      method: "POST",
+      headers: { cookie, origin: alias, "content-type": "application/json" },
+      body: JSON.stringify({ data: portableV9() }),
+    }));
+    expect(accepted.status).toBe(200);
+
+    const rejected = await pushRoute(new Request(`${alias}/api/sync/push`, {
+      method: "POST",
+      headers: {
+        cookie,
+        origin: "https://legacy.dadkit.test.evil.example",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ data: portableV9() }),
+    }));
+    expect(rejected.status).toBe(403);
+  });
 });

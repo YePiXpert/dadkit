@@ -30,7 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$GITHUB_REF_NAME" = "v3.4.8"
+          test "$GITHUB_REF_NAME" = "v3.4.9"
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
@@ -114,15 +114,15 @@ jobs:
             echo "Retired native checklist asset must not be packaged." >&2
             exit 1
           fi
-          cp "$APK" DadKit-3.4.8.apk
-          sha256sum DadKit-3.4.8.apk > DadKit-3.4.8.apk.sha256
-          cp "$AAB" DadKit-3.4.8.aab
+          cp "$APK" DadKit-3.4.9.apk
+          sha256sum DadKit-3.4.9.apk > DadKit-3.4.9.apk.sha256
+          cp "$AAB" DadKit-3.4.9.aab
 
       - name: Store AAB privately for 30 days
         uses: actions/upload-artifact@v4
         with:
-          name: DadKit-3.4.8-aab
-          path: DadKit-3.4.8.aab
+          name: DadKit-3.4.9-aab
+          path: DadKit-3.4.9.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -131,17 +131,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          DadKit 3.4.8
+          DadKit 3.4.9
 
-          - 按清单、医院档案、家庭成员、宝宝记录等业务域分别保留最新跨标签变更信号
-          - 修复 WebKit 在高负载或后台标签页节流时偶发漏掉清单和医院档案更新的问题
-          - BroadcastChannel、storage 事件与按域补读统一去重，避免重复刷新和重复冲突提示
+          - 加入家庭时默认使用远端家庭数据，避免新设备本机数据未经确认上传到家庭空间
+          - 新增“合并本机数据”选项，只有主动选择后才会合并并上传本机业务数据
+          - 加入前自动创建恢复点，并保留本机设备偏好和物品照片
+          - 修正生产环境 Origin 校验，支持主域名与精确配置的可信别名
           - APK 继续内置完整 PWA 页面、144 张物品图、33 张成长图和全部离线资源
-          - Android 包名为 com.dadkit.mobile，versionCode 为 21
+          - Android 包名为 com.dadkit.mobile，versionCode 为 22
           EOF
           gh release create "$GITHUB_REF_NAME" \
-            DadKit-3.4.8.apk \
-            DadKit-3.4.8.apk.sha256 \
+            DadKit-3.4.9.apk \
+            DadKit-3.4.9.apk.sha256 \
             --verify-tag \
-            --title "DadKit 3.4.8" \
+            --title "DadKit 3.4.9" \
             --notes-file release-notes.md

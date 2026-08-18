@@ -175,6 +175,7 @@ export type SyncClientState = {
   lastError?: string;
   lastEtag?: string;
   lastSyncedChecksum?: string;
+  initialDataMode?: "remote" | "merge";
   retryAt?: string;
   retryAttempt?: number;
 };
@@ -619,6 +620,10 @@ export function loadSyncClientState(): SyncClientState {
     lastSyncedChecksum:
       typeof value.lastSyncedChecksum === "string"
         ? value.lastSyncedChecksum
+        : undefined,
+    initialDataMode:
+      value.initialDataMode === "remote" || value.initialDataMode === "merge"
+        ? value.initialDataMode
         : undefined,
     retryAt: typeof value.retryAt === "string" ? value.retryAt : undefined,
     retryAttempt:
