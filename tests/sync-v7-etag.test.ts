@@ -30,6 +30,7 @@ function request(token: string, dataVersion: 5 | 6 | 7, etag?: string) {
 beforeEach(() => {
   dataDir = mkdtempSync(path.join(tmpdir(), "dadkit-sync-v7-etag-"));
   vi.stubEnv("DADKIT_DATA_DIR", dataDir);
+  vi.stubEnv("DADKIT_PUBLIC_ORIGIN", "https://dadkit.test");
 });
 
 afterEach(() => {

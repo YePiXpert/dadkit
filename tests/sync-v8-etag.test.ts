@@ -29,6 +29,7 @@ function pullRequest(token: string, version: DadKitSyncDataVersion, etag?: strin
 beforeEach(() => {
   dataDir = mkdtempSync(path.join(tmpdir(), "dadkit-sync-v8-etag-"));
   vi.stubEnv("DADKIT_DATA_DIR", dataDir);
+  vi.stubEnv("DADKIT_PUBLIC_ORIGIN", "https://dadkit.test");
 });
 
 afterEach(() => {
