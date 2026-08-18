@@ -4,9 +4,9 @@ import path from "node:path";
 
 const root = process.cwd();
 const expected = {
-  tag: "v3.4.10",
-  versionName: "3.4.10",
-  versionCode: 23,
+  tag: "v3.4.11",
+  versionName: "3.4.11",
+  versionCode: 24,
   packageId: "com.dadkit.mobile",
   host: "dadkit.505f.com",
 };

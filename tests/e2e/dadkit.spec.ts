@@ -87,11 +87,11 @@ test("Android 设置页显示当前版本并允许手动检查更新", async ({ 
     await route.fulfill({
       contentType: "application/json",
       json: {
-        versionCode: 23,
-        versionName: "3.4.10",
+        versionCode: 24,
+        versionName: "3.4.11",
         notes: "下一版本测试更新。",
         sha256: "a".repeat(64),
-        url: "/api/app-version/apk?versionCode=23",
+        url: "/api/app-version/apk?versionCode=24",
       },
       status: 200,
     });
@@ -101,15 +101,15 @@ test("Android 设置页显示当前版本并允许手动检查更新", async ({ 
   await expect(
     page.getByRole("heading", { name: "关于 DadKit" }),
   ).toBeVisible();
-  await expect(page.getByText("3.4.10 (22)")).toBeVisible();
+  await expect(page.getByText("3.4.11 (22)")).toBeVisible();
   const checkButton = page.getByRole("button", { name: "检查更新" });
   await expect(checkButton).toBeVisible();
   await checkButton.click();
 
-  await expect(page.getByText("发现新版本 3.4.10")).toBeVisible();
+  await expect(page.getByText("发现新版本 3.4.11")).toBeVisible();
   await expect(page.getByRole("link", { name: "下载更新" })).toHaveAttribute(
     "href",
-    "/api/app-version/apk?versionCode=23",
+    "/api/app-version/apk?versionCode=24",
   );
   expect(checks).toBe(1);
 });

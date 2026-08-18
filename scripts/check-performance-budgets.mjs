@@ -24,7 +24,8 @@ const routeBudgets = new Map([
   ["/growth/page", 190 * 1024],
   // /tools 是轻量中转页（与 /settings 类似），仅渲染 4 个入口卡片。
   ["/tools/page", 170 * 1024],
-  ["/settings/page", 170 * 1024],
+  // v3.4.11 把“关于 DadKit”版本卡并入我的页，原 /settings/about（200 KiB 预算）下线。
+  ["/settings/page", 190 * 1024],
   ["/join/page", 200 * 1024],
   ["/settings/sync/page", 250 * 1024],
   ["/onboarding/page", 225 * 1024],
