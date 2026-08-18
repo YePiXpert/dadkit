@@ -225,7 +225,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(mobileNav).toContain("bg-secondary font-semibold text-primary");
     expect(mobileNav).toContain("strokeWidth={active ? 2.2 : 1.8}");
 
-    expect(appHeader).toContain("bg-background/80 shadow-sm backdrop-blur-xl");
+    expect(appHeader).toContain("border-b border-border/60 bg-background/80 backdrop-blur-xl");
     expect(appHeader).toContain("从待产到育儿");
     expect(appHeader).toContain("shadow-glow");
   });
@@ -290,7 +290,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(settingsPage).not.toContain('href: "/growth"');
     expect(settingsPage).toContain('href: "/settings/checklist"');
     expect(settingsPage).toContain('href: "/settings/backup"');
-    expect(settingsPage).toContain('href: "/settings/about"');
+    expect(settingsPage).toContain("<AndroidUpdateSettingsCard");
     expect(checklistSettingsPage).toContain("显示物品说明");
     expect(backupSettingsPage).toContain("本机恢复点");
     expect(backupSettingsPage).toContain("WebDAV 备份");

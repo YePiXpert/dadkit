@@ -13,8 +13,8 @@ export function AppHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="hidden bg-background/80 shadow-sm backdrop-blur-xl sm:sticky sm:top-0 sm:z-40 sm:block sm:pt-[env(safe-area-inset-top)]">
-      <div className="mx-auto flex h-[4.5rem] max-w-[42rem] items-center justify-between gap-4 px-6">
+    <header className="hidden border-b border-border/60 bg-background/80 backdrop-blur-xl sm:sticky sm:top-0 sm:z-40 sm:block sm:pt-[env(safe-area-inset-top)]">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
         <Link className="flex min-w-0 items-center gap-2" href="/">
           <span className="min-w-0">
             <span className="block truncate text-base font-bold leading-tight tracking-tight">

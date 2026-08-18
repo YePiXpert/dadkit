@@ -21,28 +21,28 @@ export function PageHeader({
 }: PageHeaderProps) {
   if (backHref) {
     return (
-      <header className="grid grid-cols-[3rem_minmax(0,1fr)_3rem] items-start gap-2 py-1 sm:py-3">
+      <header className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-start gap-2 py-0.5 sm:py-1.5">
         <Link
           aria-label={backLabel}
-          className="flex size-12 items-center justify-center rounded-full bg-card text-foreground shadow-sm transition-shadow hover:shadow-md"
+          className="flex size-11 items-center justify-center rounded-full bg-card text-foreground shadow-sm transition-shadow hover:shadow-md"
           href={backHref}
         >
           <ArrowLeft className="size-5" />
         </Link>
         <div className="min-w-0 pt-0.5 text-center">
           {kicker ? (
-            <p className="text-[13px] font-semibold tracking-wide text-primary">{kicker}</p>
+            <p className="text-xs font-semibold tracking-wide text-primary">{kicker}</p>
           ) : null}
-          <h1 className="mt-0.5 break-words text-2xl font-bold tracking-tight sm:text-[28px]">
+          <h1 className="mt-0.5 break-words text-[22px] font-bold leading-tight tracking-tight sm:text-2xl">
             {title}
           </h1>
           {subtitle ? (
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            <p className="mx-auto mt-1 max-w-[24rem] text-balance text-[13px] leading-5 text-muted-foreground">
               {subtitle}
             </p>
           ) : null}
         </div>
-        {aside ?? <span aria-hidden className="size-12" />}
+        {aside ?? <span aria-hidden className="size-11" />}
       </header>
     );
   }

@@ -252,9 +252,9 @@ describe("android update prompt wiring", () => {
   });
 
   it("adds a persistent version and forced manual-check surface to settings", () => {
-    expect(settingsPageSource).toContain('href: "/settings/about"');
-    expect(settingsPageSource).toContain("当前版本");
-    expect(aboutPageSource).toContain("<AndroidUpdateSettingsCard");
+    expect(settingsPageSource).toContain("<AndroidUpdateSettingsCard");
+    expect(settingsPageSource).toContain("appVersion={packageJson.version}");
+    expect(aboutPageSource).toContain('redirect("/settings")');
     expect(settingsCardSource).toContain("关于 DadKit");
     expect(settingsCardSource).toContain("当前版本");
     expect(settingsCardSource).toContain("检查更新");

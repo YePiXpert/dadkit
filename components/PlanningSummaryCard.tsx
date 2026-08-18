@@ -46,18 +46,20 @@ export function PlanningSummaryCard({ compact = false }: { compact?: boolean }) 
           : "还没有分配负责人，可以先从核心物品开始。";
 
     return (
-      <section className="card-surface flex min-h-28 items-center gap-3 p-4">
-        <span className="icon-tile size-12"><Users className="size-6" /></span>
-        <div className="min-w-0 flex-1">
-          <p className="section-kicker">一起准备</p>
-          <h2 className="mt-1 text-[15px] font-semibold">家庭分工与采购</h2>
-          <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">
-            {message}
-          </p>
+      <section className="card-surface grid gap-1.5 p-4">
+        <div className="flex items-center gap-3">
+          <span className="icon-tile size-10"><Users className="size-5" /></span>
+          <div className="min-w-0 flex-1">
+            <p className="section-kicker">一起准备</p>
+            <h2 className="mt-0.5 text-[15px] font-semibold">家庭分工与采购</h2>
+          </div>
+          <Button asChild size="sm" variant="outline">
+            <Link href={PLANNING_PATH}>{started ? "查看" : "开始分工"}</Link>
+          </Button>
         </div>
-        <Button asChild size="sm" variant="outline">
-          <Link href={PLANNING_PATH}>{started ? "查看" : "开始分工"}</Link>
-        </Button>
+        <p className="break-words text-xs leading-5 text-muted-foreground">
+          {message}
+        </p>
       </section>
     );
   }

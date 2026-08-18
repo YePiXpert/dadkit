@@ -74,18 +74,18 @@ export function InstallPromptSettingsEntry() {
 
   return (
     <button
-      className="group flex min-h-24 w-full items-center gap-4 rounded-card bg-card p-4 text-left shadow-sm transition-shadow hover:shadow-md"
+      className="group flex w-full items-center gap-3.5 rounded-card bg-card p-4 text-left shadow-sm transition-shadow hover:shadow-md"
       onClick={openInstallPrompt}
       type="button"
     >
-      <span className="icon-tile size-12">
+      <span className="icon-tile size-11">
         <Download className="size-5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-base font-semibold">
+        <span className="block text-[15px] font-semibold">
           安装到桌面
         </span>
-        <span className="mt-1 block text-sm leading-5 text-muted-foreground">
+        <span className="mt-0.5 block text-[13px] leading-5 text-muted-foreground">
           直接从桌面打开，离线也能查看和更新清单。
         </span>
       </span>

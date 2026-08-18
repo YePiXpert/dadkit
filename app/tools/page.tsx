@@ -1,12 +1,15 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import {
   CarFront,
-  ChevronRight,
   Hospital,
   Sprout,
   Users,
 } from "lucide-react";
+
+import {
+  LinkEntryGrid,
+  type LinkEntry,
+} from "@/components/LinkEntryGrid";
 
 export const metadata: Metadata = {
   title: "工具 | DadKit",
@@ -42,13 +45,13 @@ const TOOL_ENTRIES = [
     icon: Users,
     accent: "bg-tile-mom-bg text-tile-mom-fg",
   },
-] as const;
+] as const satisfies readonly LinkEntry[];
 
 export default function ToolsPage() {
   return (
     <div className="page-shell page-shell-with-nav">
       <section className="mobile-shell grid gap-5 sm:max-w-[42rem]">
-        <header className="px-1 pb-1 text-center">
+        <header className="px-1 text-center">
           <h1 className="py-2 text-2xl font-bold leading-tight tracking-tight sm:text-[28px]">
             工具
           </h1>
@@ -57,34 +60,7 @@ export default function ToolsPage() {
           </p>
         </header>
 
-        <div className="grid gap-3">
-          {TOOL_ENTRIES.map((entry) => {
-            const Icon = entry.icon;
-
-            return (
-              <Link
-                className="group flex min-h-24 items-center gap-4 rounded-card bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
-                href={entry.href}
-                key={entry.href}
-              >
-                <span
-                  className={`flex size-12 shrink-0 items-center justify-center rounded-2xl ${entry.accent}`}
-                >
-                  <Icon className="size-5" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-base font-semibold text-foreground">
-                    {entry.title}
-                  </span>
-                  <span className="mt-1 block text-sm leading-5 text-muted-foreground">
-                    {entry.description}
-                  </span>
-                </span>
-                <ChevronRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            );
-          })}
-        </div>
+        <LinkEntryGrid entries={TOOL_ENTRIES} />
       </section>
     </div>
   );

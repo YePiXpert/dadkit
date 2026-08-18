@@ -1,16 +1,18 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import {
-  ChevronRight,
   ClipboardCheck,
   Cloud,
-  Info,
   Share2,
   Users,
 } from "lucide-react";
 
+import { AndroidUpdateSettingsCard } from "@/components/AndroidUpdateSettingsCard";
 import { AppearanceCard } from "@/components/AppearanceCard";
 import { InstallPromptSettingsEntry } from "@/components/InstallPromptSettingsEntry";
+import {
+  LinkEntryGrid,
+  type LinkEntry,
+} from "@/components/LinkEntryGrid";
 import { FamilySetupPrompt } from "@/components/household/FamilySetupPrompt";
 import packageJson from "@/package.json";
 
@@ -19,49 +21,52 @@ export const metadata: Metadata = {
   description: "管理家庭同步、成员、清单显示方式、外观与本机备份。",
 };
 
-const SETTINGS_ENTRIES = [
+const SETTINGS_GROUPS: readonly { label: string; entries: readonly LinkEntry[] }[] = [
   {
-    href: "/settings/sync",
-    title: "家庭同步",
-    description: "管理同步空间、邀请和已加入的设备。",
-    icon: Share2,
-    accent: "bg-tile-dad-bg text-tile-dad-fg",
+    label: "家庭协作",
+    entries: [
+      {
+        href: "/settings/sync",
+        title: "家庭同步",
+        description: "管理同步空间、邀请和已加入的设备。",
+        icon: Share2,
+        accent: "bg-tile-dad-bg text-tile-dad-fg",
+      },
+      {
+        href: "/settings/family",
+        title: "家庭成员",
+        description: "管理照护者和这台设备的使用者。",
+        icon: Users,
+        accent: "bg-tile-baby-bg text-tile-baby-fg",
+      },
+    ],
   },
   {
-    href: "/settings/family",
-    title: "家庭成员",
-    description: "管理照护者和这台设备的使用者。",
-    icon: Users,
-    accent: "bg-tile-baby-bg text-tile-baby-fg",
+    label: "数据与偏好",
+    entries: [
+      {
+        href: "/settings/checklist",
+        title: "清单设置",
+        description: "调整显示方式，并维护通用清单内容。",
+        icon: ClipboardCheck,
+        accent: "bg-tile-docs-bg text-tile-docs-fg",
+      },
+      {
+        href: "/settings/backup",
+        title: "备份与恢复",
+        description: "本机恢复点、JSON 与 WebDAV 备份。",
+        icon: Cloud,
+        accent: "bg-tile-car-bg text-tile-car-fg",
+      },
+    ],
   },
-  {
-    href: "/settings/checklist",
-    title: "清单设置",
-    description: "调整显示方式，并维护通用清单内容。",
-    icon: ClipboardCheck,
-    accent: "bg-tile-docs-bg text-tile-docs-fg",
-  },
-  {
-    href: "/settings/backup",
-    title: "备份与恢复",
-    description: "管理本机恢复点、JSON 和 WebDAV 备份。",
-    icon: Cloud,
-    accent: "bg-tile-dad-bg text-tile-dad-fg",
-  },
-  {
-    href: "/settings/about",
-    title: "关于 DadKit",
-    description: `当前版本 ${packageJson.version}，查看版本并检查更新。`,
-    icon: Info,
-    accent: "bg-tile-docs-bg text-tile-docs-fg",
-  },
-] as const;
+];
 
 export default function SettingsPage() {
   return (
     <div className="page-shell page-shell-with-nav">
-      <section className="mobile-shell grid gap-5 sm:max-w-[42rem]">
-        <header className="px-1 pb-1 text-center">
+      <section className="mobile-shell grid gap-6 sm:max-w-[42rem]">
+        <header className="px-1 text-center">
           <h1 className="py-2 text-2xl font-bold leading-tight tracking-tight sm:text-[28px]">
             我的
           </h1>
@@ -70,38 +75,21 @@ export default function SettingsPage() {
           </p>
         </header>
 
-        <div className="grid gap-3">
-          <FamilySetupPrompt />
-          {SETTINGS_ENTRIES.map((entry) => {
-            const Icon = entry.icon;
+        <FamilySetupPrompt />
 
-            return (
-              <Link
-                className="group flex min-h-24 items-center gap-4 rounded-card bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
-                href={entry.href}
-                key={entry.href}
-              >
-                <span
-                  className={`flex size-12 shrink-0 items-center justify-center rounded-2xl ${entry.accent}`}
-                >
-                  <Icon className="size-5" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-base font-semibold">
-                    {entry.title}
-                  </span>
-                  <span className="mt-1 block text-sm leading-5 text-muted-foreground">
-                    {entry.description}
-                  </span>
-                </span>
-                <ChevronRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            );
-          })}
-          <InstallPromptSettingsEntry />
-        </div>
+        {SETTINGS_GROUPS.map((group) => (
+          <section className="grid gap-2.5" key={group.label}>
+            <h2 className="section-kicker px-2">{group.label}</h2>
+            <LinkEntryGrid entries={group.entries} />
+          </section>
+        ))}
 
-        <AppearanceCard />
+        <InstallPromptSettingsEntry />
+
+        <section className="grid gap-3" aria-label="应用">
+          <AppearanceCard />
+          <AndroidUpdateSettingsCard appVersion={packageJson.version} />
+        </section>
       </section>
     </div>
   );

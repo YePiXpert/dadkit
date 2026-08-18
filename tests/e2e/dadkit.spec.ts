@@ -98,13 +98,8 @@ test("Android 设置页显示当前版本并允许手动检查更新", async ({ 
   });
 
   await page.goto("/settings", { waitUntil: "domcontentloaded" });
-  const aboutEntry = page.getByRole("link", { name: /关于 DadKit/ });
-  await expect(aboutEntry).toHaveAttribute("href", "/settings/about");
-  await aboutEntry.click();
-  await expect(page).toHaveURL(/\/settings\/about$/);
-
   await expect(
-    page.getByRole("heading", { level: 1, name: "关于 DadKit" }),
+    page.getByRole("heading", { name: "关于 DadKit" }),
   ).toBeVisible();
   await expect(page.getByText("3.4.10 (22)")).toBeVisible();
   const checkButton = page.getByRole("button", { name: "检查更新" });

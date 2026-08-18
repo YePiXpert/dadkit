@@ -14,13 +14,16 @@ function readSource(...segments: string[]) {
 }
 
 const page = readSource("app", "tools", "page.tsx");
+const entryGrid = readSource("components", "LinkEntryGrid.tsx");
 
 describe("tools hub page and navigation", () => {
   it("ships the route, title, subtitle and four tool entries", () => {
     expect(page).toContain("工具");
     expect(page).toContain("从孕周跟踪到出发待产，这些帮手随取随用。");
     expect(page).toContain("page-shell page-shell-with-nav");
-    expect(page).toContain("rounded-card bg-card p-4 shadow-sm");
+    expect(page).toContain("<LinkEntryGrid");
+    expect(entryGrid).toContain("rounded-card bg-card p-4 shadow-sm");
+    expect(entryGrid).toContain("sm:grid-cols-2");
 
     const entries = [
       { href: "/growth", title: "孕期成长记" },
