@@ -11,9 +11,6 @@ import { useHospitalProfileStore } from "@/lib/hospital/store";
 import { mergeHousehold } from "@/lib/household/merge";
 import { loadHousehold, saveHousehold } from "@/lib/household/repository";
 import { useHouseholdStore } from "@/lib/household/store";
-import { mergeItemPlanning } from "@/lib/planning/merge";
-import { loadItemPlanning, saveItemPlanning } from "@/lib/planning/repository";
-import { useItemPlanningStore } from "@/lib/planning/store";
 import { generateChecklist } from "@/lib/rules";
 import { mergeChecklistDocuments } from "@/lib/sync/merge";
 import { refreshSyncStatus } from "@/lib/sync/client";
@@ -84,13 +81,6 @@ function flushPendingChanges() {
           const merged = mergeHospitalProfiles(current, loadHospitalProfile());
           saveHospitalProfile(merged);
           useHospitalProfileStore.setState({ hydrated: true, profile: merged });
-          break;
-        }
-        case "planning": {
-          const current = useItemPlanningStore.getState().planning;
-          const merged = mergeItemPlanning(current, loadItemPlanning());
-          saveItemPlanning(merged);
-          useItemPlanningStore.setState({ hydrated: true, planning: merged });
           break;
         }
         case "household": {

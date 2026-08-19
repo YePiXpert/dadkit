@@ -26,9 +26,6 @@ import {
 } from "@/lib/checklist-milestones";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
-import { createEmptyItemPlanning, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
-import { loadItemPlanning, saveItemPlanning } from "@/lib/planning/repository";
-import { useItemPlanningStore } from "@/lib/planning/store";
 import {
   getBabyRepository,
   MemoryBabyRepository,
@@ -142,13 +139,6 @@ describe("v3 checklist store", () => {
       index === 0 ? { ...item, status: "packed" as const } : item,
     );
     saveChecklist(before);
-    const planning = createEmptyItemPlanning();
-    planning.items[before[0].id] = {
-      ...createEmptyItemPlanningRecord(),
-      assigneeIds: { value: ["legacy-dad-v1"], updatedAt: 10 },
-    };
-    saveItemPlanning(planning);
-    useItemPlanningStore.setState({ hydrated: true, planning });
     useDadKitStore.getState().hydrate();
 
     await useDadKitStore.getState().resetChecklist();
@@ -156,9 +146,7 @@ describe("v3 checklist store", () => {
     const snapshots = await loadSnapshotsAsync();
     expect(snapshots[0]?.reason).toBe("重建清单前");
     expect(snapshots[0]?.data.checklist).toEqual(before);
-    expect(snapshots[0]?.data.version).toBe(9);
-    expect(loadItemPlanning().items).toEqual({});
-    expect(loadItemPlanning().clearedAt).toBeGreaterThan(10);
+    expect(snapshots[0]?.data.version).toBe(10);
     expect(useDadKitStore.getState().checklist).toEqual(generateChecklist());
   });
 
@@ -176,28 +164,7 @@ describe("v3 checklist store", () => {
     expect(loadChecklist()).toEqual(before);
   });
 
-  it("rolls back checklist and planning together when planning clear fails", async () => {
-    installBrowserStorage();
-    const before = [testItem("before-planning-failure", { status: "packed" })];
-    saveChecklist(before);
-    const planning = createEmptyItemPlanning();
-    planning.items[before[0].id] = {
-      ...createEmptyItemPlanningRecord(),
-      assigneeIds: { value: ["legacy-mom-v1"], updatedAt: 20 },
-    };
-    saveItemPlanning(planning);
-    useItemPlanningStore.setState({ hydrated: true, planning });
-    useDadKitStore.setState({ hydrated: true, checklist: before });
-    failNextStorageWrite(STORAGE_KEYS.planning);
-
-    await expect(useDadKitStore.getState().resetChecklist()).rejects.toThrow(
-      "清单重建失败，原有清单已保留。",
-    );
-    expect(loadChecklist()).toEqual(before);
-    expect(loadItemPlanning()).toEqual(planning);
-  });
-
-  it("rolls back checklist, planning, merge metadata and milestones as one reset transaction", async () => {
+  it("rolls back checklist, merge metadata and milestones as one reset transaction", async () => {
     installBrowserStorage();
     const custom = testItem("atomic-custom", { status: "packed" });
     const beforeChecklist = [custom];
@@ -206,10 +173,6 @@ describe("v3 checklist store", () => {
       customItems: [custom],
       hiddenTemplateItemIds: ["mom-id-card"],
     });
-    const planning = createEmptyItemPlanning();
-    planning.items[custom.id] = createEmptyItemPlanningRecord();
-    saveItemPlanning(planning);
-    useItemPlanningStore.setState({ hydrated: true, planning });
     saveHiddenTemplateItemStamps({
       "mom-id-card": { hidden: true, updatedAt: 10 },
     });
@@ -230,7 +193,6 @@ describe("v3 checklist store", () => {
 
     expect(loadChecklist()).toEqual(beforeChecklist);
     expect(loadHiddenTemplateItemIds()).toEqual(["mom-id-card"]);
-    expect(loadItemPlanning()).toEqual(planning);
     expect(loadHiddenTemplateItemStamps()).toEqual({
       "mom-id-card": { hidden: true, updatedAt: 10 },
     });

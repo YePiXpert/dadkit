@@ -16,7 +16,6 @@ export type PersistenceDomain =
   | "checklist"
   | "growth"
   | "hospital"
-  | "planning"
   | "household"
   | "device-identity"
   | "baby"

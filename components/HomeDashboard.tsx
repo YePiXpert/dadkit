@@ -8,16 +8,15 @@ import {
   CarFront,
   ChevronRight,
   ClipboardList,
+  DatabaseBackup,
   Hospital,
   Sprout,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 
 import { BabyHomeCard } from "@/components/baby/BabyHomeCard";
 import { GrowthAnalogyIllustration } from "@/components/GrowthAnalogyIllustration";
 import { HouseholdFeaturePrompt } from "@/components/household/HouseholdFeaturePrompt";
-import { PlanningSummaryCard } from "@/components/PlanningSummaryCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CHECKLIST_PATH } from "@/lib/app-routes";
 import { hasBabyMode } from "@/lib/baby/portable";
@@ -70,10 +69,10 @@ const HOME_ENTRIES = [
     accent: "bg-tile-docs-bg text-tile-docs-fg",
   },
   {
-    href: "/planning",
-    title: "家庭分工",
-    description: "谁负责买、谁负责带",
-    icon: Users,
+    href: "/settings/backup",
+    title: "备份与恢复",
+    description: "导出备份，安心换设备",
+    icon: DatabaseBackup,
     accent: "bg-tile-lastminute-bg text-tile-lastminute-fg",
   },
 ] as const satisfies readonly {
@@ -142,8 +141,6 @@ export function HomeDashboard() {
         <HomeEntryGrid />
 
         <ProgressSummaryCard counts={counts} packing={packing} />
-
-        <PlanningSummaryCard compact />
 
         <HouseholdFeaturePrompt />
       </section>

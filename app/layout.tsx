@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "DadKit 待产包清单",
-    description: "从待产清单、医院档案和家庭分工，到宝宝出生后的喂养、尿布与睡眠记录。",
+    description: "从待产清单和医院档案，到宝宝出生后的喂养、尿布与睡眠记录。",
     type: "website",
     images: [
       {
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "DadKit 待产包清单",
-    description: "从待产清单、医院档案和家庭分工，到宝宝出生后的喂养、尿布与睡眠记录。",
+    description: "从待产清单和医院档案，到宝宝出生后的喂养、尿布与睡眠记录。",
     images: ["/og.png"],
   },
 };

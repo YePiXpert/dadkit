@@ -39,7 +39,7 @@ describe("release endpoints and product surface", () => {
       }>;
     };
 
-    expect(packageJson.version).toBe("3.4.12");
+    expect(packageJson.version).toBe("3.4.13");
     expect(manifest.name).toBe("DadKit 待产包清单");
     expect(manifest.description).toContain("待产包");
     expect(manifest.description).toContain("宝宝记录");
@@ -123,7 +123,7 @@ describe("release endpoints and product surface", () => {
     expect(activity).not.toContain('getAssets().open("www/"');
     expect(activity).toContain("loadDataWithBaseURL");
     expect(activity).toContain("DadKitAndroidMigration");
-    expect(activity).toContain("appVersionCode=25");
+    expect(activity).toContain("appVersionCode=26");
     expect(manifest).toContain("android.permission.REQUEST_INSTALL_PACKAGES");
     expect(manifest).toContain("androidx.core.content.FileProvider");
     expect(activity).toContain("DadKitAndroidUpdate");
@@ -142,7 +142,7 @@ describe("release endpoints and product surface", () => {
   it("keeps the Android tag release strict and verifies the signed APK", () => {
     const workflow = readSource(".github", "workflows", "android-release.yml");
 
-    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.4.12"');
+    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.4.13"');
     expect(workflow).toContain(
       'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
     );
@@ -265,7 +265,7 @@ describe("release endpoints and product surface", () => {
   it("installs the entry shell, then keeps all core routes in the background cache list", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.12-pwa-r1"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.13-pwa-r1"');
     expect(sw).toContain('const PRECACHE_ROUTES = ["/"]');
     expect(sw).toContain("BACKGROUND_ROUTES");
     expect(sw).toContain("networkFirstNavigation(event.request)");
@@ -279,7 +279,6 @@ describe("release endpoints and product surface", () => {
       "/growth",
       "/departure",
       "/hospital",
-      "/planning",
       "/settings",
       "/settings/about",
       "/settings/backup",
@@ -291,6 +290,7 @@ describe("release endpoints and product surface", () => {
     ]) {
       expect(sw).toContain(`"${route}"`);
     }
+    expect(sw).not.toContain('"/planning"');
     for (const route of REMOVED_PRODUCT_ROUTES) {
       expect(sw).not.toContain(`"/${route}"`);
     }

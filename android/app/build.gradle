@@ -15,8 +15,8 @@ android {
         applicationId "com.dadkit.mobile"
         minSdkVersion 23
         targetSdkVersion 36
-        versionCode 25
-        versionName "3.4.12"
+        versionCode 26
+        versionName "3.4.13"
     }
 
     androidResources {

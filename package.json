@@ -1,6 +1,6 @@
 {
   "name": "dadkit",
-  "version": "3.4.12",
+  "version": "3.4.13",
   "private": true,
   "description": "A local-first maternity preparation app for web and Android.",
   "scripts": {

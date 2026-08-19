@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class LauncherActivity extends Activity {
     private static final String APP_HOST = "dadkit.505f.com";
     private static final String START_URL =
-            "https://" + APP_HOST + "/?source=apk&appVersionCode=25";
+            "https://" + APP_HOST + "/?source=apk&appVersionCode=26";
     private static final String OFFLINE_PAGE =
             "<!doctype html><html lang=\"zh-CN\"><head>"
                     + "<meta charset=\"utf-8\">"
@@ -106,7 +106,7 @@ public class LauncherActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setSupportZoom(false);
         settings.setUserAgentString(
-                settings.getUserAgentString() + " DadKitAndroid/25"
+                settings.getUserAgentString() + " DadKitAndroid/26"
         );
 
         CookieManager.getInstance().setAcceptCookie(true);

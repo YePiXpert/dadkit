@@ -23,7 +23,6 @@ import {
   saveChecklist,
   saveChecklistMode,
   saveChecklistState,
-  saveChecklistStateAndClearPlanning,
   saveChecklistStateWithMetadata,
   saveChecklistStateSoon,
 } from "@/lib/data/local-repository";
@@ -375,7 +374,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       tombstones[item.id] = now;
     }
     try {
-      saveChecklistStateAndClearPlanning(
+      saveChecklistStateWithMetadata(
         { checklist, customItems: [], hiddenTemplateItemIds: [] },
         {
           hiddenTemplateItemStamps: stamps,

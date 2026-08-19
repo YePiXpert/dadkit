@@ -115,14 +115,14 @@
 
 ### 4.1 Service Worker 离线覆盖补齐
 
-- 证据：`public/sw.js` install 预缓存只覆盖少量路由（当前实现见文件顶部常量），`/baby`、`/growth`、`/departure`、`/hospital`、`/planning`、`/tools`、`/settings/*` 等未预缓存的路由离线首访会回退到首页而非目标页；安装引导文案宣称「离线也能用」。
-- 要求：先读 `public/sw.js` 现状（注意 `docs/optimization-plan-remaining.md` 阶段 1 #8 改过缓存策略：install 只预缓存 app shell，其余首访时写缓存）。把核心路由（`/baby`、`/baby/timeline`、`/tools`、`/growth`、`/departure`、`/hospital`、`/planning`、`/settings`、`/settings/backup`、`/settings/checklist`、`/settings/family`、`/settings/sync`、`/privacy`、`/support`）纳入 install 预缓存；`CACHE_NAME` 后缀升一级（如 `r1→r2`）触发旧缓存清理。若某路由预缓存会显著拖慢 install，可改为「导航请求命中缓存回退时优先回退到请求路径自身的缓存副本，最后才回退 `/`」——目标是离线打开已访问过的页面不跳首页。
+- 证据：`public/sw.js` install 预缓存只覆盖少量路由（当前实现见文件顶部常量），`/baby`、`/growth`、`/departure`、`/hospital`、`/tools`、`/settings/*` 等未预缓存的路由离线首访会回退到首页而非目标页；安装引导文案宣称「离线也能用」。
+- 要求：先读 `public/sw.js` 现状（注意 `docs/optimization-plan-remaining.md` 阶段 1 #8 改过缓存策略：install 只预缓存 app shell，其余首访时写缓存）。把核心路由（`/baby`、`/baby/timeline`、`/tools`、`/growth`、`/departure`、`/hospital`、`/settings`、`/settings/backup`、`/settings/checklist`、`/settings/family`、`/settings/sync`、`/privacy`、`/support`）纳入 install 预缓存；`CACHE_NAME` 后缀升一级（如 `r1→r2`）触发旧缓存清理。若某路由预缓存会显著拖慢 install，可改为「导航请求命中缓存回退时优先回退到请求路径自身的缓存副本，最后才回退 `/`」——目标是离线打开已访问过的页面不跳首页。
 - 验收：手动或 e2e 验证离线访问已缓存路由不回退首页；`tests/` 中如有 sw 相关断言同步更新。
 
 ### 4.2 对话框 history guard（iOS 左滑返回）
 
-- 证据：iOS standalone 下打开对话框（`components/AddItemDialog.tsx`、`EditItemDialog.tsx`、`ItemPlanningDialog.tsx`）时从屏幕左缘滑动会触发浏览器后退，弹窗状态丢失。
-- 要求：对话框打开时 `history.pushState` 压入一条标记记录，监听 `popstate` 关闭对话框（而不是离开页面）；对话框正常关闭时清理对应 history 记录，避免堆积。封装成可复用 hook（如 `lib/use-dialog-history-guard.ts`），三个对话框复用。
+- 证据：iOS standalone 下打开对话框（`components/AddItemDialog.tsx`、`EditItemDialog.tsx`）时从屏幕左缘滑动会触发浏览器后退，弹窗状态丢失。
+- 要求：对话框打开时 `history.pushState` 压入一条标记记录，监听 `popstate` 关闭对话框（而不是离开页面）；对话框正常关闭时清理对应 history 记录，避免堆积。封装成可复用 hook（如 `lib/use-dialog-history-guard.ts`），两个对话框复用。
 - 验收：iOS PWA 下左滑只关弹窗不跳页；浏览器后退键行为不回归；补 vitest。
 
 ### 4.3 安装引导文案区分浏览器
@@ -157,10 +157,10 @@
 
 ## 附录：已知但本计划不修的事项
 
-- `JsonDocumentMerger.kt` 缺 web `lib/sync/merge.ts` 里 v8→v9 `recordedByMemberId` 保留与 v7/v8 planning 兼容分支：原生端固定请求 data version 9，正常运行不触发，不修。
+- `JsonDocumentMerger.kt` 缺 web `lib/sync/merge.ts` 里旧版 `recordedByMemberId` 保留分支：原生端升级数据版本时需同步核验。
 - 原生端 pull 无 ETag/304：流量优化，不紧急，可后续单独立项。
 - 双端各自创建同名自定义物品会成两条（ID 前缀 `native-` vs `user-item-`）：不冲突但会重复，记录为已知行为。
-- 原生端无孕期成长/出院清单/采购分工界面（数据仅同步透传，不会丢）：属功能规划，另立需求。
+- 原生端无孕期成长/出院清单界面：属功能规划，另立需求。
 
 ## 执行顺序与里程碑
 

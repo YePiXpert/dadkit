@@ -17,7 +17,7 @@ import {
 
 export const metadata: Metadata = {
   title: "工具 | DadKit",
-  description: "使用孕期成长、准备出发、医院档案和家庭分工工具。",
+  description: "使用孕期成长、准备出发和医院档案工具。",
 };
 
 const TOOL_ENTRIES = [
@@ -43,20 +43,20 @@ const TOOL_ENTRIES = [
     accent: "bg-tile-docs-bg text-tile-docs-fg",
   },
   {
-    href: "/planning",
-    title: "家庭分工与采购",
-    description: "谁负责买、谁负责带，全家分工一目了然。",
-    icon: Users,
+    href: "/settings/checklist",
+    title: "清单设置",
+    description: "自定义分类、模板与不需要的物品。",
+    icon: ListChecks,
     accent: "bg-tile-mom-bg text-tile-mom-fg",
   },
 ] as const satisfies readonly LinkEntry[];
 
 const SUPPORT_ENTRIES = [
   {
-    href: "/settings/checklist",
-    title: "清单设置",
-    description: "自定义分类、模板与不需要的物品。",
-    icon: ListChecks,
+    href: "/settings/family",
+    title: "家庭成员",
+    description: "管理家庭名称和宝宝记录人。",
+    icon: Users,
     accent: "bg-tile-docs-bg text-tile-docs-fg",
   },
   {

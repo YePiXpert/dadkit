@@ -9,7 +9,7 @@ import { POST as joinRoute } from "@/app/api/sync/v2/join/route";
 import { GET as pullRoute } from "@/app/api/sync/pull/route";
 import { POST as pushRoute } from "@/app/api/sync/push/route";
 import { POST as leaveRoute } from "@/app/api/sync/leave/route";
-import { portableV9 } from "@/tests/helpers/portable-data";
+import { portableV10 } from "@/tests/helpers/portable-data";
 import { createV2Invite, updateSession } from "@/lib/sync/server-store";
 
 let directory: string;
@@ -52,14 +52,14 @@ describe("HttpOnly sync sessions", () => {
     const pushed = await pushRoute(new Request(`${origin}/api/sync/push`, {
       method: "POST",
       headers: { cookie, origin, "content-type": "application/json" },
-      body: JSON.stringify({ data: portableV9() }),
+      body: JSON.stringify({ data: portableV10() }),
     }));
     expect(pushed.status).toBe(200);
 
     const crossSite = await pushRoute(new Request(`${origin}/api/sync/push`, {
       method: "POST",
       headers: { cookie, origin: "https://evil.test", "content-type": "application/json" },
-      body: JSON.stringify({ data: portableV9() }),
+      body: JSON.stringify({ data: portableV10() }),
     }));
     expect(crossSite.status).toBe(403);
 
@@ -104,7 +104,7 @@ describe("HttpOnly sync sessions", () => {
     const accepted = await pushRoute(new Request(`${alias}/api/sync/push`, {
       method: "POST",
       headers: { cookie, origin: alias, "content-type": "application/json" },
-      body: JSON.stringify({ data: portableV9() }),
+      body: JSON.stringify({ data: portableV10() }),
     }));
     expect(accepted.status).toBe(200);
 
@@ -115,7 +115,7 @@ describe("HttpOnly sync sessions", () => {
         origin: "https://legacy.dadkit.test.evil.example",
         "content-type": "application/json",
       },
-      body: JSON.stringify({ data: portableV9() }),
+      body: JSON.stringify({ data: portableV10() }),
     }));
     expect(rejected.status).toBe(403);
   });

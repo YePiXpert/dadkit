@@ -18,7 +18,7 @@ import {
   revokeSession,
   updateSession,
 } from "@/lib/sync/server-store";
-import { portableTestItem, portableV9 } from "@/tests/helpers/portable-data";
+import { portableTestItem, portableV10 } from "@/tests/helpers/portable-data";
 
 let directory: string;
 
@@ -113,7 +113,7 @@ describe("random sync spaces", () => {
     const items = Array.from({ length: 800 }, (_, index) =>
       portableTestItem(`quota-${index}`, { name: `物品${index}${"测".repeat(30)}`, updatedAt: index + 1 }),
     );
-    const exact = portableV9({ checklist: items });
+    const exact = portableV10({ checklist: items });
     const exactBytes = canonicalDataBytes(exact);
     expect(exactBytes).toBeGreaterThan(64 * 1024);
     vi.stubEnv("DADKIT_SYNC_MAX_SPACE_BYTES", String(exactBytes));
@@ -124,7 +124,7 @@ describe("random sync spaces", () => {
     const backupsBefore = readdirSync(directory).filter((entry) => entry.includes(".bak."));
 
     await expect(
-      pushSpace(owner.token, portableV9({ checklist: [...items, portableTestItem("one-more", { updatedAt: 9999 })] })),
+      pushSpace(owner.token, portableV10({ checklist: [...items, portableTestItem("one-more", { updatedAt: 9999 })] })),
     ).rejects.toMatchObject({ status: 413, code: "SPACE_QUOTA_EXCEEDED" });
 
     expect(readFileSync(path.join(directory, `space-${owner.space.spaceId}.json`), "utf8")).toBe(before);
@@ -134,8 +134,8 @@ describe("random sync spaces", () => {
 
   it("deletes the main file and backups after owner confirmation", async () => {
     const owner = await createRandomSpace("删除家庭", "主设备");
-    await pushSpace(owner.token, portableV9({ checklist: [portableTestItem("a", { updatedAt: 1 })] }));
-    await pushSpace(owner.token, portableV9({ checklist: [portableTestItem("b", { updatedAt: 2 })] }));
+    await pushSpace(owner.token, portableV10({ checklist: [portableTestItem("a", { updatedAt: 1 })] }));
+    await pushSpace(owner.token, portableV10({ checklist: [portableTestItem("b", { updatedAt: 2 })] }));
     expect(readdirSync(directory).length).toBeGreaterThan(1);
     await deleteSpace(owner.token, "删除家庭");
     expect(readdirSync(directory)).toEqual([]);
@@ -144,7 +144,7 @@ describe("random sync spaces", () => {
 
   it("keeps data revision stable across metadata-only operations", async () => {
     const owner = await createRandomSpace("修订号家庭", "主设备");
-    await pushSpace(owner.token, portableV9({ checklist: [portableTestItem("data", { updatedAt: 1 })] }));
+    await pushSpace(owner.token, portableV10({ checklist: [portableTestItem("data", { updatedAt: 1 })] }));
     const before = await getSpaceMetadata(owner.token);
     await createV2Invite(owner.token, 60);
     await updateSession(owner.token, owner.space.currentSession.id, { deviceName: "新设备名" });

@@ -16,12 +16,6 @@ async function chooseSelect(page: Page, label: string, option: string) {
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 
-async function expandFilters(page: Page) {
-  if (!(await page.getByLabel("分工筛选", { exact: true }).isVisible())) {
-    await page.locator("summary").filter({ hasText: /^筛选/ }).click();
-  }
-}
-
 async function setupBaby(page: Page) {
   await page.goto("/baby", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: "宝宝已出生，开始记录" }).click();
@@ -52,30 +46,9 @@ test("家庭设置可新增、编辑、移除成员并保留已移除历史", as
 
   await page.getByRole("button", { name: "移除王姐" }).click();
   const confirm = page.getByRole("dialog", { name: "确认移除这位家庭成员？" });
-  await expect(confirm).toContainText("历史负责人和记录人仍会保留");
+  await expect(confirm).toContainText("历史记录人仍会保留");
   await confirm.getByRole("button", { name: "移除成员" }).click();
   await expect(page.getByText("王姐（已移除）", { exact: true })).toBeVisible();
-});
-
-test("一个物品可由一个或多个自定义成员负责并持久化", async ({ page }) => {
-  await seedFamily(page);
-  await page.goto("/planning", { waitUntil: "domcontentloaded" });
-  const editButton = page.getByRole("button", { name: /^编辑.+的分工与采购$/ }).first();
-  const editLabel = await editButton.getAttribute("aria-label") ?? "";
-  await editButton.click();
-  await page.getByRole("checkbox", { name: /小江/ }).check();
-  await page.getByRole("checkbox", { name: /奶奶/ }).check();
-  await page.getByRole("button", { name: "保存", exact: true }).click();
-  const editedItem = page.locator("article").filter({
-    has: page.getByRole("button", { name: editLabel, exact: true }),
-  });
-  await expect(editedItem).toContainText("小江");
-  await expect(editedItem).toContainText("奶奶");
-
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await expandFilters(page);
-  await chooseSelect(page, "负责人筛选", "小江");
-  await expect(page.locator("article").first()).toContainText("奶奶");
 });
 
 test("新记录采用当前设备成员，计时记录人固定且成员移除后历史仍可筛选", async ({ page }) => {

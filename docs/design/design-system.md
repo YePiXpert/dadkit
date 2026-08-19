@@ -5,9 +5,9 @@ V3 的目标：在 V2「打开就知道还差什么」的基础上，把界面�
 ## 信息架构
 
 - 主导航恰好五个：`首页 /`、`清单 /checklist`、`宝宝 /baby`、`工具 /tools`、`我的 /settings`。
-- `/` 是仪表盘：准备进度 hero、宝宝入口、`PlanningSummaryCard` 分工摘要、「全部工具」链接卡、家庭功能引导。不放工具快捷瓷砖。
-- `/tools` 是工具 hub，承载四个一级入口：孕期成长记 `/growth`、准备出发 `/departure`、医院档案 `/hospital`、家庭分工与采购 `/planning`。
-- 导航归属（`lib/navigation.ts` ownedRoutes）：清单只拥有 `/checklist`；工具拥有 `/tools`、`/growth`、`/departure`、`/hospital`、`/planning`；我的拥有 `/settings`、`/privacy`、`/support`。
+- `/` 是仪表盘：孕周/宝宝状态头、六项快捷入口、紧凑准备进度和家庭成员引导。
+- `/tools` 是工具 hub，一级入口为孕期成长记 `/growth`、准备出发 `/departure`、医院档案 `/hospital` 和清单设置 `/settings/checklist`。
+- 导航归属（`lib/navigation.ts` ownedRoutes）：清单只拥有 `/checklist`；工具拥有 `/tools`、`/growth`、`/departure`、`/hospital`；我的拥有 `/settings`、`/privacy`、`/support`。
 - 移动端底部导航在 `/onboarding`、`/checklist/*`（分类详情）、`/settings/*`（设置子页）隐藏，其余页面（含 `/growth`、`/tools`）均显示。
 - 隐私与支持是「我的」页的辅助入口，不增加第六个主导航项。
 

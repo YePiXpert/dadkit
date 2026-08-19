@@ -1,20 +1,24 @@
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { createEmptyLegacyPlanningRecordV1 } from "@/lib/data/legacy-planning";
 import type {
   DadKitExportData,
   DadKitExportDataV5,
   DadKitExportDataV6,
   DadKitExportDataV7,
 } from "@/lib/data/format";
-import { createEmptyItemPlanningRecordV1 } from "@/lib/planning/defaults";
 import {
   createRandomSpace,
-  createV2Invite,
-  joinWithInvite,
   pullSpace,
   pushSpace,
 } from "@/lib/sync/server-store";
@@ -26,27 +30,6 @@ import {
 } from "@/tests/helpers/portable-data";
 
 let dataDir: string;
-
-function canonicalV7() {
-  const data = portableV7();
-  data.hospital.fields.hospitalName = { value: "市妇幼保健院", updatedAt: 10 };
-  data.planning.items.bag = {
-    ...createEmptyItemPlanningRecordV1(),
-    assignee: { value: "dad", updatedAt: 20 },
-    estimatedPriceFen: { value: 2_000, updatedAt: 21 },
-  };
-  return data;
-}
-
-async function devices(name: string) {
-  const v7 = await createRandomSpace(name, "v7 设备");
-  const v6Invite = await createV2Invite(v7.token, 60);
-  const v6 = await joinWithInvite(v6Invite!.code, "v6 设备");
-  const v5Invite = await createV2Invite(v7.token, 60);
-  const v5 = await joinWithInvite(v5Invite!.code, "v5 设备");
-  if (!v7 || !v6 || !v5) throw new Error("测试同步空间创建失败");
-  return { v7, v6, v5 };
-}
 
 function currentSpacePath() {
   const filename = readdirSync(dataDir).find((entry) => entry.endsWith(".json"));
@@ -65,98 +48,71 @@ afterEach(() => {
 });
 
 describe("v5/v6/v7 family sync compatibility", () => {
-  it("returns pure version-specific projections", async () => {
-    const { v7 } = await devices("三版本投影家庭");
-    await pushSpace(v7.token, canonicalV7(), 7);
+  it("returns legal projections with empty retired planning fields", async () => {
+    const device = await createRandomSpace("三版本投影家庭", "v7 设备");
+    const data = portableV7();
+    data.hospital.fields.hospitalName = {
+      value: "市妇幼保健院",
+      updatedAt: 10,
+    };
+    data.planning.items.bag = {
+      ...createEmptyLegacyPlanningRecordV1(),
+      assignee: { value: "dad", updatedAt: 20 },
+    };
+    await pushSpace(device.token, data, 7);
 
-    const forV5 = (await pullSpace(v7.token, 5))?.data as DadKitExportDataV5;
-    const forV6 = (await pullSpace(v7.token, 6))?.data as DadKitExportDataV6;
-    const forV7 = (await pullSpace(v7.token, 7))?.data as DadKitExportDataV7;
+    const forV5 = (await pullSpace(device.token, 5))?.data as DadKitExportDataV5;
+    const forV6 = (await pullSpace(device.token, 6))?.data as DadKitExportDataV6;
+    const forV7 = (await pullSpace(device.token, 7))?.data as DadKitExportDataV7;
+
     expect(forV5.version).toBe(5);
     expect(forV5).not.toHaveProperty("hospital");
     expect(forV5).not.toHaveProperty("planning");
-    expect(forV6.version).toBe(6);
     expect(forV6.hospital.fields.hospitalName.value).toBe("市妇幼保健院");
     expect(forV6).not.toHaveProperty("planning");
-    expect(forV7.version).toBe(7);
-    expect(forV7.planning.items.bag.assignee.value).toBe("dad");
+    expect(forV7.planning).toEqual({ version: 1, clearedAt: 0, items: {} });
   });
 
-  it("preserves hospital and planning after a v5 push", async () => {
-    const { v7, v5 } = await devices("v5保留新字段家庭");
-    await pushSpace(v7.token, canonicalV7(), 7);
+  it("merges supported fields from old clients", async () => {
+    const device = await createRandomSpace("旧设备字段兼容家庭", "v7 设备");
+    const initial = portableV7();
+    initial.hospital.fields.hospitalName = { value: "市妇幼", updatedAt: 10 };
+    await pushSpace(device.token, initial, 7);
     await pushSpace(
-      v5.token,
-      portableV5({ checklist: [portableTestItem("v5", { updatedAt: 100 })] }),
+      device.token,
+      portableV5({
+        checklist: [portableTestItem("v5", { updatedAt: 100 })],
+      }),
       5,
     );
-    const final = (await pullSpace(v7.token, 7))?.data as DadKitExportDataV7;
-    expect(final.hospital.fields.hospitalName.value).toBe("市妇幼保健院");
-    expect(final.planning.items.bag.assignee.value).toBe("dad");
+    const v6Update = portableV6();
+    v6Update.hospital.fields.address = { value: "健康路 2 号", updatedAt: 200 };
+    await pushSpace(device.token, v6Update, 6);
+
+    const latest = (await pullSpace(device.token, 10))?.data as DadKitExportData;
+    expect(latest.checklist.some((item) => item.id === "v5")).toBe(true);
+    expect(latest.hospital.fields.hospitalName.value).toBe("市妇幼");
+    expect(latest.hospital.fields.address.value).toBe("健康路 2 号");
+    expect(latest).not.toHaveProperty("planning");
   });
 
-  it("merges hospital but preserves planning after a v6 push", async () => {
-    const { v7, v6 } = await devices("v6保留planning家庭");
-    await pushSpace(v7.token, canonicalV7(), 7);
-    const update = portableV6();
-    update.hospital.fields.address = { value: "健康路 2 号", updatedAt: 200 };
-    await pushSpace(v6.token, update, 6);
-    const final = (await pullSpace(v7.token, 7))?.data as DadKitExportDataV7;
-    expect(final.hospital.fields.address.value).toBe("健康路 2 号");
-    expect(final.planning.items.bag.estimatedPriceFen.value).toBe(2_000);
-  });
-
-  it("combines offline edits to different items and fields", async () => {
-    const { v7 } = await devices("v7离线字段合并家庭");
-    const assigneeEdit = portableV7();
-    assigneeEdit.planning.items.bag = {
-      ...createEmptyItemPlanningRecordV1(),
-      assignee: { value: "mom", updatedAt: 100 },
-    };
-    const priceEdit = portableV7();
-    priceEdit.planning.items.bag = {
-      ...createEmptyItemPlanningRecordV1(),
-      actualPriceFen: { value: 3_000, updatedAt: 110 },
-    };
-    priceEdit.planning.items.car = {
-      ...createEmptyItemPlanningRecordV1(),
-      storageLocation: { value: "车内", updatedAt: 120 },
-    };
-    await pushSpace(v7.token, assigneeEdit, 7);
-    await pushSpace(v7.token, priceEdit, 7);
-    const final = (await pullSpace(v7.token, 7))?.data as DadKitExportDataV7;
-    expect(final.planning.items.bag.assignee.value).toBe("mom");
-    expect(final.planning.items.bag.actualPriceFen.value).toBe(3_000);
-    expect(final.planning.items.car.storageLocation.value).toBe("车内");
-  });
-
-  it("does not resurrect planning after a global clear and old-device pushes", async () => {
-    const { v7, v6, v5 } = await devices("planning全局清空家庭");
-    await pushSpace(v7.token, canonicalV7(), 7);
-    const cleared = portableV7({
-      planning: { version: 1, clearedAt: 500, items: {} },
-    });
-    await pushSpace(v7.token, cleared, 7);
-    await pushSpace(v6.token, portableV6(), 6);
-    await pushSpace(v5.token, portableV5(), 5);
-    const final = (await pullSpace(v7.token, 7))?.data as DadKitExportDataV7;
-    expect(final.planning).toEqual({ version: 1, clearedAt: 500, items: {} });
-  });
-
-  it("upgrades a stored v6 file to canonical v7 on write", async () => {
-    const { v7 } = await devices("旧v6空间升级家庭");
+  it("upgrades a stored v6 file to canonical v10 on write", async () => {
+    const device = await createRandomSpace("旧v6空间升级家庭", "v7 设备");
     const file = currentSpacePath();
     const stored = JSON.parse(readFileSync(file, "utf8")) as { data: unknown };
     stored.data = portableV6({ checklist: [portableTestItem("stored-v6")] });
     writeFileSync(file, JSON.stringify(stored), "utf8");
 
-    const projected = (await pullSpace(v7.token, 7))?.data as DadKitExportDataV7;
-    expect(projected.version).toBe(7);
+    const projected = (await pullSpace(device.token, 7))?.data;
+    expect(projected?.version).toBe(7);
+    if (!projected || projected.version !== 7) throw new Error("v7 投影失败");
     expect(projected.planning).toEqual({ version: 1, clearedAt: 0, items: {} });
-    await pushSpace(v7.token, portableV7(), 7);
+
+    await pushSpace(device.token, portableV7(), 7);
     const persisted = JSON.parse(readFileSync(file, "utf8")) as {
       data: DadKitExportData;
     };
-    expect(persisted.data.version).toBe(9);
+    expect(persisted.data.version).toBe(10);
+    expect(persisted.data).not.toHaveProperty("planning");
   });
 });

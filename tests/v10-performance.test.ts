@@ -5,14 +5,10 @@ import type { CareEventV1 } from "@/lib/baby/types";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
 import { projectExportDataForVersion } from "@/lib/data/format";
 import { createEmptyHousehold } from "@/lib/household/defaults";
-import { migratePlanningV1ToV2 } from "@/lib/household/migration";
 import { isHouseholdPortableData } from "@/lib/household/validation";
-import { createEmptyItemPlanningRecordV1 } from "@/lib/planning/defaults";
-import { projectPlanningV2ToV1 } from "@/lib/planning/projection";
-import type { ItemPlanningPortableDataV1 } from "@/lib/planning/types";
 import { mergeExportData } from "@/lib/sync/merge";
 import { calculateChecksum } from "@/lib/webdav/checksum";
-import { portableV9 } from "@/tests/helpers/portable-data";
+import { portableV10 } from "@/tests/helpers/portable-data";
 
 function withinBudget<T>(operation: () => T, milliseconds = 3_000) {
   const started = performance.now();
@@ -34,7 +30,7 @@ function legacyEvents(count = 25_000): CareEventV1[] {
   }));
 }
 
-describe("v9 migration and validation performance", () => {
+describe("v10 migration and validation performance", () => {
   it("strictly validates 100 household records including tombstones", () => {
     const household = createEmptyHousehold();
     for (let index = 0; index < 100; index += 1) {
@@ -50,21 +46,7 @@ describe("v9 migration and validation performance", () => {
     expect(withinBudget(() => isHouseholdPortableData(household))).toBe(true);
   });
 
-  it("migrates and projects 2,000 planning records", () => {
-    const planning: ItemPlanningPortableDataV1 = { version: 1, clearedAt: 0, items: {} };
-    for (let index = 0; index < 2_000; index += 1) {
-      planning.items[`item-${index}`] = {
-        ...createEmptyItemPlanningRecordV1(),
-        assignee: { value: index % 2 ? "shared" : "family", updatedAt: index + 1 },
-      };
-    }
-    const migrated = withinBudget(() => migratePlanningV1ToV2(planning));
-    expect(Object.keys(migrated.planning.items)).toHaveLength(2_000);
-    const projected = withinBudget(() => projectPlanningV2ToV1(migrated.planning));
-    expect(Object.keys(projected.items)).toHaveLength(2_000);
-  });
-
-  it("migrates, merges and checksums 25,000 v8/v9 baby events", () => {
+  it("migrates, merges and checksums 25,000 v8/v10 baby events", () => {
     const babyV2 = createEmptyBabyData();
     const babyV1 = projectBabyV2ToV1(babyV2);
     babyV1.care.events = legacyEvents();
@@ -76,7 +58,7 @@ describe("v9 migration and validation performance", () => {
       recordedByMemberId: "member-a",
     }));
 
-    const canonical = portableV9({ baby: migrated });
+    const canonical = portableV10({ baby: migrated });
     const legacy = withinBudget(() => projectExportDataForVersion(canonical, 8));
     const merged = withinBudget(() => mergeExportData(canonical, legacy));
     expect(merged.baby.care.events).toHaveLength(25_000);

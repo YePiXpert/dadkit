@@ -186,7 +186,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(isPrimaryNavigationItemActive("/growth", toolsNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/departure", toolsNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/hospital", toolsNav)).toBe(true);
-    expect(isPrimaryNavigationItemActive("/planning", toolsNav)).toBe(true);
+    expect(isPrimaryNavigationItemActive("/planning", toolsNav)).toBe(false);
     expect(isPrimaryNavigationItemActive("/settings", toolsNav)).toBe(false);
 
     expect(isPrimaryNavigationItemActive("/settings", mineNav)).toBe(true);

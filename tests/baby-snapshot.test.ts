@@ -18,7 +18,7 @@ import { portableTestItem, portableV7, portableV8 } from "@/tests/helpers/portab
 import { loadDeviceIdentity, saveDeviceIdentity } from "@/lib/device-identity/repository";
 import { createEmptyHousehold } from "@/lib/household/defaults";
 import { loadHousehold, saveHousehold } from "@/lib/household/repository";
-import { createEmptyItemPlanningRecordV1 } from "@/lib/planning/defaults";
+import { createEmptyLegacyPlanningRecordV1 } from "@/lib/data/legacy-planning";
 import { useDadKitStore } from "@/lib/store";
 import { generateChecklist } from "@/lib/rules";
 
@@ -49,7 +49,7 @@ afterEach(() => {
 });
 
 describe("baby snapshots and compensated import rollback", () => {
-  it("stores and restores complete v9 snapshots in IndexedDB only", async () => {
+  it("stores and restores complete v10 snapshots in IndexedDB only", async () => {
     const data = createEmptyBabyData();
     data.profile.fields.birthDate = { value: "2026-08-01", updatedAt: 10 };
     data.care.events = [diaper("snapshot-event", 20)];
@@ -57,7 +57,7 @@ describe("baby snapshots and compensated import rollback", () => {
     const storage = installBrowserStorage();
 
     const snapshot = await createSnapshotAsync("宝宝快照测试");
-    if (!snapshot || snapshot.data.version !== 9) throw new Error("v9 快照未创建");
+    if (!snapshot || snapshot.data.version !== 10) throw new Error("v10 快照未创建");
     expect(snapshot.data.baby.care.events.map((event) => event.id)).toEqual(["snapshot-event"]);
     expect(storage.writes).not.toContain(STORAGE_KEYS.snapshots);
     expect(await loadSnapshotsAsync()).toHaveLength(1);
@@ -165,7 +165,7 @@ describe("baby snapshots and compensated import rollback", () => {
     expect(loadDeviceIdentity()).toEqual(oldIdentity);
   });
 
-  it("fully restores v8 with deterministic legacy members and resets only the local identity", async () => {
+  it("fully restores v8 while discarding retired planning members", async () => {
     const current = createEmptyHousehold();
     current.members["custom-before"] = {
       id: "custom-before",
@@ -179,7 +179,7 @@ describe("baby snapshots and compensated import rollback", () => {
 
     const incoming = portableV8();
     incoming.planning.items.bag = {
-      ...createEmptyItemPlanningRecordV1(),
+      ...createEmptyLegacyPlanningRecordV1(),
       assignee: { value: "dad", updatedAt: 20 },
     };
     const { recordedByMemberId: _recorder, ...legacyEvent } = diaper("legacy-v8-event", 30);
@@ -196,7 +196,7 @@ describe("baby snapshots and compensated import rollback", () => {
     }));
     const household = loadHousehold();
     expect(household.members["custom-before"]).toBeUndefined();
-    expect(household.members["legacy-dad-v1"].createdAt).toBeGreaterThan(household.clearedAt);
+    expect(household.members).toEqual({});
     expect(loadDeviceIdentity().currentMemberId).toBeNull();
     expect((await repository.getAllBabyData()).care.events[0].recordedByMemberId).toBeNull();
   });

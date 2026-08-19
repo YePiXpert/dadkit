@@ -2,7 +2,6 @@ export const CHECKLIST_PATH = "/checklist";
 export const DEPARTURE_PATH = "/departure";
 export const GROWTH_PATH = "/growth";
 export const HOSPITAL_PATH = "/hospital";
-export const PLANNING_PATH = "/planning";
 export const BABY_PATH = "/baby";
 export const BABY_TIMELINE_PATH = "/baby/timeline";
 export const ONBOARDING_PATH = "/onboarding";

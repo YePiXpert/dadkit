@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }) => {
   await seedFamily(page);
 });
 
-test("双标签实时同步清单、分工、宝宝记录和物品照片", async ({
+test("双标签实时同步清单、宝宝记录和物品照片", async ({
   context,
   page,
 }) => {
@@ -58,23 +58,6 @@ test("双标签实时同步清单、分工、宝宝记录和物品照片", async
     ).toBeVisible();
     await page.keyboard.press("Escape");
     await otherPage.keyboard.press("Escape");
-
-    await page.goto("/planning", { waitUntil: "domcontentloaded" });
-    await otherPage.goto("/planning", { waitUntil: "domcontentloaded" });
-    await expect(
-      page.getByRole("heading", { name: "家庭分工与采购", exact: true }),
-    ).toBeVisible();
-    await expect(
-      otherPage.getByRole("heading", { name: "家庭分工与采购", exact: true }),
-    ).toBeVisible();
-    await page
-      .getByRole("button", { name: `编辑${itemName}的分工与采购` })
-      .click();
-    await page.getByLabel("购买渠道").fill("跨标签门店");
-    await page.getByRole("button", { name: "保存", exact: true }).click();
-    await expect(
-      otherPage.getByText("跨标签门店", { exact: false }),
-    ).toBeVisible();
 
     await page.goto("/baby", { waitUntil: "domcontentloaded" });
     await otherPage.goto("/baby", { waitUntil: "domcontentloaded" });

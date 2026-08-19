@@ -12,7 +12,7 @@ import {
   createSyncEtag,
 } from "@/lib/sync/data-version";
 import { createRandomSpace, pullSpace, pushSpace } from "@/lib/sync/server-store";
-import { portableV5, portableV6, portableV7, portableV8, portableV9 } from "@/tests/helpers/portable-data";
+import { portableV5, portableV6, portableV7, portableV8, portableV10 } from "@/tests/helpers/portable-data";
 
 let dataDir: string;
 
@@ -27,7 +27,7 @@ function pullRequest(token: string, version: DadKitSyncDataVersion, etag?: strin
 }
 
 beforeEach(() => {
-  dataDir = mkdtempSync(path.join(tmpdir(), "dadkit-sync-v9-etag-"));
+  dataDir = mkdtempSync(path.join(tmpdir(), "dadkit-sync-v10-etag-"));
   vi.stubEnv("DADKIT_DATA_DIR", dataDir);
   vi.stubEnv("DADKIT_PUBLIC_ORIGIN", "https://dadkit.test");
 });
@@ -37,14 +37,14 @@ afterEach(() => {
   rmSync(dataDir, { recursive: true, force: true });
 });
 
-describe("v9 representation ETags", () => {
-  it("returns 304 for v5-v9 only when the requested representation matches", async () => {
-    const device = await createRandomSpace("v9 ETag 家庭", "v9 设备");
+describe("v10 representation ETags", () => {
+  it("returns 304 for v5-v10 only when the requested representation matches", async () => {
+    const device = await createRandomSpace("v10 ETag 家庭", "v10 设备");
     if (!device) throw new Error("测试同步空间创建失败");
-    await pushSpace(device.token, portableV9(), 9);
+    await pushSpace(device.token, portableV10(), 10);
 
     const etags = new Map<DadKitSyncDataVersion, string>();
-    for (const version of [5, 6, 7, 8, 9] as const) {
+    for (const version of [5, 6, 7, 8, 9, 10] as const) {
       const response = await pullRoute(pullRequest(device.token, version));
       expect(response.status).toBe(200);
       expect(response.headers.get("vary")).toBe(DADKIT_DATA_VERSION_HEADER);
@@ -57,27 +57,27 @@ describe("v9 representation ETags", () => {
       expect(unchanged.headers.get("vary")).toBe(DADKIT_DATA_VERSION_HEADER);
     }
 
-    expect((await pullRoute(pullRequest(device.token, 9, etags.get(8)))).status).toBe(200);
-    expect((await pullRoute(pullRequest(device.token, 9, etags.get(7)))).status).toBe(200);
-    expect((await pullRoute(pullRequest(device.token, 8, etags.get(9)))).status).toBe(200);
+    expect((await pullRoute(pullRequest(device.token, 10, etags.get(9)))).status).toBe(200);
+    expect((await pullRoute(pullRequest(device.token, 10, etags.get(8)))).status).toBe(200);
+    expect((await pullRoute(pullRequest(device.token, 9, etags.get(10)))).status).toBe(200);
   });
 
-  it("adds v9 ETag and Vary to push", async () => {
-    const device = await createRandomSpace("v9 响应头家庭", "v9 设备");
+  it("adds v10 ETag and Vary to push", async () => {
+    const device = await createRandomSpace("v10 响应头家庭", "v10 设备");
     const pushResponse = await pushRoute(new Request("https://dadkit.test/api/sync/push", {
       method: "POST",
-      headers: { cookie: `dadkit_sync_session=${encodeURIComponent(device.token)}`, origin: "https://dadkit.test", "content-type": "application/json", [DADKIT_DATA_VERSION_HEADER]: "9", "x-forwarded-for": "203.0.113.103" },
-      body: JSON.stringify({ data: portableV9() }),
+      headers: { cookie: `dadkit_sync_session=${encodeURIComponent(device.token)}`, origin: "https://dadkit.test", "content-type": "application/json", [DADKIT_DATA_VERSION_HEADER]: "10", "x-forwarded-for": "203.0.113.103" },
+      body: JSON.stringify({ data: portableV10() }),
     }));
     const pushed = await pushResponse.json() as { version: number };
-    expect(pushResponse.headers.get("etag")).toBe(createSyncEtag(pushed.version, 9));
+    expect(pushResponse.headers.get("etag")).toBe(createSyncEtag(pushed.version, 10));
     expect(pushResponse.headers.get("vary")).toBe(DADKIT_DATA_VERSION_HEADER);
   });
 
   it("preserves a canonical recorder when an actual v8 device edits the event", async () => {
-    const device = await createRandomSpace("v8 记录人兼容家庭", "v9 设备");
+    const device = await createRandomSpace("v8 记录人兼容家庭", "v10 设备");
     if (!device) throw new Error("测试同步空间创建失败");
-    const canonical = portableV9();
+    const canonical = portableV10();
     canonical.household.members["member-a"] = {
       id: "member-a",
       createdAt: 1,
@@ -88,7 +88,7 @@ describe("v9 representation ETags", () => {
     canonical.baby.care.events = [{
       id: "event-a",
       type: "diaper",
-      note: "v9 原备注",
+      note: "v10 原备注",
       recordedByMemberId: "member-a",
       createdAt: 10,
       updatedAt: 10,
@@ -96,7 +96,7 @@ describe("v9 representation ETags", () => {
       occurredAt: "2026-08-01T00:00:00.000Z",
       kind: "wet",
     }];
-    await pushSpace(device.token, canonical, 9);
+    await pushSpace(device.token, canonical, 10);
 
     const legacy = await pullSpace(device.token, 8);
     const legacyData = legacy?.data;
@@ -105,17 +105,17 @@ describe("v9 representation ETags", () => {
     legacyData.baby.care.events[0]!.updatedAt = 20;
     await pushSpace(device.token, legacyData, 8);
 
-    const latest = await pullSpace(device.token, 9);
+    const latest = await pullSpace(device.token, 10);
     const latestData = latest?.data;
-    if (!latestData || latestData.version !== 9) throw new Error("v9 拉取失败");
+    if (!latestData || latestData.version !== 10) throw new Error("v10 拉取失败");
     expect(latestData.baby.care.events[0]!.note).toBe("v8 已编辑");
     expect(latestData.baby.care.events[0]!.recordedByMemberId).toBe("member-a");
   });
 
   it("preserves household after v5, v6, v7 and v8 pushes", async () => {
-    const device = await createRandomSpace("旧设备 household 兼容家庭", "v9 设备");
+    const device = await createRandomSpace("旧设备 household 兼容家庭", "v10 设备");
     if (!device) throw new Error("测试同步空间创建失败");
-    const canonical = portableV9();
+    const canonical = portableV10();
     canonical.household.members["member-custom"] = {
       id: "member-custom",
       createdAt: 10,
@@ -123,7 +123,7 @@ describe("v9 representation ETags", () => {
       relationshipLabel: { value: "月嫂", updatedAt: 10 },
       deleted: { value: false, updatedAt: 10 },
     };
-    await pushSpace(device.token, canonical, 9);
+    await pushSpace(device.token, canonical, 10);
 
     for (const [version, data] of [
       [5, portableV5()],
@@ -132,9 +132,9 @@ describe("v9 representation ETags", () => {
       [8, portableV8()],
     ] as const) {
       await pushSpace(device.token, data, version);
-      const latest = await pullSpace(device.token, 9);
+      const latest = await pullSpace(device.token, 10);
       const latestData = latest?.data;
-      if (!latestData || latestData.version !== 9) throw new Error("v9 拉取失败");
+      if (!latestData || latestData.version !== 10) throw new Error("v10 拉取失败");
       expect(latestData.household.members["member-custom"].displayName.value).toBe("王阿姨");
     }
   });

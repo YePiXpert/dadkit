@@ -163,7 +163,7 @@ export async function apiRequest<T>(
   if (init.body && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
-  headers.set(DADKIT_DATA_VERSION_HEADER, "9");
+  headers.set(DADKIT_DATA_VERSION_HEADER, "10");
   headers.set(DADKIT_SYNC_PROTOCOL_HEADER, String(DADKIT_SYNC_PROTOCOL_VERSION));
 
   const parentSignal = init.signal;
@@ -295,21 +295,6 @@ export function alignExportDataToServerTime(
           { ...field, updatedAt: shiftTimestamp(field.updatedAt) },
         ]),
       ) as DadKitExportData["hospital"]["fields"],
-    },
-    planning: {
-      version: 2,
-      clearedAt: shiftTimestamp(data.planning.clearedAt),
-      items: Object.fromEntries(
-        Object.entries(data.planning.items).map(([itemId, record]) => [
-          itemId,
-          Object.fromEntries(
-            Object.entries(record).map(([key, field]) => [
-              key,
-              { ...field, updatedAt: shiftTimestamp(field.updatedAt) },
-            ]),
-          ),
-        ]),
-      ) as DadKitExportData["planning"]["items"],
     },
     household: {
       version: 1,
@@ -582,7 +567,7 @@ async function doSync(): Promise<SyncOutcome> {
         isDadKitImportData(pushed.data.data) &&
         checksumOf(pushed.data.data) !== mergedChecksum
       ) {
-        // A legacy-compatible response may omit hospital and/or planning.
+        // A legacy-compatible response may omit newer data domains.
         // Merge its supported fields instead of treating absence as a clear.
         merged = mergeExportData(merged, pushed.data.data);
         merged = await applyMerged(merged);

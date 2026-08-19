@@ -23,11 +23,6 @@ const TOOL_ROUTES = [
     heading: "医院档案",
     pathname: "/hospital",
   },
-  {
-    entryName: "家庭分工",
-    heading: "家庭分工与采购",
-    pathname: "/planning",
-  },
 ] as const;
 
 test.describe.configure({ timeout: 120_000 });
@@ -49,17 +44,13 @@ test("首页宫格入口可到达各工具页面且只激活工具导航", async
   }
 });
 
-test("首页开始分工快捷入口可到达分工页面", async ({ page }) => {
+test("家庭分工入口已下线且旧链接回到工具页", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect(page.getByText("家庭分工", { exact: false })).toHaveCount(0);
 
-  const planningEntry = page.getByRole("link", { name: "开始分工" });
-  await expect(planningEntry).toBeVisible({ timeout: 60_000 });
-  await planningEntry.click();
-
-  await expectPathname(page, "/planning");
-  await expect(
-    page.getByRole("heading", { name: "家庭分工与采购", exact: true }),
-  ).toBeVisible();
+  await page.goto("/planning", { waitUntil: "domcontentloaded" });
+  await expectPathname(page, "/tools");
+  await expect(page.getByRole("heading", { name: "工具", exact: true })).toBeVisible();
   await expectOnlyPrimaryNavigationItemActive(page, "工具");
 });
 
@@ -87,7 +78,7 @@ test("工具页展示管理与支持入口", async ({ page }) => {
     page.getByRole("heading", { name: "管理与支持", exact: true }),
   ).toBeVisible({ timeout: 60_000 });
 
-  for (const name of ["清单设置", "备份与恢复", "家庭同步", "帮助与反馈"]) {
+  for (const name of ["家庭成员", "备份与恢复", "家庭同步", "帮助与反馈"]) {
     await expect(
       page.getByRole("link", { name: new RegExp(`^${name}(?:\\s|$)`) }),
     ).toBeVisible();

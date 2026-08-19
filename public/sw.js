@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v3.4.12-pwa-r1";
+const CACHE_NAME = "dadkit-v3.4.13-pwa-r1";
 const PRECACHE_ROUTES = ["/"];
 const BACKGROUND_ROUTES = [
   "/",
@@ -11,7 +11,6 @@ const BACKGROUND_ROUTES = [
   "/growth",
   "/departure",
   "/hospital",
-  "/planning",
   "/settings",
   "/settings/about",
   "/settings/backup",

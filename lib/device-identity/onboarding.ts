@@ -4,8 +4,6 @@ import { getBabyRepository } from "@/lib/baby/repository";
 import { hasBabyMode } from "@/lib/baby/portable";
 import { loadHospitalProfile } from "@/lib/hospital/repository";
 import { isHospitalProfileConfigured } from "@/lib/hospital/selectors";
-import { loadItemPlanning } from "@/lib/planning/repository";
-import { hasAnyEffectiveItemPlanning } from "@/lib/planning/selectors";
 
 export async function hasExistingDadKitData() {
   if (typeof window === "undefined") return true;
@@ -19,7 +17,6 @@ export async function hasExistingDadKitData() {
       customItems.length > 0 || hidden.length > 0 ||
       Boolean(growth.nickname || growth.dueDate) ||
       isHospitalProfileConfigured(loadHospitalProfile()) ||
-      hasAnyEffectiveItemPlanning(loadItemPlanning()) ||
       Boolean(window.localStorage.getItem("dadkit:v3:sync-session")) ||
       Boolean(window.localStorage.getItem("dadkit:v3:webdav-config"));
     if (localExisting) return true;

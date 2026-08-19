@@ -6,8 +6,7 @@ import {
   sanitizeDadKitImportData,
   upgradeExportDataToLatest,
 } from "@/lib/data/format";
-import { createEmptyItemPlanningRecordV1 } from "@/lib/planning/defaults";
-import { createEmptyItemPlanning } from "@/lib/planning/defaults";
+import { createEmptyLegacyPlanningRecordV1 } from "@/lib/data/legacy-planning";
 import { calculateChecksum } from "@/lib/webdav/checksum";
 import {
   portableTestItem,
@@ -17,7 +16,7 @@ import {
 } from "@/tests/helpers/portable-data";
 
 describe("DadKit v7 portable format", () => {
-  it("upgrades v3-v6 with timestamp-zero empty planning", () => {
+  it("upgrades v3-v6 without adding retired planning data", () => {
     const v3 = {
       version: 3 as const,
       exportedAt: "2026-08-01T00:00:00.000Z",
@@ -38,13 +37,13 @@ describe("DadKit v7 portable format", () => {
 
     for (const input of [v3, v4, portableV5(), portableV6()]) {
       const upgraded = upgradeExportDataToLatest(input);
-      expect(upgraded.version).toBe(9);
-      expect(upgraded.planning).toEqual(createEmptyItemPlanning());
+      expect(upgraded.version).toBe(10);
+      expect(upgraded).not.toHaveProperty("planning");
       expect(isDadKitImportData(upgraded)).toBe(true);
     }
   });
 
-  it("preserves v6 hospital data while adding empty planning", () => {
+  it("preserves v6 hospital data", () => {
     const v6 = portableV6();
     v6.hospital.fields.hospitalName = { value: "市妇幼", updatedAt: 20 };
     const upgraded = upgradeExportDataToLatest(v6);
@@ -52,13 +51,13 @@ describe("DadKit v7 portable format", () => {
       value: "市妇幼",
       updatedAt: 20,
     });
-    expect(upgraded.planning.clearedAt).toBe(0);
+    expect(upgraded).not.toHaveProperty("planning");
   });
 
   it("round-trips and clones a complete v7 payload", () => {
     const data = portableV7();
     data.planning.items.bag = {
-      ...createEmptyItemPlanningRecordV1(),
+      ...createEmptyLegacyPlanningRecordV1(),
       assignee: { value: "shared", updatedAt: 10 },
       actualPriceFen: { value: 1_299, updatedAt: 11 },
     };
@@ -79,7 +78,7 @@ describe("DadKit v7 portable format", () => {
     const missing = structuredClone(portableV7()) as unknown as {
       planning: { items: Record<string, Record<string, unknown>> };
     };
-    missing.planning.items.bag = createEmptyItemPlanningRecordV1() as unknown as Record<string, unknown>;
+    missing.planning.items.bag = createEmptyLegacyPlanningRecordV1() as unknown as Record<string, unknown>;
     delete missing.planning.items.bag.storageLocation;
     expect(isDadKitImportData(missing)).toBe(false);
   });
@@ -87,7 +86,7 @@ describe("DadKit v7 portable format", () => {
   it("projects v5, v6 and v7 without mutating canonical data", () => {
     const canonical = portableV7();
     canonical.planning.items.bag = {
-      ...createEmptyItemPlanningRecordV1(),
+      ...createEmptyLegacyPlanningRecordV1(),
       assignee: { value: "dad", updatedAt: 10 },
     };
     const before = structuredClone(canonical);
@@ -101,7 +100,9 @@ describe("DadKit v7 portable format", () => {
     expect(v6.version).toBe(6);
     expect(v6).toHaveProperty("hospital");
     expect(v6).not.toHaveProperty("planning");
-    expect(v7).toEqual(canonical);
+    expect(v7.version).toBe(7);
+    if (v7.version !== 7) throw new Error("v7 投影失败");
+    expect(v7.planning).toEqual({ version: 1, clearedAt: 0, items: {} });
     expect(canonical).toEqual(before);
   });
 
@@ -109,7 +110,7 @@ describe("DadKit v7 portable format", () => {
     const empty = portableV7();
     const changed = portableV7();
     changed.planning.items.bag = {
-      ...createEmptyItemPlanningRecordV1(),
+      ...createEmptyLegacyPlanningRecordV1(),
       assignee: { value: "dad", updatedAt: 10 },
     };
     expect(calculateChecksum(changed)).not.toBe(calculateChecksum(empty));

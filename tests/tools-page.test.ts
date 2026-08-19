@@ -29,7 +29,7 @@ describe("tools hub page and navigation", () => {
       { href: "/growth", title: "孕期成长记" },
       { href: "/departure", title: "准备出发" },
       { href: "/hospital", title: "医院档案" },
-      { href: "/planning", title: "家庭分工与采购" },
+      { href: "/settings/checklist", title: "清单设置" },
     ];
 
     for (const entry of entries) {
@@ -37,9 +37,12 @@ describe("tools hub page and navigation", () => {
       expect(page).toContain(entry.title);
     }
 
+    expect(page).not.toContain('href: "/planning"');
+    expect(page).not.toContain("家庭分工");
+
     expect(page).toContain("管理与支持");
     for (const entry of [
-      { href: "/settings/checklist", title: "清单设置" },
+      { href: "/settings/family", title: "家庭成员" },
       { href: "/settings/backup", title: "备份与恢复" },
       { href: "/settings/sync", title: "家庭同步" },
       { href: "/support", title: "帮助与反馈" },
@@ -56,7 +59,7 @@ describe("tools hub page and navigation", () => {
     const tools = PRIMARY_NAVIGATION_ITEMS.find((item) => item.id === "tools")!;
     const mine = PRIMARY_NAVIGATION_ITEMS.find((item) => item.id === "mine")!;
 
-    for (const route of ["/tools", "/growth", "/departure", "/hospital", "/planning"]) {
+    for (const route of ["/tools", "/growth", "/departure", "/hospital"]) {
       expect(isPrimaryNavigationItemActive(route, tools)).toBe(true);
       expect(isPrimaryNavigationItemActive(route, checklist)).toBe(false);
       expect(isPrimaryNavigationItemActive(route, mine)).toBe(false);
@@ -65,7 +68,6 @@ describe("tools hub page and navigation", () => {
     expect(showsMobileNavigation("/tools")).toBe(true);
     expect(showsMobileNavigation("/departure")).toBe(true);
     expect(showsMobileNavigation("/hospital")).toBe(true);
-    expect(showsMobileNavigation("/planning")).toBe(true);
     expect(showsMobileNavigation("/growth")).toBe(true);
   });
 });

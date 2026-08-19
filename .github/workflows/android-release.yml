@@ -30,7 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$GITHUB_REF_NAME" = "v3.4.12"
+          test "$GITHUB_REF_NAME" = "v3.4.13"
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
@@ -121,15 +121,15 @@ jobs:
             echo "Retired native checklist asset must not be packaged." >&2
             exit 1
           fi
-          cp "$APK" DadKit-3.4.12.apk
-          sha256sum DadKit-3.4.12.apk > DadKit-3.4.12.apk.sha256
-          cp "$AAB" DadKit-3.4.12.aab
+          cp "$APK" DadKit-3.4.13.apk
+          sha256sum DadKit-3.4.13.apk > DadKit-3.4.13.apk.sha256
+          cp "$AAB" DadKit-3.4.13.aab
 
       - name: Store AAB privately for 30 days
         uses: actions/upload-artifact@v4
         with:
-          name: DadKit-3.4.12-aab
-          path: DadKit-3.4.12.aab
+          name: DadKit-3.4.13-aab
+          path: DadKit-3.4.13.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -138,20 +138,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          DadKit 3.4.12
+          DadKit 3.4.13
 
-          - 首页采用孕周/宝宝状态头与六项快捷入口，清单页压缩进度并吸附筛选
-          - 清单分类支持卡片/紧凑列表切换，出发页改为高效紧凑确认列表
-          - 成长时间表默认聚焦当前阶段，工具页补齐管理与支持入口
-          - Android 改为加载 DadKit 线上页面，日常页面和功能更新无需重复安装 APK
-          - 联网启动优先获取最新页面，成功使用后可通过缓存离线打开
-          - 当前操作不会被网页更新打断，新页面在下次启动时自动生效
-          - 保留数据迁移、文件选择、主题同步与应用内安全下载 APK 的原生能力
-          - Android 包名为 com.dadkit.mobile，versionCode 为 25
+          - 下线语义不清且使用成本较高的家庭分工与采购规划功能
+          - 首页原家庭分工入口替换为备份与恢复，工具页补齐清单设置和家庭成员入口
+          - 物品详情移除负责人、预算、购买渠道和截止日期等规划编辑项
+          - 可移植数据格式升级到 v10，不再保存、导出或同步家庭分工字段
+          - 旧 v7-v9 备份和同步数据保持可读，其中的历史分工字段会被安全忽略
+          - 家庭成员继续用于宝宝记录人和家庭同步，不受本次下线影响
+          - Android 包名为 com.dadkit.mobile，versionCode 为 26
           EOF
           gh release create "$GITHUB_REF_NAME" \
-            DadKit-3.4.12.apk \
-            DadKit-3.4.12.apk.sha256 \
+            DadKit-3.4.13.apk \
+            DadKit-3.4.13.apk.sha256 \
             --verify-tag \
-            --title "DadKit 3.4.12" \
+            --title "DadKit 3.4.13" \
             --notes-file release-notes.md

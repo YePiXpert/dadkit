@@ -4,7 +4,6 @@ export type DataDomain =
   | "checklist"
   | "growth"
   | "hospital"
-  | "planning"
   | "household"
   | "device-identity"
   | "baby"
@@ -207,7 +206,6 @@ const DATA_DOMAINS = new Set<DataDomain>([
   "checklist",
   "growth",
   "hospital",
-  "planning",
   "household",
   "device-identity",
   "baby",

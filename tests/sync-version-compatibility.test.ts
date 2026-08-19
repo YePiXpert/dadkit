@@ -230,8 +230,8 @@ describe("v5/v6 family sync compatibility", () => {
       data: DadKitExportData;
     };
 
-    expect(persisted.data.version).toBe(9);
-    expect(persisted.data.planning).toEqual({ version: 2, clearedAt: 0, items: {} });
+    expect(persisted.data.version).toBe(10);
+    expect(persisted.data).not.toHaveProperty("planning");
     expect(persisted.data.checklist.map((item) => item.id).sort()).toEqual([
       "new-v6",
       "stored-v5",
@@ -255,6 +255,11 @@ describe("v5/v6 family sync compatibility", () => {
         new Headers({ "X-DadKit-Data-Version": "7" }),
       ),
     ).toBe(7);
+    expect(
+      getRequestedDataVersion(
+        new Headers({ "X-DadKit-Data-Version": "10" }),
+      ),
+    ).toBe(10);
     expect(
       getRequestedDataVersion(
         new Headers({ "X-DadKit-Data-Version": "999" }),

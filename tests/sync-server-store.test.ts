@@ -20,7 +20,7 @@ import {
   pullSpace,
   pushSpace,
 } from "@/lib/sync/server-store";
-import { portableTestItem, portableV9 } from "@/tests/helpers/portable-data";
+import { portableTestItem, portableV10 } from "@/tests/helpers/portable-data";
 
 let directory: string;
 
@@ -88,11 +88,11 @@ describe("sync server store", () => {
     const [fromA, fromB] = await Promise.all([
       pushSpace(
         owner.token,
-        portableV9({ checklist: [portableTestItem("a", { updatedAt: 100 })] }),
+        portableV10({ checklist: [portableTestItem("a", { updatedAt: 100 })] }),
       ),
       pushSpace(
         member.token,
-        portableV9({
+        portableV10({
           checklist: [portableTestItem("b", { updatedAt: 200 })],
           customItems: [portableTestItem("custom-b", { updatedAt: 200 })],
         }),
@@ -110,7 +110,7 @@ describe("sync server store", () => {
     for (let index = 1; index <= 6; index += 1) {
       await pushSpace(
         owner.token,
-        portableV9({
+        portableV10({
           checklist: [portableTestItem(`xiaomei-${index}`, { updatedAt: index })],
         }),
       );
@@ -132,13 +132,13 @@ describe("sync server store", () => {
     const { owner, member } = await createJoinedPair("冲突家庭");
     await pushSpace(
       owner.token,
-      portableV9({
+      portableV10({
         checklist: [portableTestItem("a", { status: "packed", updatedAt: 300 })],
       }),
     );
     const merged = await pushSpace(
       member.token,
-      portableV9({
+      portableV10({
         checklist: [portableTestItem("a", { status: "todo", updatedAt: 100 })],
       }),
     );

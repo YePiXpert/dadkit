@@ -4,12 +4,16 @@ import {
   type DadKitExportDataV6,
   type DadKitExportDataV7,
   type DadKitExportDataV8,
+  type DadKitExportDataV9,
 } from "@/lib/data/format";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
 import { projectBabyV2ToV1 } from "@/lib/baby/portable";
 import { createEmptyHousehold } from "@/lib/household/defaults";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
-import { createEmptyItemPlanning, createEmptyItemPlanningV1 } from "@/lib/planning/defaults";
+import {
+  createEmptyLegacyPlanningV1,
+  createEmptyLegacyPlanningV2,
+} from "@/lib/data/legacy-planning";
 import type { ChecklistItem } from "@/lib/types";
 
 export function portableTestItem(
@@ -74,7 +78,7 @@ export function portableV7(
   return {
     ...portableV6(),
     version: 7,
-    planning: createEmptyItemPlanningV1(),
+    planning: createEmptyLegacyPlanningV1(),
     ...patch,
   };
 }
@@ -91,14 +95,26 @@ export function portableV8(
 }
 
 export function portableV9(
-  patch: Partial<DadKitExportData> = {},
-): DadKitExportData {
+  patch: Partial<DadKitExportDataV9> = {},
+): DadKitExportDataV9 {
   return {
     ...portableV8(),
     version: 9,
     household: createEmptyHousehold(),
-    planning: createEmptyItemPlanning(),
+    planning: createEmptyLegacyPlanningV2(),
     baby: createEmptyBabyData(),
+    ...patch,
+  };
+}
+
+export function portableV10(
+  patch: Partial<DadKitExportData> = {},
+): DadKitExportData {
+  const { planning: _planning, ...v9 } = portableV9();
+  void _planning;
+  return {
+    ...v9,
+    version: 10,
     ...patch,
   };
 }

@@ -31,7 +31,6 @@ describe("checklist and home dashboard pages", () => {
   });
 
   it("leads with the pregnancy stage header and a quick-entry grid", () => {
-    expect(homeDashboard).toContain("PlanningSummaryCard compact");
     expect(homeDashboard).toContain("BabyHomeCard");
     expect(homeDashboard).toContain("HouseholdFeaturePrompt");
     expect(homeDashboard).toContain("GrowthAnalogyIllustration");
@@ -42,10 +41,12 @@ describe("checklist and home dashboard pages", () => {
     expect(homeDashboard).toContain("useHouseholdStore");
     expect(homeDashboard).toContain("useGrowthStore");
 
-    for (const href of ["/growth", "/baby", "/departure", "/hospital", "/planning"]) {
+    for (const href of ["/growth", "/baby", "/departure", "/hospital", "/settings/backup"]) {
       expect(homeDashboard).toContain(`href: "${href}"`);
     }
     expect(homeDashboard).toContain("CHECKLIST_PATH");
+    expect(homeDashboard).not.toContain("PlanningSummaryCard");
+    expect(homeDashboard).not.toContain('href: "/planning"');
 
     expect(homeDashboard).not.toContain("getDepartureProgress");
     expect(homeDashboard).not.toContain("全部工具");

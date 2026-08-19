@@ -4,10 +4,6 @@ import { mergeExportData } from "@/lib/sync/merge";
 import type { DadKitExportData } from "@/lib/storage";
 import type { ChecklistItem } from "@/lib/types";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
-import {
-  createEmptyItemPlanning,
-  createEmptyItemPlanningRecord,
-} from "@/lib/planning/defaults";
 import { portableV6 } from "@/tests/helpers/portable-data";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
 import { createEmptyHousehold } from "@/lib/household/defaults";
@@ -37,7 +33,7 @@ function testItem(
 
 function exportData(patch: Partial<DadKitExportData> = {}): DadKitExportData {
   return {
-    version: 9,
+    version: 10,
     exportedAt: "2026-07-26T00:00:00.000Z",
     checklistMode: "lean",
     checklist: [],
@@ -52,7 +48,6 @@ function exportData(patch: Partial<DadKitExportData> = {}): DadKitExportData {
     deletedCustomItems: {},
     growthUpdatedAt: 0,
     hospital: createEmptyHospitalProfile(),
-    planning: createEmptyItemPlanning(),
     baby: createEmptyBabyData(),
     household: createEmptyHousehold(),
     ...patch,
@@ -236,13 +231,8 @@ describe("mergeExportData", () => {
     expect(merged.growth.profile.nickname).toBe("");
   });
 
-  it("keeps local planning when a new client receives a v6 document", () => {
-    const planning = createEmptyItemPlanning();
-    planning.items.bag = {
-      ...createEmptyItemPlanningRecord(),
-      assigneeIds: { value: ["legacy-dad-v1"], updatedAt: 100 },
-    };
-    const merged = mergeExportData(exportData({ planning }), portableV6());
-    expect(merged.planning).toEqual(planning);
+  it("does not add retired planning data when merging a v6 document", () => {
+    const merged = mergeExportData(exportData(), portableV6());
+    expect(merged).not.toHaveProperty("planning");
   });
 });

@@ -54,7 +54,7 @@ test("孕期中首页显示孕周状态头、宫格入口和进度卡", async ({
     "宝宝记录",
     "准备出发",
     "医院档案",
-    "家庭分工",
+    "备份与恢复",
   ]) {
     await expect(
       page.getByRole("link", { name: new RegExp(`^${name}(?:\\s|$)`) }),

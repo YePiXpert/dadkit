@@ -16,9 +16,6 @@ const routeBudgets = new Map([
   ["/checklist/[sectionId]/page", 255 * 1024],
   ["/departure/page", 250 * 1024],
   ["/hospital/page", 225 * 1024],
-  // v3.1 的动态家庭成员、多负责人筛选与兼容标签增加约 7 KiB；
-  // 255 KiB 仅比旧预算高 4.1%，并保留约 1.2% 实测余量。
-  ["/planning/page", 255 * 1024],
   ["/baby/page", 260 * 1024],
   ["/baby/timeline/page", 260 * 1024],
   ["/growth/page", 190 * 1024],
@@ -32,8 +29,8 @@ const routeBudgets = new Map([
   ["/settings/family/page", 225 * 1024],
   // v3.4.3 adds the shared Android bundle/theme bridge; measured +0.8 KiB.
   ["/settings/checklist/page", 232 * 1024],
-  // v3.1 adds household/planning-v2/baby-v2 validation to the dense backup
-  // surface. Keep roughly 1.5% headroom over the measured v3.1 bundle.
+  // Household, baby and legacy backup validation make this the densest form.
+  // Keep roughly 1.5% headroom over the measured bundle.
   ["/settings/backup/page", 258 * 1024],
   ["/privacy/page", 160 * 1024],
   ["/support/page", 160 * 1024],
@@ -45,7 +42,6 @@ const routeLabels = new Map([
   ["/checklist/[sectionId]/page", "清单分类页"],
   ["/departure/page", "准备出发页"],
   ["/hospital/page", "医院档案页"],
-  ["/planning/page", "家庭分工与采购页"],
   ["/baby/page", "宝宝记录页"],
   ["/baby/timeline/page", "宝宝时间线页"],
   ["/growth/page", "成长记页"],

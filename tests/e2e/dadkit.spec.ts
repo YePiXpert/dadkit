@@ -87,11 +87,11 @@ test("Android 设置页区分页面与外壳版本并允许手动检查更新", 
     await route.fulfill({
       contentType: "application/json",
       json: {
-        versionCode: 25,
-        versionName: "3.4.12",
+        versionCode: 26,
+        versionName: "3.4.13",
         notes: "下一版本测试更新。",
         sha256: "a".repeat(64),
-        url: "/api/app-version/apk?versionCode=25",
+        url: "/api/app-version/apk?versionCode=26",
       },
       status: 200,
     });
@@ -101,16 +101,16 @@ test("Android 设置页区分页面与外壳版本并允许手动检查更新", 
   await expect(
     page.getByRole("heading", { name: "关于 DadKit" }),
   ).toBeVisible();
-  await expect(page.getByText("3.4.12")).toBeVisible();
+  await expect(page.getByText("3.4.13")).toBeVisible();
   await expect(page.getByText("versionCode 22")).toBeVisible();
   const checkButton = page.getByRole("button", { name: "检查更新" });
   await expect(checkButton).toBeVisible();
   await checkButton.click();
 
-  await expect(page.getByText("发现新版本 3.4.12")).toBeVisible();
+  await expect(page.getByText("发现新版本 3.4.13")).toBeVisible();
   await expect(page.getByRole("link", { name: "下载更新" })).toHaveAttribute(
     "href",
-    "/api/app-version/apk?versionCode=25",
+    "/api/app-version/apk?versionCode=26",
   );
   expect(checks).toBe(1);
 });

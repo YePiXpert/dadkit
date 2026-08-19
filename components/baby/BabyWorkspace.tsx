@@ -44,7 +44,7 @@ export function BabyWorkspace() {
             <PageHeader kicker="出生后启用" subtitle="宝宝出生后，可以在这里记录喂养、尿布和睡眠。" title="宝宝记录" />
             <EmptyState
               action={<Button onClick={() => setProfileOpen(true)}>宝宝已出生，开始记录</Button>}
-              description="填写出生日期即可开始记录；不会清空待产清单、医院档案、准备出发或家庭分工。"
+              description="填写出生日期即可开始记录；不会清空待产清单、医院档案或准备出发状态。"
               icon={Baby}
               title="宝宝已出生？"
             />
@@ -58,7 +58,7 @@ export function BabyWorkspace() {
       <BabyProfileDialog onOpenChange={setProfileOpen} open={profileOpen} profile={profile} />
       <ConfirmDialog
         confirmLabel="清空全部宝宝数据"
-        description="宝宝昵称、出生资料、全部喂养、吸奶、尿布、睡眠记录和活动计时都会清空；旧设备不能让旧记录重新出现。待产清单、医院档案和家庭分工不受影响。"
+        description="宝宝昵称、出生资料、全部喂养、吸奶、尿布、睡眠记录和活动计时都会清空；旧设备不能让旧记录重新出现。待产清单和医院档案不受影响。"
         onConfirm={() => { void clearAllBabyData().then((result) => showAppToast({ message: result.ok ? "宝宝资料和照护记录已清空。" : result.message ?? "清空失败。", tone: result.ok ? "success" : "warning" })); }}
         onOpenChange={setClearOpen}
         open={clearOpen}

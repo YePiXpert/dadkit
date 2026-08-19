@@ -51,8 +51,6 @@ import {
   webDavStatusMessage,
 } from "@/lib/webdav/client";
 import { DEFAULT_WEBDAV_CONFIG } from "@/lib/webdav/types";
-import { createEmptyItemPlanning, createEmptyItemPlanningRecord } from "@/lib/planning/defaults";
-import { loadItemPlanning, saveItemPlanning } from "@/lib/planning/repository";
 import { MemoryBabyRepository, setBabyRepositoryForTests } from "@/lib/baby/repository";
 import { createEmptyHousehold } from "@/lib/household/defaults";
 import { loadHousehold, saveHousehold } from "@/lib/household/repository";
@@ -194,7 +192,7 @@ describe("webdav helpers", () => {
     const backup = buildDadKitWebDavBackup(data, "device-1");
 
     expect(backup.schemaVersion).toBe(3);
-    expect(backup.data.version).toBe(9);
+    expect(backup.data.version).toBe(10);
     expect(backup.app).toBe("DadKit");
     expect(backup.deviceId).toBe("device-1");
     expect(backup.checksum).toBe(calculateChecksum(data));
@@ -445,33 +443,9 @@ describe("webdav helpers", () => {
       updatedAt: 300,
     });
     const rescueData = (await loadSnapshotsAsync())[0]?.data;
-    expect(rescueData?.version).toBe(9);
-    if (rescueData?.version !== 9) throw new Error("缺少 v9 恢复快照");
+    expect(rescueData?.version).toBe(10);
+    if (rescueData?.version !== 10) throw new Error("缺少 v10 恢复快照");
     expect(rescueData.hospital.fields.address.value).toBe("旧地址");
-  });
-
-  it("restores and field-merges planning from a v7 WebDAV backup", async () => {
-    installStorage();
-    saveChecklist([testItem("bag")]);
-    const local = createEmptyItemPlanning();
-    local.items.bag = {
-      ...createEmptyItemPlanningRecord(),
-      assigneeIds: { value: ["legacy-dad-v1"], updatedAt: 100 },
-    };
-    saveItemPlanning(local);
-    const remote = createEmptyItemPlanning();
-    remote.items.bag = {
-      ...createEmptyItemPlanningRecord(),
-      actualPriceFen: { value: 1_500, updatedAt: 200 },
-    };
-    const backup = buildDadKitWebDavBackup(
-      { ...exportData(), planning: remote },
-      "remote-planning",
-    );
-
-    expect((await importDadKitWebDavBackup(backup)).ok).toBe(true);
-    expect(loadItemPlanning().items.bag.assigneeIds.value).toEqual(["legacy-dad-v1"]);
-    expect(loadItemPlanning().items.bag.actualPriceFen.value).toBe(1_500);
   });
 
   it("restores and event-merges v8 baby timers, events and tombstones", async () => {
@@ -502,7 +476,7 @@ describe("webdav helpers", () => {
     expect((await babyRepository.getActiveEvents()).map((event) => event.type).sort()).toEqual(["pumping", "sleep"]);
   });
 
-  it("merges an actual v8 WebDAV backup without clearing v9 household or recorder", async () => {
+  it("merges an actual v8 WebDAV backup without clearing v10 household or recorder", async () => {
     const { babyRepository } = installStorage();
     const household = createEmptyHousehold();
     household.members["member-a"] = {
@@ -517,7 +491,7 @@ describe("webdav helpers", () => {
     localBaby.care.events = [{
       id: "shared-event",
       type: "diaper",
-      note: "v9 原备注",
+      note: "v10 原备注",
       recordedByMemberId: "member-a",
       createdAt: 10,
       updatedAt: 10,
