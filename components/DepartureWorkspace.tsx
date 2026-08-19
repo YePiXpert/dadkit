@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { CheckCircle2, PackageCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { ChecklistItemRow } from "@/components/ChecklistItemRow";
+import { DepartureItemRow } from "@/components/DepartureItemRow";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
 import { HospitalSummaryCard } from "@/components/HospitalSummaryCard";
@@ -101,7 +101,7 @@ export function DepartureWorkspace() {
           <div className="flex min-w-0 items-start justify-between gap-4">
             <div className="min-w-0">
               <p className="text-sm font-semibold text-primary">总体确认进度</p>
-              <p className="mt-2 text-4xl font-bold leading-none tracking-[-0.05em]">
+              <p className="mt-2 text-4xl font-bold leading-none">
                 {progress.percent}
                 <span className="ml-1 text-xl tracking-normal">%</span>
               </p>
@@ -206,10 +206,9 @@ export function DepartureWorkspace() {
                     </Button>
                   ) : null}
 
-                  <div className="item-card-grid">
+                  <div className="grid gap-2">
                     {group.items.map((item) => (
-                      <ChecklistItemRow
-                        departureMode
+                      <DepartureItemRow
                         item={item}
                         key={item.id}
                         onOpenDetails={setDetailsItemId}
@@ -263,9 +262,10 @@ export function DepartureWorkspaceSkeleton() {
         <Skeleton className="h-48 rounded-card" />
         <div className="grid gap-3">
           <Skeleton className="h-12 rounded-inset" />
-          <div className="item-card-grid">
-            <Skeleton className="h-80 rounded-card" />
-            <Skeleton className="h-80 rounded-card" />
+          <div className="grid gap-2">
+            <Skeleton className="h-16 rounded-card" />
+            <Skeleton className="h-16 rounded-card" />
+            <Skeleton className="h-16 rounded-card" />
           </div>
         </div>
       </section>

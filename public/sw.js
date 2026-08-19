@@ -1,4 +1,4 @@
-const CACHE_NAME = "dadkit-v3.4.11-pwa-r1";
+const CACHE_NAME = "dadkit-v3.4.12-pwa-r1";
 const PRECACHE_ROUTES = ["/"];
 const BACKGROUND_ROUTES = [
   "/",
@@ -131,42 +131,19 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(event.request.url);
 
-  if (url.origin !== self.location.origin || url.pathname === "/sw.js") {
+  if (
+    url.origin !== self.location.origin ||
+    url.pathname === "/sw.js" ||
+    url.pathname === "/api" ||
+    url.pathname.startsWith("/api/")
+  ) {
     return;
   }
 
   if (event.request.mode === "navigate") {
-    // 页面导航用 stale-while-revalidate：缓存秒开，后台静默更新；
-    // 首次访问成功的路由随即写入缓存，之后离线可开。
-    // 带 ?view= 等查询参数的导航通过 ignoreSearch 命中同一份缓存。
-    const networkUpdate = fetch(event.request)
-      .then((response) => {
-        if (isCacheable(response)) {
-          const copy = response.clone();
-          caches
-            .open(CACHE_NAME)
-            .then((cache) => cache.put(event.request, copy));
-        }
-        return response;
-      })
-      .catch(() => null);
-
-    event.waitUntil(networkUpdate);
-    event.respondWith(
-      (async () => {
-        const cache = await caches.open(CACHE_NAME);
-        const cached = await cache.match(event.request, {
-          ignoreSearch: true,
-        });
-
-        if (cached) {
-          return cached;
-        }
-
-        const response = await networkUpdate;
-        return response || cache.match("/");
-      })(),
-    );
+    // 页面导航用 network-first：每次重新启动优先获取线上最新版，网络失败
+    // 才回退到最近一次成功缓存。查询参数不影响离线命中同一路由。
+    event.respondWith(networkFirstNavigation(event.request));
     return;
   }
 
@@ -217,6 +194,32 @@ function replyWhenSettled(event, work) {
   work.then(
     () => replyPort.postMessage({ ok: true }),
     () => replyPort.postMessage({ ok: false }),
+  );
+}
+
+async function networkFirstNavigation(request) {
+  const cache = await caches.open(CACHE_NAME);
+
+  try {
+    const networkRequest = new Request(request, { cache: "no-cache" });
+    const response = await fetch(networkRequest);
+
+    if (isCacheable(response)) {
+      try {
+        await cache.put(request, response.clone());
+      } catch {
+        // A full cache must not hide an otherwise successful online page.
+      }
+      return response;
+    }
+  } catch {
+    // Continue to the offline cache fallback below.
+  }
+
+  return (
+    (await cache.match(request, { ignoreSearch: true })) ||
+    (await cache.match("/")) ||
+    Response.error()
   );
 }
 

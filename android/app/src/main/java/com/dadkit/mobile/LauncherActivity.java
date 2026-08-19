@@ -14,9 +14,9 @@ import android.provider.Settings;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
-import android.webkit.MimeTypeMap;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -26,7 +26,6 @@ import android.widget.Toast;
 
 import androidx.core.content.FileProvider;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -35,20 +34,33 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings("deprecation")
 public class LauncherActivity extends Activity {
     private static final String APP_HOST = "dadkit.505f.com";
     private static final String START_URL =
-            "https://" + APP_HOST + "/?source=apk&appVersionCode=24";
+            "https://" + APP_HOST + "/?source=apk&appVersionCode=25";
+    private static final String OFFLINE_PAGE =
+            "<!doctype html><html lang=\"zh-CN\"><head>"
+                    + "<meta charset=\"utf-8\">"
+                    + "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+                    + "<meta name=\"color-scheme\" content=\"light dark\">"
+                    + "<style>html{font-family:sans-serif;color-scheme:light dark}"
+                    + "body{min-height:100vh;margin:0;display:grid;place-items:center;"
+                    + "background:#fbf8f2;color:#2a2521}main{max-width:24rem;padding:2rem;"
+                    + "text-align:center}h1{font-size:1.25rem}p{line-height:1.7;color:#746b64}"
+                    + "a{display:inline-block;margin-top:1rem;padding:.8rem 1.5rem;border-radius:999px;"
+                    + "background:#b95549;color:white;text-decoration:none;font-weight:700}"
+                    + "@media(prefers-color-scheme:dark){body{background:#1a1714;color:#f5eee7}"
+                    + "p{color:#bdb2a8}}</style></head><body><main>"
+                    + "<h1>暂时无法连接 DadKit</h1>"
+                    + "<p>首次使用需要联网。若此前已使用过，请检查网络后重试。</p>"
+                    + "<a href=\"" + START_URL + "\">重新加载</a>"
+                    + "</main></body></html>";
     private static final int FILE_CHOOSER_REQUEST = 201;
     private static final String NATIVE_DATA_PREFERENCES = "dadkit_native_data";
     private static final String NATIVE_DOCUMENT_KEY = "family_document";
@@ -87,13 +99,14 @@ public class LauncherActivity extends Activity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setSupportZoom(false);
         settings.setUserAgentString(
-                settings.getUserAgentString() + " DadKitAndroid/24"
+                settings.getUserAgentString() + " DadKitAndroid/25"
         );
 
         CookieManager.getInstance().setAcceptCookie(true);
@@ -108,7 +121,7 @@ public class LauncherActivity extends Activity {
         );
         webView.addJavascriptInterface(new AndroidShellBridge(), "DadKitAndroidShell");
         webView.addJavascriptInterface(new AndroidUpdateBridge(), "DadKitAndroidUpdate");
-        webView.setWebViewClient(new BundledWebViewClient());
+        webView.setWebViewClient(new DadKitWebViewClient());
         webView.setWebChromeClient(new DadKitWebChromeClient());
         webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, length) ->
                 openExternal(Uri.parse(url))
@@ -472,26 +485,7 @@ public class LauncherActivity extends Activity {
         }
     }
 
-    private final class BundledWebViewClient extends WebViewClient {
-        @Override
-        public WebResourceResponse shouldInterceptRequest(
-                WebView view,
-                WebResourceRequest request
-        ) {
-            Uri uri = request.getUrl();
-
-            if (!"https".equals(uri.getScheme()) || !APP_HOST.equals(uri.getHost())) {
-                return null;
-            }
-
-            String path = uri.getPath() == null ? "/" : uri.getPath();
-            if (path.equals("/api") || path.startsWith("/api/")) {
-                return null;
-            }
-
-            return bundledResponse(path);
-        }
-
+    private final class DadKitWebViewClient extends WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(
                 WebView view,
@@ -506,85 +500,41 @@ public class LauncherActivity extends Activity {
             openExternal(uri);
             return true;
         }
-    }
 
-    private WebResourceResponse bundledResponse(String requestPath) {
-        if (requestPath.contains("..")) {
-            return response(403, "text/plain", "Blocked");
+        @Override
+        public void onReceivedError(
+                WebView view,
+                WebResourceRequest request,
+                WebResourceError error
+        ) {
+            if (request.isForMainFrame()) {
+                showOfflinePage(view);
+                return;
+            }
+            super.onReceivedError(view, request, error);
         }
 
-        String assetPath = requestPath.startsWith("/")
-                ? requestPath.substring(1)
-                : requestPath;
-
-        if (assetPath.isEmpty()) {
-            assetPath = "index.html";
-        } else if (assetPath.endsWith("/")) {
-            assetPath += "index.html";
-        } else if (!assetPath.substring(assetPath.lastIndexOf('/') + 1).contains(".")) {
-            assetPath += "/index.html";
-        }
-
-        try {
-            InputStream input = getAssets().open("www/" + assetPath);
-            String mimeType = mimeTypeFor(assetPath);
-            String encoding = mimeType.startsWith("text/")
-                    || mimeType.contains("javascript")
-                    || mimeType.contains("json")
-                    || mimeType.contains("xml")
-                    ? "UTF-8"
-                    : null;
-            Map<String, String> headers = new HashMap<>();
-            headers.put(
-                    "Cache-Control",
-                    assetPath.endsWith(".html")
-                            ? "no-store"
-                            : "public, max-age=31536000, immutable"
-            );
-            headers.put("X-Content-Type-Options", "nosniff");
-
-            return new WebResourceResponse(
-                    mimeType,
-                    encoding,
-                    200,
-                    "OK",
-                    headers,
-                    input
-            );
-        } catch (IOException error) {
-            return response(404, "text/plain", "Not found");
+        @Override
+        public void onReceivedHttpError(
+                WebView view,
+                WebResourceRequest request,
+                WebResourceResponse errorResponse
+        ) {
+            if (request.isForMainFrame()) {
+                showOfflinePage(view);
+                return;
+            }
+            super.onReceivedHttpError(view, request, errorResponse);
         }
     }
 
-    private WebResourceResponse response(int status, String mimeType, String body) {
-        return new WebResourceResponse(
-                mimeType,
+    private void showOfflinePage(WebView view) {
+        view.loadDataWithBaseURL(
+                START_URL,
+                OFFLINE_PAGE,
+                "text/html",
                 "UTF-8",
-                status,
-                status == 404 ? "Not Found" : "Error",
-                Collections.singletonMap("Cache-Control", "no-store"),
-                new ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8))
+                START_URL
         );
-    }
-
-    private String mimeTypeFor(String assetPath) {
-        String extension = MimeTypeMap.getFileExtensionFromUrl(assetPath);
-        String detected = MimeTypeMap.getSingleton().getMimeTypeFromExtension(
-                extension.toLowerCase(Locale.ROOT)
-        );
-
-        if (detected != null) {
-            return detected;
-        }
-        if ("webmanifest".equals(extension)) {
-            return "application/manifest+json";
-        }
-        if ("woff2".equals(extension)) {
-            return "font/woff2";
-        }
-        if ("js".equals(extension)) {
-            return "application/javascript";
-        }
-        return "application/octet-stream";
     }
 }

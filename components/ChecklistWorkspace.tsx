@@ -10,7 +10,6 @@ import { ChecklistCategoryCard } from "@/components/ChecklistCategoryCard";
 import { ChecklistGroupTabs } from "@/components/ChecklistGroupTabs";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
-import { HomeHeroIllustration } from "@/components/HomeHeroIllustration";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -225,37 +224,42 @@ export function ChecklistWorkspace() {
     <div className="page-shell page-shell-with-nav">
       <section className="mobile-shell grid gap-4">
         <PageHeader
+          aside={
+            <Link
+              aria-label="清单设置"
+              className="flex size-11 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm transition-shadow hover:text-foreground hover:shadow-md"
+              href="/settings/checklist"
+            >
+              <Settings2 className="size-5" />
+            </Link>
+          }
           title="待产包清单"
           subtitle="看一眼还差什么，准备好就打勾。"
         />
 
-        <section className="hero-card p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-primary">准备进度</p>
-              <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-1">
-                <span className="text-5xl font-bold leading-none tracking-[-0.06em] text-foreground">
-                  {packing.percent}
-                  <span className="ml-1 text-2xl tracking-normal">%</span>
-                </span>
-                <button
-                  className="rounded-lg pb-1 text-sm text-muted-foreground underline decoration-primary/40 underline-offset-4 transition-colors hover:text-foreground"
-                  type="button"
-                  onClick={() => setView("packed")}
-                >
-                  已装包 {packing.completed} 项，共 {packing.total} 项
-                </button>
-              </div>
-            </div>
-            <HomeHeroIllustration className="size-20 shrink-0 sm:size-24" />
+        <section className="rounded-card bg-card p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <span className="shrink-0 text-2xl font-bold leading-none text-foreground">
+              {packing.percent}
+              <span className="ml-0.5 text-base">%</span>
+            </span>
+            <button
+              className="shrink-0 rounded-lg text-xs font-medium text-primary underline decoration-primary/40 underline-offset-4 transition-colors hover:text-foreground"
+              type="button"
+              onClick={() => setView("packed")}
+            >
+              已装包 {packing.completed} 项，共 {packing.total} 项
+            </button>
           </div>
-
+          <p className="mt-1 text-xs text-muted-foreground">
+            待买 {counts.shopping} · 待装 {counts.packing} · 已装 {counts.packed} 项
+          </p>
           <div
             aria-label={`清单完成 ${packing.percent}%`}
             aria-valuemax={100}
             aria-valuemin={0}
             aria-valuenow={packing.percent}
-            className="mt-5 h-2 overflow-hidden rounded-full bg-card/80"
+            className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted"
             role="progressbar"
           >
             <span
@@ -263,21 +267,14 @@ export function ChecklistWorkspace() {
               style={{ width: `${packing.percent}%` }}
             />
           </div>
-
-          <div className="mt-4 grid grid-cols-3 divide-x divide-primary/10 rounded-2xl bg-card/70 py-3 text-center">
-            <ProgressStat label="待买" value={counts.shopping} />
-            <ProgressStat label="待装" value={counts.packing} />
-            <ProgressStat label="已装" value={counts.packed} />
-          </div>
-          <span className="sr-only">
-            待买 {counts.shopping}，待装 {counts.packing}，已装 {counts.packed} 项
-          </span>
           <HomeGrowthHint />
         </section>
 
-        <ChecklistGroupTabs counts={counts} value={view} onChange={setView} />
+        <div className="sticky top-[max(env(safe-area-inset-top),0.5rem)] z-30 -mx-1 border-b border-border/50 bg-background/85 px-1 pb-2 pt-1 backdrop-blur-xl">
+          <ChecklistGroupTabs counts={counts} value={view} onChange={setView} />
+        </div>
 
-        <div className="grid gap-2 rounded-card bg-card p-3 shadow-sm">
+        <div className="rounded-card bg-card p-3 shadow-sm">
           <label className="sr-only" htmlFor="checklist-search">
             搜索清单
           </label>
@@ -287,7 +284,7 @@ export function ChecklistWorkspace() {
               className="h-10 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
               id="checklist-search"
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="搜索物品名称或备注"
+              placeholder={`搜索物品名称或备注（当前「${activeView?.label}」）`}
               type="search"
               value={search}
             />
@@ -302,25 +299,13 @@ export function ChecklistWorkspace() {
               </button>
             ) : null}
           </div>
-          <p className="text-xs text-muted-foreground">
-            搜索会在当前「{activeView?.label}」筛选中查找名称和备注。
-          </p>
         </div>
 
-        <div className="flex items-center justify-between gap-3 px-1 pt-1">
-          <div>
-            <h2 className="text-[15px] font-semibold">{activeView?.label}</h2>
-            <p className="mt-0.5 text-[13px] text-muted-foreground">
-              {getViewCaption(view, searchedVisibleItems.length)}
-            </p>
-          </div>
-          <Link
-            className="flex min-h-11 items-center gap-1.5 rounded-full bg-card px-3 text-[13px] font-semibold text-muted-foreground shadow-sm transition-shadow hover:shadow-md hover:text-foreground"
-            href="/settings/checklist"
-          >
-            <Settings2 className="size-4" />
-            <span>清单设置</span>
-          </Link>
+        <div className="px-1 pt-1">
+          <h2 className="text-[15px] font-semibold">{activeView?.label}</h2>
+          <p className="mt-0.5 text-[13px] text-muted-foreground">
+            {getViewCaption(view, searchedVisibleItems.length)}
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-2 px-1">
@@ -422,18 +407,6 @@ export function ChecklistWorkspace() {
   );
 }
 
-function ProgressStat({ label, value }: { label: string; value: number }) {
-  return (
-    <span className="grid gap-0.5 px-1">
-      <strong className="text-lg font-bold leading-none text-foreground">
-        {value}
-      </strong>
-      <span className="text-xs font-medium text-muted-foreground">
-        {label}
-      </span>
-    </span>
-  );
-}
 
 function getEmptyStateCopy(view: ChecklistView, searching: boolean) {
   if (searching) {
@@ -498,26 +471,18 @@ export function ChecklistWorkspaceSkeleton() {
           <Skeleton className="h-7 w-32 rounded-xl" />
           <Skeleton className="h-4 w-52 rounded-lg" />
         </div>
-        <div className="grid h-52 gap-4 rounded-card bg-muted p-5">
-          <div className="flex items-start justify-between">
-            <div className="grid gap-3">
-              <Skeleton className="h-4 w-20 rounded-lg bg-background/70" />
-              <Skeleton className="h-12 w-28 rounded-xl bg-background/70" />
-            </div>
-            <Skeleton className="size-20 rounded-inset bg-background/70" />
-          </div>
-          <Skeleton className="h-2 rounded-full bg-background/70" />
-          <div className="grid grid-cols-3 gap-2">
-            <Skeleton className="h-10 rounded-xl bg-background/70" />
-            <Skeleton className="h-10 rounded-xl bg-background/70" />
-            <Skeleton className="h-10 rounded-xl bg-background/70" />
+        <div className="flex items-center gap-4 rounded-card bg-muted p-4">
+          <Skeleton className="h-9 w-14 rounded-lg bg-background/70" />
+          <div className="grid flex-1 gap-2">
+            <Skeleton className="h-2 rounded-full bg-background/70" />
+            <Skeleton className="h-3 w-44 rounded-lg bg-background/70" />
           </div>
         </div>
-        <div className="grid h-16 grid-cols-4 gap-1 rounded-card bg-muted p-1.5">
-          <Skeleton className="rounded-inset bg-background/70" />
-          <Skeleton className="rounded-inset bg-background/70" />
-          <Skeleton className="rounded-inset bg-background/70" />
-          <Skeleton className="rounded-inset bg-background/70" />
+        <div className="grid h-14 grid-cols-4 gap-1 rounded-full bg-muted p-1">
+          <Skeleton className="rounded-full bg-background/70" />
+          <Skeleton className="rounded-full bg-background/70" />
+          <Skeleton className="rounded-full bg-background/70" />
+          <Skeleton className="rounded-full bg-background/70" />
         </div>
         <div className="grid gap-3">
           <Skeleton className="h-28 rounded-card" />

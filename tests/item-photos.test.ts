@@ -160,7 +160,10 @@ describe("item photo integration contract", () => {
   });
 
   it("loads row photos only near the viewport and keeps one controlled dialog", () => {
-    expect(itemRow).toContain("useItemPhoto(item.id, mediaEnabled)");
+    expect(itemRow).toContain(
+      "useItemPhoto(item.id, mediaEnabled && !compact)",
+    );
+    expect(itemRow).toContain("if (compact) return;");
     expect(itemRow).toContain('rootMargin: "600px 0px"');
     expect(itemRow).toContain('className="size-full object-cover"');
     expect(itemRow).toContain("!mediaEnabled || itemPhoto.loading");

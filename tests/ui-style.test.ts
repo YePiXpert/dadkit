@@ -57,7 +57,6 @@ const pwaRegister = readSource("components", "PwaRegister.tsx");
 const button = readSource("components", "ui", "button.tsx");
 const card = readSource("components", "ui", "card.tsx");
 const nextConfig = readSource("next.config.ts");
-const androidBundleScript = readSource("scripts", "build-android-web.mjs");
 const tailwindConfig = readSource("tailwind.config.ts");
 const packageJson = JSON.parse(readSource("package.json")) as {
   dependencies?: Record<string, string>;
@@ -80,7 +79,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(globals).toContain("sm:max-w-[42rem]");
     expect(globals).toContain("xs:grid-cols-2");
     expect(tailwindConfig).toContain('xs: "360px"');
-    expect(globals).toContain("overflow-x: hidden");
+    expect(globals).toContain("overflow-x: clip");
     expect(globals).toContain("touch-action: pan-x pan-y");
     expect(globals).toContain("font-family:\n      MiSans");
     expect(layout).toContain('precedence="font"');
@@ -131,7 +130,7 @@ describe("V3 PWA visual and navigation contract", () => {
     }
   });
 
-  it("ships standalone web and the same PWA surface in Android", () => {
+  it("ships one standalone PWA surface for web and the remote Android shell", () => {
     const dependencyNames = Object.keys({
       ...packageJson.dependencies,
       ...packageJson.devDependencies,
@@ -143,16 +142,16 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(Object.keys(packageJson.scripts).some((name) => name.startsWith("mobile:"))).toBe(
       false,
     );
-    expect(nextConfig).toContain('output: isAndroidBundle ? "export" : "standalone"');
-    expect(nextConfig).toContain("trailingSlash: isAndroidBundle");
-    expect(nextConfig).toContain('DADKIT_BUILD_TARGET === "android"');
+    expect(nextConfig).toContain('output: "standalone"');
+    expect(nextConfig).not.toContain("trailingSlash");
+    expect(nextConfig).not.toContain("DADKIT_BUILD_TARGET");
+    expect(nextConfig).not.toContain("NEXT_PUBLIC_DADKIT_ANDROID_BUNDLE");
     expect(nextConfig).not.toContain("DADKIT_CAPACITOR_EXPORT");
-    expect(androidBundleScript).toContain('"app"');
-    expect(androidBundleScript).toContain('"components"');
-    expect(androidBundleScript).toContain('"lib"');
-    expect(androidBundleScript).toContain('"public"');
+    expect(packageJson.scripts).not.toHaveProperty("android:bundle");
     expect(pwaRegister).not.toContain("gesturestart");
     expect(pwaRegister).not.toContain("preventDoubleTapZoom");
+    expect(pwaRegister).not.toContain("SKIP_WAITING");
+    expect(pwaRegister).not.toContain("window.location.reload()");
   });
 
   it("uses a five-tab navigation model on mobile and desktop", () => {
@@ -234,6 +233,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(checklistPage).toContain("<ChecklistWorkspace />");
     expect(homePage).toContain("<HomeDashboard />");
     expect(checklistWorkspace).toContain("<ChecklistGroupTabs");
+    expect(checklistWorkspace).toContain("sticky");
     expect(checklistWorkspace).toContain("deriveChecklistView");
     expect(checklistWorkspace).toContain("visibleItems");
     expect(checklistWorkspace).not.toMatch(/if\s*\(\s*!profile\s*\)/);
@@ -250,7 +250,9 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(checklistItemRow).toContain("break-words text-[15px] font-semibold leading-5");
     expect(checklistCategoryCard).toContain("break-words text-[15px] font-semibold leading-5");
     expect(checklistCategoryCard).toContain("href={href}");
-    expect(checklistSectionWorkspace).toContain('className="item-card-grid"');
+    expect(checklistSectionWorkspace).toContain("item-card-grid");
+    expect(checklistSectionWorkspace).toContain('"grid gap-2"');
+    expect(checklistSectionWorkspace).toContain("useChecklistViewPreference");
     expect(globals).toContain("xs:grid-cols-2");
     expect(checklistItemRow).toContain("ChecklistItemArt");
     expect(checklistItemRow).toContain(
@@ -263,7 +265,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(card).toContain("shadow-sm");
     expect(card).not.toContain("border border-border");
     expect(checklistWorkspace).toContain(
-      "grid gap-2 rounded-card bg-card p-3 shadow-sm",
+      "rounded-card bg-card p-3 shadow-sm",
     );
     expect(checklistWorkspace).toContain(
       "safe-bottom-fab fixed right-4 z-40 flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glow",
@@ -280,7 +282,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(globals).toContain(
       "bottom: calc(6.5rem + env(safe-area-inset-bottom));",
     );
-    expect(pwaRegister).toContain("safe-bottom-toast");
+    expect(pwaRegister).not.toContain("safe-bottom-toast");
     expect(checklistWorkspace).toContain("safe-bottom-fab");
   });
 

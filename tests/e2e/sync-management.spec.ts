@@ -5,7 +5,7 @@ import { seedCompletedOnboarding } from "./helpers";
 test.beforeEach(async ({ page }) => {
   await seedCompletedOnboarding(page);
 });
-test.describe.configure({ timeout: 120_000 });
+test.describe.configure({ timeout: 180_000 });
 
 async function waitForCachedRoute(page: Page, route: string) {
   await expect.poll(async () => page.evaluate(async (candidate) => {
@@ -52,6 +52,7 @@ test("随机空间、邀请、设备角色和永久删除完成闭环", async ({
   const memberPage = await memberContext.newPage();
   await seedCompletedOnboarding(memberPage);
   await memberPage.goto("/join");
+  await expect(memberPage.locator('[aria-busy="false"]')).toBeVisible();
   await memberPage.getByLabel("邀请链接或短口令").fill(inviteCode);
   await memberPage.getByLabel("设备名称").fill("副设备");
   await memberPage.getByRole("button", { name: "加入家庭同步" }).click();

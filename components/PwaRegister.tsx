@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 const OFFLINE_READY_ATTRIBUTE = "data-dadkit-offline-ready";
@@ -45,7 +45,6 @@ function requestWorkerCache(
 
 export function PwaRegister() {
   const pathname = usePathname();
-  const [waitingWorker, setWaitingWorker] = useState<ServiceWorker>();
 
   useEffect(() => {
     const handleOfflineNavigation = (event: MouseEvent) => {
@@ -108,7 +107,6 @@ export function PwaRegister() {
       return;
     }
 
-    let refreshing = false;
     let cacheSequence = 0;
     let cacheWork = Promise.resolve();
     const shouldFillBackgroundCache = window.location.pathname === "/";
@@ -116,7 +114,6 @@ export function PwaRegister() {
     let activeWorker: ServiceWorker | undefined;
     let registrationTimer: number | undefined;
     let backgroundCacheTimer: number | undefined;
-    const hadController = Boolean(navigator.serviceWorker.controller);
     const root = document.documentElement;
     const pendingAssets = new Set<string>();
     const reportedAssets = new Set<string>();
@@ -173,78 +170,46 @@ export function PwaRegister() {
       assetObserver.observe({ type: "resource", buffered: true });
     }
 
-    function handleControllerChange() {
-      if (!hadController || refreshing) {
-        return;
-      }
-
-      refreshing = true;
-      window.location.reload();
-    }
-
-    navigator.serviceWorker.addEventListener("controllerchange", handleControllerChange);
-
     function startRegistration() {
       registrationTimer = undefined;
       void navigator.serviceWorker
         .register("/sw.js")
-        .then(async (registration) => {
-        if (registration.waiting && hadController) {
-          setWaitingWorker(registration.waiting);
-        }
-
-        registration.addEventListener("updatefound", () => {
-          const worker = registration.installing;
+        .then(async () => {
+          const readyRegistration = await navigator.serviceWorker.ready;
+          const worker = readyRegistration.active;
 
           if (!worker) {
             return;
           }
 
-          worker.addEventListener("statechange", () => {
-            if (
-              worker.state === "installed" &&
-              hadController &&
-              navigator.serviceWorker.controller
-            ) {
-              setWaitingWorker(worker);
+          activeWorker = worker;
+
+          queueCache(async () => {
+            await requestWorkerCache(worker, {
+              type: "CACHE_ROUTE",
+              url: `${window.location.pathname}${window.location.search}`,
+            });
+            const assets = [
+              ...new Set([...pendingAssets, ...getLoadedNextStaticAssets()]),
+            ];
+            pendingAssets.clear();
+            assets.forEach((asset) => reportedAssets.add(asset));
+            if (assets.length > 0) {
+              await requestWorkerCache(worker, {
+                type: "CACHE_ASSETS",
+                urls: assets,
+              });
             }
           });
-        });
 
-        const readyRegistration = await navigator.serviceWorker.ready;
-        const worker = readyRegistration.active;
-
-        if (!worker) {
-          return;
-        }
-
-        activeWorker = worker;
-
-        queueCache(async () => {
-          await requestWorkerCache(worker, {
-            type: "CACHE_ROUTE",
-            url: `${window.location.pathname}${window.location.search}`,
-          });
-          const assets = [
-            ...new Set([...pendingAssets, ...getLoadedNextStaticAssets()]),
-          ];
-          pendingAssets.clear();
-          assets.forEach((asset) => reportedAssets.add(asset));
-          if (assets.length > 0) {
-            await requestWorkerCache(worker, {
-              type: "CACHE_ASSETS",
-              urls: assets,
-            });
+          if (shouldFillBackgroundCache) {
+            backgroundCacheTimer = window.setTimeout(() => {
+              worker.postMessage({ type: "CACHE_BACKGROUND_ROUTES" });
+            }, BACKGROUND_CACHE_DELAY_MS);
           }
-        });
 
-        if (shouldFillBackgroundCache) {
-          backgroundCacheTimer = window.setTimeout(() => {
-            worker.postMessage({ type: "CACHE_BACKGROUND_ROUTES" });
-          }, BACKGROUND_CACHE_DELAY_MS);
-        }
-
-        // 浏览器自身会定期检查 Service Worker 更新，不再每次加载强制 update()。
+          // 新 worker 保持默认 waiting 生命周期，在所有现有页面关闭后激活。
+          // 页面内容本身由 network-first 导航在下次启动获取，不打断当前操作。
         })
         .catch(() => {
           // PWA registration is best-effort.
@@ -266,36 +231,8 @@ export function PwaRegister() {
         window.clearTimeout(backgroundCacheTimer);
       }
       root.removeAttribute(OFFLINE_READY_ATTRIBUTE);
-      navigator.serviceWorker.removeEventListener("controllerchange", handleControllerChange);
     };
   }, []);
 
-  if (!waitingWorker) {
-    return null;
-  }
-
-  return (
-    <div className="safe-bottom-toast fixed inset-x-3 z-[60] mx-auto max-w-md rounded-card border border-border bg-card p-4 text-sm shadow-md">
-      <p className="font-semibold">DadKit 有新版本</p>
-      <div className="mt-2 flex items-center justify-between gap-3">
-        <p className="text-muted-foreground">刷新后使用最新页面。</p>
-        <div className="flex shrink-0 gap-2">
-          <button
-            className="min-h-11 rounded-full px-3 py-2 font-semibold text-muted-foreground hover:bg-secondary"
-            onClick={() => setWaitingWorker(undefined)}
-            type="button"
-          >
-            稍后
-          </button>
-          <button
-            className="min-h-11 rounded-full bg-primary px-4 py-2 font-semibold text-primary-foreground shadow-sm"
-            onClick={() => waitingWorker.postMessage("SKIP_WAITING")}
-            type="button"
-          >
-            刷新
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  return null;
 }

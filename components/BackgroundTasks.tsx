@@ -1,24 +1,18 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { PwaRegister } from "@/components/PwaRegister";
 import { startCrossTabSync } from "@/lib/data/cross-tab-sync";
 
-const ANDROID_MIGRATION_COMPLETE_EVENT = "dadkit:android-migration-complete";
-const IS_ANDROID_BUNDLE =
-  process.env.NEXT_PUBLIC_DADKIT_ANDROID_BUNDLE === "1";
-
-const AndroidNativeMigration = IS_ANDROID_BUNDLE
-  ? dynamic(
-      () =>
-        import("@/components/AndroidNativeMigration").then(
-          (module) => module.AndroidNativeMigration,
-        ),
-      { ssr: false },
-    )
-  : () => null;
+const AndroidNativeMigration = dynamic(
+  () =>
+    import("@/components/AndroidNativeMigration").then(
+      (module) => module.AndroidNativeMigration,
+    ),
+  { ssr: false },
+);
 const AndroidUpdatePrompt = dynamic(
   () =>
     import("@/components/AndroidUpdatePrompt").then(
@@ -29,8 +23,29 @@ const AndroidUpdatePrompt = dynamic(
 
 export function BackgroundTasks() {
   const [idle, setIdle] = useState(false);
+  const [runtime, setRuntime] = useState<"detecting" | "web" | "android">(
+    "detecting",
+  );
+  const [migrationComplete, setMigrationComplete] = useState(false);
 
   useEffect(() => {
+    const bridge = (
+      window as Window & { DadKitAndroidMigration?: { getNativeData(): string } }
+    ).DadKitAndroidMigration;
+    setRuntime(
+      bridge && typeof bridge.getNativeData === "function" ? "android" : "web",
+    );
+  }, []);
+
+  const handleMigrationComplete = useCallback(() => {
+    setMigrationComplete(true);
+  }, []);
+
+  useEffect(() => {
+    if (runtime === "detecting" || (runtime === "android" && !migrationComplete)) {
+      return;
+    }
+
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let idleCallback: number | undefined;
@@ -72,31 +87,22 @@ export function BackgroundTasks() {
       }
     };
 
-    if (IS_ANDROID_BUNDLE) {
-      window.addEventListener(
-        ANDROID_MIGRATION_COMPLETE_EVENT,
-        scheduleBackgroundWork,
-        { once: true },
-      );
-    } else {
-      scheduleBackgroundWork();
-    }
+    scheduleBackgroundWork();
 
     return () => {
       cancelled = true;
-      window.removeEventListener(
-        ANDROID_MIGRATION_COMPLETE_EVENT,
-        scheduleBackgroundWork,
-      );
       if (idleCallback !== undefined) window.cancelIdleCallback(idleCallback);
       if (timer !== undefined) clearTimeout(timer);
       stopCrossTabSync();
     };
-  }, []);
+  }, [migrationComplete, runtime]);
 
   return (
     <>
-      {IS_ANDROID_BUNDLE ? <AndroidNativeMigration /> : <PwaRegister />}
+      {runtime === "android" ? (
+        <AndroidNativeMigration onComplete={handleMigrationComplete} />
+      ) : null}
+      {runtime === "detecting" ? null : <PwaRegister />}
       {idle ? <AndroidUpdatePrompt /> : null}
     </>
   );

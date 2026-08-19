@@ -209,7 +209,7 @@ describe("checklist search", () => {
     expect(checklistWorkspace).toContain('aria-label="清除搜索"');
     expect(checklistWorkspace).toContain("没有找到匹配物品");
     expect(checklistWorkspace).toContain("清除搜索后查看当前筛选中的全部物品");
-    expect(checklistWorkspace).toContain("搜索会在当前「");
+    expect(checklistWorkspace).toContain("（当前「${activeView?.label}」）");
   });
 });
 

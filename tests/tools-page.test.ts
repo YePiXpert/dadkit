@@ -17,7 +17,7 @@ const page = readSource("app", "tools", "page.tsx");
 const entryGrid = readSource("components", "LinkEntryGrid.tsx");
 
 describe("tools hub page and navigation", () => {
-  it("ships the route, title, subtitle and four tool entries", () => {
+  it("ships the primary tools and lower-frequency management entries", () => {
     expect(page).toContain("工具");
     expect(page).toContain("从孕周跟踪到出发待产，这些帮手随取随用。");
     expect(page).toContain("page-shell page-shell-with-nav");
@@ -33,6 +33,17 @@ describe("tools hub page and navigation", () => {
     ];
 
     for (const entry of entries) {
+      expect(page).toContain(`href: "${entry.href}"`);
+      expect(page).toContain(entry.title);
+    }
+
+    expect(page).toContain("管理与支持");
+    for (const entry of [
+      { href: "/settings/checklist", title: "清单设置" },
+      { href: "/settings/backup", title: "备份与恢复" },
+      { href: "/settings/sync", title: "家庭同步" },
+      { href: "/support", title: "帮助与反馈" },
+    ]) {
       expect(page).toContain(`href: "${entry.href}"`);
       expect(page).toContain(entry.title);
     }

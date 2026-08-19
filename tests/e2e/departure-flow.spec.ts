@@ -58,6 +58,12 @@ test("可以直接访问准备出发页面", async ({ page }) => {
   await expect(
     page.getByRole("progressbar", { name: /出发物品确认/ }),
   ).toBeVisible();
+  const firstItem = page
+    .locator('section[aria-labelledby^="departure-group-"] article')
+    .first();
+  await expect(firstItem).toBeVisible();
+  const firstItemBox = await firstItem.boundingBox();
+  expect(firstItemBox?.height).toBeLessThan(120);
   await expectOnlyPrimaryNavigationItemActive(page, "工具");
   await expect
     .poll(() =>

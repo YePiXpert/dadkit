@@ -19,8 +19,7 @@ const toolsPage = source("app/tools/page.tsx");
 describe("planning product surface", () => {
   it("surfaces planning in the dashboard and via the tools hub", () => {
     expect(home).toContain("PlanningSummaryCard compact");
-    expect(home).toContain("全部工具");
-    expect(home).toContain('href="/tools"');
+    expect(home).toContain('href: "/planning"');
     expect(home).not.toContain("DEPARTURE_PATH");
 
     expect(toolsPage).toContain("家庭分工与采购");

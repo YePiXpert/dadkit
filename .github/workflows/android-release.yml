@@ -30,7 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$GITHUB_REF_NAME" = "v3.4.11"
+          test "$GITHUB_REF_NAME" = "v3.4.12"
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
@@ -51,7 +51,6 @@ jobs:
           npm test
           npm run build
           npm run performance:check
-          npm run android:bundle
           npm run android:validate -- "$GITHUB_REF_NAME"
 
       - name: Install Playwright browsers
@@ -92,7 +91,7 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon clean assembleRelease bundleRelease
 
-      - name: Verify bundled APK alignment and signature
+      - name: Verify remote-shell APK alignment and signature
         id: apk
         shell: bash
         run: |
@@ -105,24 +104,23 @@ jobs:
           "$BUILD_TOOLS/zipalign" -c -v 4 "$APK"
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
           zipinfo -1 "$APK" > apk-entries.txt
-          test "$(awk '/^assets\/www\/item-art\/.*\.webp$/ { count++ } END { print count+0 }' apk-entries.txt)" = "144"
-          test "$(awk '/^assets\/www\/growth\/.*\.webp$/ { count++ } END { print count+0 }' apk-entries.txt)" = "33"
-          grep -q '^assets/www/index.html$' apk-entries.txt
-          grep -q '^assets/www/settings/about/index.html$' apk-entries.txt
-          grep -q '^assets/www/tools/index.html$' apk-entries.txt
+          if grep -q '^assets/www/' apk-entries.txt; then
+            echo "Remote-shell APK must not contain bundled web pages." >&2
+            exit 1
+          fi
           if grep -q '^assets/default_checklist.json$' apk-entries.txt; then
             echo "Retired native checklist asset must not be packaged." >&2
             exit 1
           fi
-          cp "$APK" DadKit-3.4.11.apk
-          sha256sum DadKit-3.4.11.apk > DadKit-3.4.11.apk.sha256
-          cp "$AAB" DadKit-3.4.11.aab
+          cp "$APK" DadKit-3.4.12.apk
+          sha256sum DadKit-3.4.12.apk > DadKit-3.4.12.apk.sha256
+          cp "$AAB" DadKit-3.4.12.aab
 
       - name: Store AAB privately for 30 days
         uses: actions/upload-artifact@v4
         with:
-          name: DadKit-3.4.11-aab
-          path: DadKit-3.4.11.aab
+          name: DadKit-3.4.12-aab
+          path: DadKit-3.4.12.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -131,18 +129,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          DadKit 3.4.11
+          DadKit 3.4.12
 
-          - “我的”设置页重组为家庭协作、数据与偏好分组，“关于 DadKit”并入本页，旧页面自动跳转
-          - 工具与设置入口在桌面端变为双列磁贴，移动端列表更紧凑
-          - 子页面页眉压缩，首页分工卡片文字不再被按钮挤压
-          - 危险操作改用深绯红，与珊瑚主色一眼区分；浅色、深色主题同步更新
-          - APK 继续内置完整 PWA 页面、144 张物品图、33 张成长图和全部离线资源
-          - Android 包名为 com.dadkit.mobile，versionCode 为 24
+          - 首页采用孕周/宝宝状态头与六项快捷入口，清单页压缩进度并吸附筛选
+          - 清单分类支持卡片/紧凑列表切换，出发页改为高效紧凑确认列表
+          - 成长时间表默认聚焦当前阶段，工具页补齐管理与支持入口
+          - Android 改为加载 DadKit 线上页面，日常页面和功能更新无需重复安装 APK
+          - 联网启动优先获取最新页面，成功使用后可通过缓存离线打开
+          - 当前操作不会被网页更新打断，新页面在下次启动时自动生效
+          - 保留数据迁移、文件选择、主题同步与应用内安全下载 APK 的原生能力
+          - Android 包名为 com.dadkit.mobile，versionCode 为 25
           EOF
           gh release create "$GITHUB_REF_NAME" \
-            DadKit-3.4.11.apk \
-            DadKit-3.4.11.apk.sha256 \
+            DadKit-3.4.12.apk \
+            DadKit-3.4.12.apk.sha256 \
             --verify-tag \
-            --title "DadKit 3.4.11" \
+            --title "DadKit 3.4.12" \
             --notes-file release-notes.md

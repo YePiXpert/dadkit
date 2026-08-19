@@ -21,7 +21,13 @@ export function PageHeader({
 }: PageHeaderProps) {
   if (backHref) {
     return (
-      <header className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-start gap-2 py-0.5 sm:py-1.5">
+      <header
+        className={`grid items-start gap-2 py-0.5 sm:py-1.5 ${
+          aside
+            ? "grid-cols-[2.75rem_minmax(0,1fr)_auto]"
+            : "grid-cols-[2.75rem_minmax(0,1fr)_2.75rem]"
+        }`}
+      >
         <Link
           aria-label={backLabel}
           className="flex size-11 items-center justify-center rounded-full bg-card text-foreground shadow-sm transition-shadow hover:shadow-md"
@@ -48,7 +54,8 @@ export function PageHeader({
   }
 
   return (
-    <header className="px-1 pb-1 text-center">
+    <header className="relative px-1 pb-1 text-center">
+      {aside ? <div className="absolute right-0 top-1.5">{aside}</div> : null}
       {kicker ? (
         <p className="text-[13px] font-semibold tracking-wide text-primary">{kicker}</p>
       ) : null}

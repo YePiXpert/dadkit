@@ -3,14 +3,14 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { LayoutGrid, List, Plus, WrapText } from "lucide-react";
 
 import { ChecklistGroupTabs } from "@/components/ChecklistGroupTabs";
 import { ChecklistItemRow } from "@/components/ChecklistItemRow";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
-import { SettingToggleRow } from "@/components/SettingToggleRow";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   CHECKLIST_SECTIONS,
@@ -21,6 +21,7 @@ import { getChecklistHomeHref } from "@/lib/checklist-display";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistCategory } from "@/lib/types";
 import { useChecklistDescriptionPreference } from "@/lib/use-checklist-description-preference";
+import { useChecklistViewPreference } from "@/lib/use-checklist-view-preference";
 import { useChecklistViewQuery } from "@/lib/use-checklist-view-query";
 
 const AddItemDialog = dynamic(
@@ -58,6 +59,7 @@ export function ChecklistSectionWorkspace({
     setShowFullDescriptions,
     showFullDescriptions,
   } = useChecklistDescriptionPreference();
+  const { toggleViewMode, viewMode } = useChecklistViewPreference();
   const hydrated = useDadKitStore((state) => state.hydrated);
   const hydrate = useDadKitStore((state) => state.hydrate);
   const checklist = useDadKitStore((state) => state.checklist);
@@ -99,24 +101,56 @@ export function ChecklistSectionWorkspace({
           backHref={getChecklistHomeHref(query)}
           backLabel="返回清单首页"
           aside={
-            <Badge
-              aria-label={`共 ${counts.all} 项`}
-              className="min-h-10 justify-center tabular-nums"
-              variant="muted"
+            <div
+              aria-label="清单显示选项"
+              className="flex items-center gap-2"
+              role="group"
             >
-              {counts.all} 项
-            </Badge>
+              <button
+                aria-label={
+                  viewMode === "cards"
+                    ? "切换为紧凑列表"
+                    : "切换为卡片视图"
+                }
+                aria-pressed={viewMode === "list"}
+                className={cn(
+                  "flex size-11 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm transition-all hover:text-foreground hover:shadow-md active:scale-95",
+                  viewMode === "list" &&
+                    "bg-primary text-primary-foreground hover:text-primary-foreground",
+                )}
+                title={
+                  viewMode === "cards"
+                    ? "紧凑列表：每行一个物品，快速勾选"
+                    : "卡片视图：查看物品图片与说明"
+                }
+                type="button"
+                onClick={toggleViewMode}
+              >
+                {viewMode === "cards" ? (
+                  <List className="size-5" />
+                ) : (
+                  <LayoutGrid className="size-5" />
+                )}
+              </button>
+              <button
+                aria-label="显示物品说明"
+                aria-pressed={showFullDescriptions}
+                className={cn(
+                  "flex size-11 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm transition-all hover:text-foreground hover:shadow-md active:scale-95",
+                  showFullDescriptions &&
+                    "bg-primary text-primary-foreground hover:text-primary-foreground",
+                )}
+                title="开启后在卡片中完整显示，不截断文字"
+                type="button"
+                onClick={() => setShowFullDescriptions(!showFullDescriptions)}
+              >
+                <WrapText className="size-5" />
+              </button>
+            </div>
           }
         />
 
         <ChecklistGroupTabs counts={counts} value={view} onChange={setView} />
-
-        <SettingToggleRow
-          title="显示物品说明"
-          description="开启后在卡片中完整显示，不截断文字"
-          checked={showFullDescriptions}
-          onCheckedChange={setShowFullDescriptions}
-        />
 
         {visibleItems.length === 0 ? (
           <div className="grid gap-3">
@@ -145,9 +179,14 @@ export function ChecklistSectionWorkspace({
             </Link>
           </div>
         ) : (
-          <div className="item-card-grid">
+          <div
+            className={
+              viewMode === "cards" ? "item-card-grid" : "grid gap-2"
+            }
+          >
             {visibleItems.map((item) => (
               <ChecklistItemRow
+                compact={viewMode === "list"}
                 item={item}
                 key={item.id}
                 onOpenDetails={setDetailsItemId}

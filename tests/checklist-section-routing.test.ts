@@ -14,6 +14,10 @@ import {
   CHECKLIST_DESCRIPTION_PREFERENCE_KEY,
   readChecklistDescriptionPreference,
 } from "@/lib/use-checklist-description-preference";
+import {
+  CHECKLIST_VIEW_PREFERENCE_KEY,
+  readChecklistViewPreference,
+} from "@/lib/use-checklist-view-preference";
 
 function readSource(...segments: string[]) {
   return readFileSync(join(process.cwd(), ...segments), "utf8");
@@ -86,6 +90,23 @@ describe("checklist section routes", () => {
     expect(CHECKLIST_DESCRIPTION_PREFERENCE_KEY).toBe(
       "dadkit:ui:checklist:show-full-descriptions",
     );
+
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: vi.fn(() => "list"),
+      },
+    });
+    expect(readChecklistViewPreference()).toBe("list");
+
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: vi.fn(() => "unexpected-value"),
+      },
+    });
+    expect(readChecklistViewPreference()).toBe("cards");
+    expect(CHECKLIST_VIEW_PREFERENCE_KEY).toBe(
+      "dadkit:ui:checklist:view-mode",
+    );
   });
 
   it("uses one column at 320px and exactly two from 360px through tablet", () => {
@@ -96,7 +117,7 @@ describe("checklist section routes", () => {
     );
     const tailwindConfig = readSource("tailwind.config.ts");
 
-    expect(workspace).toContain('className="item-card-grid"');
+    expect(workspace).toContain("item-card-grid");
     expect(styles).toMatch(
       /\.item-card-grid\s*\{[\s\S]*?grid-cols-1[\s\S]*?\}/,
     );

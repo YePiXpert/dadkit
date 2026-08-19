@@ -108,7 +108,7 @@ V3 的目标：在 V2「打开就知道还差什么」的基础上，把界面�
 ## 发布链路
 
 - Web/PWA：manifest、Service Worker、离线页和安装入口必须可独立工作；新版本需更新 Service Worker cache name。
-- Android：`android/` 是承载完整 PWA 静态导出的轻量 WebView 壳；`scripts/build-android-web.mjs` 必须从当前 `app/`、`components/`、`lib/` 和 `public/` 构建 `assets/www`，确保网页、iPhone PWA 与 APK 的视觉、交互、页面和图片资源同源。3.4.4 起，更新提示优先通过 `DadKitAndroidUpdate` 桥在应用内下载 APK、显示进度、校验 SHA-256，再以 `FileProvider` 调起系统安装；桥不可用时必须保留普通链接下载兜底。「我的 → 关于 DadKit」必须显示当前版本并提供不受后台检查间隔限制的手动检查入口，启动浮层与设置页共用同一份可用版本和下载进度状态。发布走 `scripts/release-apk.sh` 与 `scripts/validate-android-release.mjs`，校验器会逐文件核对 `public/` 资源及更新桥关键能力。
+- Android：`android/` 是直接加载 `https://dadkit.505f.com` 的轻量 WebView 壳，不再打包 `assets/www`。线上页面导航采用 network-first，成功访问后由 Service Worker 提供离线缓存；当前会话不因部署而刷新，下次启动获取最新页面。原生数据迁移、主题、文件选择与 `DadKitAndroidUpdate` 桥继续保留；原生更新在应用内下载 APK、显示进度、校验 SHA-256，再以 `FileProvider` 调起系统安装。「我的 → 关于 DadKit」分别显示页面版本与 Android 外壳 versionCode。发布走 `scripts/release-apk.sh` 与 `scripts/validate-android-release.mjs`，校验器必须确认 APK 不含网页包并保留更新桥安全能力。
 
 ## 边界
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const COMPLETE_EVENT = "dadkit:android-migration-complete";
 
@@ -10,18 +10,33 @@ type NativeDataMigrationBridge = {
   markMigrationComplete(): void;
 };
 
-export function AndroidNativeMigration() {
+export function AndroidNativeMigration({
+  onComplete,
+}: {
+  onComplete?: () => void;
+}) {
   const [migrating, setMigrating] = useState(false);
   const [failed, setFailed] = useState(false);
+  const onCompleteRef = useRef(onComplete);
+  const completedRef = useRef(false);
+
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
+    function complete() {
+      if (completedRef.current) return;
+      completedRef.current = true;
+      window.dispatchEvent(new Event(COMPLETE_EVENT));
+      onCompleteRef.current?.();
+    }
+
     const bridge = (
       window as Window & { DadKitAndroidMigration?: NativeDataMigrationBridge }
     ).DadKitAndroidMigration;
     const nativeData = bridge?.getNativeData().trim();
 
     if (!bridge || !nativeData) {
-      window.dispatchEvent(new Event(COMPLETE_EVENT));
+      complete();
       return;
     }
 
@@ -31,7 +46,7 @@ export function AndroidNativeMigration() {
       .catch(() => setFailed(true))
       .finally(() => {
         setMigrating(false);
-        window.dispatchEvent(new Event(COMPLETE_EVENT));
+        complete();
       });
   }, []);
 

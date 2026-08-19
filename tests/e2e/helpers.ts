@@ -23,17 +23,10 @@ export async function openToolFromHome(
 ) {
   await page.goto("/", { waitUntil: "domcontentloaded" });
 
-  const toolsEntry = page.getByRole("link", {
-    name: /^全部工具(?:\s|$)/,
-  });
-  await expect(toolsEntry).toBeVisible({ timeout: 60_000 });
-  await toolsEntry.click();
-  await expectPathname(page, "/tools");
-
   const toolEntry = page.getByRole("link", {
     name: new RegExp(`^${escapeRegExp(toolName)}(?:\\s|$)`),
   });
-  await expect(toolEntry).toBeVisible();
+  await expect(toolEntry).toBeVisible({ timeout: 60_000 });
   await toolEntry.click();
   await expectPathname(page, pathname);
 }

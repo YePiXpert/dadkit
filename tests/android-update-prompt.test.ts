@@ -35,6 +35,8 @@ const aboutPageSource = readSource(
   "page.tsx",
 );
 const updateCoreSource = readSource("lib", "android-update.ts");
+const backgroundTasksSource = readSource("components", "BackgroundTasks.tsx");
+const migrationSource = readSource("components", "AndroidNativeMigration.tsx");
 const launcherSource = readSource(
   "android",
   "app",
@@ -233,6 +235,15 @@ describe("android update progress states", () => {
 });
 
 describe("android update prompt wiring", () => {
+  it("detects the remote Android runtime and completes migration only once", () => {
+    expect(backgroundTasksSource).toContain("DadKitAndroidMigration");
+    expect(backgroundTasksSource).toContain('runtime === "android"');
+    expect(backgroundTasksSource).toContain("<PwaRegister />");
+    expect(backgroundTasksSource).not.toContain("NEXT_PUBLIC_DADKIT_ANDROID_BUNDLE");
+    expect(migrationSource).toContain("completedRef.current");
+    expect(migrationSource).toContain("onCompleteRef.current?.()");
+  });
+
   it("declares the bridge and progress callback on window", () => {
     expect(updateCoreSource).toContain("declare global");
     expect(updateCoreSource).toContain("DadKitAndroidUpdate");
@@ -256,7 +267,8 @@ describe("android update prompt wiring", () => {
     expect(settingsPageSource).toContain("appVersion={packageJson.version}");
     expect(aboutPageSource).toContain('redirect("/settings")');
     expect(settingsCardSource).toContain("关于 DadKit");
-    expect(settingsCardSource).toContain("当前版本");
+    expect(settingsCardSource).toContain("页面版本");
+    expect(settingsCardSource).toContain("Android 外壳");
     expect(settingsCardSource).toContain("检查更新");
     expect(settingsCardSource).toContain("checkForAndroidUpdate({ force: true })");
     expect(settingsCardSource).toContain("已是最新版");

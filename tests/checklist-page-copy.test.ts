@@ -136,6 +136,11 @@ describe("V2 checklist experience", () => {
     expect(checklistItemRow).toContain("size-11");
     expect(checklistItemRow).toContain("showFullDescription = true");
     expect(checklistSectionWorkspace).toContain("useChecklistDescriptionPreference");
+    expect(checklistSectionWorkspace).toContain("useChecklistViewPreference");
+    expect(checklistSectionWorkspace).toContain(
+      'compact={viewMode === "list"}',
+    );
+    expect(checklistSectionWorkspace).toContain("切换为紧凑列表");
     expect(checklistSectionWorkspace).toContain("showFullDescription={showFullDescriptions}");
     expect(checklistSectionWorkspace).toContain("不截断文字");
   });

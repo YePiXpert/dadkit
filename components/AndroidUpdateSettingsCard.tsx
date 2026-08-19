@@ -79,14 +79,20 @@ export function AndroidUpdateSettingsCard({
       </CardHeader>
       <CardContent className="grid gap-3">
         <div className="flex items-center justify-between gap-3 rounded-2xl bg-muted/35 px-4 py-3 text-sm">
-          <span className="text-muted-foreground">当前版本</span>
+          <span className="text-muted-foreground">页面版本</span>
           <span className="font-mono font-semibold">
             {appVersion}
-            {androidApp && currentVersionCode !== undefined
-              ? ` (${currentVersionCode})`
-              : ""}
           </span>
         </div>
+
+        {androidApp && currentVersionCode !== undefined ? (
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-muted/35 px-4 py-3 text-sm">
+            <span className="text-muted-foreground">Android 外壳</span>
+            <span className="font-mono font-semibold">
+              versionCode {currentVersionCode}
+            </span>
+          </div>
+        ) : null}
 
         {androidApp ? (
           <>
@@ -109,7 +115,7 @@ export function AndroidUpdateSettingsCard({
               </p>
             ) : (
               <p className="text-sm leading-6 text-muted-foreground">
-                启动时会自动检查；也可以随时手动检查，不受 6 小时间隔限制。
+                页面功能会在下次启动时自动更新；原生外壳也可以随时手动检查更新。
               </p>
             )}
             <div className="flex flex-wrap gap-2">
@@ -140,7 +146,7 @@ export function AndroidUpdateSettingsCard({
           </>
         ) : (
           <p className="text-sm leading-6 text-muted-foreground">
-            Web 与 PWA 会在新页面资源准备完成后提示刷新。
+            Web 与 PWA 会在下次打开时自动使用最新页面。
           </p>
         )}
       </CardContent>

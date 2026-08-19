@@ -1,6 +1,6 @@
 {
   "name": "dadkit",
-  "version": "3.4.11",
+  "version": "3.4.12",
   "private": true,
   "description": "A local-first maternity preparation app for web and Android.",
   "scripts": {
@@ -15,7 +15,6 @@
     "test:e2e:install": "playwright install chromium webkit",
     "test:docker": "vitest run --config vitest.docker.config.ts tests/docker-integration.test.ts",
     "performance:check": "node scripts/check-performance-budgets.mjs",
-    "android:bundle": "node scripts/build-android-web.mjs",
     "android:validate": "node scripts/validate-android-release.mjs",
     "webdav:verify": "node scripts/verify-webdav-acceptance.mjs",
     "webdav:verify:prompt": "powershell -ExecutionPolicy Bypass -File scripts/verify-webdav-acceptance.ps1"

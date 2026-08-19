@@ -39,7 +39,7 @@ describe("release endpoints and product surface", () => {
       }>;
     };
 
-    expect(packageJson.version).toBe("3.4.11");
+    expect(packageJson.version).toBe("3.4.12");
     expect(manifest.name).toBe("DadKit 待产包清单");
     expect(manifest.description).toContain("待产包");
     expect(manifest.description).toContain("宝宝记录");
@@ -92,7 +92,7 @@ describe("release endpoints and product surface", () => {
     expect(readme).not.toContain("公开 APK、日志和仓库不得包含");
   });
 
-  it("ships the full PWA surface inside the Android APK", () => {
+  it("ships a trusted remote PWA inside the Android WebView shell", () => {
     const manifest = readSource(
       "android",
       "app",
@@ -111,7 +111,6 @@ describe("release endpoints and product surface", () => {
       "mobile",
       "LauncherActivity.java",
     );
-    const bundleScript = readSource("scripts", "build-android-web.mjs");
     const validator = readSource("scripts", "validate-android-release.mjs");
 
     expect(manifest).toContain("android.permission.INTERNET");
@@ -120,9 +119,11 @@ describe("release endpoints and product surface", () => {
     expect(manifest).toContain('android:name=".LauncherActivity"');
     expect(activity).toContain("extends Activity");
     expect(activity).toContain("new WebView(this)");
-    expect(activity).toContain('getAssets().open("www/" + assetPath)');
+    expect(activity).not.toContain("shouldInterceptRequest");
+    expect(activity).not.toContain('getAssets().open("www/"');
+    expect(activity).toContain("loadDataWithBaseURL");
     expect(activity).toContain("DadKitAndroidMigration");
-    expect(activity).toContain("appVersionCode=24");
+    expect(activity).toContain("appVersionCode=25");
     expect(manifest).toContain("android.permission.REQUEST_INSTALL_PACKAGES");
     expect(manifest).toContain("androidx.core.content.FileProvider");
     expect(activity).toContain("DadKitAndroidUpdate");
@@ -131,12 +132,9 @@ describe("release endpoints and product surface", () => {
     expect(activity).toContain('"(?i)^[0-9a-f]{64}$"');
     expect(activity).toContain('"/api/app-version/apk".equals');
     expect(activity).toContain("UPDATE_MAX_BYTES");
-    expect(bundleScript).toContain('DADKIT_BUILD_TARGET: "android"');
-    expect(bundleScript).toContain('"public"');
-    expect(bundleScript).toMatch(/"assets",\r?\n\s+"www"/);
-    expect(validator).toContain("144 bundled item illustrations");
-    expect(validator).toContain("33 bundled growth illustrations");
-    expect(validator).toContain("bundled public asset matches PWA");
+    expect(validator).toContain("no local request interception");
+    expect(validator).toContain("no APK web asset loader");
+    expect(existsSync(join(process.cwd(), "scripts", "build-android-web.mjs"))).toBe(false);
     expect(existsSync(join(process.cwd(), "scripts", "prepare-native-android.mjs"))).toBe(false);
     expect(packageJson.devDependencies).not.toHaveProperty("@bubblewrap/cli");
   });
@@ -144,16 +142,15 @@ describe("release endpoints and product surface", () => {
   it("keeps the Android tag release strict and verifies the signed APK", () => {
     const workflow = readSource(".github", "workflows", "android-release.yml");
 
-    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.4.11"');
+    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.4.12"');
     expect(workflow).toContain(
       'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
     );
-    expect(workflow).toContain("npm run android:bundle");
+    expect(workflow).not.toContain("npm run android:bundle");
     expect(workflow).toContain("apksigner");
     expect(workflow).toContain("actions/upload-artifact@v4");
     expect(workflow).toContain("retention-days: 30");
-    expect(workflow).toContain('= "144"');
-    expect(workflow).toContain('= "33"');
+    expect(workflow).toContain("must not contain bundled web pages");
     expect(workflow).toContain('gh release create "$GITHUB_REF_NAME"');
   });
 
@@ -268,9 +265,11 @@ describe("release endpoints and product surface", () => {
   it("installs the entry shell, then keeps all core routes in the background cache list", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.11-pwa-r1"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.12-pwa-r1"');
     expect(sw).toContain('const PRECACHE_ROUTES = ["/"]');
     expect(sw).toContain("BACKGROUND_ROUTES");
+    expect(sw).toContain("networkFirstNavigation(event.request)");
+    expect(sw).toContain('cache: "no-cache"');
     for (const route of [
       "/",
       "/checklist",
@@ -298,6 +297,90 @@ describe("release endpoints and product surface", () => {
 
     expect(sw).toContain("precacheAppShell");
     expect(sw).not.toContain("/illustrations/");
+  });
+
+  it("uses the network for navigations and falls back to cached HTML offline", async () => {
+    const sw = readSource("public", "sw.js");
+    const cached = { body: "cached page", ok: true, type: "basic", clone() { return this; } };
+    const fresh = { body: "fresh page", ok: true, type: "basic", clone() { return this; } };
+    const writes: unknown[] = [];
+    let online = true;
+    class FakeRequest {
+      readonly url: string;
+      readonly cache?: string;
+
+      constructor(input: FakeRequest | string, init?: { cache?: string }) {
+        this.url = typeof input === "string" ? input : input.url;
+        this.cache = init?.cache;
+      }
+    }
+    const cache = {
+      async match() {
+        return cached;
+      },
+      async put(_request: unknown, response: unknown) {
+        writes.push(response);
+      },
+    };
+    const context = {
+      self: {
+        addEventListener: () => undefined,
+        location: { origin: "https://dadkit.example" },
+      },
+      caches: { async open() { return cache; } },
+      Request: FakeRequest,
+      Response: { error: () => ({ ok: false, type: "error" }) },
+      async fetch(request: FakeRequest) {
+        expect(request.cache).toBe("no-cache");
+        if (!online) throw new Error("offline");
+        return fresh;
+      },
+    } as Record<string, unknown>;
+
+    runInNewContext(
+      `${sw}\n;globalThis.__networkFirstNavigation = networkFirstNavigation;`,
+      context,
+    );
+    const networkFirstNavigation = context.__networkFirstNavigation as (
+      request: FakeRequest,
+    ) => Promise<typeof fresh>;
+    const request = new FakeRequest("https://dadkit.example/checklist?source=apk");
+
+    await expect(networkFirstNavigation(request)).resolves.toBe(fresh);
+    expect(writes).toEqual([fresh]);
+
+    online = false;
+    await expect(networkFirstNavigation(request)).resolves.toBe(cached);
+  });
+
+  it("does not intercept API fetches in the service worker", () => {
+    const sw = readSource("public", "sw.js");
+    const listeners = new Map<string, (event: Record<string, unknown>) => void>();
+    let intercepted = false;
+    const context = {
+      self: {
+        addEventListener: (
+          type: string,
+          listener: (event: Record<string, unknown>) => void,
+        ) => listeners.set(type, listener),
+        location: { origin: "https://dadkit.example" },
+      },
+      URL,
+    } as Record<string, unknown>;
+
+    runInNewContext(sw, context);
+    listeners.get("fetch")?.({
+      request: {
+        method: "GET",
+        mode: "cors",
+        url: "https://dadkit.example/api/sync/pull",
+      },
+      respondWith() {
+        intercepted = true;
+      },
+    });
+
+    expect(intercepted).toBe(false);
   });
 
   it("caps runtime asset caches per path prefix", () => {

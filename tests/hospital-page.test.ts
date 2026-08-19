@@ -112,8 +112,8 @@ describe("hospital profile page and entry points", () => {
     expect(pwaRegister).toContain("scheduleRegistration();");
     expect(pwaRegister).not.toContain('addEventListener("load", scheduleRegistration');
     expect(pwaRegister).toContain("window.location.pathname");
-    expect(pwaRegister).toContain("稍后");
-    expect(pwaRegister).toContain("setWaitingWorker(undefined)");
+    expect(pwaRegister).not.toContain("稍后");
+    expect(pwaRegister).not.toContain("setWaitingWorker(undefined)");
     expect(serviceWorker).toContain('event.data?.type === "CACHE_ROUTE"');
     expect(serviceWorker).toContain('event.data?.type === "CACHE_ASSETS"');
     expect(serviceWorker).toContain('event.data?.type === "CACHE_BACKGROUND_ROUTES"');

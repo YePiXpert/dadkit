@@ -40,14 +40,10 @@ test-results/
 # 本地运行时家庭同步数据(DADKIT_DATA_DIR 默认 ./data)
 /data/
 
-# android build output, bundled web assets and signing keys
+# android build output and signing keys
 android/.gradle/
 android/.gradle-codex/
 android/app/build/
-android/app/src/main/assets/www/
-!android/app/src/main/assets/www/
-android/app/src/main/assets/www/*
-!android/app/src/main/assets/www/.gitkeep
 android/build/
 android/local.properties
 android/*.keystore
@@ -59,7 +55,6 @@ android/signing.properties
 /android/manifest-checksum.txt
 *.keystore
 *.jks
-.android-static-build/
 /artifacts/
 
 # local coding assistants

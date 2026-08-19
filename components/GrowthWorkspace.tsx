@@ -4,8 +4,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   CalendarDays,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Circle,
   ClipboardCheck,
   Info,
@@ -63,6 +65,7 @@ export function GrowthWorkspace() {
     (state) => state.toggleCompletedTask,
   );
   const [packingPercent, setPackingPercent] = useState(0);
+  const [timelineExpanded, setTimelineExpanded] = useState(false);
 
   useEffect(() => {
     hydrate();
@@ -400,19 +403,38 @@ export function GrowthWorkspace() {
         </section>
 
         <section aria-labelledby="growth-timeline-title" className="grid gap-4">
-          <div className="flex items-end justify-between gap-3 px-1">
+          <div className="flex flex-wrap items-end justify-between gap-3 px-1">
             <div>
               <p className="section-kicker text-primary">孕 8–40 周</p>
               <h2 className="mt-1 text-[15px] font-semibold" id="growth-timeline-title">
                 完整时间表
               </h2>
             </div>
-            <p className="text-[13px] text-muted-foreground">
-              已完成 {completedTaskIds.length} 项，共 {GROWTH_WEEKS.length} 项
-            </p>
+            <div className="grid justify-items-end gap-2">
+              <p className="text-[13px] text-muted-foreground">
+                已完成 {completedTaskIds.length} 项，共 {GROWTH_WEEKS.length} 项
+              </p>
+              <Button
+                aria-expanded={timelineExpanded}
+                onClick={() => setTimelineExpanded((expanded) => !expanded)}
+                size="sm"
+                variant="outline"
+              >
+                {timelineExpanded ? (
+                  <ChevronUp className="size-4" />
+                ) : (
+                  <ChevronDown className="size-4" />
+                )}
+                {timelineExpanded
+                  ? "收起时间表"
+                  : `展开全部 ${GROWTH_WEEKS.length} 周`}
+              </Button>
+            </div>
           </div>
 
-          {TIMELINE_GROUPS.map((trimester) => (
+          {TIMELINE_GROUPS.filter(
+            (trimester) => timelineExpanded || trimester === current.trimester,
+          ).map((trimester) => (
             <section
               aria-labelledby={`growth-${trimester}`}
               className="overflow-hidden rounded-card bg-card shadow-sm"

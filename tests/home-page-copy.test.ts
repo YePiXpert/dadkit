@@ -30,25 +30,26 @@ describe("checklist and home dashboard pages", () => {
     expect(checklistWorkspace).toContain("counts");
   });
 
-  it("surfaces a tools hub link plus planning, baby and household entries on the dashboard", () => {
+  it("leads with the pregnancy stage header and a quick-entry grid", () => {
     expect(homeDashboard).toContain("PlanningSummaryCard compact");
     expect(homeDashboard).toContain("BabyHomeCard");
     expect(homeDashboard).toContain("HouseholdFeaturePrompt");
-    expect(homeDashboard).toContain("全部工具");
-    expect(homeDashboard).toContain('href="/tools"');
-    expect(homeDashboard).toContain(
-      "孕周成长、准备出发、医院档案与家庭分工",
-    );
+    expect(homeDashboard).toContain("GrowthAnalogyIllustration");
+    expect(homeDashboard).toContain("距预产期");
+    expect(homeDashboard).toContain("设置预产期");
+    expect(homeDashboard).toContain("出生第");
     expect(homeDashboard).toContain("mobile-shell grid gap-4 sm:max-w-[42rem]");
     expect(homeDashboard).toContain("useHouseholdStore");
     expect(homeDashboard).toContain("useGrowthStore");
 
+    for (const href of ["/growth", "/baby", "/departure", "/hospital", "/planning"]) {
+      expect(homeDashboard).toContain(`href: "${href}"`);
+    }
+    expect(homeDashboard).toContain("CHECKLIST_PATH");
+
     expect(homeDashboard).not.toContain("getDepartureProgress");
-    expect(homeDashboard).not.toContain("快捷入口");
-    expect(homeDashboard).not.toContain('href="/departure"');
-    expect(homeDashboard).not.toContain('href="/hospital"');
-    expect(homeDashboard).not.toContain('href="/planning"');
-    expect(homeDashboard).not.toContain('href="/growth"');
+    expect(homeDashboard).not.toContain("全部工具");
+    expect(homeDashboard).not.toContain('href="/tools"');
   });
 
   it("does not depend on optional profile or removed tools", () => {

@@ -108,7 +108,7 @@ export function JoinSyncWorkspace() {
         {!online ? (
           <Feedback message="需要联网才能加入家庭同步。" ok={false} />
         ) : null}
-        <Card>
+        <Card aria-busy={!sessionChecked}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Link2 className="size-5" />邀请</CardTitle>
           </CardHeader>
