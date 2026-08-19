@@ -34,7 +34,16 @@ jobs:
           npm run performance:check
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium webkit
+        timeout-minutes: 26
+        run: |
+          for attempt in 1 2; do
+            if timeout --kill-after=30s 12m npx playwright install --with-deps chromium webkit; then
+              exit 0
+            fi
+            echo "Playwright browser install attempt $attempt failed or timed out."
+            sleep 5
+          done
+          exit 1
 
       - name: Run Chromium and WebKit acceptance tests
         run: npm run test:e2e
