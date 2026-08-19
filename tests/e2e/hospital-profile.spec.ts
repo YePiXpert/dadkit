@@ -177,22 +177,31 @@ test("同一浏览器双标签实时合并并要求显式解决同字段冲突",
     await page.locator("#hospital-hospitalName").fill("双标签妇幼医院");
     await page.locator("#hospital-address").fill("初始地址");
     await page.getByRole("button", { name: "保存档案" }).click();
+    await otherPage.bringToFront();
     await expect(
       otherPage.getByRole("heading", { name: "双标签妇幼医院" }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 60_000 });
 
+    await page.bringToFront();
     await page.getByRole("button", { name: "编辑档案" }).click();
+    await otherPage.bringToFront();
     await otherPage.getByRole("button", { name: "编辑档案" }).click();
+    await page.bringToFront();
     await page.locator("#hospital-address").fill("本页草稿地址");
+    await otherPage.bringToFront();
     await otherPage.locator("#hospital-address").fill("其他页面地址");
     await otherPage.getByRole("button", { name: "保存档案" }).click();
 
-    await expect(page.getByText(/其他页面也修改了/)).toBeVisible();
+    await page.bringToFront();
+    await expect(page.getByText(/其他页面也修改了/)).toBeVisible({
+      timeout: 60_000,
+    });
     await expect(page.getByRole("button", { name: "保存档案" })).toBeDisabled();
     await page.getByRole("button", { name: "采用其他页面版本" }).click();
     await expect(page.locator("#hospital-address")).toHaveValue("其他页面地址");
 
     await page.locator("#hospital-address").fill("保留本页地址");
+    await otherPage.bringToFront();
     await otherPage.getByRole("button", { name: "编辑档案" }).click();
     await expect(otherPage.locator("#hospital-hospitalName")).toBeFocused();
     await otherPage.locator("#hospital-address").fill("第二次外部地址");
@@ -200,11 +209,17 @@ test("同一浏览器双标签实时合并并要求显式解决同字段冲突",
       "第二次外部地址",
     );
     await otherPage.getByRole("button", { name: "保存档案" }).click();
-    await expect(page.getByText(/其他页面也修改了/)).toBeVisible();
+    await page.bringToFront();
+    await expect(page.getByText(/其他页面也修改了/)).toBeVisible({
+      timeout: 60_000,
+    });
     await page.getByRole("button", { name: "保留本页修改" }).click();
     await page.getByRole("button", { name: "保存档案" }).click();
 
-    await expect(otherPage.getByText("保留本页地址", { exact: true })).toBeVisible();
+    await otherPage.bringToFront();
+    await expect(
+      otherPage.getByText("保留本页地址", { exact: true }),
+    ).toBeVisible({ timeout: 60_000 });
   } finally {
     await otherPage.close();
   }

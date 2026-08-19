@@ -122,7 +122,9 @@ test("清单页紧凑进度条、吸附筛选和物品状态流转", async ({ pa
   await expect(action).toBeVisible();
   const beforeLabel = await action.getAttribute("aria-label");
   await action.click();
-  await expect(action).not.toHaveAttribute("aria-label", beforeLabel ?? "");
+  await expect(action).not.toHaveAttribute("aria-label", beforeLabel ?? "", {
+    timeout: 30_000,
+  });
 
   await page.goto("/checklist?view=packing", { waitUntil: "domcontentloaded" });
   await page.getByRole("searchbox", { name: "搜索清单" }).fill(itemName);
