@@ -94,6 +94,7 @@ export function AddItemDialog({ defaultCategory = "mom_labor", trigger }: AddIte
 
     setName("");
     setNameTouched(false);
+    setCategory(defaultCategory);
     setPreparationKind("pack_existing");
     setQuantity("");
     setNote("");

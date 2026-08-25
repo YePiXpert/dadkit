@@ -19,6 +19,7 @@ import { HomeHeroIllustration } from "@/components/HomeHeroIllustration";
 import { HouseholdFeaturePrompt } from "@/components/household/HouseholdFeaturePrompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CHECKLIST_PATH } from "@/lib/app-routes";
+import { birthDayNumber } from "@/lib/baby/date";
 import { hasBabyMode } from "@/lib/baby/portable";
 import { useBabyStore } from "@/lib/baby/store";
 import { deriveChecklistView } from "@/lib/checklist-v2";
@@ -154,7 +155,7 @@ function StageHero({
   dueDate: string;
 }) {
   if (babyBorn) {
-    const days = getDaysSinceBirth(babyBirthDate) ?? 1;
+    const days = birthDayNumber(babyBirthDate) ?? 1;
     const nickname = babyNickname.trim() || "宝宝";
 
     return (
@@ -351,23 +352,9 @@ function ProgressStat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function getDaysSinceBirth(birthDate: string) {
-  if (!birthDate) return undefined;
-
-  const birth = new Date(`${birthDate}T00:00:00`);
-  if (Number.isNaN(birth.getTime())) return undefined;
-
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.max(
-    1,
-    Math.floor((today.getTime() - birth.getTime()) / 86_400_000) + 1,
-  );
-}
-
 export function HomeDashboardSkeleton() {
   return (
-    <div className="page-shell page-shell-with-nav" aria-label="正在准备首页">
+    <div role="status" className="page-shell page-shell-with-nav" aria-label="正在准备首页">
       <section className="mobile-shell grid gap-4 sm:max-w-[42rem]">
         <div className="grid gap-2 px-1 py-2">
           <Skeleton className="h-7 w-24 rounded-xl" />

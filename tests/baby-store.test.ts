@@ -205,4 +205,36 @@ describe("baby store", () => {
       { id: "remote-timeline-event", note: "远端新增" },
     ]);
   });
+
+  it("queues remote merges behind in-flight local writes so new events survive", async () => {
+    await useBabyStore.getState().hydrate();
+
+    // 远端快照不包含本地即将写入的事件。
+    const remote = await repository.getAllBabyData();
+    const originalReplace = repository.replaceBabyDataTransaction.bind(repository);
+    let releaseReplace!: () => void;
+    const replaceGate = new Promise<void>((resolve) => {
+      releaseReplace = resolve;
+    });
+    vi.spyOn(repository, "replaceBabyDataTransaction").mockImplementation(
+      async (data) => {
+        await replaceGate;
+        return originalReplace(data);
+      },
+    );
+
+    const applyPromise = useBabyStore.getState().applyRemoteBabyData(remote);
+    const startPromise = useBabyStore.getState().startSleep();
+
+    // 若远端合并未排队，本地 putEvent 会在这个窗口内先落库，
+    // 随后被整体替换静默冲掉。
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    releaseReplace();
+    await Promise.all([applyPromise, startPromise]);
+
+    const events = await repository.getAllEventsForPortableExport();
+    expect(
+      events.filter((event) => event.type === "sleep" && event.endAt === null),
+    ).toHaveLength(1);
+  });
 });

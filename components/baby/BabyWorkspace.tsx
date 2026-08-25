@@ -70,5 +70,5 @@ export function BabyWorkspace() {
 }
 
 export function BabyWorkspaceSkeleton() {
-  return <div className="page-shell page-shell-with-nav" aria-label="正在读取宝宝资料和照护记录"><section className="mobile-shell grid gap-4"><Skeleton className="h-32 rounded-card" /><Skeleton className="h-20 rounded-card" /><Skeleton className="h-64 rounded-card" /></section></div>;
+  return <div role="status" className="page-shell page-shell-with-nav" aria-label="正在读取宝宝资料和照护记录"><section className="mobile-shell grid gap-4"><Skeleton className="h-32 rounded-card" /><Skeleton className="h-20 rounded-card" /><Skeleton className="h-64 rounded-card" /></section></div>;
 }

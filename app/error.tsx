@@ -1,10 +1,16 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 
-export default function AppError({ reset }: { error: Error & { digest?: string }; reset(): void }) {
+export default function AppError({ error, reset }: { error: Error & { digest?: string }; reset(): void }) {
+  useEffect(() => {
+    // 保留现场，便于通过浏览器控制台或日志采集定位问题。
+    console.error("[DadKit] 页面渲染失败。", error);
+  }, [error]);
+
   return (
     <main className="page-shell">
       <section className="mobile-shell grid min-h-[70dvh] content-center gap-4 sm:max-w-[32rem]">

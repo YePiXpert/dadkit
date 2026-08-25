@@ -281,23 +281,26 @@ export const useBabyStore = create<BabyState>((set, get) => ({
     }
   },
 
-  applyRemoteBabyData: async (remote) => {
-    if (!isBabyPortableData(remote)) throw new Error("远端宝宝数据无效。");
-    const repository = getBabyRepository();
-    const local = await repository.getAllBabyData();
-    const merged = mergeBabyData(local, remote);
-    await repository.replaceBabyDataTransaction(merged);
-    publishDataChange("baby");
-    set((state) => ({
-      profile: merged.profile,
-      careClearedAt: merged.care.clearedAt,
-      recentEvents: activeRecent(merged),
-      todayEvents: activeToday(merged),
-      activeEvents: activeOnly(merged),
-      timelineEvents: timelineEventsForRange(merged, state.timelineRange),
-      repositoryError: undefined,
-    }));
-  },
+  applyRemoteBabyData: (remote) =>
+    // 远端合并会整体替换仓库：排进照护写队列，等正在进行的本地写入
+    // （例如“结束睡眠”）落库后再读快照，避免新记录被旧快照静默覆盖。
+    enqueueCareWrite(async () => {
+      if (!isBabyPortableData(remote)) throw new Error("远端宝宝数据无效。");
+      const repository = getBabyRepository();
+      const local = await repository.getAllBabyData();
+      const merged = mergeBabyData(local, remote);
+      await repository.replaceBabyDataTransaction(merged);
+      publishDataChange("baby");
+      set((state) => ({
+        profile: merged.profile,
+        careClearedAt: merged.care.clearedAt,
+        recentEvents: activeRecent(merged),
+        todayEvents: activeToday(merged),
+        activeEvents: activeOnly(merged),
+        timelineEvents: timelineEventsForRange(merged, state.timelineRange),
+        repositoryError: undefined,
+      }));
+    }),
 }));
 
 async function writeEvent(

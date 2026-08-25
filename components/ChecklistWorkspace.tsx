@@ -563,7 +563,7 @@ function getViewCaption(view: ChecklistView, count: number) {
 
 export function ChecklistWorkspaceSkeleton() {
   return (
-    <div className="page-shell page-shell-with-nav" aria-label="正在准备清单">
+    <div role="status" className="page-shell page-shell-with-nav" aria-label="正在准备清单">
       <section className="mobile-shell grid gap-4">
         <div className="flex items-start justify-between gap-4 px-1 py-2">
           <div className="grid gap-2">

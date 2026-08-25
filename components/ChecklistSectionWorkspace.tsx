@@ -272,6 +272,7 @@ export function ChecklistSectionWorkspaceSkeleton() {
   return (
     <div
       className="page-shell page-shell-with-nav"
+      role="status"
       aria-label="正在准备分类清单"
     >
       <section className="mobile-shell grid gap-4">

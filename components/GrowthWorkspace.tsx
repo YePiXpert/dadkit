@@ -561,7 +561,7 @@ export function GrowthWorkspace() {
 function GrowthWorkspaceSkeleton() {
   return (
     <div className="page-shell page-shell-with-nav">
-      <section className="mobile-shell grid gap-5" aria-label="正在读取成长记录">
+      <section role="status" className="mobile-shell grid gap-5" aria-label="正在读取成长记录">
         <Skeleton className="h-20 rounded-card" />
         <Skeleton className="h-16 rounded-card" />
         <Skeleton className="h-80 rounded-card" />

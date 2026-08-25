@@ -253,6 +253,7 @@ export function DepartureWorkspaceSkeleton() {
     <div
       aria-label="正在准备出发清单"
       className="page-shell page-shell-with-nav"
+      role="status"
     >
       <section className="mobile-shell grid gap-4">
         <Skeleton className="h-20 rounded-card" />
