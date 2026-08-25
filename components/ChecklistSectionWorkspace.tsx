@@ -119,7 +119,7 @@ export function ChecklistSectionWorkspace({
                 className={cn(
                   "flex size-11 items-center justify-center rounded-full bg-on-highlight/15 text-on-highlight transition-colors hover:bg-on-highlight/25",
                   viewMode === "list" &&
-                    "bg-on-highlight text-primary hover:bg-on-highlight/90",
+                    "bg-primary text-primary-foreground hover:bg-primary/90",
                 )}
                 title={
                   viewMode === "cards"
@@ -141,7 +141,7 @@ export function ChecklistSectionWorkspace({
                 className={cn(
                   "flex size-11 items-center justify-center rounded-full bg-on-highlight/15 text-on-highlight transition-colors hover:bg-on-highlight/25",
                   showFullDescriptions &&
-                    "bg-on-highlight text-primary hover:bg-on-highlight/90",
+                    "bg-primary text-primary-foreground hover:bg-primary/90",
                 )}
                 title="开启后在卡片中完整显示，不截断文字"
                 type="button"

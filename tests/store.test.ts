@@ -146,7 +146,7 @@ describe("v3 checklist store", () => {
     const snapshots = await loadSnapshotsAsync();
     expect(snapshots[0]?.reason).toBe("重建清单前");
     expect(snapshots[0]?.data.checklist).toEqual(before);
-    expect(snapshots[0]?.data.version).toBe(10);
+    expect(snapshots[0]?.data.version).toBe(11);
     expect(useDadKitStore.getState().checklist).toEqual(generateChecklist());
   });
 

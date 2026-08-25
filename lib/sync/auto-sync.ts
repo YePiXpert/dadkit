@@ -2,7 +2,6 @@
 
 import { useGrowthStore } from "@/lib/growth-store";
 import { useBabyStore } from "@/lib/baby/store";
-import { useHospitalProfileStore } from "@/lib/hospital/store";
 import { useHouseholdStore } from "@/lib/household/store";
 import { useDadKitStore } from "@/lib/store";
 import {
@@ -71,16 +70,6 @@ export function startAutoSync() {
       state.dueDate !== previous.dueDate ||
       state.completedTaskIds !== previous.completedTaskIds
     ) {
-      scheduleSync();
-    }
-  });
-
-  useHospitalProfileStore.subscribe((state, previous) => {
-    if (isApplyingRemote() || !state.hydrated) {
-      return;
-    }
-
-    if (state.profile !== previous.profile) {
       scheduleSync();
     }
   });

@@ -33,6 +33,7 @@ import {
   V8_EXPORT_KEYS,
   V9_EXPORT_KEYS,
   V10_EXPORT_KEYS,
+  V11_EXPORT_KEYS,
   type DadKitExportData,
   type DadKitImportData,
   type DeletedCustomItemStamps,
@@ -49,13 +50,6 @@ import { useHouseholdStore } from "@/lib/household/store";
 import { getBabyRepository } from "@/lib/baby/repository";
 import { careEventsForLocalDay } from "@/lib/baby/selectors";
 import { timelineEventsForRange, useBabyStore } from "@/lib/baby/store";
-import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
-import {
-  HOSPITAL_STORAGE_KEY,
-  loadHospitalProfile,
-} from "@/lib/hospital/repository";
-import { isHospitalProfileConfigured } from "@/lib/hospital/selectors";
-import { useHospitalProfileStore } from "@/lib/hospital/store";
 import { getSyncAdjustedNow } from "@/lib/sync-clock";
 import { CHECKLIST_MILESTONES_KEY } from "@/lib/checklist-milestones";
 import {
@@ -90,14 +84,24 @@ export const STORAGE_KEYS = {
   syncClientState: "dadkit:v3:sync-client-state",
   syncClockOffset: "dadkit:v3:sync-clock-offset-ms",
   syncClockTimelineInitialized: "dadkit:v3:sync-clock-timeline-initialized",
-  hospital: HOSPITAL_STORAGE_KEY,
   household: HOUSEHOLD_STORAGE_KEY,
   deviceIdentity: DEVICE_IDENTITY_STORAGE_KEY,
 } as const;
 
 const LEGACY_ITEM_PLANNING_STORAGE_KEY = "dadkit:v3:item-planning";
+const LEGACY_HOSPITAL_STORAGE_KEY = "dadkit:v3:hospital-profile";
 
 export const WEBDAV_SESSION_SECRET_KEY = "dadkit:v3:webdav-session-secret";
+
+export function purgeRetiredLocalData() {
+  if (!canUseLocalStorage()) return;
+
+  try {
+    window.localStorage.removeItem(LEGACY_HOSPITAL_STORAGE_KEY);
+  } catch {
+    // Retired data cleanup is best effort and must not block app startup.
+  }
+}
 
 const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.checklist,
@@ -114,7 +118,7 @@ const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.syncClientState,
   STORAGE_KEYS.syncClockOffset,
   STORAGE_KEYS.syncClockTimelineInitialized,
-  STORAGE_KEYS.hospital,
+  LEGACY_HOSPITAL_STORAGE_KEY,
   LEGACY_ITEM_PLANNING_STORAGE_KEY,
   STORAGE_KEYS.household,
   STORAGE_KEYS.deviceIdentity,
@@ -1032,10 +1036,6 @@ export function resetAllData(initialChecklist?: ChecklistItem[]) {
       ...DEFAULT_GROWTH_VIEW,
       hydrated: true,
     });
-    useHospitalProfileStore.setState({
-      hydrated: true,
-      profile: createEmptyHospitalProfile(),
-    });
     useHouseholdStore.setState({ hydrated: true, household: clearedHousehold });
   }
 
@@ -1057,7 +1057,7 @@ export function exportData(): DadKitExportData {
   const latest = latestChecklistState;
 
   return {
-    version: 10,
+    version: 11,
     exportedAt: new Date().toISOString(),
     checklistMode: loadChecklistMode(),
     checklist: latest?.checklist ?? loadChecklist(),
@@ -1068,19 +1068,18 @@ export function exportData(): DadKitExportData {
     hiddenTemplateItemStamps: loadHiddenTemplateItemStamps(),
     deletedCustomItems: loadDeletedCustomItems(),
     growthUpdatedAt: loadGrowthUpdatedAt(),
-    hospital: loadHospitalProfile(),
     baby: createEmptyBabyData(),
     household: loadHousehold(),
   };
 }
 
-/** Builds the complete v10 document from localStorage plus IndexedDB baby data. */
+/** Builds the complete v11 document from localStorage plus IndexedDB baby data. */
 export async function buildLatestPortableData(): Promise<DadKitExportData> {
   const baby = await getBabyRepository().getAllBabyData();
   // Read synchronous localStorage domains after the async IndexedDB read so a
   // checklist edit made while the baby repository is responding is included.
   const base = exportData();
-  return { ...base, version: 10, baby: cloneBabyData(baby) };
+  return { ...base, version: 11, baby: cloneBabyData(baby) };
 }
 
 export function validateImportData(rawJson: string): ImportValidationResult {
@@ -1104,13 +1103,16 @@ export function validateImportData(rawJson: string): ImportValidationResult {
     parsed.version !== 7 &&
     parsed.version !== 8 &&
     parsed.version !== 9 &&
-    parsed.version !== 10
+    parsed.version !== 10 &&
+    parsed.version !== 11
   ) {
     return { ok: false, message: "不支持的备份版本，未修改本地数据。" };
   }
 
   const expectedKeys =
-    parsed.version === 10
+    parsed.version === 11
+      ? V11_EXPORT_KEYS
+      : parsed.version === 10
       ? V10_EXPORT_KEYS
       : parsed.version === 9
       ? V9_EXPORT_KEYS
@@ -1173,10 +1175,6 @@ export function applyImportData(data: DadKitImportData): ImportResult {
   }
 
   data = sanitizeDadKitImportData(data) as DadKitImportData;
-  const hospital =
-    data.version === 6 || data.version === 7 || data.version === 8 || data.version === 9 || data.version === 10
-      ? data.hospital
-      : createEmptyHospitalProfile();
   const currentHousehold = loadHousehold();
   const householdClearedAt = Math.max(
     getSyncAdjustedNow() + 1,
@@ -1184,7 +1182,7 @@ export function applyImportData(data: DadKitImportData): ImportResult {
     latestHouseholdTimestamp(currentHousehold) + 1,
   );
   const legacyHousehold = clearHouseholdPortable(currentHousehold, householdClearedAt);
-  const household = data.version === 9 || data.version === 10
+  const household = data.version === 9 || data.version === 10 || data.version === 11
     ? data.household
     : legacyHousehold;
   const currentIdentity = loadDeviceIdentity();
@@ -1216,7 +1214,7 @@ export function applyImportData(data: DadKitImportData): ImportResult {
       key: STORAGE_KEYS.checklistMode,
       value: JSON.stringify(data.checklistMode),
     },
-    { key: STORAGE_KEYS.hospital, value: JSON.stringify(hospital) },
+    { key: LEGACY_HOSPITAL_STORAGE_KEY, value: null },
     { key: LEGACY_ITEM_PLANNING_STORAGE_KEY, value: null },
     { key: STORAGE_KEYS.household, value: JSON.stringify(household) },
     ...(nextIdentity
@@ -1243,7 +1241,8 @@ export function applyImportData(data: DadKitImportData): ImportResult {
     data.version === 7 ||
     data.version === 8 ||
     data.version === 9 ||
-    data.version === 10
+    data.version === 10 ||
+    data.version === 11
   ) {
     mutations.push(
       {
@@ -1294,7 +1293,6 @@ export function applyImportData(data: DadKitImportData): ImportResult {
         hydrated: true,
       });
     }
-    useHospitalProfileStore.setState({ hydrated: true, profile: hospital });
     useHouseholdStore.setState({ hydrated: true, household });
     if (nextIdentity) {
       useDeviceIdentityStore.setState({ ...nextIdentity, hydrated: true });
@@ -1302,7 +1300,7 @@ export function applyImportData(data: DadKitImportData): ImportResult {
     return {
       ok: true,
       message:
-        data.version === 10 || data.version === 9
+        data.version === 11 || data.version === 10 || data.version === 9
           ? "导入成功"
           : data.version === 8
             ? "导入成功（v8 备份中的宝宝记录不包含记录人信息）"
@@ -1310,7 +1308,7 @@ export function applyImportData(data: DadKitImportData): ImportResult {
             ? "导入成功（v7 备份不包含宝宝资料和照护记录）"
             : data.version === 6
             ? "导入成功（v6 备份不包含宝宝资料和照护记录）"
-            : `导入成功（旧版 v${data.version} 备份不包含医院档案和宝宝记录；医院档案已清空）`,
+            : `导入成功（旧版 v${data.version} 备份不包含宝宝记录）`,
     };
   } catch (error) {
     if (error instanceof StorageTransactionError && !error.rollbackSucceeded) {
@@ -1350,7 +1348,7 @@ export async function applyImportDataAsync(
   const previousLocal = exportData();
   const clean = sanitizeDadKitImportData(data);
   const targetBaby =
-    clean.version === 9 || clean.version === 10
+    clean.version === 9 || clean.version === 10 || clean.version === 11
       ? cloneBabyData(clean.baby)
       : clean.version === 8
         ? migrateBabyV1ToV2(clean.baby)
@@ -1417,7 +1415,7 @@ export async function applyImportDataAsync(
         };
   }
 
-  if (clean.version === 9 || clean.version === 10) {
+  if (clean.version === 9 || clean.version === 10 || clean.version === 11) {
     return { ok: true, message: "导入成功" };
   }
   if (clean.version === 8) {
@@ -1438,7 +1436,7 @@ export async function applyImportDataAsync(
   }
   return {
     ok: true,
-    message: `导入成功（旧版 v${clean.version} 备份不包含医院档案和宝宝记录，相关数据已按旧格式恢复）`,
+    message: `导入成功（旧版 v${clean.version} 备份不包含宝宝记录，相关数据已按旧格式恢复）`,
   };
 }
 
@@ -1502,7 +1500,6 @@ function hasSnapshotData(data: DadKitExportData) {
     data.growth.profile.nickname.length > 0 ||
     data.growth.profile.dueDate.length > 0 ||
     data.growth.progress.completedTaskIds.length > 0 ||
-    isHospitalProfileConfigured(data.hospital) ||
     data.household.householdName.value.length > 0 ||
     Object.keys(data.household.members).length > 0 ||
     data.baby.profile.fields.birthDate.value.length > 0 ||

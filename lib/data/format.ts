@@ -93,7 +93,14 @@ export type DadKitExportDataV10 = Omit<DadKitExportDataV9, "version" | "planning
   version: 10;
 };
 
-export type DadKitExportData = DadKitExportDataV10;
+export type DadKitExportDataV11 = Omit<
+  DadKitExportDataV10,
+  "version" | "hospital"
+> & {
+  version: 11;
+};
+
+export type DadKitExportData = DadKitExportDataV11;
 
 export type DadKitImportData =
   | DadKitExportDataV3
@@ -103,11 +110,12 @@ export type DadKitImportData =
   | DadKitExportDataV7
   | DadKitExportDataV8
   | DadKitExportDataV9
-  | DadKitExportDataV10;
+  | DadKitExportDataV10
+  | DadKitExportDataV11;
 
-export type DadKitSyncDataVersion = 5 | 6 | 7 | 8 | 9 | 10;
+export type DadKitSyncDataVersion = 5 | 6 | 7 | 8 | 9 | 10 | 11;
 
-export const LATEST_DATA_VERSION = 10 as const;
+export const LATEST_DATA_VERSION = 11 as const;
 
 export const V3_EXPORT_KEYS = [
   "version",
@@ -134,6 +142,7 @@ export const V7_EXPORT_KEYS = [...V6_EXPORT_KEYS, "planning"] as const;
 export const V8_EXPORT_KEYS = [...V7_EXPORT_KEYS, "baby"] as const;
 export const V9_EXPORT_KEYS = [...V8_EXPORT_KEYS, "household"] as const;
 export const V10_EXPORT_KEYS = [...V6_EXPORT_KEYS, "baby", "household"] as const;
+export const V11_EXPORT_KEYS = [...V5_EXPORT_KEYS, "baby", "household"] as const;
 
 const CHECKLIST_ITEM_KEYS = [
   "id",
@@ -336,6 +345,15 @@ export function sanitizeDadKitImportData(
     return { ...v5, version: 5 };
   }
 
+  if (data.version === 11) {
+    return {
+      ...v5,
+      version: 11,
+      household: cloneHousehold(data.household),
+      baby: cloneBabyData(data.baby),
+    };
+  }
+
   const v6 = {
     ...v5,
     version: 6,
@@ -405,16 +423,16 @@ export function upgradeExportDataToLatest(
       ? {}
       : clean.deletedCustomItems;
   const growthUpdatedAt =
-    clean.version === 5 || clean.version === 6 || clean.version === 7 || clean.version === 8 || clean.version === 9 || clean.version === 10
+    clean.version === 5 || clean.version === 6 || clean.version === 7 || clean.version === 8 || clean.version === 9 || clean.version === 10 || clean.version === 11
       ? clean.growthUpdatedAt
       : 0;
 
-  const household = clean.version === 9 || clean.version === 10
+  const household = clean.version === 9 || clean.version === 10 || clean.version === 11
     ? cloneHousehold(clean.household)
     : createEmptyHousehold();
 
   return {
-    version: 10,
+    version: 11,
     exportedAt: clean.exportedAt,
     checklistMode: clean.checklistMode,
     checklist: clean.checklist.map(copyChecklistItem),
@@ -435,11 +453,7 @@ export function upgradeExportDataToLatest(
     ),
     deletedCustomItems: { ...deletedCustomItems },
     growthUpdatedAt,
-    hospital:
-      clean.version === 6 || clean.version === 7 || clean.version === 8 || clean.version === 9 || clean.version === 10
-        ? cloneHospitalProfile(clean.hospital)
-        : createEmptyHospitalProfile(),
-    baby: clean.version === 9 || clean.version === 10
+    baby: clean.version === 9 || clean.version === 10 || clean.version === 11
       ? cloneBabyData(clean.baby)
       : clean.version === 8
         ? migrateBabyV1ToV2(clean.baby)
@@ -451,22 +465,30 @@ export function upgradeExportDataToLatest(
 export function projectExportDataForVersion(
   data: DadKitImportData,
   targetVersion: DadKitSyncDataVersion,
-): DadKitExportData | DadKitExportDataV9 | DadKitExportDataV8 | DadKitExportDataV7 | DadKitExportDataV6 | DadKitExportDataV5 {
+): DadKitExportData | DadKitExportDataV10 | DadKitExportDataV9 | DadKitExportDataV8 | DadKitExportDataV7 | DadKitExportDataV6 | DadKitExportDataV5 {
   const latest = upgradeExportDataToLatest(data);
 
-  if (targetVersion === 10) {
+  if (targetVersion === 11) {
     return latest;
   }
 
-  const v9: DadKitExportDataV9 = {
+  const v10: DadKitExportDataV10 = {
     ...latest,
+    version: 10,
+    hospital: createEmptyHospitalProfile(),
+  };
+
+  if (targetVersion === 10) return v10;
+
+  const v9: DadKitExportDataV9 = {
+    ...v10,
     version: 9,
     planning: createEmptyLegacyPlanningV2(),
   };
 
   if (targetVersion === 9) return v9;
 
-  const { household: _household, baby: latestBaby, ...base } = latest;
+  const { household: _household, baby: latestBaby, ...base } = v10;
   void _household;
   const v8: DadKitExportDataV8 = {
     ...base,
@@ -667,8 +689,7 @@ export function isDadKitImportData(value: unknown): value is DadKitImportData {
     isHouseholdPortableData(value.household)
   );
 
-  return (
-    value.version === 10 &&
+  if (value.version === 10) return (
     isPlainRecord(value) &&
     hasExactKeys(value, V10_EXPORT_KEYS) &&
     hasValidPortableChecklistData(value) &&
@@ -678,6 +699,20 @@ export function isDadKitImportData(value: unknown): value is DadKitImportData {
     typeof value.growthUpdatedAt === "number" &&
     Number.isFinite(value.growthUpdatedAt) &&
     isHospitalProfilePortableData(value.hospital) &&
+    isBabyPortableData(value.baby) &&
+    isHouseholdPortableData(value.household)
+  );
+
+  return (
+    value.version === 11 &&
+    isPlainRecord(value) &&
+    hasExactKeys(value, V11_EXPORT_KEYS) &&
+    hasValidPortableChecklistData(value) &&
+    validateGrowthPortableData(value.growth) &&
+    isHiddenTemplateItemStamps(value.hiddenTemplateItemStamps) &&
+    isDeletedCustomItemStamps(value.deletedCustomItems) &&
+    typeof value.growthUpdatedAt === "number" &&
+    Number.isFinite(value.growthUpdatedAt) &&
     isBabyPortableData(value.baby) &&
     isHouseholdPortableData(value.household)
   );

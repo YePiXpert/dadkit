@@ -18,11 +18,6 @@ const TOOL_ROUTES = [
     heading: "准备出发",
     pathname: "/departure",
   },
-  {
-    entryName: "医院档案",
-    heading: "医院档案",
-    pathname: "/hospital",
-  },
 ] as const;
 
 test.describe.configure({ timeout: 120_000 });

@@ -10,10 +10,10 @@ import { calculateChecksum } from "@/lib/webdav/checksum";
 import {
   portableV8,
   portableV9,
-  portableV10,
+  portableV11,
 } from "@/tests/helpers/portable-data";
 
-describe("DadKit v10 portable format", () => {
+describe("DadKit v11 portable format", () => {
   it("upgrades legacy data while discarding retired planning records", () => {
     const legacy = portableV8();
     legacy.planning.items.bag = {
@@ -35,15 +35,20 @@ describe("DadKit v10 portable format", () => {
 
     const latest = upgradeExportDataToLatest(legacy);
 
-    expect(latest.version).toBe(10);
+    expect(latest.version).toBe(11);
     expect(latest).not.toHaveProperty("planning");
     expect(latest.household.members).toEqual({});
     expect(latest.baby.care.events[0].recordedByMemberId).toBeNull();
   });
 
-  it("round trips v10 and projects empty compatibility fields for v9/v8", () => {
-    const latest = portableV10();
+  it("round trips v11 and projects empty compatibility fields for v10/v9/v8", () => {
+    const latest = portableV11();
     expect(isDadKitImportData(JSON.parse(JSON.stringify(latest)))).toBe(true);
+
+    const v10 = projectExportDataForVersion(latest, 10);
+    if (v10.version !== 10) throw new Error("v10 投影失败");
+    expect(v10.hospital.fields.hospitalName.value).toBe("");
+    expect(isDadKitImportData(v10)).toBe(true);
 
     const v9 = projectExportDataForVersion(latest, 9);
     if (v9.version !== 9) throw new Error("v9 投影失败");
@@ -72,11 +77,11 @@ describe("DadKit v10 portable format", () => {
 
     const latest = upgradeExportDataToLatest(legacy);
     expect(latest).not.toHaveProperty("planning");
-    expect(latest.version).toBe(10);
+    expect(latest.version).toBe(11);
   });
 
   it("includes household and baby recorder changes in stable checksums", () => {
-    const latest = portableV10();
+    const latest = portableV11();
     latest.household.householdName = { value: "小满之家", updatedAt: 1 };
     const base = calculateChecksum(latest);
 

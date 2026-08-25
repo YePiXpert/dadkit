@@ -8,13 +8,9 @@ import { GET as pullRoute } from "@/app/api/sync/pull/route";
 import { POST as pushRoute } from "@/app/api/sync/push/route";
 import {
   isDadKitImportData,
-  type DadKitExportData,
   type DadKitExportDataV5,
+  type DadKitExportDataV6,
 } from "@/lib/data/format";
-import {
-  hospitalValuesFromPortable,
-  updateHospitalProfile,
-} from "@/lib/hospital/portable";
 import {
   DADKIT_DATA_VERSION_HEADER,
   createSyncEtag,
@@ -28,16 +24,13 @@ import {
 
 let dataDir: string;
 
-function canonicalHospital(updatedAt = 100) {
+function legacyV6WithHospital(updatedAt = 100) {
   const data = portableV6();
-  const values = hospitalValuesFromPortable(data.hospital);
-
-  values.hospitalName = "市妇幼保健院";
-  values.address = "健康路 1 号";
-
-  return portableV6({
-    hospital: updateHospitalProfile(data.hospital, values, updatedAt).profile,
-  });
+  data.hospital.fields.hospitalName = {
+    value: "市妇幼保健院",
+    updatedAt,
+  };
+  return data;
 }
 
 function syncRequest(
@@ -88,7 +81,7 @@ describe("version-negotiated sync ETags", () => {
     const device = await createRandomSpace("ETag 升级家庭", "v6 设备");
     if (!device) throw new Error("测试同步空间创建失败");
 
-    await pushSpace(device.token, canonicalHospital(), 6);
+    await pushSpace(device.token, legacyV6WithHospital(), 6);
 
     const v5Response = await pullRoute(
       syncRequest("/api/sync/pull", device.token),
@@ -113,16 +106,14 @@ describe("version-negotiated sync ETags", () => {
       }),
     );
     const upgradedPayload = (await upgradedResponse.json()) as {
-      data: DadKitExportData;
+      data: DadKitExportDataV6;
       version: number;
     };
     const v6Etag = upgradedResponse.headers.get("etag");
 
     expect(upgradedResponse.status).toBe(200);
     expect(upgradedPayload.data.version).toBe(6);
-    expect(upgradedPayload.data.hospital.fields.hospitalName.value).toBe(
-      "市妇幼保健院",
-    );
+    expect(upgradedPayload.data.hospital.fields.hospitalName.value).toBe("");
     expect(v6Etag).toBe(createSyncEtag(upgradedPayload.version, 6));
     expect(v6Etag).not.toBe(v5Etag);
     expect(upgradedResponse.headers.get("vary")).toBe(
@@ -158,7 +149,7 @@ describe("version-negotiated sync ETags", () => {
     const device = await createRandomSpace("ETag 推送家庭", "v6 设备");
     if (!device) throw new Error("测试同步空间创建失败");
 
-    await pushSpace(device.token, canonicalHospital(), 6);
+    await pushSpace(device.token, legacyV6WithHospital(), 6);
     const v5Response = await pushRoute(
       syncRequest("/api/sync/push", device.token, {
         body: {
@@ -186,18 +177,14 @@ describe("version-negotiated sync ETags", () => {
     );
     expect(v5Response.headers.get("vary")).toBe(DADKIT_DATA_VERSION_HEADER);
 
-    const afterV5 = (await pullSpace(device.token, 6))?.data as DadKitExportData;
-    expect(afterV5.hospital.fields.hospitalName.value).toBe("市妇幼保健院");
+    const afterV5 = (await pullSpace(device.token, 6))?.data as DadKitExportDataV6;
+    expect(afterV5.hospital.fields.hospitalName.value).toBe("");
 
-    const changedHospital = canonicalHospital(300);
-    const changedValues = hospitalValuesFromPortable(changedHospital.hospital);
-    changedValues.address = "健康路 2 号";
+    const changedV6 = portableV6({
+      checklist: [portableTestItem("v6-push", { updatedAt: 400 })],
+    });
     const v6Data = portableV6({
-      hospital: updateHospitalProfile(
-        changedHospital.hospital,
-        changedValues,
-        400,
-      ).profile,
+      ...changedV6,
     });
     const v6Response = await pushRoute(
       syncRequest("/api/sync/push", device.token, {
@@ -206,12 +193,13 @@ describe("version-negotiated sync ETags", () => {
       }),
     );
     const v6Payload = (await v6Response.json()) as {
-      data: DadKitExportData;
+      data: DadKitExportDataV6;
       version: number;
     };
 
     expect(v6Payload.data.version).toBe(6);
-    expect(v6Payload.data.hospital.fields.address.value).toBe("健康路 2 号");
+    expect(v6Payload.data.checklist.some((item) => item.id === "v6-push")).toBe(true);
+    expect(v6Payload.data.hospital.fields.address.value).toBe("");
     expect(v6Response.headers.get("etag")).toBe(
       createSyncEtag(v6Payload.version, 6),
     );

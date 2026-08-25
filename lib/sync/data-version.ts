@@ -23,6 +23,7 @@ export function getRequestedDataVersion(
   headers: Pick<Headers, "get">,
 ): DadKitSyncDataVersion {
   const requested = headers.get(DADKIT_DATA_VERSION_HEADER);
+  if (requested === "11") return 11;
   if (requested === "10") return 10;
   if (requested === "9") return 9;
   if (requested === "8") return 8;

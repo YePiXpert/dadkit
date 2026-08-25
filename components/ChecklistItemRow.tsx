@@ -283,7 +283,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
 
         <div className="mt-2.5 flex min-h-11 items-center justify-between gap-2 border-t border-border/70 pt-2">
           <button
-            className="inline-flex min-h-11 min-w-0 items-center gap-1 rounded-full px-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-full px-1 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             type="button"
             onClick={() => onOpenDetails(item.id)}
           >
@@ -294,7 +294,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
           <button
             aria-label={`${actionLabel}：${displayName}`}
             className={cn(
-              "flex size-11 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground ring-2 ring-border transition-all hover:bg-secondary/70 hover:text-primary hover:ring-primary/40 active:scale-95",
+              "flex size-[44px] shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground ring-2 ring-border transition-all hover:bg-secondary/70 hover:text-primary hover:ring-primary/40 active:scale-95",
               itemState === "ready" &&
                 "bg-secondary text-primary ring-primary/30",
               itemState === "packed" &&

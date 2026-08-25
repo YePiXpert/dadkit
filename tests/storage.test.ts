@@ -42,10 +42,6 @@ import {
   hospitalValuesFromPortable,
   updateHospitalProfile,
 } from "@/lib/hospital/portable";
-import {
-  loadHospitalProfile,
-  saveHospitalProfile,
-} from "@/lib/hospital/repository";
 import { useDadKitStore } from "@/lib/store";
 
 function testItem(id = "item-1", patch: Partial<ChecklistItem> = {}): ChecklistItem {
@@ -72,7 +68,7 @@ function backupData(
   patch: Partial<DadKitExportData> = {},
 ): DadKitExportData {
   return {
-    version: 10,
+    version: 11,
     exportedAt: "2026-07-25T00:00:00.000Z",
     checklistMode: "full",
     checklist: [testItem("backup-item")],
@@ -86,7 +82,6 @@ function backupData(
     hiddenTemplateItemStamps: {},
     deletedCustomItems: {},
     growthUpdatedAt: 0,
-    hospital: createEmptyHospitalProfile(),
     baby: createEmptyBabyData(),
     household: createEmptyHousehold(),
     ...patch,
@@ -110,12 +105,10 @@ function backupDataV4(patch: Record<string, unknown> = {}) {
 
 function backupDataV5(patch: Record<string, unknown> = {}) {
   const {
-    hospital: _hospital,
     baby: _baby,
     household: _household,
     ...current
   } = backupData();
-  void _hospital;
   void _baby;
   void _household;
 
@@ -189,13 +182,6 @@ describe("v6 portable backup with the existing local namespace", () => {
     saveChecklistMode("lean");
     saveCustomItems(customItems);
     saveHiddenTemplateItemIds(["hidden-template"]);
-    saveHospitalProfile(
-      hospitalProfile({
-        hospitalName: "市妇幼保健院",
-        address: "健康路 1 号",
-      }),
-    );
-
     const exported = exportData();
 
     expect(Object.keys(exported).sort()).toEqual(
@@ -210,13 +196,12 @@ describe("v6 portable backup with the existing local namespace", () => {
         "hiddenTemplateItemStamps",
         "deletedCustomItems",
         "growthUpdatedAt",
-        "hospital",
         "baby",
         "household",
       ].sort(),
     );
     expect(exported).toMatchObject({
-      version: 10,
+      version: 11,
       checklistMode: "lean",
       checklist,
       customItems,
@@ -231,17 +216,12 @@ describe("v6 portable backup with the existing local namespace", () => {
         profile: { nickname: "", dueDate: "" },
         progress: { completedTaskIds: [] },
       },
-      hospital: {
-        fields: {
-          hospitalName: { value: "市妇幼保健院", updatedAt: 100 },
-          address: { value: "健康路 1 号", updatedAt: 100 },
-        },
-      },
     });
+    expect(exported).not.toHaveProperty("hospital");
     expect(Number.isNaN(Date.parse(exported.exportedAt))).toBe(false);
   });
 
-  it("round-trips a complete v10 backup including hospital data", () => {
+  it("round-trips a complete v11 backup without hospital data", () => {
     installBrowserStorage();
     const payload = backupData({
       checklistMode: "lean",
@@ -253,10 +233,6 @@ describe("v6 portable backup with the existing local namespace", () => {
       },
       deletedCustomItems: { "gone-custom": 456 },
       growthUpdatedAt: 789,
-      hospital: hospitalProfile({
-        hospitalName: "中心医院",
-        maternityPhone: "+86 (010) 1234-5678",
-      }),
     });
 
     const result = importData(JSON.stringify(payload));
@@ -274,8 +250,8 @@ describe("v6 portable backup with the existing local namespace", () => {
     });
     expect(loadDeletedCustomItems()).toEqual({ "gone-custom": 456 });
     expect(loadGrowthUpdatedAt()).toBe(789);
-    expect(loadHospitalProfile()).toEqual(payload.hospital);
-    expect(exportData().version).toBe(10);
+    expect(exportData().version).toBe(11);
+    expect(exportData()).not.toHaveProperty("hospital");
   });
 
   it("refreshes an already hydrated checklist store after import", () => {
@@ -307,15 +283,17 @@ describe("v6 portable backup with the existing local namespace", () => {
     ).toBe(true);
   });
 
-  it("keeps hospital on a manual v6 restore", () => {
+  it("imports a v6 backup while discarding retired hospital data", () => {
     installBrowserStorage();
-    const latest = backupData({
-      hospital: hospitalProfile({ hospitalName: "v6 医院" }),
-    });
+    const latest = backupData();
     const { baby: _baby, household: _household, ...withoutBaby } = latest;
     void _baby;
     void _household;
-    const v6 = { ...withoutBaby, version: 6 as const };
+    const v6 = {
+      ...withoutBaby,
+      version: 6 as const,
+      hospital: hospitalProfile({ hospitalName: "v6 医院" }),
+    };
 
     const result = importData(JSON.stringify(v6));
 
@@ -323,7 +301,7 @@ describe("v6 portable backup with the existing local namespace", () => {
       ok: true,
       message: "导入成功（v6 备份不包含宝宝资料和照护记录）",
     });
-    expect(loadHospitalProfile().fields.hospitalName.value).toBe("v6 医院");
+    expect(window.localStorage.getItem("dadkit:v3:hospital-profile")).toBeNull();
   });
 
   it("rolls back the full old import when resetting device identity fails", () => {
@@ -344,24 +322,18 @@ describe("v6 portable backup with the existing local namespace", () => {
     ["v3", () => backupDataV3()],
     ["v4", () => backupDataV4()],
     ["v5", () => backupDataV5()],
-  ])("treats a manual %s import as a full restore and clears hospital data", (
+  ])("treats a manual %s import as a full restore and clears retired data", (
     label,
     createLegacy,
   ) => {
     installBrowserStorage();
-    saveHospitalProfile(
-      hospitalProfile({
-        hospitalName: "导入前医院",
-        address: "导入前地址",
-      }),
-    );
+    window.localStorage.setItem("dadkit:v3:hospital-profile", "legacy");
 
     const result = importData(JSON.stringify(createLegacy()));
 
     expect(result.ok).toBe(true);
     expect(result.message).toContain(`旧版 ${label}`);
-    expect(result.message).toContain("医院档案已清空");
-    expect(loadHospitalProfile()).toEqual(createEmptyHospitalProfile());
+    expect(window.localStorage.getItem("dadkit:v3:hospital-profile")).toBeNull();
   });
 
   it("migrates merge metadata when importing a v4 backup", () => {
@@ -486,7 +458,7 @@ describe("strict v3, v4, v5 and v6 import boundary", () => {
 
     expect(importData(raw)).toEqual({
       ok: true,
-      message: "导入成功（旧版 v5 备份不包含医院档案和宝宝记录；医院档案已清空）",
+      message: "导入成功（旧版 v5 备份不包含宝宝记录）",
     });
     expect(loadChecklist()[0]).not.toHaveProperty("futureField");
     expect(exportData()).not.toHaveProperty("futureBackupField");
@@ -618,34 +590,17 @@ describe("local recovery snapshots", () => {
     expect(loadSnapshots()[0]?.data.checklist).toEqual([testItem("current")]);
   });
 
-  it("restores hospital data from a local snapshot", () => {
+  it("restores a legacy v6 snapshot while discarding hospital data", () => {
     installBrowserStorage();
-    saveChecklist([testItem("snapshot-hospital")]);
-    const targetHospital = hospitalProfile(
-      { hospitalName: "目标医院", address: "目标地址" },
-      200,
-    );
-    saveHospitalProfile(targetHospital);
-    const target = createSnapshot("医院档案恢复点");
-
-    saveHospitalProfile(
-      hospitalProfile({ hospitalName: "当前医院", address: "当前地址" }, 300),
-    );
-    const result = restoreSnapshot(target?.id ?? "");
-
-    expect(result.ok).toBe(true);
-    expect(loadHospitalProfile()).toEqual(targetHospital);
-  });
-
-  it("restores a legacy v6 snapshot with hospital data", () => {
-    installBrowserStorage();
-    const latest = backupData({
-      hospital: hospitalProfile({ hospitalName: "快照医院" }),
-    });
+    const latest = backupData();
     const { baby: _baby, household: _household, ...withoutBaby } = latest;
     void _baby;
     void _household;
-    const v6: DadKitExportDataV6 = { ...withoutBaby, version: 6 };
+    const v6: DadKitExportDataV6 = {
+      ...withoutBaby,
+      version: 6,
+      hospital: hospitalProfile({ hospitalName: "快照医院" }),
+    };
     saveSnapshots([
       {
         id: "legacy-v6-snapshot",
@@ -659,7 +614,7 @@ describe("local recovery snapshots", () => {
       snapshotBeforeRestore: false,
     });
     expect(result.ok).toBe(true);
-    expect(loadHospitalProfile().fields.hospitalName.value).toBe("快照医院");
+    expect(window.localStorage.getItem("dadkit:v3:hospital-profile")).toBeNull();
   });
 
   it("does not restore if the rescue snapshot cannot be saved", () => {

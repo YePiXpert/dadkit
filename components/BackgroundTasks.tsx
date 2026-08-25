@@ -54,6 +54,9 @@ export function BackgroundTasks() {
     const start = () => {
       if (cancelled) return;
       setIdle(true);
+      void import("@/lib/storage")
+        .then(({ purgeRetiredLocalData }) => purgeRetiredLocalData())
+        .catch(() => undefined);
       void import("@/lib/sync/auto-sync").then(({ startAutoSync }) => {
         if (!cancelled) startAutoSync();
       });

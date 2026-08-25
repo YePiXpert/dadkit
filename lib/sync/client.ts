@@ -163,7 +163,7 @@ export async function apiRequest<T>(
   if (init.body && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
-  headers.set(DADKIT_DATA_VERSION_HEADER, "10");
+  headers.set(DADKIT_DATA_VERSION_HEADER, "11");
   headers.set(DADKIT_SYNC_PROTOCOL_HEADER, String(DADKIT_SYNC_PROTOCOL_VERSION));
 
   const parentSignal = init.signal;
@@ -287,15 +287,6 @@ export function alignExportDataToServerTime(
       ]),
     ),
     growthUpdatedAt: shiftTimestamp(data.growthUpdatedAt),
-    hospital: {
-      version: 1,
-      fields: Object.fromEntries(
-        Object.entries(data.hospital.fields).map(([key, field]) => [
-          key,
-          { ...field, updatedAt: shiftTimestamp(field.updatedAt) },
-        ]),
-      ) as DadKitExportData["hospital"]["fields"],
-    },
     household: {
       version: 1,
       clearedAt: shiftTimestamp(data.household.clearedAt),

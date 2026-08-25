@@ -35,7 +35,7 @@ export const PRIMARY_NAVIGATION_ITEMS = [
     href: "/tools",
     label: "工具",
     icon: LayoutGrid,
-    ownedRoutes: ["/tools", "/growth", "/departure", "/hospital"],
+    ownedRoutes: ["/tools", "/growth", "/departure"],
   },
   {
     id: "mine",

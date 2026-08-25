@@ -1,5 +1,6 @@
 import {
   type DadKitExportData,
+  type DadKitExportDataV10,
   type DadKitExportDataV5,
   type DadKitExportDataV6,
   type DadKitExportDataV7,
@@ -108,13 +109,25 @@ export function portableV9(
 }
 
 export function portableV10(
-  patch: Partial<DadKitExportData> = {},
-): DadKitExportData {
+  patch: Partial<DadKitExportDataV10> = {},
+): DadKitExportDataV10 {
   const { planning: _planning, ...v9 } = portableV9();
   void _planning;
   return {
     ...v9,
     version: 10,
+    ...patch,
+  };
+}
+
+export function portableV11(
+  patch: Partial<DadKitExportData> = {},
+): DadKitExportData {
+  const { hospital: _hospital, ...v10 } = portableV10();
+  void _hospital;
+  return {
+    ...v10,
+    version: 11,
     ...patch,
   };
 }

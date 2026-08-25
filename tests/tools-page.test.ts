@@ -28,7 +28,6 @@ describe("tools hub page and navigation", () => {
     const entries = [
       { href: "/growth", title: "孕期成长记" },
       { href: "/departure", title: "准备出发" },
-      { href: "/hospital", title: "医院档案" },
       { href: "/settings/checklist", title: "清单设置" },
     ];
 
@@ -59,7 +58,7 @@ describe("tools hub page and navigation", () => {
     const tools = PRIMARY_NAVIGATION_ITEMS.find((item) => item.id === "tools")!;
     const mine = PRIMARY_NAVIGATION_ITEMS.find((item) => item.id === "mine")!;
 
-    for (const route of ["/tools", "/growth", "/departure", "/hospital"]) {
+    for (const route of ["/tools", "/growth", "/departure"]) {
       expect(isPrimaryNavigationItemActive(route, tools)).toBe(true);
       expect(isPrimaryNavigationItemActive(route, checklist)).toBe(false);
       expect(isPrimaryNavigationItemActive(route, mine)).toBe(false);
@@ -67,7 +66,7 @@ describe("tools hub page and navigation", () => {
 
     expect(showsMobileNavigation("/tools")).toBe(true);
     expect(showsMobileNavigation("/departure")).toBe(true);
-    expect(showsMobileNavigation("/hospital")).toBe(true);
     expect(showsMobileNavigation("/growth")).toBe(true);
+    expect(page).not.toContain('href: "/hospital"');
   });
 });

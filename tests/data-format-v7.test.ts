@@ -37,20 +37,17 @@ describe("DadKit v7 portable format", () => {
 
     for (const input of [v3, v4, portableV5(), portableV6()]) {
       const upgraded = upgradeExportDataToLatest(input);
-      expect(upgraded.version).toBe(10);
+      expect(upgraded.version).toBe(11);
       expect(upgraded).not.toHaveProperty("planning");
       expect(isDadKitImportData(upgraded)).toBe(true);
     }
   });
 
-  it("preserves v6 hospital data", () => {
+  it("drops retired v6 hospital data during upgrade", () => {
     const v6 = portableV6();
     v6.hospital.fields.hospitalName = { value: "市妇幼", updatedAt: 20 };
     const upgraded = upgradeExportDataToLatest(v6);
-    expect(upgraded.hospital.fields.hospitalName).toEqual({
-      value: "市妇幼",
-      updatedAt: 20,
-    });
+    expect(upgraded).not.toHaveProperty("hospital");
     expect(upgraded).not.toHaveProperty("planning");
   });
 

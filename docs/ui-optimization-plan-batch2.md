@@ -37,7 +37,7 @@
 
 - `ChecklistItemRow` 导入替换为 `DepartureItemRow`；分组列表容器由 `item-card-grid` 改为 `grid gap-2`；行渲染不再传 `departureMode` / `showFullDescription`。
 - 骨架屏：`item-card-grid` + 两个 `h-80` 改为 `grid gap-2` + 三个 `h-16`。
-- **保留不动**：PageHeader、hero 进度卡（`#departure-remaining-count`、`role="progressbar" aria-label="出发物品确认 X%"`）、HospitalSummaryCard、分组 section（`aria-labelledby="departure-group-{id}"`）、「本组全部确认」按钮与 ConfirmDialog（确认按钮文案「确认本组项目」）、`ChecklistItemDetailsDialog` 仍传 `departureMode`。
+- **保留不动**：PageHeader、hero 进度卡（`#departure-remaining-count`、`role="progressbar" aria-label="出发物品确认 X%"`）、分组 section（`aria-labelledby="departure-group-{id}"`）、「本组全部确认」按钮与 ConfirmDialog（确认按钮文案「确认本组项目」）、`ChecklistItemDetailsDialog` 仍传 `departureMode`。医院档案及其摘要卡已在后续版本移除。
 
 ### 1.3 测试核对
 

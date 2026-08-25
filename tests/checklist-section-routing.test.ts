@@ -109,7 +109,7 @@ describe("checklist section routes", () => {
     );
   });
 
-  it("uses one column on phones and two columns from the small-tablet breakpoint", () => {
+  it("uses two columns from the 360px phone breakpoint", () => {
     const styles = readSource("app", "globals.css");
     const workspace = readSource(
       "components",
@@ -121,7 +121,7 @@ describe("checklist section routes", () => {
     expect(styles).toMatch(
       /\.item-card-grid\s*\{[\s\S]*?grid-cols-1[\s\S]*?\}/,
     );
-    expect(styles).toContain("sm:grid-cols-2");
+    expect(styles).toContain("xs:grid-cols-2");
     expect(tailwindConfig).toContain('xs: "360px"');
     expect(styles).not.toMatch(/\.item-card-grid[^}]*grid-cols-3/);
   });

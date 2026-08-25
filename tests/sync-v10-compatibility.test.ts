@@ -6,12 +6,12 @@ import { mergeExportData } from "@/lib/sync/merge";
 import {
   portableV8,
   portableV9,
-  portableV10,
+  portableV11,
 } from "@/tests/helpers/portable-data";
 
-describe("v8/v9/v10 canonical compatibility", () => {
+describe("v8/v9/v11 canonical compatibility", () => {
   it("preserves household and recorder when v8 edits an existing event", () => {
-    const canonical = portableV10();
+    const canonical = portableV11();
     canonical.household.members["member-a"] = {
       id: "member-a",
       createdAt: 1,
@@ -60,12 +60,12 @@ describe("v8/v9/v10 canonical compatibility", () => {
       storageLocation: { value: "", updatedAt: 0 },
     };
 
-    expect(mergeExportData(portableV10(), v8)).not.toHaveProperty("planning");
-    expect(mergeExportData(portableV10(), v9)).not.toHaveProperty("planning");
+    expect(mergeExportData(portableV11(), v8)).not.toHaveProperty("planning");
+    expect(mergeExportData(portableV11(), v9)).not.toHaveProperty("planning");
   });
 
   it("projects empty planning placeholders only for legacy clients", () => {
-    const canonical = portableV10();
+    const canonical = portableV11();
     const v9 = projectExportDataForVersion(canonical, 9);
     const v8 = projectExportDataForVersion(canonical, 8);
 

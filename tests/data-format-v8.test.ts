@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
 import { isBabyCarePortableData, isBabyPortableData, isBabyProfilePortableData } from "@/lib/baby/validation";
 import { isDadKitImportData, projectExportDataForVersion, upgradeExportDataToLatest, type DadKitExportDataV3, type DadKitExportDataV4 } from "@/lib/data/format";
-import { portableV5, portableV6, portableV7, portableV8, portableV10 } from "@/tests/helpers/portable-data";
+import { portableV5, portableV6, portableV7, portableV8, portableV11 } from "@/tests/helpers/portable-data";
 import { exportData, validateImportData } from "@/lib/storage";
 import { calculateChecksum } from "@/lib/webdav/checksum";
 
@@ -13,7 +13,7 @@ describe("DadKit v8 portable format", () => {
     expect(isBabyProfilePortableData(baby.profile)).toBe(true);
     expect(isBabyCarePortableData(baby.care)).toBe(true);
     expect(isBabyPortableData(baby)).toBe(true);
-    expect(isDadKitImportData(portableV10({ baby }))).toBe(true);
+    expect(isDadKitImportData(portableV11({ baby }))).toBe(true);
     expect(isDadKitImportData(exportData())).toBe(true);
     const parsed = JSON.parse(JSON.stringify(exportData())) as ReturnType<typeof exportData>;
     expect(isBabyPortableData(parsed.baby)).toBe(true);
@@ -36,13 +36,13 @@ describe("DadKit v8 portable format", () => {
     const v4: DadKitExportDataV4 = { ...v3, version: 4, growth: v5.growth };
     for (const input of [v3, v4, v5, portableV6(), portableV7()]) {
       const upgraded = upgradeExportDataToLatest(input);
-      expect(upgraded.version).toBe(10);
+      expect(upgraded.version).toBe(11);
       expect(upgraded.baby).toEqual(createEmptyBabyData());
     }
   });
 
   it("projects v5-v8 without mutating canonical data", () => {
-    const canonical = portableV10();
+    const canonical = portableV11();
     const before = structuredClone(canonical);
     expect(projectExportDataForVersion(canonical, 5)).not.toHaveProperty("baby");
     expect(projectExportDataForVersion(canonical, 6)).not.toHaveProperty("baby");

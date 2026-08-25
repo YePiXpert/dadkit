@@ -476,7 +476,7 @@ function requireOwner(session: SyncSpaceSessionV2) {
 
 export async function pullSpace(
   token: string,
-  targetVersion: DadKitSyncDataVersion = 10,
+  targetVersion: DadKitSyncDataVersion = 11,
 ): Promise<SyncSpaceSnapshot | undefined> {
   const parsed = parseSessionToken(token);
   if (!parsed) return undefined;
@@ -493,7 +493,7 @@ function canonicalComparable(data: DadKitImportData) {
 export async function pushSpace(
   token: string,
   incoming: DadKitImportData,
-  targetVersion: DadKitSyncDataVersion = 10,
+  targetVersion: DadKitSyncDataVersion = 11,
 ): Promise<SyncSpaceSnapshot | undefined> {
   const parsed = parseSessionToken(token);
   if (!parsed) return undefined;
@@ -517,7 +517,7 @@ export async function pushSpace(
     }
     const businessChanged =
       space.data === null || canonicalComparable(space.data) !== canonicalComparable(merged);
-    const needsCanonicalUpgrade = space.data !== null && space.data.version !== 10;
+    const needsCanonicalUpgrade = space.data !== null && space.data.version !== 11;
     if (businessChanged || needsCanonicalUpgrade) {
       const now = new Date().toISOString();
       space.data = merged;

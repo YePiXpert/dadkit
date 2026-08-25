@@ -43,12 +43,13 @@ describe("checklist and home dashboard pages", () => {
     expect(homeDashboard).toContain("useHouseholdStore");
     expect(homeDashboard).toContain("useGrowthStore");
 
-    for (const href of ["/growth", "/baby", "/departure", "/hospital", "/settings/backup"]) {
+    for (const href of ["/growth", "/baby", "/departure", "/settings/backup"]) {
       expect(homeDashboard).toContain(`href: "${href}"`);
     }
     expect(homeDashboard).toContain("CHECKLIST_PATH");
     expect(homeDashboard).not.toContain("PlanningSummaryCard");
     expect(homeDashboard).not.toContain('href: "/planning"');
+    expect(homeDashboard).not.toContain('href: "/hospital"');
 
     expect(homeDashboard).not.toContain("getDepartureProgress");
     expect(homeDashboard).not.toContain("全部工具");

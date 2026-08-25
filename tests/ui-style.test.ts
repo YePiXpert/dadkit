@@ -77,7 +77,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(globals).toContain("--ring: 7 58% 52%");
     expect(globals).toContain("--radius: 1.75rem");
     expect(globals).toContain("sm:max-w-[42rem]");
-    expect(globals).toContain("@apply grid grid-cols-1 gap-3 sm:grid-cols-2");
+    expect(globals).toContain("@apply grid grid-cols-1 gap-3 xs:grid-cols-2");
     expect(tailwindConfig).toContain('xs: "360px"');
     expect(globals).toContain("overflow-x: clip");
     expect(globals).toContain("touch-action: pan-x pan-y");
@@ -185,7 +185,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(isPrimaryNavigationItemActive("/tools", toolsNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/growth", toolsNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/departure", toolsNav)).toBe(true);
-    expect(isPrimaryNavigationItemActive("/hospital", toolsNav)).toBe(true);
+    expect(isPrimaryNavigationItemActive("/hospital", toolsNav)).toBe(false);
     expect(isPrimaryNavigationItemActive("/planning", toolsNav)).toBe(false);
     expect(isPrimaryNavigationItemActive("/settings", toolsNav)).toBe(false);
 
@@ -259,7 +259,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(checklistSectionWorkspace).toContain("item-card-grid");
     expect(checklistSectionWorkspace).toContain('"grid gap-2"');
     expect(checklistSectionWorkspace).toContain("useChecklistViewPreference");
-    expect(globals).toContain("sm:grid-cols-2");
+    expect(globals).toContain("xs:grid-cols-2");
     expect(checklistItemRow).toContain("ChecklistItemArt");
     expect(checklistItemRow).toContain(
       "aspect-[16/9] items-center justify-center overflow-hidden rounded-inset bg-muted/75 xs:aspect-[4/3]",

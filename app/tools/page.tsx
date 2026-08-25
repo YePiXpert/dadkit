@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import {
   CarFront,
   DatabaseBackup,
-  Hospital,
   LifeBuoy,
   ListChecks,
   RefreshCw,
@@ -18,7 +17,7 @@ import { PageHeader } from "@/components/PageHeader";
 
 export const metadata: Metadata = {
   title: "工具 | DadKit",
-  description: "使用孕期成长、准备出发和医院档案工具。",
+  description: "使用孕期成长、准备出发和清单管理工具。",
 };
 
 const TOOL_ENTRIES = [
@@ -35,13 +34,6 @@ const TOOL_ENTRIES = [
     description: "临产出发前的证件、随手物品、随车与行李确认。",
     icon: CarFront,
     accent: "bg-tile-car-bg text-tile-car-fg",
-  },
-  {
-    href: "/hospital",
-    title: "医院档案",
-    description: "建档医院信息、就诊卡、路线与紧急联系。",
-    icon: Hospital,
-    accent: "bg-tile-docs-bg text-tile-docs-fg",
   },
   {
     href: "/settings/checklist",

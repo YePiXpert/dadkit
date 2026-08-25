@@ -9,7 +9,6 @@ import {
   ChevronRight,
   ClipboardList,
   DatabaseBackup,
-  Hospital,
   Sprout,
   type LucideIcon,
 } from "lucide-react";
@@ -61,13 +60,6 @@ const HOME_ENTRIES = [
     description: "临产出发逐项确认",
     icon: CarFront,
     accent: "bg-tile-car-bg text-tile-car-fg",
-  },
-  {
-    href: "/hospital",
-    title: "医院档案",
-    description: "建档信息与紧急联系",
-    icon: Hospital,
-    accent: "bg-tile-docs-bg text-tile-docs-fg",
   },
   {
     href: "/settings/backup",
@@ -208,7 +200,7 @@ function StageHero({
         <span className="relative z-10 mt-2 block text-sm leading-6 text-on-highlight">
           设置预产期后，这里会显示孕周、倒计时和成长类比。
         </span>
-        <span className="relative z-10 mt-4 inline-flex min-h-11 items-center gap-1 rounded-full bg-on-highlight px-4 text-sm font-semibold text-primary shadow-sm">
+        <span className="relative z-10 mt-4 inline-flex min-h-11 items-center gap-1 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm">
           设置预产期
           <ArrowRight
             aria-hidden="true"

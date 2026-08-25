@@ -49,7 +49,7 @@ afterEach(() => {
 });
 
 describe("baby snapshots and compensated import rollback", () => {
-  it("stores and restores complete v10 snapshots in IndexedDB only", async () => {
+  it("stores and restores complete v11 snapshots in IndexedDB only", async () => {
     const data = createEmptyBabyData();
     data.profile.fields.birthDate = { value: "2026-08-01", updatedAt: 10 };
     data.care.events = [diaper("snapshot-event", 20)];
@@ -57,7 +57,7 @@ describe("baby snapshots and compensated import rollback", () => {
     const storage = installBrowserStorage();
 
     const snapshot = await createSnapshotAsync("宝宝快照测试");
-    if (!snapshot || snapshot.data.version !== 10) throw new Error("v10 快照未创建");
+    if (!snapshot || snapshot.data.version !== 11) throw new Error("v11 快照未创建");
     expect(snapshot.data.baby.care.events.map((event) => event.id)).toEqual(["snapshot-event"]);
     expect(storage.writes).not.toContain(STORAGE_KEYS.snapshots);
     expect(await loadSnapshotsAsync()).toHaveLength(1);

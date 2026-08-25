@@ -78,7 +78,7 @@ describe("release endpoints and product surface", () => {
     expect(readme).toContain("恢复快照");
     expect(readme).toContain("WebDAV 备份");
     expect(readme).toContain("宝宝成长记");
-    expect(readme).toContain("医院档案");
+    expect(readme).not.toContain("医院档案");
     expect(readme).toContain("兼容既有备份和较旧的数据格式");
     expect(readme).toContain("通用家庭档案");
     expect(readme).toContain("当前设备使用者");
@@ -255,7 +255,7 @@ describe("release endpoints and product surface", () => {
       true,
     );
     expect(existsSync(join(process.cwd(), "app", "hospital", "page.tsx"))).toBe(
-      true,
+      false,
     );
     expect(existsSync(join(process.cwd(), "app", "planning", "page.tsx"))).toBe(
       true,
@@ -265,7 +265,7 @@ describe("release endpoints and product surface", () => {
   it("installs the entry shell, then keeps all core routes in the background cache list", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.13-pwa-r1"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.13-pwa-r2"');
     expect(sw).toContain('const PRECACHE_ROUTES = ["/"]');
     expect(sw).toContain("BACKGROUND_ROUTES");
     expect(sw).toContain("networkFirstNavigation(event.request)");
@@ -278,7 +278,6 @@ describe("release endpoints and product surface", () => {
       "/tools",
       "/growth",
       "/departure",
-      "/hospital",
       "/settings",
       "/settings/about",
       "/settings/backup",
@@ -609,7 +608,7 @@ describe("release endpoints and product surface", () => {
     expect(cachedUrls).toContain("/settings");
     expect(cachedUrls).toContain("/growth");
     expect(cachedUrls).toContain("/baby/timeline");
-    expect(cachedUrls).toContain("/hospital");
+    expect(cachedUrls).not.toContain("/hospital");
 
     for (const route of REMOVED_PRODUCT_ROUTES) {
       expect(cachedUrls).not.toContain(`/${route}`);

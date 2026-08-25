@@ -30,18 +30,8 @@ import {
 } from "@/lib/sync-session-status";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
-import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
-import {
-  hospitalValuesFromPortable,
-  updateHospitalProfile,
-} from "@/lib/hospital/portable";
-import {
-  loadHospitalProfile,
-  saveHospitalProfile,
-} from "@/lib/hospital/repository";
-import { useHospitalProfileStore } from "@/lib/hospital/store";
 import { DADKIT_DATA_VERSION_HEADER } from "@/lib/sync/data-version";
-import { portableV5, portableV10 } from "@/tests/helpers/portable-data";
+import { portableV5, portableV11 } from "@/tests/helpers/portable-data";
 import { generateChecklist } from "@/lib/rules";
 
 function testItem(id: string, patch: Partial<ChecklistItem> = {}): ChecklistItem {
@@ -129,10 +119,6 @@ function resetStores() {
     lastError: undefined,
   });
   clearSyncSessionExpired();
-  useHospitalProfileStore.setState({
-    hydrated: false,
-    profile: createEmptyHospitalProfile(),
-  });
 }
 
 afterEach(() => {
@@ -331,7 +317,7 @@ describe("family sync client", () => {
         return jsonResponse({
           version: 1,
           updatedAt: "2026-08-18T00:00:00.000Z",
-          data: portableV10({ checklist: [remote], customItems: [remote] }),
+          data: portableV11({ checklist: [remote], customItems: [remote] }),
         });
       }
       throw new Error(`unexpected url ${url}`);
@@ -375,7 +361,7 @@ describe("family sync client", () => {
         return jsonResponse({
           version: 1,
           updatedAt: "2026-08-18T00:00:00.000Z",
-          data: portableV10({ checklist: [remote], customItems: [remote] }),
+          data: portableV11({ checklist: [remote], customItems: [remote] }),
         });
       }
       if (url === "/api/sync/push") {
@@ -405,17 +391,11 @@ describe("family sync client", () => {
     expect(loadSyncClientState().initialDataMode).toBeUndefined();
   });
 
-  it("sends version 10 and preserves hospital on a v5 response", async () => {
+  it("sends version 11 and removes retired hospital data on a v5 response", async () => {
     const { localValues } = installBrowserStorage({
       "dadkit:v3:sync-session": JSON.stringify(localSyncSession()),
     });
-    const hospital = createEmptyHospitalProfile();
-    const hospitalValues = hospitalValuesFromPortable(hospital);
-    hospitalValues.hospitalName = "市妇幼保健院";
-    hospitalValues.address = "健康路 1 号";
-    saveHospitalProfile(
-      updateHospitalProfile(hospital, hospitalValues, 100).profile,
-    );
+    localValues.set("dadkit:v3:hospital-profile", "legacy");
     useDadKitStore.setState({ hydrated: true });
     const legacy = portableV5({
       checklist: [testItem("legacy-server", { updatedAt: 200 })],
@@ -441,12 +421,8 @@ describe("family sync client", () => {
 
     await expect(syncNow()).resolves.toMatchObject({ ok: true });
 
-    expect(requestVersions).toEqual(["10", "10"]);
-    expect(loadHospitalProfile().fields.hospitalName.value).toBe(
-      "市妇幼保健院",
-    );
-    expect(loadHospitalProfile().fields.address.value).toBe("健康路 1 号");
-    expect(localValues.get(STORAGE_KEYS.hospital)).toBeTruthy();
+    expect(requestVersions).toEqual(["11", "11"]);
+    expect(localValues.has("dadkit:v3:hospital-profile")).toBe(false);
   });
 
   it("clears the session when the server reports it expired", async () => {

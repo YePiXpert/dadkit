@@ -68,7 +68,7 @@ describe("v5/v6/v7 family sync compatibility", () => {
     expect(forV5.version).toBe(5);
     expect(forV5).not.toHaveProperty("hospital");
     expect(forV5).not.toHaveProperty("planning");
-    expect(forV6.hospital.fields.hospitalName.value).toBe("市妇幼保健院");
+    expect(forV6.hospital.fields.hospitalName.value).toBe("");
     expect(forV6).not.toHaveProperty("planning");
     expect(forV7.planning).toEqual({ version: 1, clearedAt: 0, items: {} });
   });
@@ -89,14 +89,13 @@ describe("v5/v6/v7 family sync compatibility", () => {
     v6Update.hospital.fields.address = { value: "健康路 2 号", updatedAt: 200 };
     await pushSpace(device.token, v6Update, 6);
 
-    const latest = (await pullSpace(device.token, 10))?.data as DadKitExportData;
+    const latest = (await pullSpace(device.token, 11))?.data as DadKitExportData;
     expect(latest.checklist.some((item) => item.id === "v5")).toBe(true);
-    expect(latest.hospital.fields.hospitalName.value).toBe("市妇幼");
-    expect(latest.hospital.fields.address.value).toBe("健康路 2 号");
+    expect(latest).not.toHaveProperty("hospital");
     expect(latest).not.toHaveProperty("planning");
   });
 
-  it("upgrades a stored v6 file to canonical v10 on write", async () => {
+  it("upgrades a stored v6 file to canonical v11 on write", async () => {
     const device = await createRandomSpace("旧v6空间升级家庭", "v7 设备");
     const file = currentSpacePath();
     const stored = JSON.parse(readFileSync(file, "utf8")) as { data: unknown };
@@ -112,7 +111,7 @@ describe("v5/v6/v7 family sync compatibility", () => {
     const persisted = JSON.parse(readFileSync(file, "utf8")) as {
       data: DadKitExportData;
     };
-    expect(persisted.data.version).toBe(10);
+    expect(persisted.data.version).toBe(11);
     expect(persisted.data).not.toHaveProperty("planning");
   });
 });

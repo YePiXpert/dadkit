@@ -8,7 +8,7 @@ import { createEmptyHousehold } from "@/lib/household/defaults";
 import { isHouseholdPortableData } from "@/lib/household/validation";
 import { mergeExportData } from "@/lib/sync/merge";
 import { calculateChecksum } from "@/lib/webdav/checksum";
-import { portableV10 } from "@/tests/helpers/portable-data";
+import { portableV11 } from "@/tests/helpers/portable-data";
 
 function withinBudget<T>(operation: () => T, milliseconds = 3_000) {
   const started = performance.now();
@@ -30,7 +30,7 @@ function legacyEvents(count = 25_000): CareEventV1[] {
   }));
 }
 
-describe("v10 migration and validation performance", () => {
+describe("v11 migration and validation performance", () => {
   it("strictly validates 100 household records including tombstones", () => {
     const household = createEmptyHousehold();
     for (let index = 0; index < 100; index += 1) {
@@ -46,7 +46,7 @@ describe("v10 migration and validation performance", () => {
     expect(withinBudget(() => isHouseholdPortableData(household))).toBe(true);
   });
 
-  it("migrates, merges and checksums 25,000 v8/v10 baby events", () => {
+  it("migrates, merges and checksums 25,000 v8/v11 baby events", () => {
     const babyV2 = createEmptyBabyData();
     const babyV1 = projectBabyV2ToV1(babyV2);
     babyV1.care.events = legacyEvents();
@@ -58,7 +58,7 @@ describe("v10 migration and validation performance", () => {
       recordedByMemberId: "member-a",
     }));
 
-    const canonical = portableV10({ baby: migrated });
+    const canonical = portableV11({ baby: migrated });
     const legacy = withinBudget(() => projectExportDataForVersion(canonical, 8));
     const merged = withinBudget(() => mergeExportData(canonical, legacy));
     expect(merged.baby.care.events).toHaveLength(25_000);

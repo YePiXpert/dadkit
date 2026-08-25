@@ -95,7 +95,7 @@ describe("v5/v6/v7/v8 family sync compatibility", () => {
     expect(v5).not.toHaveProperty("planning");
     expect(v5).not.toHaveProperty("baby");
     expect(v6.version).toBe(6);
-    expect(v6.hospital.fields.hospitalName.value).toBe("市妇幼保健院");
+    expect(v6.hospital.fields.hospitalName.value).toBe("");
     expect(v6).not.toHaveProperty("planning");
     expect(v6).not.toHaveProperty("baby");
     expect(v7.version).toBe(7);
@@ -119,7 +119,7 @@ describe("v5/v6/v7/v8 family sync compatibility", () => {
 
     const final = (await pullSpace(v8.token, 8))?.data as DadKitExportDataV8;
     expect(final.checklist.some((item) => item.id === "from-v5")).toBe(true);
-    expect(final.hospital.fields.address.value).toBe("健康路 2 号");
+    expect(final.hospital.fields.address.value).toBe("");
     expect(final.planning).toEqual({ version: 1, clearedAt: 0, items: {} });
     expect(final.baby.profile.fields.nickname.value).toBe("满满");
     expect(final.baby.care.events.map((event) => event.id)).toEqual(["canonical-diaper"]);
@@ -171,6 +171,6 @@ describe("v5/v6/v7/v8 family sync compatibility", () => {
     expect(projected.baby.care).toEqual({ version: 1, clearedAt: 0, events: [] });
     await pushSpace(v8.token, portableV8(), 8);
     const persisted = JSON.parse(readFileSync(file, "utf8")) as { data: DadKitExportData };
-    expect(persisted.data.version).toBe(10);
+    expect(persisted.data.version).toBe(11);
   });
 });

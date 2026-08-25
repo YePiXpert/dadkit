@@ -18,10 +18,6 @@ import {
   hospitalValuesFromPortable,
   updateHospitalProfile,
 } from "@/lib/hospital/portable";
-import {
-  loadHospitalProfile,
-  saveHospitalProfile,
-} from "@/lib/hospital/repository";
 import type { ChecklistItem } from "@/lib/types";
 import {
   isBlockedHostname,
@@ -181,26 +177,16 @@ describe("webdav helpers", () => {
   it("builds a DadKit WebDAV backup envelope", () => {
     installStorage();
     saveChecklist([testItem()]);
-    saveHospitalProfile(
-      hospitalProfile(
-        { hospitalName: "市妇幼保健院", address: "健康路 1 号" },
-        100,
-      ),
-    );
-
     const data = exportData();
     const backup = buildDadKitWebDavBackup(data, "device-1");
 
     expect(backup.schemaVersion).toBe(3);
-    expect(backup.data.version).toBe(10);
+    expect(backup.data.version).toBe(11);
     expect(backup.app).toBe("DadKit");
     expect(backup.deviceId).toBe("device-1");
     expect(backup.checksum).toBe(calculateChecksum(data));
     expect(backup.data).toEqual(data);
-    expect(backup.data).toHaveProperty(
-      "hospital.fields.hospitalName.value",
-      "市妇幼保健院",
-    );
+    expect(backup.data).not.toHaveProperty("hospital");
   });
 
   it("creates stable checksums for equal data and different checksums for changes", () => {
@@ -420,12 +406,10 @@ describe("webdav helpers", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("restores and merges hospital data from a v7 WebDAV backup", async () => {
+  it("discards retired hospital data from a WebDAV backup", async () => {
     installStorage();
-    saveChecklist([testItem("local-hospital")]);
-    saveHospitalProfile(
-      hospitalProfile({ hospitalName: "本机医院", address: "旧地址" }, 100),
-    );
+    saveChecklist([testItem("local-before-retired-data")]);
+    window.localStorage.setItem("dadkit:v3:hospital-profile", "legacy");
     const remoteData = {
       ...exportData(),
       hospital: hospitalProfile(
@@ -433,19 +417,16 @@ describe("webdav helpers", () => {
         300,
       ),
     };
-    const backup = buildDadKitWebDavBackup(remoteData, "remote-hospital");
+    const backup = buildDadKitWebDavBackup(remoteData, "remote-retired-data");
 
     const result = await importDadKitWebDavBackup(backup);
 
     expect(result.ok).toBe(true);
-    expect(loadHospitalProfile().fields.address).toEqual({
-      value: "远端新地址",
-      updatedAt: 300,
-    });
+    expect(window.localStorage.getItem("dadkit:v3:hospital-profile")).toBeNull();
+    expect(exportData()).not.toHaveProperty("hospital");
     const rescueData = (await loadSnapshotsAsync())[0]?.data;
-    expect(rescueData?.version).toBe(10);
-    if (rescueData?.version !== 10) throw new Error("缺少 v10 恢复快照");
-    expect(rescueData.hospital.fields.address.value).toBe("旧地址");
+    expect(rescueData?.version).toBe(11);
+    expect(rescueData).not.toHaveProperty("hospital");
   });
 
   it("restores and event-merges v8 baby timers, events and tombstones", async () => {

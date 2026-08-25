@@ -5,9 +5,6 @@ import { notifyExternalItemPhotoChange } from "@/lib/item-photos";
 import { useDeviceIdentityStore } from "@/lib/device-identity/store";
 import { loadDeviceIdentity } from "@/lib/device-identity/repository";
 import { reloadGrowthFromStorage } from "@/lib/growth-store";
-import { mergeHospitalProfiles } from "@/lib/hospital/merge";
-import { loadHospitalProfile, saveHospitalProfile } from "@/lib/hospital/repository";
-import { useHospitalProfileStore } from "@/lib/hospital/store";
 import { mergeHousehold } from "@/lib/household/merge";
 import { loadHousehold, saveHousehold } from "@/lib/household/repository";
 import { useHouseholdStore } from "@/lib/household/store";
@@ -76,13 +73,6 @@ function flushPendingChanges() {
         case "growth":
           reloadGrowthFromStorage();
           break;
-        case "hospital": {
-          const current = useHospitalProfileStore.getState().profile;
-          const merged = mergeHospitalProfiles(current, loadHospitalProfile());
-          saveHospitalProfile(merged);
-          useHospitalProfileStore.setState({ hydrated: true, profile: merged });
-          break;
-        }
         case "household": {
           const current = useHouseholdStore.getState().household;
           const merged = mergeHousehold(current, loadHousehold());
