@@ -13,8 +13,8 @@ V3 的目标：在 V2「打开就知道还差什么」的基础上，把界面�
 
 ## 导航与外壳
 
-- 移动端底部导航是悬浮式圆角 dock：`inset-x-3`、底部安全区 `max(env(safe-area-inset-bottom), 0.75rem)`、`rounded-3xl bg-card/90 backdrop-blur-xl shadow-lg`，激活项 `bg-secondary` 圆角 pill 高亮。
-- 桌面端页头无分割线：`bg-background/80 backdrop-blur-xl shadow-sm` 吸顶，导航胶囊激活态为主色 + `shadow-glow`。
+- 移动端底部导航是通栏应用栏：`fixed inset-x-0 bottom-0`、顶部细线 `border-t border-border/50`、`bg-card/95 backdrop-blur-xl shadow-nav`，底部适配 `env(safe-area-inset-bottom)`；激活项为主色加粗文字，图标带 `bg-secondary` 圆角底。
+- 桌面端页头吸顶：`bg-background/80 backdrop-blur-xl` + `border-b border-border/60` 细分隔线，导航胶囊激活态为主色 + `shadow-glow`。
 - 使用底部导航的页面必须带 `page-shell-with-nav`（底部预留 7.5rem + 安全区）；无导航页面用 `page-shell`。
 - FAB 底部避让 `.safe-bottom-fab`（6.5rem + 安全区），toast 避让 `.safe-bottom-toast`。
 
@@ -37,6 +37,7 @@ V3 的目标：在 V2「打开就知道还差什么」的基础上，把界面�
 - 卡片一律无边框：`.card-surface`（`rounded-card bg-card shadow-sm`）是唯一卡片基底；交互卡加 `transition-shadow hover:shadow-md`。
 - 阴影为暖棕 `rgb(64 45 31)` 分层柔影：`shadow-sm` 默认卡、`shadow-md` 悬浮/hover、`shadow-lg` 对话框与浮动导航、`shadow-glow` 主色 CTA。
 - 选中/状态指示用 `ring-1`/`ring-2`（如 `ring-primary`、`ring-destructive/30`），不再用 border 表达状态。
+- 提供浅色、深色与跟随系统三种外观（选择保存在 `dadkit-theme`，由内联脚本无闪烁初始化）；深色令牌在 `.dark` 中整体重定义（如 background `28 14% 9%`、primary `7 58% 62%`），插画、彩带与 tile 色彩均有深色取值。
 - 分类图标块按语义使用柔和粉、杏、薄荷、蓝、紫 tile 背景。物品卡使用温暖米色纸张、水粉与彩铅质感的无品牌原创插画，禁止人物、文字、医学图示和水印；卡片进入视口前后 600px 范围才读取图片，用户上传的本机实拍始终优先显示。
 
 ## 字体与排版
@@ -67,9 +68,9 @@ V3 的目标：在 V2「打开就知道还差什么」的基础上，把界面�
 
 ## 清单结构
 
-- 页头为居中小标题；新增物品入口是右下角主色圆形 FAB（`shadow-glow`）。
+- 页头为全站统一的左对齐 kicker + 大标题（共享 `PageHeader` 组件；分类详情页带圆形返回键）；新增物品入口是右下角主色圆形 FAB（`shadow-glow`）。
 - 顶层提供 `全部 / 待购买 / 待装包 / 已装包` 四个视图，数量必须与可见 selector 共源。
-- 清单首页展示分类摘要卡，点击进入独立分类页；分类页使用双列物品卡。
+- 清单首页顶部是主色进度 hero（完成度进度环 + 待买/待装/已装统计），下方按证件包、产房包、病房包 · 妈妈、病房包 · 宝宝组成「住院分包」网格，其余分组归入「后续准备」；点击进入独立分类页，分类页物品卡手机单列、`sm` 起双列。
 - 行的首要动作是状态推进；默认只展示名称、数量、一句话说明、状态和缩略图。
 - 编辑、标记不需要、删除、完整说明与本机照片放入行详情。
 - 同名新增物品合并数量，不创建第二条可见记录。
