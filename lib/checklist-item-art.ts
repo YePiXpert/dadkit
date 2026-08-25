@@ -218,7 +218,9 @@ function inferChecklistItemArtKey(
     return "general-labor-toiletries";
   }
   if (name.includes("护唇")) return "general-labor-lip-balm";
-  if (hasAny(name, "吸管杯", "水杯", "吸管")) return "general-labor-cup";
+  if (hasAny(name, "吸管杯", "水杯", "保温杯", "吸管")) {
+    return "general-labor-cup";
+  }
   if (name.includes("眼罩")) return "general-labor-eye-mask";
   if (name.includes("哺乳枕")) return "general-confinement-mom-nursing-pillow";
   if (hasAny(name, "枕头", "被褥", "折叠床")) return "general-labor-pillow";
@@ -255,7 +257,18 @@ function inferChecklistItemArtKey(
     return "general-confinement-mom-diaper-bag";
   }
 
-  if (hasAny(name, "奶瓶刷", "清洗剂")) return "general-baby-bottle-brush";
+  if (
+    hasAny(
+      name,
+      "奶瓶刷",
+      "清洗剂",
+      "清洗盆",
+      "奶瓶专用盆",
+      "奶瓶专用小盆",
+    )
+  ) {
+    return "general-baby-bottle-brush";
+  }
   if (hasAny(name, "奶瓶", "奶粉", "硅胶小勺")) {
     return "general-baby-formula-bottle";
   }
@@ -268,7 +281,7 @@ function inferChecklistItemArtKey(
   if (hasAny(name, "湿巾", "棉柔巾", "云柔巾", "纸巾")) {
     return "general-baby-wipes";
   }
-  if (hasAny(name, "包被", "小毯子", "毛毯")) {
+  if (hasAny(name, "包被", "包单", "盖毯", "小毯子", "毛毯")) {
     return "general-baby-blanket";
   }
   if (hasAny(name, "宝宝帽", "宝宝袜")) return "general-baby-hat";
@@ -289,7 +302,7 @@ function inferChecklistItemArtKey(
   }
   if (name.includes("消毒")) return "general-confinement-baby-sterilizer";
   if (name.includes("温奶")) return "general-confinement-baby-bottle-warmer";
-  if (hasAny(name, "洗澡盆", "浴网")) {
+  if (hasAny(name, "澡盆", "洗澡盆", "浴网")) {
     return "general-confinement-baby-bathtub";
   }
   if (hasAny(name, "体温计", "水温计", "耳温枪")) {

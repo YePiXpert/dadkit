@@ -53,17 +53,21 @@ describe("fixed checklist generation", () => {
   });
 
   it("keeps essential hospital-bag items in the fixed template", () => {
-    const names = generateChecklist().map((item) => item.name);
+    const ids = new Set(generateChecklist().map((item) => item.id));
 
-    for (const expected of [
-      "身份证件",
-      "产检资料",
-      "产褥垫 / 产后卫生巾",
-      "一次性内裤",
-      "尿不湿",
-      "宝宝出院衣物",
+    for (const id of [
+      "general-doc-id",
+      "general-doc-health-book",
+      "general-doc-prenatal-records",
+      "general-labor-pads",
+      "general-postpartum-pads",
+      "general-postpartum-gloves",
+      "general-postpartum-underwear",
+      "general-baby-diapers",
+      "general-baby-bottle-basin",
+      "general-baby-home-clothes",
     ]) {
-      expect(names).toContain(expected);
+      expect(ids.has(id), id).toBe(true);
     }
   });
 
@@ -83,6 +87,42 @@ describe("fixed checklist generation", () => {
       ),
     ).toBe(true);
     expect(filterItemsForChecklistMode(allItems, "full")).toEqual(allItems);
+  });
+
+  it("keeps requested labor and ward supplies visible in lean mode", () => {
+    const leanIds = new Set(
+      filterItemsForChecklistMode(generateChecklist(), "lean").map(
+        (item) => item.id,
+      ),
+    );
+
+    for (const id of [
+      "general-doc-health-book",
+      "general-labor-energy-food",
+      "general-labor-pads",
+      "general-postpartum-yuezi-clothes",
+      "general-postpartum-gloves",
+      "general-postpartum-thermos",
+      "general-baby-sheet",
+      "general-baby-bath-basin",
+      "general-baby-bath-towels",
+      "general-baby-bottle-basin",
+      "general-baby-cotton-tissues",
+      "general-baby-cloud-tissues",
+    ]) {
+      expect(leanIds.has(id), id).toBe(true);
+    }
+  });
+
+  it("keeps same-name rows in different workflow sections", () => {
+    const prenatalRows = generateChecklist().filter(
+      (item) => item.name === "产检资料",
+    );
+
+    expect(prenatalRows.map((item) => item.category)).toEqual([
+      "documents",
+      "last_minute",
+    ]);
   });
 
   it("preserves current progress when regenerating", () => {
@@ -145,6 +185,48 @@ describe("fixed checklist generation", () => {
     });
   });
 
+  it("upgrades former hospital defaults while preserving edited hospital text", () => {
+    const initial = generateChecklist();
+    const pads = initial.find(
+      (item) => item.id === "general-postpartum-pads",
+    );
+    const bottleBrush = initial.find(
+      (item) => item.id === "general-baby-bottle-brush",
+    );
+    expect(pads).toBeDefined();
+    expect(bottleBrush).toBeDefined();
+
+    const regenerated = generateChecklist({
+      currentItems: [
+        {
+          ...pads!,
+          status: "bought",
+          quantity: "10-20 片",
+          note: "用于住院期间铺垫床面和按需更换；建议先备六十乘九十厘米产褥垫十至二十片，并向医院确认是否还需产后卫生巾。",
+        },
+        {
+          ...bottleBrush!,
+          quantity: "用户仍想带两套",
+          note: "用户自定义的奶瓶刷说明",
+        },
+      ],
+    });
+    const migratedPads = regenerated.find((item) => item.id === pads!.id);
+    const preservedBottleBrush = regenerated.find(
+      (item) => item.id === bottleBrush!.id,
+    );
+
+    expect(migratedPads).toMatchObject({
+      status: "bought",
+      quantity: pads!.quantity,
+      note: pads!.note,
+    });
+    expect(preservedBottleBrush).toMatchObject({
+      quantity: "用户仍想带两套",
+      note: "用户自定义的奶瓶刷说明",
+    });
+  });
+
   it("restores custom items and hidden template choices", () => {
     const hiddenId = "general-baby-nail-clipper";
     const item = customItem();
@@ -169,6 +251,39 @@ describe("fixed checklist generation", () => {
     );
 
     expect(matches).toHaveLength(1);
+  });
+
+  it("merges a renamed user overlay by id without duplicating the template row", () => {
+    const current = generateChecklist().find(
+      (item) => item.id === "general-postpartum-pads",
+    );
+    expect(current).toBeDefined();
+
+    const generated = generateChecklist({
+      customItems: [
+        {
+          ...current!,
+          category: "mom_labor",
+          name: "产褥垫 / 产后卫生巾",
+          note: "用户自定义说明",
+          packTier: "core",
+          priority: "must",
+          quantity: "用户自定义数量",
+          source: "user",
+        },
+      ],
+    });
+    const matches = generated.filter((item) => item.id === current!.id);
+
+    expect(matches).toHaveLength(1);
+    expect(matches[0]).toMatchObject({
+      category: current!.category,
+      name: current!.name,
+      note: "用户自定义说明",
+      packTier: current!.packTier,
+      priority: current!.priority,
+      quantity: "用户自定义数量",
+    });
   });
 });
 

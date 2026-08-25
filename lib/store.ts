@@ -492,12 +492,15 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
 
     const normalizedName = comparableItemName(name);
     const existing = state.checklist.find(
-      (candidate) => comparableItemName(candidate.name) === normalizedName,
+      (candidate) =>
+        candidate.category === item.category &&
+        comparableItemName(candidate.name) === normalizedName,
     );
     const existingOverlay = state.customItems.find(
       (candidate) =>
         candidate.id === existing?.id ||
-        comparableItemName(candidate.name) === normalizedName,
+        (candidate.category === item.category &&
+          comparableItemName(candidate.name) === normalizedName),
     );
     const customItem = normalizeChecklistItem({
       id: existingOverlay?.id ?? existing?.id ?? item.id ?? itemId(),
@@ -617,7 +620,8 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
         .filter(
           ({ customItem }) =>
             customItem.id === id ||
-            comparableItemName(customItem.name) === normalizedName,
+            (customItem.category === item.category &&
+              comparableItemName(customItem.name) === normalizedName),
         )
         .map(({ customItem, index }) => ({ item: customItem, index })),
     };
@@ -659,7 +663,8 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
         !customItems.some(
           (item) =>
             item.id === restored.item.id ||
-            comparableItemName(item.name) === restoredName,
+            (item.category === restored.item.category &&
+              comparableItemName(item.name) === restoredName),
         )
       ) {
         customItems.splice(
@@ -678,7 +683,8 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       !checklist.some(
         (item) =>
           item.id === pending.item.id ||
-          comparableItemName(item.name) === pendingName,
+          (item.category === pending.item.category &&
+            comparableItemName(item.name) === pendingName),
       )
     ) {
       checklist.splice(

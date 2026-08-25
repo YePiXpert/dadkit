@@ -38,7 +38,10 @@ describe("custom item same-name merge", () => {
     expect(existing).toBeDefined();
     const beforeCount = useDadKitStore
       .getState()
-      .checklist.filter((item) => item.name === existing!.name).length;
+      .checklist.filter(
+        (item) =>
+          item.category === existing!.category && item.name === existing!.name,
+      ).length;
 
     const result = useDadKitStore.getState().addCustomItem({
       name: ` ${existing!.name} `,
@@ -49,11 +52,61 @@ describe("custom item same-name merge", () => {
 
     const matches = useDadKitStore
       .getState()
-      .checklist.filter((item) => item.name === existing!.name);
+      .checklist.filter(
+        (item) =>
+          item.category === existing!.category && item.name === existing!.name,
+      );
 
     expect(result.merged).toBe(true);
     expect(beforeCount).toBe(1);
     expect(matches).toHaveLength(1);
     expect(useDadKitStore.getState().customItems).toHaveLength(1);
+  });
+
+  it("keeps same-name items in different bag categories separate", () => {
+    vi.useFakeTimers();
+
+    try {
+      const first = useDadKitStore.getState().addCustomItem({
+        name: "备用小盆",
+        category: "mom_postpartum",
+        priority: "recommended",
+      });
+      const second = useDadKitStore.getState().addCustomItem({
+        name: "备用小盆",
+        category: "baby",
+        priority: "recommended",
+      });
+
+      expect(first.merged).toBe(false);
+      expect(second.merged).toBe(false);
+      expect(second.itemId).not.toBe(first.itemId);
+      expect(
+        useDadKitStore
+          .getState()
+          .checklist.filter((item) => item.name === "备用小盆"),
+      ).toHaveLength(2);
+
+      useDadKitStore.getState().removeItem(first.itemId);
+      expect(
+        useDadKitStore
+          .getState()
+          .checklist.filter((item) => item.name === "备用小盆"),
+      ).toHaveLength(1);
+      expect(
+        useDadKitStore
+          .getState()
+          .checklist.some((item) => item.id === second.itemId),
+      ).toBe(true);
+
+      useDadKitStore.getState().undoRemoveItem(first.itemId);
+      expect(
+        useDadKitStore
+          .getState()
+          .checklist.filter((item) => item.name === "备用小盆"),
+      ).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

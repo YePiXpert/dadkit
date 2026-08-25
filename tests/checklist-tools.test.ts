@@ -69,12 +69,25 @@ describe("checklist interaction helpers", () => {
   it("formats a readable grouped checklist and preserves skipped items", () => {
     const text = formatChecklistAsText([
       item({ name: "身份证", category: "documents", quantity: "2 张" }),
-      item({ name: "哺乳枕", status: "packed", quantity: "1 个" }),
-      item({ name: "备用毯", status: "not_needed" }),
+      item({ name: "产房拖鞋", status: "packed", quantity: "1 双" }),
+      item({
+        name: "哺乳内衣",
+        category: "mom_postpartum",
+        status: "packed",
+        quantity: "2 件",
+      }),
+      item({
+        name: "备用毛巾",
+        category: "mom_postpartum",
+        status: "not_needed",
+      }),
     ]);
 
     expect(text).toContain("证件包\n☐ 身份证 · 2 张");
-    expect(text).toContain("妈妈包\n☑ 哺乳枕 · 1 个\n⊘ 备用毯（不需要）");
+    expect(text).toContain("产房包\n☑ 产房拖鞋 · 1 双");
+    expect(text).toContain(
+      "病房包 · 妈妈\n☑ 哺乳内衣 · 2 件\n⊘ 备用毛巾（不需要）",
+    );
   });
 
   it("calculates the due-date countdown on calendar-day boundaries", () => {

@@ -26,7 +26,7 @@ export const DEPARTURE_GROUPS = [
   {
     id: "criticalLuggage",
     label: "关键行李",
-    description: "妈妈包、宝宝包和爸爸背包里的必带物品",
+    description: "产房包、病房包和陪产人背包里的必带物品",
   },
 ] as const satisfies ReadonlyArray<{
   id: DepartureGroupId;

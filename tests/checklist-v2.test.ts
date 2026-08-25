@@ -5,6 +5,7 @@ import {
   CHECKLIST_VIEWS,
   getDepartureItemCount,
   getChecklistItemState,
+  getChecklistSection,
   getChecklistViewCounts,
   getChecklistViewItems,
   groupChecklistViewItems,
@@ -40,10 +41,11 @@ function checklistItem(
 }
 
 describe("V2 checklist views", () => {
-  it("keeps the eight section route ids stable", () => {
+  it("keeps the nine section route ids stable", () => {
     expect(CHECKLIST_SECTIONS.map((section) => section.id)).toEqual([
       "documents",
       "mom",
+      "wardMom",
       "baby",
       "confinementMom",
       "confinementBaby",
@@ -55,7 +57,30 @@ describe("V2 checklist views", () => {
       CHECKLIST_SECTIONS.every((section) => isChecklistSectionId(section.id)),
     ).toBe(true);
     expect(isChecklistSectionId("unknown")).toBe(false);
-    expect(groupChecklistViewItems([], { includeEmpty: true })).toHaveLength(8);
+    expect(groupChecklistViewItems([], { includeEmpty: true })).toHaveLength(9);
+  });
+
+  it("routes labor, ward-mom and ward-baby items into separate sections", () => {
+    expect(getChecklistSection(checklistItem("labor", "todo"))).toBe("mom");
+    expect(
+      getChecklistSection({
+        ...checklistItem("ward-mom", "todo"),
+        category: "mom_postpartum",
+      }),
+    ).toBe("wardMom");
+    expect(
+      getChecklistSection({
+        ...checklistItem("ward-baby", "todo"),
+        bag: "baby_bag",
+        category: "baby",
+      }),
+    ).toBe("baby");
+    expect(
+      getChecklistSection({
+        ...checklistItem("going-home", "todo"),
+        category: "going_home",
+      }),
+    ).toBe("home");
   });
 
   it("exposes exactly the four user-facing views", () => {

@@ -59,28 +59,126 @@ describe("general checklist template", () => {
   });
 
   it("keeps key quantity and sizing guidance", () => {
-    const pads = getTemplateItem("general-postpartum-pads");
+    const laborPads = getTemplateItem("general-labor-pads");
+    const laborPaper = getTemplateItem("general-labor-paper");
+    const wardPads = getTemplateItem("general-postpartum-pads");
+    const wardPaper = getTemplateItem("general-postpartum-paper");
+    const sanitaryPads = getTemplateItem("general-postpartum-sanitary-pads");
     const underwear = getTemplateItem("general-postpartum-underwear");
     const diapers = getTemplateItem("general-baby-diapers");
 
-    expect(pads.quantity).toBe("10-20 片");
-    expect(pads.note).toContain("六十乘九十厘米");
-    expect(underwear.quantity).toContain("预计住院天数 + 2 条");
-    expect(underwear.note).toContain("孕晚期实际腰臀围选码");
+    expect(laborPads.quantity).toContain("3 包");
+    expect(laborPaper.quantity).toContain("2 包");
+    expect(wardPads.quantity).toContain("2 包");
+    expect(wardPaper.quantity).toContain("1 包");
+    expect(sanitaryPads.quantity).toBe("2 包");
+    expect(underwear.quantity).toContain("2 盒");
+    expect(underwear.note).toContain("孕晚期腰臀围选码");
     expect(diapers.quantity).toContain("NB 码先备 1 小包");
     expect(diapers.note).toContain("宝宝体重");
   });
 
+  it("keeps the requested documents and hospital supplies in their intended bags", () => {
+    const requestedIdsByCategory = {
+      documents: [
+        "general-doc-health-book",
+        "general-doc-prenatal-records",
+        "general-doc-medical-card",
+        "general-doc-id",
+      ],
+      mom_labor: [
+        "general-labor-energy-food",
+        "general-labor-snacks",
+        "general-labor-power-bank",
+        "general-labor-clothes",
+        "general-labor-slippers",
+        "general-labor-pads",
+        "general-labor-paper",
+        "general-labor-cup",
+        "general-labor-ctg-belt",
+      ],
+      mom_postpartum: [
+        "general-postpartum-yuezi-clothes",
+        "general-postpartum-nursing-bra",
+        "general-labor-socks",
+        "general-postpartum-slippers",
+        "general-labor-towels",
+        "general-postpartum-belly-wrap",
+        "general-postpartum-yuezi-hat-shoes",
+        "general-postpartum-pads",
+        "general-postpartum-paper",
+        "general-postpartum-sanitary-pads",
+        "general-postpartum-pull-up-pants",
+        "general-postpartum-underwear",
+        "general-postpartum-gloves",
+        "general-postpartum-toilet-seat-covers",
+        "general-postpartum-peri-bottle",
+        "general-labor-moon-toothbrush",
+        "general-postpartum-thermos",
+        "general-postpartum-going-home-clothes",
+        "general-labor-tissues",
+      ],
+      baby: [
+        "general-baby-hospital-clothes",
+        "general-baby-blanket",
+        "general-baby-sheet",
+        "general-baby-bath-basin",
+        "general-baby-socks",
+        "general-baby-hat",
+        "general-baby-cover-blanket",
+        "general-baby-towels",
+        "general-baby-bath-towels",
+        "general-baby-formula",
+        "general-baby-formula-bottle",
+        "general-baby-bottle-cleanser",
+        "general-baby-bottle-brush",
+        "general-baby-bottle-basin",
+        "general-baby-diapers",
+        "general-baby-cotton-tissues",
+        "general-baby-cloud-tissues",
+        "general-baby-wipes",
+        "general-baby-changing-pads",
+        "general-baby-diaper-cream",
+        "general-baby-touch-oil",
+        "general-baby-lotion",
+        "general-baby-face-cream",
+        "general-baby-laundry",
+      ],
+    } as const;
+
+    for (const [category, ids] of Object.entries(requestedIdsByCategory)) {
+      for (const id of ids) {
+        const item = getTemplateItem(id);
+        expect(item.category, id).toBe(category);
+        expect(["core", "confirm"], id).toContain(item.packTier);
+      }
+    }
+
+    expect(getTemplateItem("general-baby-bottle-basin").note).toContain(
+      "普通塑料盆不能代替",
+    );
+  });
+
   it("classifies optional supplies as checklist purchases", () => {
-    for (const id of [
-      "general-postpartum-cold-pack",
-      "general-postpartum-basins",
-      "general-baby-laundry",
-    ]) {
+    for (const id of ["general-postpartum-cold-pack"]) {
       const item = getTemplateItem(id);
       expect(item.priority).toBe("optional");
       expect(item.packTier).toBe("optional");
       expect(item.preparationKind).toBe("buy_and_pack");
     }
+
+    for (const id of [
+      "general-postpartum-basins",
+      "general-baby-bottle-basin",
+    ]) {
+      const item = getTemplateItem(id);
+      expect(item.packTier).toBe("confirm");
+      expect(item.preparationKind).toBe("buy_and_pack");
+    }
+
+    const laundry = getTemplateItem("general-baby-laundry");
+    expect(laundry.priority).toBe("optional");
+    expect(laundry.packTier).toBe("confirm");
+    expect(laundry.preparationKind).toBe("buy_and_pack");
   });
 });

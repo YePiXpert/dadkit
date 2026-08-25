@@ -24,6 +24,7 @@ export function isChecklistView(value: string | null): value is ChecklistView {
 export type ChecklistSectionId =
   | "documents"
   | "mom"
+  | "wardMom"
   | "baby"
   | "confinementMom"
   | "confinementBaby"
@@ -37,8 +38,9 @@ export const CHECKLIST_SECTIONS: Array<{
   caption: string;
 }> = [
   { id: "documents", label: "证件包", caption: "入院和办理材料" },
-  { id: "mom", label: "妈妈包", caption: "产房与住院用品" },
-  { id: "baby", label: "宝宝包", caption: "住院与出院用品" },
+  { id: "mom", label: "产房包", caption: "分娩时单独带入，放在最上层" },
+  { id: "wardMom", label: "病房包 · 妈妈", caption: "产后住院换洗与护理用品" },
+  { id: "baby", label: "病房包 · 宝宝", caption: "宝宝住院喂养与护理用品" },
   { id: "confinementMom", label: "月子妈妈包", caption: "产后恢复与哺乳，留在家里" },
   { id: "confinementBaby", label: "宝宝家中囤货", caption: "月子吃穿洗护，留在家里" },
   { id: "partner", label: "陪产人", caption: "家人随身与协作" },
@@ -164,16 +166,16 @@ export function getChecklistSection(item: ChecklistItem): ChecklistSectionId {
     return "lastMinute";
   }
 
-  if (item.category === "documents" || item.bag === "documents_folder") {
+  if (item.category === "documents") {
     return "documents";
   }
 
-  if (
-    item.category === "mom_labor" ||
-    item.category === "mom_postpartum" ||
-    item.bag === "mom_bag"
-  ) {
+  if (item.category === "mom_labor") {
     return "mom";
+  }
+
+  if (item.category === "mom_postpartum") {
+    return "wardMom";
   }
 
   if (item.category === "confinement_mom") {
@@ -184,13 +186,25 @@ export function getChecklistSection(item: ChecklistItem): ChecklistSectionId {
     return "confinementBaby";
   }
 
-  if (item.category === "baby" || item.bag === "baby_bag") {
+  if (item.category === "baby") {
     return "baby";
   }
 
-  if (item.category === "partner" || item.bag === "dad_backpack") {
+  if (item.category === "partner") {
     return "partner";
   }
+
+  if (item.category === "going_home") {
+    return "home";
+  }
+
+  // Legacy or imported rows may have a bag but an older category. Keep these
+  // fallbacks after category routing so a saved mom_labor row cannot drift
+  // back into the ward section just because its historical bag value is mom_bag.
+  if (item.bag === "documents_folder") return "documents";
+  if (item.bag === "mom_bag") return "wardMom";
+  if (item.bag === "baby_bag") return "baby";
+  if (item.bag === "dad_backpack") return "partner";
 
   return "home";
 }
