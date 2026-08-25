@@ -13,6 +13,7 @@ import {
   LinkEntryGrid,
   type LinkEntry,
 } from "@/components/LinkEntryGrid";
+import { PageHeader } from "@/components/PageHeader";
 import { FamilySetupPrompt } from "@/components/household/FamilySetupPrompt";
 import packageJson from "@/package.json";
 
@@ -66,14 +67,11 @@ export default function SettingsPage() {
   return (
     <div className="page-shell page-shell-with-nav">
       <section className="mobile-shell grid gap-6 sm:max-w-[42rem]">
-        <header className="px-1 text-center">
-          <h1 className="py-2 text-2xl font-bold leading-tight tracking-tight sm:text-[28px]">
-            我的
-          </h1>
-          <p className="text-sm leading-6 text-muted-foreground">
-            管理家庭同步、成员、清单偏好与数据备份。
-          </p>
-        </header>
+        <PageHeader
+          kicker="家庭与设置"
+          subtitle="管理家庭同步、成员、清单偏好与数据备份。"
+          title="我的"
+        />
 
         <FamilySetupPrompt />
 

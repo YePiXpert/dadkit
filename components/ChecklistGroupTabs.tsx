@@ -29,7 +29,7 @@ export function ChecklistGroupTabs({
   return (
     <div
       aria-label="清单视图"
-      className="grid grid-cols-4 gap-1 rounded-full bg-muted p-1"
+      className="grid grid-cols-4 gap-1.5 rounded-card bg-card p-1.5 shadow-sm ring-1 ring-border/35"
       role="group"
     >
       {CHECKLIST_VIEWS.map((view) => {
@@ -40,23 +40,23 @@ export function ChecklistGroupTabs({
           <button
             aria-pressed={active}
             className={cn(
-              "flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-full px-1 text-[13px] font-semibold text-muted-foreground transition-all sm:flex-row sm:gap-1.5 sm:px-3",
+              "flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-inset px-1 text-[13px] font-semibold text-muted-foreground transition-colors sm:flex-row sm:gap-1.5 sm:px-3",
               active &&
-                "bg-card text-foreground shadow-sm",
+                "bg-secondary text-primary",
             )}
             key={view.id}
             type="button"
             onClick={() => onChange(view.id)}
           >
             <span className="flex min-w-0 items-center gap-1.5">
-              <Icon className="size-4 shrink-0" />
+              <Icon aria-hidden="true" className="size-4 shrink-0" />
               <span className="truncate">{view.shortLabel}</span>
             </span>
             <span
               className={cn(
                 "text-[13px] font-medium",
                 active
-                  ? "text-foreground"
+                  ? "text-primary"
                   : "text-muted-foreground",
               )}
             >

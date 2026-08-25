@@ -54,12 +54,12 @@ export function PageHeader({
   }
 
   return (
-    <header className="relative px-1 pb-1 text-center">
-      {aside ? <div className="absolute right-0 top-1.5">{aside}</div> : null}
+    <header className="relative grid gap-1 px-1 py-2">
+      {aside ? <div className="absolute right-1 top-2">{aside}</div> : null}
       {kicker ? (
-        <p className="text-[13px] font-semibold tracking-wide text-primary">{kicker}</p>
+        <p className="text-[13px] font-semibold text-primary">{kicker}</p>
       ) : null}
-      <h1 className="py-2 text-2xl font-bold leading-tight tracking-tight sm:text-[28px]">
+      <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-[28px]">
         {title}
       </h1>
       {subtitle ? (

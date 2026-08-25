@@ -10,8 +10,9 @@ import {
   getGrowthWeek,
 } from "@/lib/growth";
 import { useGrowthStore } from "@/lib/growth-store";
+import { cn } from "@/lib/utils";
 
-export function HomeGrowthHint() {
+export function HomeGrowthHint({ tone = "default" }: { tone?: "default" | "inverse" }) {
   const hydrated = useGrowthStore((state) => state.hydrated);
   const hydrate = useGrowthStore((state) => state.hydrate);
   const dueDate = useGrowthStore((state) => state.dueDate);
@@ -31,17 +32,33 @@ export function HomeGrowthHint() {
     Boolean(dueDate) && !completedTaskIds.includes(currentWeek.checkupTaskId);
 
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+    <div
+      className={cn(
+        "mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm",
+        tone === "inverse" &&
+          "relative z-10 border-t border-on-highlight/20 pt-3",
+      )}
+    >
       {daysUntilDue === undefined ? (
         <Link
-          className="rounded-lg text-muted-foreground underline decoration-primary/40 underline-offset-4 hover:text-foreground"
+          className={cn(
+            "inline-flex min-h-11 items-center rounded-lg underline underline-offset-4 active:opacity-75",
+            tone === "inverse"
+              ? "font-medium text-on-highlight decoration-on-highlight/45 hover:text-on-highlight"
+              : "text-muted-foreground decoration-primary/40 hover:text-foreground",
+          )}
           href="/growth"
         >
           去填写预产期
         </Link>
       ) : (
         <Link
-          className="rounded-lg font-medium text-primary underline decoration-primary/40 underline-offset-4 hover:text-foreground"
+          className={cn(
+            "inline-flex min-h-11 items-center rounded-lg font-medium underline underline-offset-4 active:opacity-75",
+            tone === "inverse"
+              ? "text-on-highlight decoration-on-highlight/45 hover:text-on-highlight"
+              : "text-primary decoration-primary/40 hover:text-foreground",
+          )}
           href="/growth"
         >
           {daysUntilDue >= 0
@@ -50,9 +67,22 @@ export function HomeGrowthHint() {
         </Link>
       )}
       {hasPendingReminder ? (
-        <Link href="/growth">
-          <Badge variant="destructive">
-            <span className="size-1.5 rounded-full bg-destructive" />
+        <Link className="inline-flex min-h-11 items-center rounded-lg active:opacity-75" href="/growth">
+          <Badge
+            className={cn(
+              tone === "inverse" &&
+                "bg-on-highlight/15 text-on-highlight",
+            )}
+            variant={tone === "inverse" ? "secondary" : "destructive"}
+          >
+            <span
+              className={cn(
+                "size-1.5 rounded-full",
+                tone === "inverse"
+                  ? "bg-on-highlight"
+                  : "bg-destructive",
+              )}
+            />
             本周产检提醒待确认
           </Badge>
         </Link>

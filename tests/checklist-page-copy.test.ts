@@ -65,9 +65,15 @@ describe("V2 checklist experience", () => {
     expect(checklistWorkspace).toContain(
       "const { counts, packing, sections, visibleItems }",
     );
-    expect(checklistWorkspace).toContain("待买 {counts.shopping}");
-    expect(checklistWorkspace).toContain("待装 {counts.packing}");
-    expect(checklistWorkspace).toContain("已装 {counts.packed} 项");
+    expect(checklistWorkspace).toContain(
+      '<HeroStat label="待买" value={counts.shopping} />',
+    );
+    expect(checklistWorkspace).toContain(
+      '<HeroStat label="待装" value={counts.packing} />',
+    );
+    expect(checklistWorkspace).toContain(
+      '<HeroStat label="已装" value={counts.packed} />',
+    );
     expect(checklistWorkspace).toContain('setView("packed")');
   });
 

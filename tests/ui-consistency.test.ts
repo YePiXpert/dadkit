@@ -76,15 +76,12 @@ describe("three-tier border radius convergence", () => {
     }
   });
 
-  it("reserves rounded-3xl for the floating mobile dock", () => {
+  it("keeps the edge-to-edge app tab bar off the card-radius scale", () => {
     const offenders = sourceFiles
       .filter(({ source }) => source.includes("rounded-3xl"))
       .map(({ path }) => path);
 
-    expect(offenders).toHaveLength(1);
-    expect(offenders[0].endsWith(join("components", "MobileNav.tsx"))).toBe(
-      true,
-    );
+    expect(offenders).toEqual([]);
   });
 });
 
@@ -228,8 +225,8 @@ describe("checklist skeleton isomorphism", () => {
     expect(skeleton).toContain("page-shell page-shell-with-nav");
     expect(skeleton).toContain("rounded-card bg-muted");
     expect(skeleton).toContain("grid-cols-4");
-    expect(skeleton.match(/h-28 rounded-card/g)?.length).toBeGreaterThanOrEqual(
-      2,
+    expect(skeleton.match(/h-44 rounded-card/g)?.length ?? 0).toBeGreaterThanOrEqual(
+      4,
     );
   });
 });

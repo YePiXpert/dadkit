@@ -16,6 +16,7 @@ import {
 
 import { BabyHomeCard } from "@/components/baby/BabyHomeCard";
 import { GrowthAnalogyIllustration } from "@/components/GrowthAnalogyIllustration";
+import { HomeHeroIllustration } from "@/components/HomeHeroIllustration";
 import { HouseholdFeaturePrompt } from "@/components/household/HouseholdFeaturePrompt";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CHECKLIST_PATH } from "@/lib/app-routes";
@@ -120,7 +121,8 @@ export function HomeDashboard() {
   return (
     <div className="page-shell page-shell-with-nav">
       <section className="mobile-shell grid gap-4 sm:max-w-[42rem]">
-        <header className="grid gap-1 px-1 py-2 text-center">
+        <header className="grid gap-1 px-1 py-2">
+          <p className="text-[13px] font-semibold text-primary">家庭首页</p>
           <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-[28px]">
             {householdName || "首页"}
           </h1>
@@ -165,24 +167,24 @@ function StageHero({
 
     return (
       <Link
-        className="hero-card group flex items-center gap-4 p-5 sm:p-6"
+        className="app-highlight-card group flex items-center gap-4 p-5 transition-opacity active:opacity-90 sm:p-6"
         href="/baby"
       >
-        <span className="icon-tile size-12">
-          <Baby className="size-6" />
+        <span className="relative z-10 flex size-12 shrink-0 items-center justify-center rounded-2xl bg-on-highlight/15 text-on-highlight">
+          <Baby aria-hidden="true" className="size-6" />
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-primary">
+        <span className="relative z-10 min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-on-highlight">
             宝宝已经来到身边
           </span>
-          <span className="mt-1 block break-words text-2xl font-bold leading-tight text-foreground">
+          <span className="mt-1 block break-words text-2xl font-bold leading-tight text-on-highlight">
             {nickname}出生第 {days} 天
           </span>
-          <span className="mt-1 block text-sm leading-6 text-muted-foreground">
+          <span className="mt-1 block text-sm leading-6 text-on-highlight">
             点这里记录喂养、尿布和睡眠。
           </span>
         </span>
-        <ChevronRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
+        <ChevronRight aria-hidden="true" className="relative z-10 size-5 shrink-0 text-on-highlight transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
       </Link>
     );
   }
@@ -191,24 +193,22 @@ function StageHero({
 
   if (daysUntilDue === undefined) {
     return (
-      <Link className="hero-card group block p-5 sm:p-6" href="/growth">
-        <span className="flex items-center gap-4">
-          <span className="icon-tile size-12">
-            <Sprout className="size-6" />
-          </span>
+      <Link className="app-highlight-card group block p-5 transition-opacity active:opacity-90 sm:p-6" href="/growth">
+        <span className="relative z-10 flex items-start justify-between gap-4">
           <span className="min-w-0">
-            <span className="block text-sm font-semibold text-primary">
+            <span className="block text-sm font-semibold text-on-highlight">
               孕周状态
             </span>
-            <span className="mt-1 block text-2xl font-bold leading-tight text-foreground">
+            <span className="mt-1 block text-2xl font-bold leading-tight text-on-highlight">
               宝宝现在多大了？
             </span>
           </span>
+          <HomeHeroIllustration className="w-24 shrink-0 sm:w-28" />
         </span>
-        <span className="mt-2 block text-sm leading-6 text-muted-foreground">
+        <span className="relative z-10 mt-2 block text-sm leading-6 text-on-highlight">
           设置预产期后，这里会显示孕周、倒计时和成长类比。
         </span>
-        <span className="mt-4 inline-flex min-h-11 items-center gap-1 rounded-full bg-card px-4 text-sm font-semibold text-primary shadow-sm">
+        <span className="relative z-10 mt-4 inline-flex min-h-11 items-center gap-1 rounded-full bg-on-highlight px-4 text-sm font-semibold text-primary shadow-sm">
           设置预产期
           <ArrowRight
             aria-hidden="true"
@@ -226,21 +226,21 @@ function StageHero({
   const weekData = getGrowthWeek(getCurrentGrowthWeekFromDueDate(dueDate));
 
   return (
-    <Link className="hero-card group block p-5 sm:p-6" href="/growth">
-      <div className="flex items-start justify-between gap-4">
+    <Link className="app-highlight-card group block p-5 transition-opacity active:opacity-90 sm:p-6" href="/growth">
+      <div className="relative z-10 flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-primary">
+          <p className="text-sm font-semibold text-on-highlight">
             {weekData.trimester}
           </p>
-          <p className="mt-1 text-3xl font-bold leading-tight text-foreground">
+          <p className="mt-1 text-3xl font-bold leading-tight text-on-highlight">
             孕 {displayWeek} 周{displayDay > 0 ? ` + ${displayDay} 天` : ""}
           </p>
-          <p className="mt-1.5 text-sm font-medium text-foreground">
+          <p className="mt-1.5 text-sm font-medium text-on-highlight">
             {overdue
               ? `预产期已过 ${Math.abs(daysUntilDue)} 天`
               : `距预产期约 ${daysUntilDue} 天`}
           </p>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+          <p className="mt-1 text-sm leading-6 text-on-highlight">
             宝宝现在约有{weekData.analogy}那么大。
           </p>
         </div>
@@ -262,14 +262,14 @@ function HomeEntryGrid() {
 
         return (
           <Link
-            className="group flex min-w-0 flex-col gap-3 rounded-card bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
+            className="group flex min-w-0 flex-col gap-3 rounded-card bg-card p-4 shadow-sm transition-colors hover:shadow-md active:bg-secondary/30"
             href={entry.href}
             key={entry.href}
           >
             <span
               className={`flex size-11 shrink-0 items-center justify-center rounded-2xl ${entry.accent}`}
             >
-              <Icon className="size-5" />
+              <Icon aria-hidden="true" className="size-5" />
             </span>
             <span className="min-w-0">
               <span className="block text-[15px] font-semibold leading-6 text-foreground">
@@ -295,7 +295,7 @@ function ProgressSummaryCard({
 }) {
   return (
     <Link
-      className="group block rounded-card bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
+      className="group block rounded-card bg-card p-5 shadow-sm transition-colors hover:shadow-md active:bg-secondary/25"
       href={CHECKLIST_PATH}
     >
       <div className="flex items-start justify-between gap-3">
@@ -329,7 +329,7 @@ function ProgressSummaryCard({
         role="progressbar"
       >
         <span
-          className="block h-full rounded-full bg-primary transition-[width] duration-500"
+          className="block h-full rounded-full bg-primary transition-[width] duration-500 motion-reduce:transition-none"
           style={{ width: `${packing.percent}%` }}
         />
       </div>

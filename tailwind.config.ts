@@ -71,6 +71,8 @@ const config: Config = {
         "tile-car-fg": "hsl(var(--tile-car-fg) / <alpha-value>)",
         "tile-lastminute-bg": "hsl(var(--tile-lastminute-bg) / <alpha-value>)",
         "tile-lastminute-fg": "hsl(var(--tile-lastminute-fg) / <alpha-value>)",
+        "on-highlight":
+          "hsl(var(--checklist-hero-foreground) / <alpha-value>)",
       },
       borderRadius: {
         card: "1.75rem",

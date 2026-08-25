@@ -24,7 +24,9 @@ describe("checklist and home dashboard pages", () => {
 
   it("opens directly into an actionable checklist", () => {
     expect(checklistWorkspace).toContain("待产包清单");
-    expect(checklistWorkspace).toContain("看一眼还差什么，准备好就打勾。");
+    expect(checklistWorkspace).toContain("产房、病房分开装，入院时更从容。");
+    expect(checklistWorkspace).toContain("住院分包");
+    expect(checklistWorkspace).toContain("后续准备");
     expect(checklistWorkspace).toContain("deriveChecklistView");
     expect(checklistWorkspace).toContain("visibleItems");
     expect(checklistWorkspace).toContain("counts");

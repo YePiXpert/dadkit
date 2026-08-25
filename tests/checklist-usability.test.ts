@@ -164,7 +164,7 @@ describe("in-app confirmation dialogs", () => {
 
 describe("home due-date countdown and checkup reminder", () => {
   it("renders the growth hint inside the checklist hero", () => {
-    expect(checklistWorkspace).toContain("<HomeGrowthHint />");
+    expect(checklistWorkspace).toContain('<HomeGrowthHint tone="inverse" />');
   });
 
   it("covers both due-date states and hides a completed reminder", () => {

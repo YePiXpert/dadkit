@@ -20,9 +20,9 @@ export function MobileNav() {
   return (
     <nav
       aria-label="主导航"
-      className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.75rem)] z-50 rounded-3xl bg-card/90 shadow-lg backdrop-blur-xl sm:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-border/50 bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-nav backdrop-blur-xl sm:hidden"
     >
-      <div className="mobile-shell grid grid-cols-5 gap-1 px-2 py-1.5">
+      <div className="mobile-shell grid grid-cols-5 gap-1 px-2 py-1">
         {PRIMARY_NAVIGATION_ITEMS.map((item) => {
           const active = isPrimaryNavigationItemActive(pathname, item);
           const Icon = item.icon;
@@ -31,13 +31,20 @@ export function MobileNav() {
             <Link
               aria-current={active ? "page" : undefined}
               className={cn(
-                "relative flex h-[3.4rem] min-h-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground",
-                active && "bg-secondary font-semibold text-primary",
+                "relative flex h-[4rem] min-h-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-xs font-medium text-muted-foreground transition-colors hover:text-foreground active:bg-secondary/60",
+                active && "font-semibold text-primary",
               )}
               href={item.href}
               key={item.href}
             >
-              <Icon className="size-6" strokeWidth={active ? 2.2 : 1.8} />
+              <span
+                className={cn(
+                  "grid size-8 place-items-center rounded-xl transition-colors",
+                  active && "bg-secondary",
+                )}
+              >
+                <Icon aria-hidden="true" className="size-5" strokeWidth={active ? 2.3 : 1.8} />
+              </span>
               <span>{item.label}</span>
             </Link>
           );

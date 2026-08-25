@@ -57,6 +57,7 @@ type ChecklistItemForm = {
 const CUSTOM_CATEGORIES: ChecklistCategory[] = [
   "documents",
   "mom_labor",
+  "mom_postpartum",
   "baby",
   "confinement_mom",
   "confinement_baby",

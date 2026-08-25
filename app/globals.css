@@ -70,6 +70,10 @@
     --tile-car-fg: 268 32% 46%;
     --tile-lastminute-bg: 335 72% 92%;
     --tile-lastminute-fg: 335 60% 46%;
+    --checklist-hero-start: 345 76% 49%;
+    --checklist-hero-end: 6 70% 48%;
+    --checklist-hero-glow: 28 88% 62%;
+    --checklist-hero-foreground: 0 0% 100%;
     color-scheme: light;
   }
 
@@ -139,6 +143,10 @@
     --tile-car-fg: 268 35% 74%;
     --tile-lastminute-bg: 335 28% 20%;
     --tile-lastminute-fg: 335 50% 72%;
+    --checklist-hero-start: 345 62% 48%;
+    --checklist-hero-end: 8 58% 46%;
+    --checklist-hero-glow: 28 70% 60%;
+    --checklist-hero-foreground: 0 0% 100%;
     color-scheme: dark;
   }
 
@@ -204,7 +212,7 @@
   }
 
   .item-card-grid {
-    @apply grid grid-cols-1 gap-3 xs:grid-cols-2;
+    @apply grid grid-cols-1 gap-3 sm:grid-cols-2;
   }
 
   .hero-card {
@@ -215,6 +223,34 @@
       hsl(var(--hero-via)) 55%,
       hsl(var(--hero-to)) 100%
     );
+  }
+
+  .app-highlight-card {
+    @apply relative overflow-hidden rounded-card shadow-lg;
+    color: hsl(var(--checklist-hero-foreground));
+    background-image:
+      radial-gradient(
+        circle at 86% 4%,
+        hsl(var(--checklist-hero-glow) / 0.14),
+        transparent 34%
+      ),
+      linear-gradient(
+        135deg,
+        hsl(var(--checklist-hero-start)) 0%,
+        hsl(var(--checklist-hero-end)) 100%
+      );
+  }
+
+  .app-highlight-card::after {
+    content: "";
+    position: absolute;
+    width: 10rem;
+    height: 10rem;
+    right: -4.5rem;
+    bottom: -6.5rem;
+    border-radius: 9999px;
+    background: hsl(var(--checklist-hero-foreground) / 0.08);
+    pointer-events: none;
   }
 
   .safe-bottom-fab {

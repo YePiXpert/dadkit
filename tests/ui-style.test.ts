@@ -77,7 +77,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(globals).toContain("--ring: 7 58% 52%");
     expect(globals).toContain("--radius: 1.75rem");
     expect(globals).toContain("sm:max-w-[42rem]");
-    expect(globals).toContain("xs:grid-cols-2");
+    expect(globals).toContain("@apply grid grid-cols-1 gap-3 sm:grid-cols-2");
     expect(tailwindConfig).toContain('xs: "360px"');
     expect(globals).toContain("overflow-x: clip");
     expect(globals).toContain("touch-action: pan-x pan-y");
@@ -218,11 +218,14 @@ describe("V3 PWA visual and navigation contract", () => {
 
     expect(mobileNav).toContain("grid grid-cols-5");
     expect(mobileNav).toContain(
-      "fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),0.75rem)]",
+      "fixed inset-x-0 bottom-0",
     );
-    expect(mobileNav).toContain("rounded-3xl bg-card/90 shadow-lg backdrop-blur-xl");
-    expect(mobileNav).toContain("bg-secondary font-semibold text-primary");
-    expect(mobileNav).toContain("strokeWidth={active ? 2.2 : 1.8}");
+    expect(mobileNav).toContain(
+      "border-t border-border/50 bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-nav backdrop-blur-xl",
+    );
+    expect(mobileNav).toContain('active && "font-semibold text-primary"');
+    expect(mobileNav).toContain('active && "bg-secondary"');
+    expect(mobileNav).toContain("strokeWidth={active ? 2.3 : 1.8}");
 
     expect(appHeader).toContain("border-b border-border/60 bg-background/80 backdrop-blur-xl");
     expect(appHeader).toContain("从待产到育儿");
@@ -244,8 +247,11 @@ describe("V3 PWA visual and navigation contract", () => {
 
   it("keeps checklist controls touch-friendly and narrow-screen text readable", () => {
     expect(checklistGroupTabs).toContain("min-h-14");
-    expect(checklistGroupTabs).toContain("rounded-full bg-muted p-1");
-    expect(checklistGroupTabs).toContain("bg-card text-foreground shadow-sm");
+    expect(checklistGroupTabs).toContain(
+      "rounded-card bg-card p-1.5 shadow-sm ring-1 ring-border/35",
+    );
+    expect(checklistGroupTabs).toContain("rounded-inset");
+    expect(checklistGroupTabs).toContain("bg-secondary text-primary");
     expect(checklistItemRow).toContain("size-11");
     expect(checklistItemRow).toContain("break-words text-[15px] font-semibold leading-5");
     expect(checklistCategoryCard).toContain("break-words text-[15px] font-semibold leading-5");
@@ -253,7 +259,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(checklistSectionWorkspace).toContain("item-card-grid");
     expect(checklistSectionWorkspace).toContain('"grid gap-2"');
     expect(checklistSectionWorkspace).toContain("useChecklistViewPreference");
-    expect(globals).toContain("xs:grid-cols-2");
+    expect(globals).toContain("sm:grid-cols-2");
     expect(checklistItemRow).toContain("ChecklistItemArt");
     expect(checklistItemRow).toContain(
       "aspect-[16/9] items-center justify-center overflow-hidden rounded-inset bg-muted/75 xs:aspect-[4/3]",
@@ -268,7 +274,7 @@ describe("V3 PWA visual and navigation contract", () => {
       "rounded-card bg-card p-3 shadow-sm",
     );
     expect(checklistWorkspace).toContain(
-      "safe-bottom-fab fixed right-4 z-40 flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glow",
+      "safe-bottom-fab fixed right-4 z-40 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glow",
     );
   });
 

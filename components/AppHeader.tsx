@@ -15,7 +15,7 @@ export function AppHeader() {
   return (
     <header className="hidden border-b border-border/60 bg-background/80 backdrop-blur-xl sm:sticky sm:top-0 sm:z-40 sm:block sm:pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
-        <Link className="flex min-w-0 items-center gap-2" href="/">
+        <Link className="flex min-h-11 min-w-0 items-center gap-2 rounded-xl" href="/">
           <span className="min-w-0">
             <span className="block truncate text-base font-bold leading-tight tracking-tight">
               DadKit
@@ -34,13 +34,13 @@ export function AppHeader() {
               <Link
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-11 items-center gap-2 rounded-full px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-secondary-foreground",
-                  active && "bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 hover:text-primary-foreground",
+                  "inline-flex h-11 items-center gap-2 rounded-full px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-secondary-foreground active:bg-secondary/70",
+                  active && "bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/85",
                 )}
                 href={item.href}
                 key={item.href}
               >
-                <Icon className="size-4" />
+                <Icon aria-hidden="true" className="size-4" />
                 {item.label}
               </Link>
             );

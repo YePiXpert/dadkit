@@ -14,6 +14,7 @@ import {
   LinkEntryGrid,
   type LinkEntry,
 } from "@/components/LinkEntryGrid";
+import { PageHeader } from "@/components/PageHeader";
 
 export const metadata: Metadata = {
   title: "工具 | DadKit",
@@ -86,14 +87,11 @@ export default function ToolsPage() {
   return (
     <div className="page-shell page-shell-with-nav">
       <section className="mobile-shell grid gap-5 sm:max-w-[42rem]">
-        <header className="px-1 text-center">
-          <h1 className="py-2 text-2xl font-bold leading-tight tracking-tight sm:text-[28px]">
-            工具
-          </h1>
-          <p className="text-sm leading-6 text-muted-foreground">
-            从孕周跟踪到出发待产，这些帮手随取随用。
-          </p>
-        </header>
+        <PageHeader
+          kicker="顺手工具"
+          subtitle="从孕周跟踪到出发待产，这些帮手随取随用。"
+          title="工具"
+        />
 
         <LinkEntryGrid entries={TOOL_ENTRIES} />
 

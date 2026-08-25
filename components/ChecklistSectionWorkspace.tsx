@@ -3,12 +3,12 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGrid, List, Plus, WrapText } from "lucide-react";
+import { ArrowLeft, LayoutGrid, List, Plus, WrapText } from "lucide-react";
 
 import { ChecklistGroupTabs } from "@/components/ChecklistGroupTabs";
 import { ChecklistItemRow } from "@/components/ChecklistItemRow";
+import { ChecklistProgressRing } from "@/components/ChecklistProgressRing";
 import { EmptyState } from "@/components/EmptyState";
-import { PageHeader } from "@/components/PageHeader";
 import { cn } from "@/lib/utils";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,6 +41,7 @@ const ChecklistItemDetailsDialog = dynamic(
 const DEFAULT_CATEGORY_BY_SECTION = {
   documents: "documents",
   mom: "mom_labor",
+  wardMom: "mom_postpartum",
   baby: "baby",
   confinementMom: "confinement_mom",
   confinementBaby: "confinement_baby",
@@ -68,7 +69,7 @@ export function ChecklistSectionWorkspace({
   const section = CHECKLIST_SECTIONS.find(
     (candidate) => candidate.id === sectionId,
   )!;
-  const { counts, sections } = useMemo(
+  const { counts, packing, sections } = useMemo(
     () =>
       deriveChecklistView(checklist, {
         mode: checklistMode,
@@ -93,14 +94,16 @@ export function ChecklistSectionWorkspace({
 
   return (
     <div className="page-shell page-shell-with-nav">
-      <section className="mobile-shell grid gap-4">
-        <PageHeader
-          title={section.label}
-          kicker="清单分类"
-          subtitle={section.caption}
-          backHref={getChecklistHomeHref(query)}
-          backLabel="返回清单首页"
-          aside={
+      <section className="mobile-shell grid gap-5">
+        <section className="app-highlight-card px-4 pb-8 pt-4 sm:p-6">
+          <div className="relative z-10 flex items-center justify-between gap-3">
+            <Link
+              aria-label="返回清单首页"
+              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-on-highlight/15 text-on-highlight transition-colors hover:bg-on-highlight/25"
+              href={getChecklistHomeHref(query)}
+            >
+              <ArrowLeft aria-hidden="true" className="size-5" />
+            </Link>
             <div
               aria-label="清单显示选项"
               className="flex items-center gap-2"
@@ -114,9 +117,9 @@ export function ChecklistSectionWorkspace({
                 }
                 aria-pressed={viewMode === "list"}
                 className={cn(
-                  "flex size-11 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm transition-all hover:text-foreground hover:shadow-md active:scale-95",
+                  "flex size-11 items-center justify-center rounded-full bg-on-highlight/15 text-on-highlight transition-colors hover:bg-on-highlight/25",
                   viewMode === "list" &&
-                    "bg-primary text-primary-foreground hover:text-primary-foreground",
+                    "bg-on-highlight text-primary hover:bg-on-highlight/90",
                 )}
                 title={
                   viewMode === "cards"
@@ -127,30 +130,57 @@ export function ChecklistSectionWorkspace({
                 onClick={toggleViewMode}
               >
                 {viewMode === "cards" ? (
-                  <List className="size-5" />
+                  <List aria-hidden="true" className="size-5" />
                 ) : (
-                  <LayoutGrid className="size-5" />
+                  <LayoutGrid aria-hidden="true" className="size-5" />
                 )}
               </button>
               <button
                 aria-label="显示物品说明"
                 aria-pressed={showFullDescriptions}
                 className={cn(
-                  "flex size-11 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm transition-all hover:text-foreground hover:shadow-md active:scale-95",
+                  "flex size-11 items-center justify-center rounded-full bg-on-highlight/15 text-on-highlight transition-colors hover:bg-on-highlight/25",
                   showFullDescriptions &&
-                    "bg-primary text-primary-foreground hover:text-primary-foreground",
+                    "bg-on-highlight text-primary hover:bg-on-highlight/90",
                 )}
                 title="开启后在卡片中完整显示，不截断文字"
                 type="button"
                 onClick={() => setShowFullDescriptions(!showFullDescriptions)}
               >
-                <WrapText className="size-5" />
+                <WrapText aria-hidden="true" className="size-5" />
               </button>
             </div>
-          }
-        />
+          </div>
 
-        <ChecklistGroupTabs counts={counts} value={view} onChange={setView} />
+          <div className="relative z-10 mt-5 flex items-end justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-on-highlight">
+                待产清单 · 分阶段准备
+              </p>
+              <h1 className="mt-1 break-words text-[26px] font-bold leading-tight tracking-tight text-on-highlight sm:text-3xl">
+                {section.label}
+              </h1>
+              <p className="mt-2 max-w-[24rem] text-sm leading-6 text-on-highlight">
+                {section.caption}
+              </p>
+            </div>
+            <ChecklistProgressRing
+              compact
+              label={`${section.label}完成`}
+              value={packing.percent}
+            />
+          </div>
+
+          <div className="relative z-10 mt-5 grid grid-cols-3 divide-x divide-on-highlight/20 rounded-2xl bg-on-highlight/15 py-3 text-center text-on-highlight">
+            <SectionStat label="待买" value={counts.shopping} />
+            <SectionStat label="待装" value={counts.packing} />
+            <SectionStat label="已装" value={counts.packed} />
+          </div>
+        </section>
+
+        <div className="relative z-20 -mt-9 px-2">
+          <ChecklistGroupTabs counts={counts} value={view} onChange={setView} />
+        </div>
 
         {visibleItems.length === 0 ? (
           <div className="grid gap-3">
@@ -216,14 +246,25 @@ export function ChecklistSectionWorkspace({
         trigger={
           <button
             aria-label={`在${section.label}中新增物品`}
-            className="safe-bottom-fab fixed right-4 z-40 flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glow transition-transform active:scale-95 sm:right-[max(1rem,calc(50%_-_21rem_-_5rem))]"
+            className="safe-bottom-fab fixed right-4 z-40 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glow transition-transform active:scale-95 motion-reduce:transition-none sm:right-[max(1rem,calc(50%_-_21rem_-_5rem))]"
             type="button"
           >
-            <Plus className="size-7" strokeWidth={2.2} />
+            <Plus aria-hidden="true" className="size-6" strokeWidth={2.2} />
           </button>
         }
       />
     </div>
+  );
+}
+
+function SectionStat({ label, value }: { label: string; value: number }) {
+  return (
+    <span className="grid gap-1 px-2">
+      <strong className="text-lg font-bold leading-none">{value}</strong>
+      <span className="text-xs font-medium text-on-highlight">
+        {label}
+      </span>
+    </span>
   );
 }
 
@@ -233,9 +274,9 @@ export function ChecklistSectionWorkspaceSkeleton() {
       className="page-shell page-shell-with-nav"
       aria-label="正在准备分类清单"
     >
-      <section className="mobile-shell grid gap-3">
-        <Skeleton className="h-20 rounded-card" />
-        <Skeleton className="h-16 rounded-card" />
+      <section className="mobile-shell grid gap-4">
+        <Skeleton className="h-64 rounded-card" />
+        <Skeleton className="-mt-10 h-16 rounded-card" />
         <Skeleton className="h-20 rounded-card" />
         <div className="item-card-grid">
           <Skeleton className="h-80 rounded-card" />

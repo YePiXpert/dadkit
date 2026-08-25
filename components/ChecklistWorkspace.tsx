@@ -3,14 +3,22 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Clipboard, PackageCheck, Plus, Search, Settings2, X } from "lucide-react";
+import {
+  Clipboard,
+  PackageCheck,
+  Plus,
+  Search,
+  Settings2,
+  Sparkles,
+  X,
+} from "lucide-react";
 
 import { CelebrationOverlay } from "@/components/CelebrationOverlay";
 import { ChecklistCategoryCard } from "@/components/ChecklistCategoryCard";
 import { ChecklistGroupTabs } from "@/components/ChecklistGroupTabs";
+import { ChecklistProgressRing } from "@/components/ChecklistProgressRing";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EmptyState } from "@/components/EmptyState";
-import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,6 +53,8 @@ const HomeGrowthHint = dynamic(
     ),
   { ssr: false },
 );
+
+const HOSPITAL_SECTION_IDS = new Set(["documents", "mom", "wardMom", "baby"]);
 
 export function ChecklistWorkspace() {
   const { query, setView, view } = useChecklistViewQuery();
@@ -85,6 +95,19 @@ export function ChecklistWorkspace() {
   const searchedVisibleItems = useMemo(
     () => (search.trim() ? searchedSections.flatMap((section) => section.items) : visibleItems),
     [search, searchedSections, visibleItems],
+  );
+  const displayedSections = useMemo(
+    () =>
+      search.trim()
+        ? searchedSections.filter((section) => section.items.length > 0)
+        : searchedSections,
+    [search, searchedSections],
+  );
+  const hospitalSections = displayedSections.filter((section) =>
+    HOSPITAL_SECTION_IDS.has(section.id),
+  );
+  const followUpSections = displayedSections.filter(
+    (section) => !HOSPITAL_SECTION_IDS.has(section.id),
   );
   const departureItemCount = useMemo(
     () => getDepartureItemCount(checklist),
@@ -222,66 +245,85 @@ export function ChecklistWorkspace() {
 
   return (
     <div className="page-shell page-shell-with-nav">
-      <section className="mobile-shell grid gap-4">
-        <PageHeader
-          aside={
-            <Link
-              aria-label="清单设置"
-              className="flex size-11 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm transition-shadow hover:text-foreground hover:shadow-md"
-              href="/settings/checklist"
-            >
-              <Settings2 className="size-5" />
-            </Link>
-          }
-          title="待产包清单"
-          subtitle="看一眼还差什么，准备好就打勾。"
-        />
-
-        <section className="rounded-card bg-card p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <span className="shrink-0 text-2xl font-bold leading-none text-foreground">
-              {packing.percent}
-              <span className="ml-0.5 text-base">%</span>
-            </span>
-            <button
-              className="shrink-0 rounded-lg text-xs font-medium text-primary underline decoration-primary/40 underline-offset-4 transition-colors hover:text-foreground"
-              type="button"
-              onClick={() => setView("packed")}
-            >
-              已装包 {packing.completed} 项，共 {packing.total} 项
-            </button>
+      <section className="mobile-shell grid gap-5">
+        <header className="flex items-start justify-between gap-4 px-1 pt-1">
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold text-primary">待产准备</p>
+            <h1 className="mt-1 text-2xl font-bold leading-tight tracking-tight sm:text-[28px]">
+              待产包清单
+            </h1>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              产房、病房分开装，入院时更从容。
+            </p>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            待买 {counts.shopping} · 待装 {counts.packing} · 已装 {counts.packed} 项
-          </p>
-          <div
-            aria-label={`清单完成 ${packing.percent}%`}
-            aria-valuemax={100}
-            aria-valuemin={0}
-            aria-valuenow={packing.percent}
-            className="mt-2.5 h-2 overflow-hidden rounded-full bg-muted"
-            role="progressbar"
+          <Link
+            aria-label="清单设置"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground shadow-sm ring-1 ring-border/35 transition-colors hover:bg-secondary hover:text-primary active:bg-secondary/70"
+            href="/settings/checklist"
           >
-            <span
-              className="block h-full rounded-full bg-primary transition-[width] duration-500"
-              style={{ width: `${packing.percent}%` }}
-            />
+            <Settings2 aria-hidden="true" className="size-5" />
+          </Link>
+        </header>
+
+        <section className="app-highlight-card p-5 sm:p-6">
+          <div className="relative z-10 flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="inline-flex items-center gap-1.5 rounded-full bg-on-highlight/15 px-3 py-1 text-xs font-semibold text-on-highlight">
+                <Sparkles aria-hidden="true" className="size-3.5" />
+                准备进度
+              </p>
+              <h2 className="mt-3 text-balance text-[22px] font-bold leading-8 text-on-highlight sm:text-2xl">
+                {getProgressHeadline(packing.percent)}
+              </h2>
+              <button
+                className="mt-2 min-h-11 rounded-full px-1 text-left text-[13px] font-medium text-on-highlight underline decoration-on-highlight/45 underline-offset-4"
+                type="button"
+                onClick={() => setView("packed")}
+              >
+                已装包 {packing.completed} 项，共 {packing.total} 项
+              </button>
+            </div>
+            <ChecklistProgressRing label="清单完成" value={packing.percent} />
           </div>
-          <HomeGrowthHint />
+
+          <div className="relative z-10 mt-4 grid grid-cols-3 divide-x divide-on-highlight/20 rounded-2xl bg-on-highlight/10 py-3 text-center text-on-highlight">
+            <HeroStat label="待买" value={counts.shopping} />
+            <HeroStat label="待装" value={counts.packing} />
+            <HeroStat label="已装" value={counts.packed} />
+          </div>
+          <HomeGrowthHint tone="inverse" />
         </section>
 
-        <div className="sticky top-[max(env(safe-area-inset-top),0.5rem)] z-30 -mx-1 border-b border-border/50 bg-background/85 px-1 pb-2 pt-1 backdrop-blur-xl">
+        <div className="sticky top-[max(env(safe-area-inset-top),0.5rem)] z-30 -mt-8 rounded-card bg-background/80 p-1 backdrop-blur-xl">
           <ChecklistGroupTabs counts={counts} value={view} onChange={setView} />
         </div>
 
-        <div className="rounded-card bg-card p-3 shadow-sm">
+        <div className="flex items-end justify-between gap-3 px-1 pt-1">
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold">{activeView?.label}</h2>
+            <p className="mt-0.5 text-[13px] leading-5 text-muted-foreground">
+              {getViewCaption(view, searchedVisibleItems.length)}
+            </p>
+          </div>
+          <Button
+            aria-label="复制清单为文本"
+            onClick={copyChecklistText}
+            size="sm"
+            variant="ghost"
+          >
+            <Clipboard aria-hidden="true" />
+            复制
+          </Button>
+        </div>
+
+        <div className="rounded-card bg-card p-3 shadow-sm ring-1 ring-border/25">
           <label className="sr-only" htmlFor="checklist-search">
             搜索清单
           </label>
           <div className="flex items-center gap-2">
-            <Search className="size-4 shrink-0 text-muted-foreground" />
+            <Search aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
             <Input
-              className="h-10 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+              className="h-11 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
               id="checklist-search"
               onChange={(event) => setSearch(event.target.value)}
               placeholder={`搜索物品名称或备注（当前「${activeView?.label}」）`}
@@ -291,7 +333,7 @@ export function ChecklistWorkspace() {
             {search ? (
               <button
                 aria-label="清除搜索"
-                className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary"
+                 className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary active:bg-secondary/70"
                 onClick={() => setSearch("")}
                 type="button"
               >
@@ -301,25 +343,14 @@ export function ChecklistWorkspace() {
           </div>
         </div>
 
-        <div className="px-1 pt-1">
-          <h2 className="text-[15px] font-semibold">{activeView?.label}</h2>
-          <p className="mt-0.5 text-[13px] text-muted-foreground">
-            {getViewCaption(view, searchedVisibleItems.length)}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2 px-1">
-          <Button onClick={copyChecklistText} size="sm" variant="outline">
-            <Clipboard />
-            复制清单为文本
-          </Button>
-          {view === "packing" && bulkPackingIds.length > 0 ? (
+        {view === "packing" && bulkPackingIds.length > 0 ? (
+          <div className="flex flex-wrap gap-2 px-1">
             <Button onClick={() => setBulkConfirmOpen(true)} size="sm" variant="outline">
-              <PackageCheck />
+              <PackageCheck aria-hidden="true" />
               本页全部标记装包
             </Button>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         {highlightNotNeeded ? (
           <section
@@ -352,25 +383,74 @@ export function ChecklistWorkspace() {
           />
         ) : null}
 
-        <div className="grid gap-4">
-          {searchedSections.map((section) => (
-            <ChecklistCategoryCard
-              caption={section.caption}
-              href={getChecklistSectionHref(section.id, query)}
-              items={section.items}
-              key={section.id}
-              progressItems={
-                allSections.find((candidate) => candidate.id === section.id)
-                  ?.items
-              }
-              resolvedLabel={
-                view === "packed" ? `${section.items.length} 项已装` : undefined
-              }
-              sectionId={section.id}
-              title={section.label}
-            />
-          ))}
-        </div>
+        {searchedVisibleItems.length > 0 ? (
+          <div className="grid gap-6">
+            {hospitalSections.length > 0 ? (
+              <section aria-labelledby="hospital-bags-heading" className="grid gap-3">
+                <div className="px-1">
+                  <h2 className="text-[15px] font-bold" id="hospital-bags-heading">
+                    住院分包
+                  </h2>
+                  <p className="mt-0.5 text-[13px] leading-5 text-muted-foreground">
+                    证件、产房和病房用品分开放，拿取更快。
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {hospitalSections.map((section) => (
+                    <ChecklistCategoryCard
+                      caption={section.caption}
+                      href={getChecklistSectionHref(section.id, query)}
+                      items={section.items}
+                      key={section.id}
+                      layout="feature"
+                      progressItems={
+                        allSections.find((candidate) => candidate.id === section.id)
+                          ?.items
+                      }
+                      resolvedLabel={
+                        view === "packed" ? `${section.items.length} 项已装` : undefined
+                      }
+                      sectionId={section.id}
+                      title={section.label}
+                    />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {followUpSections.length > 0 ? (
+              <section aria-labelledby="follow-up-heading" className="grid gap-3">
+                <div className="px-1">
+                  <h2 className="text-[15px] font-bold" id="follow-up-heading">
+                    后续准备
+                  </h2>
+                  <p className="mt-0.5 text-[13px] leading-5 text-muted-foreground">
+                    月子、陪产与返家事项按阶段慢慢完成。
+                  </p>
+                </div>
+                <div className="grid gap-3">
+                  {followUpSections.map((section) => (
+                    <ChecklistCategoryCard
+                      caption={section.caption}
+                      href={getChecklistSectionHref(section.id, query)}
+                      items={section.items}
+                      key={section.id}
+                      progressItems={
+                        allSections.find((candidate) => candidate.id === section.id)
+                          ?.items
+                      }
+                      resolvedLabel={
+                        view === "packed" ? `${section.items.length} 项已装` : undefined
+                      }
+                      sectionId={section.id}
+                      title={section.label}
+                    />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </div>
+        ) : null}
 
         <p className="px-3 text-center text-[13px] leading-5 text-muted-foreground">
           清单是准备参考，不替代医院通知或医疗建议。
@@ -381,10 +461,10 @@ export function ChecklistWorkspace() {
         trigger={
           <button
             aria-label="新增物品"
-            className="safe-bottom-fab fixed right-4 z-40 flex size-16 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glow transition-transform active:scale-95 sm:right-[max(1rem,calc(50%_-_21rem_-_5rem))]"
+            className="safe-bottom-fab fixed right-4 z-40 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glow transition-transform active:scale-95 motion-reduce:transition-none sm:right-[max(1rem,calc(50%_-_21rem_-_5rem))]"
             type="button"
           >
-            <Plus className="size-7" strokeWidth={2.2} />
+            <Plus aria-hidden="true" className="size-6" strokeWidth={2.2} />
           </button>
         }
       />
@@ -405,6 +485,24 @@ export function ChecklistWorkspace() {
       />
     </div>
   );
+}
+
+function HeroStat({ label, value }: { label: string; value: number }) {
+  return (
+    <span className="grid gap-1 px-2">
+      <strong className="text-lg font-bold leading-none">{value}</strong>
+      <span className="text-xs font-medium text-on-highlight">
+        {label}
+      </span>
+    </span>
+  );
+}
+
+function getProgressHeadline(percent: number) {
+  if (percent >= 100) return "入院行李已经准备妥当";
+  if (percent >= 60) return "大部分物品已经备好了";
+  if (percent >= 20) return "正在把待产包慢慢备齐";
+  return "从四个住院分包开始准备";
 }
 
 
@@ -467,26 +565,35 @@ export function ChecklistWorkspaceSkeleton() {
   return (
     <div className="page-shell page-shell-with-nav" aria-label="正在准备清单">
       <section className="mobile-shell grid gap-4">
-        <div className="grid gap-2 px-1 py-2">
-          <Skeleton className="h-7 w-32 rounded-xl" />
-          <Skeleton className="h-4 w-52 rounded-lg" />
-        </div>
-        <div className="flex items-center gap-4 rounded-card bg-muted p-4">
-          <Skeleton className="h-9 w-14 rounded-lg bg-background/70" />
-          <div className="grid flex-1 gap-2">
-            <Skeleton className="h-2 rounded-full bg-background/70" />
-            <Skeleton className="h-3 w-44 rounded-lg bg-background/70" />
+        <div className="flex items-start justify-between gap-4 px-1 py-2">
+          <div className="grid gap-2">
+            <Skeleton className="h-4 w-20 rounded-lg" />
+            <Skeleton className="h-7 w-32 rounded-xl" />
+            <Skeleton className="h-4 w-52 rounded-lg" />
           </div>
+          <Skeleton className="size-11 rounded-full" />
         </div>
-        <div className="grid h-14 grid-cols-4 gap-1 rounded-full bg-muted p-1">
+        <div className="grid gap-4 rounded-card bg-muted p-5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="grid flex-1 gap-3">
+              <Skeleton className="h-6 w-24 rounded-full bg-background/70" />
+              <Skeleton className="h-8 w-48 rounded-xl bg-background/70" />
+            </div>
+            <Skeleton className="size-24 rounded-full bg-background/70" />
+          </div>
+          <Skeleton className="h-14 rounded-2xl bg-background/70" />
+        </div>
+        <div className="grid h-16 grid-cols-4 gap-1 rounded-card bg-muted p-1">
           <Skeleton className="rounded-full bg-background/70" />
           <Skeleton className="rounded-full bg-background/70" />
           <Skeleton className="rounded-full bg-background/70" />
           <Skeleton className="rounded-full bg-background/70" />
         </div>
-        <div className="grid gap-3">
-          <Skeleton className="h-28 rounded-card" />
-          <Skeleton className="h-28 rounded-card" />
+        <div className="grid grid-cols-2 gap-3">
+          <Skeleton className="h-44 rounded-card" />
+          <Skeleton className="h-44 rounded-card" />
+          <Skeleton className="h-44 rounded-card" />
+          <Skeleton className="h-44 rounded-card" />
         </div>
       </section>
     </div>
