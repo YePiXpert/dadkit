@@ -47,7 +47,7 @@ test("宝宝资料、主导航和计时在刷新后可恢复", async ({ page }) 
   await page.getByRole("button", { name: "切换右侧" }).click();
   await expect(page.getByText("当前右侧", { exact: true })).toBeVisible();
   await expect(page.locator("#baby-care-note")).toHaveValue("切侧时保留这段备注");
-  await page.getByRole("button", { name: "结束亲喂" }).click();
+  await page.getByRole("button", { name: "结束亲喂", exact: true }).click();
   await expect(page.getByText("亲喂记录已保存。")).toBeVisible();
 
   await page.reload({ waitUntil: "domcontentloaded" });
@@ -80,7 +80,7 @@ test("可记录五类照护事件，并从时间线编辑和二次确认删除",
   await openQuickAction(page, "睡眠");
   await page.getByRole("button", { name: "开始睡眠" }).click();
   await openQuickAction(page, "睡眠");
-  await page.getByRole("button", { name: "结束睡眠" }).click();
+  await page.getByRole("button", { name: "结束睡眠", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "今日汇总" })).toBeVisible();
   await expect(page.getByText("60 ml", { exact: false }).first()).toBeVisible();

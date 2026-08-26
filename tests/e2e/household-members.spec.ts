@@ -72,7 +72,7 @@ test("新记录采用当前设备成员，计时记录人固定且成员移除�
   await openQuickAction(page, "亲喂");
   await expect(page.getByLabel("记录人", { exact: true })).toBeDisabled();
   await expect(page.getByLabel("记录人", { exact: true })).toContainText("小江");
-  await page.getByRole("button", { name: "结束亲喂" }).click();
+  await page.getByRole("button", { name: "结束亲喂", exact: true }).click();
   await expect(page.getByText("小江记录", { exact: true })).toHaveCount(2);
 
   await page.goto("/settings/family", { waitUntil: "domcontentloaded" });
