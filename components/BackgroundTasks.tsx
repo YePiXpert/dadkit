@@ -71,6 +71,14 @@ export function BackgroundTasks() {
         });
     };
 
+    const startCrossTabListener = () => {
+      void import("@/lib/data/cross-tab-sync")
+        .then(({ startCrossTabSync }) => {
+          if (!cancelled) stopCrossTabSync = startCrossTabSync();
+        })
+        .catch(() => undefined);
+    };
+
     const scheduleLater = (
       callback: () => void,
       delay: number,
@@ -93,11 +101,6 @@ export function BackgroundTasks() {
     const start = () => {
       if (cancelled) return;
       setIdle(true);
-      void import("@/lib/data/cross-tab-sync")
-        .then(({ startCrossTabSync }) => {
-          if (!cancelled) stopCrossTabSync = startCrossTabSync();
-        })
-        .catch(() => undefined);
       void import("@/lib/retired-data")
         .then(({ purgeRetiredLocalData }) => purgeRetiredLocalData())
         .catch(() => undefined);
@@ -136,6 +139,7 @@ export function BackgroundTasks() {
     };
 
     window.addEventListener(SYNC_SETTINGS_CHANGE_EVENT, requestAutoSync);
+    startCrossTabListener();
     scheduleBackgroundWork();
 
     return () => {

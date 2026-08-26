@@ -27,7 +27,6 @@ test("双标签实时同步清单、宝宝记录和物品照片", async ({
     await expect(
       otherPage.getByRole("button", { name: "新增物品" }),
     ).toBeVisible({ timeout: 60_000 });
-    await page.waitForTimeout(1_500);
 
     await page.getByRole("button", { name: "新增物品" }).click();
     await page.locator("#add-item-name").fill(itemName);
