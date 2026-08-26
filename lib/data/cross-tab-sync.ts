@@ -1,30 +1,5 @@
 "use client";
 
-import { useBabyStore } from "@/lib/baby/store";
-import { notifyExternalItemPhotoChange } from "@/lib/item-photos";
-import { useDeviceIdentityStore } from "@/lib/device-identity/store";
-import { loadDeviceIdentity } from "@/lib/device-identity/repository";
-import { reloadGrowthFromStorage } from "@/lib/growth-store";
-import { mergeHousehold } from "@/lib/household/merge";
-import { loadHousehold, saveHousehold } from "@/lib/household/repository";
-import { useHouseholdStore } from "@/lib/household/store";
-import { generateChecklist } from "@/lib/rules";
-import { mergeChecklistDocuments } from "@/lib/sync/merge";
-import { refreshSyncStatus } from "@/lib/sync/client";
-import { useDadKitStore } from "@/lib/store";
-import {
-  getChecklistPersistenceStatus,
-} from "@/lib/persistence-status";
-import {
-  loadChecklist,
-  loadChecklistMode,
-  loadCustomItems,
-  loadDeletedCustomItems,
-  loadHiddenTemplateItemIds,
-  loadHiddenTemplateItemStamps,
-  primeChecklistState,
-  saveChecklistStateSoon,
-} from "@/lib/data/local-repository";
 import {
   SYNC_SETTINGS_CHANGE_EVENT,
   subscribeToDataChanges,
@@ -36,7 +11,6 @@ let started = false;
 let unsubscribe: (() => void) | undefined;
 const pending = new Map<DataDomain, DataChangeMessage>();
 let flushScheduled = false;
-let checklistRetryTimer: ReturnType<typeof setTimeout> | undefined;
 
 export function startCrossTabSync() {
   if (started || typeof window === "undefined") return () => undefined;
@@ -54,8 +28,6 @@ export function startCrossTabSync() {
     started = false;
     pending.clear();
     flushScheduled = false;
-    if (checklistRetryTimer !== undefined) clearTimeout(checklistRetryTimer);
-    checklistRetryTimer = undefined;
   };
 }
 
@@ -65,96 +37,65 @@ function flushPendingChanges() {
   pending.clear();
 
   for (const message of changes) {
-    try {
-      switch (message.domain) {
-        case "checklist":
-          reloadChecklistFromStorage();
-          break;
-        case "growth":
-          reloadGrowthFromStorage();
-          break;
-        case "household": {
-          const current = useHouseholdStore.getState().household;
-          const merged = mergeHousehold(current, loadHousehold());
-          saveHousehold(merged);
-          useHouseholdStore.setState({ hydrated: true, household: merged });
-          break;
-        }
-        case "device-identity":
-          useDeviceIdentityStore.setState({ ...loadDeviceIdentity(), hydrated: true });
-          break;
-        case "baby":
-          void useBabyStore.getState().reloadFromRepository();
-          break;
-        case "item-photo":
-          notifyExternalItemPhotoChange(message.entityId);
-          break;
-        case "sync-settings":
-          refreshSyncStatus();
-          window.dispatchEvent(new Event(SYNC_SETTINGS_CHANGE_EVENT));
-          break;
-      }
-    } catch {
-      // A storage failure in one domain must not block the other notifications.
-    }
+    void refreshDomain(message).catch(() => undefined);
   }
 }
 
-function reloadChecklistFromStorage() {
-  const current = useDadKitStore.getState();
-  if (current.pendingRemovalIds.length > 0) {
-    if (checklistRetryTimer === undefined) {
-      checklistRetryTimer = setTimeout(() => {
-        checklistRetryTimer = undefined;
-        reloadChecklistFromStorage();
-      }, 5_100);
+async function refreshDomain(message: DataChangeMessage) {
+  switch (message.domain) {
+    case "checklist": {
+      const { reloadChecklistFromStorage } = await import(
+        "@/lib/data/cross-tab-checklist"
+      );
+      reloadChecklistFromStorage();
+      return;
     }
-    return;
+    case "growth": {
+      const { reloadGrowthFromStorage } = await import("@/lib/growth-store");
+      reloadGrowthFromStorage();
+      return;
+    }
+    case "household": {
+      const [{ mergeHousehold }, repository, { useHouseholdStore }] =
+        await Promise.all([
+          import("@/lib/household/merge"),
+          import("@/lib/household/repository"),
+          import("@/lib/household/store"),
+        ]);
+      const current = useHouseholdStore.getState().household;
+      const merged = mergeHousehold(current, repository.loadHousehold());
+      repository.saveHousehold(merged);
+      useHouseholdStore.setState({ hydrated: true, household: merged });
+      return;
+    }
+    case "device-identity": {
+      const [{ useDeviceIdentityStore }, { loadDeviceIdentity }] =
+        await Promise.all([
+          import("@/lib/device-identity/store"),
+          import("@/lib/device-identity/repository"),
+        ]);
+      useDeviceIdentityStore.setState({
+        ...loadDeviceIdentity(),
+        hydrated: true,
+      });
+      return;
+    }
+    case "baby": {
+      const { useBabyStore } = await import("@/lib/baby/store");
+      await useBabyStore.getState().reloadFromRepository();
+      return;
+    }
+    case "item-photo": {
+      const { notifyExternalItemPhotoChange } = await import(
+        "@/lib/item-photos"
+      );
+      notifyExternalItemPhotoChange(message.entityId);
+      return;
+    }
+    case "sync-settings": {
+      const { refreshSyncStatus } = await import("@/lib/sync/client");
+      refreshSyncStatus();
+      window.dispatchEvent(new Event(SYNC_SETTINGS_CHANGE_EVENT));
+    }
   }
-
-  const external = {
-    checklist: loadChecklist(),
-    customItems: loadCustomItems(),
-    hiddenTemplateItemStamps: loadHiddenTemplateItemStamps(),
-    deletedCustomItems: loadDeletedCustomItems(),
-  };
-  const merged = mergeChecklistDocuments(
-    {
-      checklist: current.checklist,
-      customItems: current.customItems,
-      hiddenTemplateItemStamps: external.hiddenTemplateItemStamps,
-      deletedCustomItems: external.deletedCustomItems,
-    },
-    external,
-  );
-  const checklist = generateChecklist({
-    currentItems: merged.checklist,
-    customItems: merged.customItems,
-    hiddenTemplateItemIds: merged.hiddenTemplateItemIds,
-  });
-  const payload = {
-    checklist,
-    customItems: merged.customItems,
-    hiddenTemplateItemIds: merged.hiddenTemplateItemIds,
-  };
-  const status = getChecklistPersistenceStatus();
-  const mergedDiffersFromDisk =
-    JSON.stringify(payload.checklist) !== JSON.stringify(external.checklist) ||
-    JSON.stringify(payload.customItems) !== JSON.stringify(external.customItems) ||
-    JSON.stringify(payload.hiddenTemplateItemIds) !==
-      JSON.stringify(loadHiddenTemplateItemIds());
-
-  if (mergedDiffersFromDisk || status.dirtyRevision > status.persistedRevision) {
-    saveChecklistStateSoon(payload);
-  } else {
-    primeChecklistState(payload);
-  }
-
-  useDadKitStore.setState((state) => ({
-    hydrated: true,
-    ...payload,
-    checklistMode: loadChecklistMode(),
-    changeOrigin: "cross-tab",
-    changeRevision: state.changeRevision + 1,
-  }));
 }

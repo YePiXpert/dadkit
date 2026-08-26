@@ -93,6 +93,34 @@ export function subscribeToDataChanges(listener: DataChangeListener) {
   };
 }
 
+export function getRetainedDataChange(domain: DataDomain) {
+  if (typeof window === "undefined") return undefined;
+
+  let latest: DataChangeMessage | undefined;
+  for (const key of [domainSignalKey(domain), DATA_CHANGE_SIGNAL_KEY]) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) continue;
+      const message = JSON.parse(raw) as unknown;
+      if (
+        isDataChangeMessage(message) &&
+        message.domain === domain &&
+        (!latest || message.version > latest.version)
+      ) {
+        latest = message;
+      }
+    } catch {
+      // A missing or malformed signal simply falls back to repository versioning.
+    }
+  }
+
+  return latest;
+}
+
+export function isCurrentDataChangeSource(message: DataChangeMessage) {
+  return message.sourceId === sourceId;
+}
+
 function ensureInitialized() {
   if (initialized || typeof window === "undefined") return;
   if (typeof window.addEventListener !== "function") return;

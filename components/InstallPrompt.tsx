@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Download, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { getChecklistItemState } from "@/lib/checklist-v2";
 import {
   clearPwaInstalledSession,
   INSTALL_PROMPT_DISMISS_KEY,
@@ -19,7 +18,6 @@ import {
   OPEN_INSTALL_PROMPT_EVENT,
   setPwaInstallPromptAvailable,
 } from "@/lib/install-prompt";
-import { useDadKitStore } from "@/lib/store";
 
 const AUTO_PROMPT_COMPLETION_COUNT = 3;
 
@@ -34,12 +32,7 @@ export function InstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [showIosGuide, setShowIosGuide] = useState(false);
   const [installStatusRevision, setInstallStatusRevision] = useState(0);
-  const hydrate = useDadKitStore((state) => state.hydrate);
-  const hydrated = useDadKitStore((state) => state.hydrated);
-  const checklist = useDadKitStore((state) => state.checklist);
-  const completedCount = checklist.filter(
-    (item) => getChecklistItemState(item) === "packed",
-  ).length;
+  const [readyForAutoPrompt, setReadyForAutoPrompt] = useState(false);
 
   useEffect(() => {
     if (isBundledAndroidApp()) {
@@ -50,8 +43,65 @@ export function InstallPrompt() {
       return;
     }
 
-    hydrate();
-  }, [hydrate]);
+    if (
+      isPwaInstalled() ||
+      window.localStorage.getItem(INSTALL_PROMPT_DISMISS_KEY) === "1" ||
+      (!deferredPrompt && !showIosGuide)
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    let idleCallback: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let unsubscribe: (() => void) | undefined;
+
+    const watchChecklist = async () => {
+      const { useDadKitStore } = await import("@/lib/store");
+      if (cancelled) return;
+
+      const updateReadiness = () => {
+        const state = useDadKitStore.getState();
+        if (!state.hydrated) state.hydrate();
+
+        let packedCount = 0;
+        for (const item of useDadKitStore.getState().checklist) {
+          if (item.status !== "packed") continue;
+          packedCount += 1;
+          if (packedCount >= AUTO_PROMPT_COMPLETION_COUNT) {
+            setReadyForAutoPrompt(true);
+            return;
+          }
+        }
+        setReadyForAutoPrompt(false);
+      };
+
+      updateReadiness();
+      unsubscribe = useDadKitStore.subscribe((state, previous) => {
+        if (
+          state.hydrated !== previous.hydrated ||
+          state.checklist !== previous.checklist
+        ) {
+          updateReadiness();
+        }
+      });
+    };
+
+    if ("requestIdleCallback" in window) {
+      idleCallback = window.requestIdleCallback(() => void watchChecklist(), {
+        timeout: 1_500,
+      });
+    } else {
+      timer = setTimeout(() => void watchChecklist(), 250);
+    }
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+      if (idleCallback !== undefined) window.cancelIdleCallback(idleCallback);
+      if (timer !== undefined) clearTimeout(timer);
+    };
+  }, [deferredPrompt, showIosGuide]);
 
   useEffect(() => {
     if (isStandaloneDisplay()) {
@@ -124,8 +174,7 @@ export function InstallPrompt() {
 
   useEffect(() => {
     if (
-      !hydrated ||
-      completedCount < AUTO_PROMPT_COMPLETION_COUNT ||
+      !readyForAutoPrompt ||
       isBundledAndroidApp() ||
       isPwaInstalled() ||
       window.localStorage.getItem(INSTALL_PROMPT_DISMISS_KEY) === "1"
@@ -134,7 +183,7 @@ export function InstallPrompt() {
     }
 
     setShowPrompt(true);
-  }, [completedCount, hydrated, installStatusRevision]);
+  }, [readyForAutoPrompt, installStatusRevision]);
 
   if (!showPrompt || (!deferredPrompt && !showIosGuide)) {
     return null;

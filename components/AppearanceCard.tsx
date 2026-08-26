@@ -19,6 +19,10 @@ const THEME_OPTIONS = [
     value: "dark",
     label: "深色",
   },
+  {
+    value: "night",
+    label: "夜间",
+  },
 ] as const satisfies readonly {
   value: ThemePreference;
   label: string;
@@ -38,7 +42,7 @@ export function AppearanceCard() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-2" role="group" aria-label="外观模式">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label="外观模式">
           {THEME_OPTIONS.map((option) => {
             const active = preference === option.value;
 
@@ -60,6 +64,11 @@ export function AppearanceCard() {
             );
           })}
         </div>
+        {preference === "night" ? (
+          <p className="mt-3 text-[13px] leading-5 text-muted-foreground">
+            夜间在深色基础上再降一档亮度，适合凌晨喂奶、换尿布时查看。
+          </p>
+        ) : null}
       </CardContent>
     </Card>
   );

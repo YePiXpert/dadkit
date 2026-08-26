@@ -2,8 +2,8 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, LayoutGrid, List, Plus, WrapText } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ChevronDown, LayoutGrid, List, Plus, WrapText } from "lucide-react";
 
 import { ChecklistGroupTabs } from "@/components/ChecklistGroupTabs";
 import { ChecklistItemRow } from "@/components/ChecklistItemRow";
@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   CHECKLIST_SECTIONS,
   deriveChecklistView,
+  splitChecklistItemsBySettled,
   type ChecklistSectionId,
 } from "@/lib/checklist-v2";
 import { getChecklistHomeHref } from "@/lib/checklist-display";
@@ -78,8 +79,39 @@ export function ChecklistSectionWorkspace({
       }),
     [checklist, checklistMode, sectionId, view],
   );
-  const visibleItems =
-    sections.find((candidate) => candidate.id === sectionId)?.items ?? [];
+  const visibleItems = useMemo(
+    () => sections.find((candidate) => candidate.id === sectionId)?.items ?? [],
+    [sections, sectionId],
+  );
+  // 沉底分组只在首次拿到真实数据时判定一次：本次会话里新装包的物品原地
+  // 保留打勾状态，下次进入页面再归入「已完成」，避免勾选瞬间物品跳走、
+  // 进行中的连续操作被列表重排打断。
+  const settledIdsRef = useRef<ReadonlySet<string> | null>(null);
+  if (hydrated && settledIdsRef.current === null) {
+    settledIdsRef.current = new Set(
+      splitChecklistItemsBySettled(visibleItems).settled.map((item) => item.id),
+    );
+  }
+  const settledIds = settledIdsRef.current;
+  const pendingItems = useMemo(
+    () => visibleItems.filter((item) => !settledIds?.has(item.id)),
+    [settledIds, visibleItems],
+  );
+  const settledItems = useMemo(
+    () => visibleItems.filter((item) => Boolean(settledIds?.has(item.id))),
+    [settledIds, visibleItems],
+  );
+  const splittingSettled = view === "all" && settledItems.length > 0;
+  const [settledOpenOverride, setSettledOpenOverride] = useState<
+    boolean | null
+  >(null);
+  // 默认折叠只在首次拿到真实数据时判定一次，之后由用户手动切换，
+  // 避免勾选进行中物品时列表突然塌掉。
+  const settledDefaultOpenRef = useRef<boolean | null>(null);
+  if (hydrated && settledDefaultOpenRef.current === null) {
+    settledDefaultOpenRef.current = settledItems.length === 0;
+  }
+  const settledOpen = settledOpenOverride ?? settledDefaultOpenRef.current ?? true;
   const detailsItem = detailsItemId
     ? checklist.find((item) => item.id === detailsItemId)
     : undefined;
@@ -214,7 +246,7 @@ export function ChecklistSectionWorkspace({
               viewMode === "cards" ? "item-card-grid" : "grid gap-2"
             }
           >
-            {visibleItems.map((item) => (
+            {(splittingSettled ? pendingItems : visibleItems).map((item) => (
               <ChecklistItemRow
                 compact={viewMode === "list"}
                 item={item}
@@ -223,6 +255,37 @@ export function ChecklistSectionWorkspace({
                 showFullDescription={showFullDescriptions}
               />
             ))}
+            {splittingSettled ? (
+              <div className="col-span-full">
+                <button
+                  aria-expanded={settledOpen}
+                  aria-label={`${settledOpen ? "收起" : "展开"}已完成的 ${settledItems.length} 件物品`}
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-muted/60 px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted"
+                  onClick={() => setSettledOpenOverride(!settledOpen)}
+                  type="button"
+                >
+                  已完成 {settledItems.length} 件
+                  <ChevronDown
+                    aria-hidden="true"
+                    className={cn(
+                      "size-4 transition-transform motion-reduce:transition-none",
+                      settledOpen && "rotate-180",
+                    )}
+                  />
+                </button>
+              </div>
+            ) : null}
+            {splittingSettled && settledOpen
+              ? settledItems.map((item) => (
+                  <ChecklistItemRow
+                    compact={viewMode === "list"}
+                    item={item}
+                    key={item.id}
+                    onOpenDetails={setDetailsItemId}
+                    showFullDescription={showFullDescriptions}
+                  />
+                ))
+              : null}
           </div>
         )}
 

@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { AppHeader } from "@/components/AppHeader";
 import { AppToast } from "@/components/AppToast";
 import { BackgroundTasks } from "@/components/BackgroundTasks";
+import { CareTimerBarMount } from "@/components/baby/CareTimerBarMount";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { MobileNav } from "@/components/MobileNav";
 import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
@@ -75,7 +76,7 @@ export const viewport: Viewport = {
 };
 
 // 构建期注入共享 key；对应值见 lib/theme.ts，避免客户端 hook 与首屏脚本漂移。
-const themeInitScript = `(function(){try{var p=window.localStorage.getItem("${THEME_STORAGE_KEY}");if(p!=="light"&&p!=="dark"){p=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}var d=p==="dark";document.documentElement.classList.toggle("dark",d);if(window.DadKitAndroidShell){window.DadKitAndroidShell.setDarkTheme(d);}}catch(e){}})();`;
+const themeInitScript = `(function(){try{var p=window.localStorage.getItem("${THEME_STORAGE_KEY}");if(p!=="light"&&p!=="dark"&&p!=="night"){p=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}var d=p==="dark"||p==="night";document.documentElement.classList.toggle("dark",d);document.documentElement.classList.toggle("night-dim",p==="night");if(window.DadKitAndroidShell){window.DadKitAndroidShell.setDarkTheme(d);}}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -97,6 +98,7 @@ export default function RootLayout({
         <AppHeader />
         <main>{children}</main>
         <InstallPrompt />
+        <CareTimerBarMount />
         <MobileNav />
       </body>
     </html>

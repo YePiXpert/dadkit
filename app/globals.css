@@ -144,6 +144,47 @@
     color-scheme: dark;
   }
 
+  /* 夜间低亮度：在深色令牌基础上再压一档亮度，适合凌晨喂奶、换尿布时查看。
+     只改令牌不加滤镜，插画随卡片底色一起变暗。 */
+  .dark.night-dim {
+    --background: 28 16% 5%;
+    --background-glow: 28 14% 8%;
+    --foreground: 35 18% 84%;
+    --card: 28 14% 10%;
+    --card-foreground: 35 18% 84%;
+    --popover: 28 14% 10%;
+    --popover-foreground: 35 18% 84%;
+    --primary: 7 52% 56%;
+    --primary-foreground: 20 30% 8%;
+    --secondary: 24 14% 16%;
+    --secondary-foreground: 8 45% 66%;
+    --muted: 28 9% 14%;
+    --muted-foreground: 32 10% 60%;
+    --accent: 24 14% 16%;
+    --accent-foreground: 8 45% 66%;
+    --border: 30 10% 17%;
+    --input: 30 9% 23%;
+    --ring: 7 52% 56%;
+    --hero-from: 16 22% 15%;
+    --hero-via: 22 17% 12%;
+    --hero-to: 29 13% 10%;
+    --surface-art: 33 15% 15%;
+    --surface-growth: 31 14% 14%;
+    --tile-mom-bg: 348 26% 16%;
+    --tile-mom-fg: 348 45% 64%;
+    --tile-baby-bg: 30 30% 15%;
+    --tile-baby-fg: 32 55% 60%;
+    --tile-docs-bg: 215 22% 16%;
+    --tile-docs-fg: 215 38% 64%;
+    --tile-dad-bg: 150 10% 15%;
+    --tile-dad-fg: 150 22% 58%;
+    --tile-car-bg: 270 12% 17%;
+    --tile-car-fg: 268 30% 66%;
+    --tile-lastminute-bg: 335 24% 16%;
+    --tile-lastminute-fg: 335 42% 64%;
+    --checklist-hero-foreground: 35 20% 86%;
+  }
+
   * {
     @apply border-border;
   }
@@ -370,5 +411,14 @@
 
   .celebration-confetti {
     display: none;
+  }
+}
+
+/* 触屏设备（含 Android WebView）上 backdrop-blur 在滚动和点按时每帧重绘，
+   代价很高；这些设备上关掉模糊，靠底色保持可读。 */
+@media (hover: none), (pointer: coarse) {
+  [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }

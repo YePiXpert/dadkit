@@ -36,6 +36,7 @@ export function MobileNav() {
               )}
               href={item.href}
               key={item.href}
+              prefetch={false}
             >
               <span
                 className={cn(

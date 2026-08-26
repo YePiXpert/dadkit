@@ -24,7 +24,9 @@ export function HouseholdFeaturePrompt() {
         <p className="text-sm font-semibold">添加家庭成员后，可以标记每条宝宝记录由谁完成。</p>
         <p className="mt-1 text-[13px] leading-5 text-muted-foreground">也可以暂不设置，清单和宝宝记录仍可正常使用。</p>
         <Button asChild className="mt-3" size="sm" variant="outline">
-          <Link href="/settings/family">添加家庭成员</Link>
+          <Link href="/settings/family" prefetch={false}>
+            添加家庭成员
+          </Link>
         </Button>
       </div>
     </section>

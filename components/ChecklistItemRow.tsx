@@ -18,6 +18,7 @@ import {
   type ChecklistItemState,
 } from "@/lib/checklist-v2";
 import { formatChecklistDisplayText } from "@/lib/checklist-display";
+import { triggerHaptic } from "@/lib/haptics";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,14 @@ const STATE_ICONS = {
   packed: Check,
   not_needed: Ban,
 } satisfies Record<ChecklistItemState, typeof Circle>;
+
+// 行左缘的 4px 状态色条：深色模式下整行底色差异很弱，色条扫读更稳。
+const STATE_SPINE_CLASSES: Record<ChecklistItemState, string> = {
+  todo: "bg-border",
+  ready: "bg-primary/55",
+  packed: "bg-primary",
+  not_needed: "bg-muted-foreground/30",
+};
 
 // 所有卡片共享一个 IntersectionObserver，避免整页清单为每行各建一个实例。
 const visibilityCallbacks = new Map<Element, (visible: boolean) => void>();
@@ -137,6 +146,9 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   }, [itemState]);
 
   function handleAction() {
+    triggerHaptic(
+      itemState === "packed" || itemState === "not_needed" ? "tap" : "success",
+    );
     if (departureMode) {
       updateItem(item.id, {
         status:
@@ -155,12 +167,19 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
       <article
         ref={articleRef}
         className={cn(
-          "flex min-h-16 min-w-0 items-center gap-2.5 rounded-card bg-card px-3 py-2 shadow-sm transition-shadow hover:shadow-md",
+          "relative flex min-h-16 min-w-0 items-center gap-2.5 overflow-hidden rounded-card bg-card px-3 py-2 shadow-sm transition-shadow hover:shadow-md [content-visibility:auto] [contain-intrinsic-size:auto_4.5rem]",
           itemState === "ready" && "bg-secondary/35 ring-1 ring-primary/30",
           itemState === "packed" && "bg-secondary/55 ring-1 ring-primary/35",
           itemState === "not_needed" && "bg-muted/50 ring-1 ring-border/60",
         )}
       >
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute inset-y-0 left-0 w-1",
+            STATE_SPINE_CLASSES[itemState],
+          )}
+        />
         <div className="min-w-0 flex-1 py-1">
           <h3
             className={cn(

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   deriveDepartureGroups,
   getDepartureProgress,
+  getDepartureProgressFromGroups,
   isDepartureRelevantItem,
   type DepartureGroupId,
 } from "@/lib/departure";
@@ -173,6 +174,20 @@ describe("departure checklist derivation", () => {
       percent: 0,
       remaining: 0,
       total: 0,
+    });
+  });
+
+  it("reuses already derived groups when calculating page progress", () => {
+    const groups = deriveDepartureGroups([
+      testItem("pending", { bag: "car" }),
+      testItem("done", { bag: "mom_bag", priority: "must", status: "packed" }),
+    ]);
+
+    expect(getDepartureProgressFromGroups(groups)).toEqual({
+      completed: 1,
+      percent: 50,
+      remaining: 1,
+      total: 2,
     });
   });
 

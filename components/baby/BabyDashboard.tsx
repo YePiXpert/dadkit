@@ -79,7 +79,7 @@ export function BabyDashboard({ onEditProfile }: { onEditProfile(): void }) {
       <section className="grid gap-3">
         <div className="flex items-center justify-between gap-3 px-1"><div><h2 className="text-[15px] font-semibold">最近 24 小时</h2><p className="text-[13px] text-muted-foreground">按发生时间显示最近记录</p></div><Button asChild size="sm" variant="outline"><Link href="/baby/timeline">查看全部记录</Link></Button></div>
         {recentEvents.filter((event) => careEventSortTime(event) >= now - 86_400_000 || activeEvents.some((active) => active.id === event.id)).slice(0, 12).map((event) => <CareEventRow event={event} key={event.id} now={now} />)}
-        {recentEvents.length === 0 ? <EmptyState variant="dashed" icon={null} title="还没有记录" description="记录会保存在本机 IndexedDB，断网时也能继续使用。" /> : null}
+        {recentEvents.length === 0 ? <EmptyState illustrationId="state-empty-records" variant="dashed" icon={null} title="还没有记录" description="记录会保存在本机 IndexedDB，断网时也能继续使用。" /> : null}
       </section>
 
       <BabyQuickActionDialog action={action} onOpenChange={(open) => !open && setAction(undefined)} open={Boolean(action)} />

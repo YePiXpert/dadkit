@@ -159,9 +159,8 @@ const settingsPage = readSource("app", "settings", "page.tsx");
 describe("install prompt timing and settings re-entry", () => {
   it("waits for real engagement before auto-showing the install prompt", () => {
     expect(installPrompt).toContain("AUTO_PROMPT_COMPLETION_COUNT = 3");
-    expect(installPrompt).toContain(
-      "completedCount < AUTO_PROMPT_COMPLETION_COUNT",
-    );
+    expect(installPrompt).toContain(">= AUTO_PROMPT_COMPLETION_COUNT");
+    expect(installPrompt).toContain("!readyForAutoPrompt");
     expect(installPrompt).toContain(
       'localStorage.getItem(INSTALL_PROMPT_DISMISS_KEY) === "1"',
     );

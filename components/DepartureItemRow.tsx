@@ -8,6 +8,7 @@ import {
   type ChecklistItemState,
 } from "@/lib/checklist-v2";
 import { formatChecklistDisplayText } from "@/lib/checklist-display";
+import { triggerHaptic } from "@/lib/haptics";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -57,6 +58,7 @@ export const DepartureItemRow = memo(function DepartureItemRow({
   }, [itemState]);
 
   function handleAction() {
+    triggerHaptic(confirmed ? "tap" : "success");
     updateItem(item.id, {
       status: confirmed ? "todo" : "packed",
     });
@@ -65,12 +67,22 @@ export const DepartureItemRow = memo(function DepartureItemRow({
   return (
     <article
       className={cn(
-        "flex min-h-16 min-w-0 items-center gap-2.5 rounded-card bg-card px-3 py-2 shadow-sm transition-shadow hover:shadow-md",
+        "relative flex min-h-16 min-w-0 items-center gap-2.5 overflow-hidden rounded-card bg-card px-3 py-2 shadow-sm transition-shadow hover:shadow-md [content-visibility:auto] [contain-intrinsic-size:auto_4.5rem]",
         itemState === "ready" && "bg-secondary/35 ring-1 ring-primary/30",
         itemState === "packed" && "bg-secondary/55 ring-1 ring-primary/35",
         itemState === "not_needed" && "bg-muted/50 ring-1 ring-border/60",
       )}
     >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "absolute inset-y-0 left-0 w-1",
+          itemState === "todo" && "bg-border",
+          itemState === "ready" && "bg-primary/55",
+          itemState === "packed" && "bg-primary",
+          itemState === "not_needed" && "bg-muted-foreground/30",
+        )}
+      />
       <div className="min-w-0 flex-1 py-1">
         <h3
           className={cn(

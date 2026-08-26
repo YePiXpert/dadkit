@@ -77,11 +77,19 @@ test("双标签实时同步清单、宝宝记录和物品照片", async ({
     await page.locator("#baby-profile-birthDate").fill("2026-08-01");
     await page.getByRole("button", { name: "保存资料" }).click();
     await otherPage.bringToFront();
+    await otherPage
+      .getByRole("dialog", { name: "双标签宝宝出生了！" })
+      .getByRole("button", { name: "知道了" })
+      .click();
     await expect(
       otherPage.getByRole("heading", { name: "双标签宝宝", exact: true }),
     ).toBeVisible({ timeout: 60_000 });
 
     await page.bringToFront();
+    await page
+      .getByRole("dialog", { name: "双标签宝宝出生了！" })
+      .getByRole("button", { name: "知道了" })
+      .click();
     await page
       .getByRole("region", { name: "快速记录" })
       .getByRole("button", { name: "瓶喂", exact: true })

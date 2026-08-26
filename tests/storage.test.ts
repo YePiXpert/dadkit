@@ -677,3 +677,33 @@ describe("destructive storage scope", () => {
     expect(sessionValues.has("dadkit:v3:webdav-session-secret")).toBe(false);
   });
 });
+
+describe("readJson 热路径缓存", () => {
+  it("存储未变时重复读取不再重新解析", () => {
+    installBrowserStorage();
+    saveChecklist([testItem("cached")]);
+    loadChecklist();
+
+    const parseSpy = vi.spyOn(JSON, "parse");
+    try {
+      loadChecklist();
+      loadChecklist();
+      expect(parseSpy).not.toHaveBeenCalled();
+    } finally {
+      parseSpy.mockRestore();
+    }
+  });
+
+  it("存储被外部改写后（如另一个标签页）读取自动失效", () => {
+    installBrowserStorage();
+    saveChecklist([testItem("before")]);
+    expect(loadChecklist().map((item) => item.id)).toEqual(["before"]);
+
+    window.localStorage.setItem(
+      STORAGE_KEYS.checklist,
+      JSON.stringify([testItem("after")]),
+    );
+
+    expect(loadChecklist().map((item) => item.id)).toEqual(["after"]);
+  });
+});

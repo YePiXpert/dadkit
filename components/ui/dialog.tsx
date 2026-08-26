@@ -17,6 +17,7 @@ type DialogContentProps = React.ComponentPropsWithoutRef<
 > & {
   showCloseButton?: boolean;
   mobileFullscreen?: boolean;
+  mobileSheet?: boolean;
 };
 
 const DialogOverlay = React.forwardRef<
@@ -37,7 +38,7 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, children, showCloseButton = true, mobileFullscreen = false, ...props }, ref) => (
+>(({ className, children, showCloseButton = true, mobileFullscreen = false, mobileSheet = false, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -46,6 +47,8 @@ const DialogContent = React.forwardRef<
         "fixed left-1/2 top-1/2 z-50 grid max-h-[90vh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-card bg-background p-5 shadow-lg duration-200",
         mobileFullscreen &&
           "max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:w-full max-sm:max-w-none max-sm:rounded-none max-sm:gap-0 max-sm:p-0",
+        mobileSheet &&
+          "max-sm:bottom-0 max-sm:left-0 max-sm:top-auto max-sm:max-h-[85dvh] max-sm:w-full max-sm:max-w-none max-sm:-translate-x-0 max-sm:-translate-y-0 max-sm:rounded-b-none max-sm:rounded-t-card max-sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))]",
         className,
       )}
       {...props}

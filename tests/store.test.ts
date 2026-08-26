@@ -24,6 +24,7 @@ import {
   markHalfwayMilestone,
   markSectionClearedMilestone,
 } from "@/lib/checklist-milestones";
+import { DATA_CHANGE_SIGNAL_KEY } from "@/lib/data/change-bus";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
 import {
@@ -244,6 +245,53 @@ describe("v3 checklist store", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("skips persisted document reads while rapid updates share one baseline", () => {
+    installBrowserStorage();
+    useDadKitStore.getState().hydrate();
+    const load = vi.spyOn(window.localStorage, "getItem");
+    const [first, second] = useDadKitStore.getState().checklist;
+
+    useDadKitStore.getState().updateItem(first.id, { status: "packed" });
+    load.mockClear();
+    useDadKitStore.getState().updateItem(second.id, { status: "packed" });
+
+    expect(
+      load.mock.calls.filter(([key]) => key === STORAGE_KEYS.checklist),
+    ).toHaveLength(0);
+  });
+
+  it("rebases the fast path when another tab publishes a checklist change", () => {
+    const browserStorage = installBrowserStorage();
+    useDadKitStore.getState().hydrate();
+    const [first, second] = useDadKitStore.getState().checklist;
+    const externalChecklist = useDadKitStore
+      .getState()
+      .checklist.map((item) =>
+        item.id === second.id
+          ? { ...item, status: "packed" as const, updatedAt: Date.now() + 10_000 }
+          : item,
+      );
+
+    browserStorage.localValues.set(
+      STORAGE_KEYS.checklist,
+      JSON.stringify(externalChecklist),
+    );
+    browserStorage.localValues.set(
+      `${DATA_CHANGE_SIGNAL_KEY}:checklist`,
+      JSON.stringify({
+        domain: "checklist",
+        sourceId: "another-tab",
+        version: Date.now() * 1_000,
+      }),
+    );
+
+    useDadKitStore.getState().updateItem(first.id, { status: "packed" });
+
+    const checklist = useDadKitStore.getState().checklist;
+    expect(checklist.find((item) => item.id === first.id)?.status).toBe("packed");
+    expect(checklist.find((item) => item.id === second.id)?.status).toBe("packed");
   });
 
   it("commits a pending deletion after its undo window without clobbering a debounced write", () => {

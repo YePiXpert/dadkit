@@ -4,13 +4,18 @@ import { useCallback, useEffect, useState } from "react";
 
 import { THEME_STORAGE_KEY } from "@/lib/theme";
 
-export type ThemePreference = "system" | "light" | "dark";
+export type ThemePreference = "system" | "light" | "dark" | "night";
 export type ResolvedTheme = "light" | "dark";
 
 export { THEME_STORAGE_KEY };
 
 function isThemePreference(value: string | null): value is ThemePreference {
-  return value === "system" || value === "light" || value === "dark";
+  return (
+    value === "system" ||
+    value === "light" ||
+    value === "dark" ||
+    value === "night"
+  );
 }
 
 export function getThemePreference(): ThemePreference {
@@ -25,6 +30,8 @@ export function getThemePreference(): ThemePreference {
 }
 
 export function resolveTheme(preference: ThemePreference): ResolvedTheme {
+  // 夜间低亮度是深色主题的再降亮度版本，解析结果仍按深色处理。
+  if (preference === "night") return "dark";
   if (preference !== "system") return preference;
   if (typeof window === "undefined") return "light";
 
@@ -36,6 +43,7 @@ export function resolveTheme(preference: ThemePreference): ResolvedTheme {
 export function applyThemePreference(preference: ThemePreference) {
   const dark = resolveTheme(preference) === "dark";
   document.documentElement.classList.toggle("dark", dark);
+  document.documentElement.classList.toggle("night-dim", preference === "night");
   (
     window as Window & {
       DadKitAndroidShell?: { setDarkTheme(dark: boolean): void };

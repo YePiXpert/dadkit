@@ -1,9 +1,10 @@
 "use client";
 
 import { Baby } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { BabyDashboard } from "@/components/baby/BabyDashboard";
+import { CelebrationOverlay } from "@/components/CelebrationOverlay";
 import { BabyRepositoryErrorState } from "@/components/baby/BabyRepositoryErrorState";
 import { BabyProfileDialog } from "@/components/baby/BabyProfileDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showAppToast } from "@/lib/app-toast";
 import { hasBabyMode } from "@/lib/baby/portable";
+import { triggerHaptic } from "@/lib/haptics";
 import { useBabyStore } from "@/lib/baby/store";
 import { useHouseholdStore } from "@/lib/household/store";
 
@@ -25,9 +27,26 @@ export function BabyWorkspace() {
   const clearAllBabyData = useBabyStore((state) => state.clearAllBabyData);
   const [profileOpen, setProfileOpen] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
+  const [birthCelebrationOpen, setBirthCelebrationOpen] = useState(false);
+  const babyModeRef = useRef<boolean | null>(null);
   const hydrateHousehold = useHouseholdStore((state) => state.hydrate);
 
   useEffect(() => { void hydrate(); hydrateHousehold(); }, [hydrate, hydrateHousehold]);
+
+  // 宝宝资料从「未出生」变为「已出生」的这一刻庆祝一次；首次加载已出生的老用户不打扰。
+  useEffect(() => {
+    if (!hydrated || loading) return;
+    const babyMode = hasBabyMode(profile);
+    if (babyModeRef.current === null) {
+      babyModeRef.current = babyMode;
+      return;
+    }
+    if (!babyModeRef.current && babyMode) {
+      babyModeRef.current = true;
+      triggerHaptic("success");
+      setBirthCelebrationOpen(true);
+    }
+  }, [hydrated, loading, profile]);
 
   if (repositoryError && !hydrated && !loading) {
     return <BabyRepositoryErrorState error={repositoryError} onRetry={() => void hydrate()} />;
@@ -55,6 +74,12 @@ export function BabyWorkspace() {
         <footer className="px-3 pb-4 text-center text-xs leading-5 text-muted-foreground">本功能仅用于个人记录，不用于判断宝宝是否喂养充足、睡眠正常或是否需要就医。出现健康问题请联系医生。</footer>
       </section>
 
+      <CelebrationOverlay
+        babyName={profile.fields.nickname.value}
+        onClose={() => setBirthCelebrationOpen(false)}
+        open={birthCelebrationOpen}
+        variant="birth"
+      />
       <BabyProfileDialog onOpenChange={setProfileOpen} open={profileOpen} profile={profile} />
       <ConfirmDialog
         confirmLabel="清空全部宝宝数据"

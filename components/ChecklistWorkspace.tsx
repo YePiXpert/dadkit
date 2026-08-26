@@ -124,6 +124,7 @@ export function ChecklistWorkspace() {
 
   // 只在“进行中 → 100%”的这一刻庆祝：首次加载就是 100% 时不打扰。
   const [celebrating, setCelebrating] = useState(false);
+  const [sectionCelebration, setSectionCelebration] = useState<string>();
   const previousPercentRef = useRef<number | null>(null);
   const previousMilestonePercentRef = useRef<number | null>(null);
   const previousCompletedSectionsRef = useRef<Set<string> | undefined>(undefined);
@@ -194,13 +195,11 @@ export function ChecklistWorkspace() {
         (sectionId) =>
           allSections.find((section) => section.id === sectionId)?.label ?? "一个分类",
       );
-      showAppToast({
-        message:
-          labels.length === 1
-            ? `${labels[0]}已经准备完成，真棒。`
-            : `同时完成 ${labels.length} 个分类：${labels.slice(0, 3).join("、")}${labels.length > 3 ? "等" : ""}。`,
-        tone: "success",
-      });
+      setSectionCelebration(
+        labels.length === 1
+          ? labels[0]
+          : `${labels.length} 个分类（${labels.slice(0, 3).join("、")}${labels.length > 3 ? "等" : ""}）`,
+      );
     }
   }, [allSections, changeOrigin, changeRevision, hydrated, packing.percent]);
 
@@ -294,7 +293,7 @@ export function ChecklistWorkspace() {
           <HomeGrowthHint tone="inverse" />
         </section>
 
-        <div className="sticky top-[max(env(safe-area-inset-top),0.5rem)] z-30 -mt-8 rounded-card bg-background/80 p-1 backdrop-blur-xl">
+        <div className="sticky top-[max(env(safe-area-inset-top),0.5rem)] z-30 -mt-8 rounded-card bg-background/95 p-1 backdrop-blur-xl">
           <ChecklistGroupTabs counts={counts} value={view} onChange={setView} />
         </div>
 
@@ -474,6 +473,12 @@ export function ChecklistWorkspace() {
         onClose={() => setCelebrating(false)}
         open={celebrating}
         packingPercent={packing.percent}
+      />
+      <CelebrationOverlay
+        onClose={() => setSectionCelebration(undefined)}
+        open={Boolean(sectionCelebration)}
+        sectionLabel={sectionCelebration}
+        variant="section"
       />
       <ConfirmDialog
         confirmLabel="全部标记装包"

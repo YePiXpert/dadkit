@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { CheckCircle2, PackageCheck } from "lucide-react";
+import { Check, CheckCircle2, PackageCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { DepartureItemRow } from "@/components/DepartureItemRow";
@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { showAppToast } from "@/lib/app-toast";
 import {
   deriveDepartureGroups,
-  getDepartureProgress,
+  getDepartureProgressFromGroups,
   type DepartureGroupId,
 } from "@/lib/departure";
 import { useDadKitStore } from "@/lib/store";
@@ -37,10 +37,7 @@ export function DepartureWorkspace() {
     () => deriveDepartureGroups(checklist),
     [checklist],
   );
-  const progress = useMemo(
-    () => getDepartureProgress(checklist),
-    [checklist],
-  );
+  const progress = useMemo(() => getDepartureProgressFromGroups(groups), [groups]);
   const confirmGroup = groups.find((group) => group.id === confirmGroupId);
   const confirmIds = confirmGroup
     ? confirmGroup.items
@@ -140,13 +137,40 @@ export function DepartureWorkspace() {
         </section>
 
         {progress.total > 0 && progress.remaining === 0 ? (
-          <section className="flex items-start gap-3 rounded-card bg-secondary/50 p-4 shadow-sm">
-            <CheckCircle2 className="mt-0.5 size-6 shrink-0 text-primary" />
-            <div className="min-w-0">
-              <h2 className="text-[15px] font-semibold">关键物品已经确认</h2>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                可以安心出发；需要重新核对时，点开下面的物品即可恢复。
+          <section
+            aria-labelledby="departure-ready-heading"
+            className="app-highlight-card p-5 sm:p-6"
+          >
+            <div className="relative z-10">
+              <p className="inline-flex items-center gap-1.5 rounded-full bg-on-highlight/15 px-3 py-1 text-xs font-semibold text-on-highlight">
+                <CheckCircle2 aria-hidden="true" className="size-3.5" />
+                全部确认完成
               </p>
+              <h2
+                className="mt-3 text-[22px] font-bold leading-8 text-on-highlight"
+                id="departure-ready-heading"
+              >
+                可以走了
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-on-highlight">
+                需要重新核对时，点开下面的物品即可恢复。
+              </p>
+              <ul className="mt-4 grid gap-2">
+                {groups.map((group) => (
+                  <li
+                    className="flex items-center justify-between gap-3 rounded-2xl bg-on-highlight/10 px-3 py-2.5 text-on-highlight"
+                    key={group.id}
+                  >
+                    <span className="flex min-w-0 items-center gap-2 break-words text-sm font-semibold">
+                      <Check aria-hidden="true" className="size-4 shrink-0" />
+                      {group.label}
+                    </span>
+                    <span className="shrink-0 text-xs tabular-nums">
+                      {group.completed} / {group.total}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </section>
         ) : null}

@@ -83,6 +83,10 @@ test("宝宝出生后首页切换为宝宝状态头", async ({ page }) => {
   await page.locator("#baby-profile-birthDate").fill("2026-08-01");
   await page.locator("#baby-profile-birthTime").fill("08:30");
   await page.getByRole("button", { name: "保存资料" }).click();
+  await page
+    .getByRole("dialog", { name: "E2E首页宝宝出生了！" })
+    .getByRole("button", { name: "知道了" })
+    .click();
   await expect(
     page.getByRole("heading", { name: "E2E首页宝宝", exact: true }),
   ).toBeVisible();

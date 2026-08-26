@@ -15,7 +15,11 @@ export function AppHeader() {
   return (
     <header className="hidden border-b border-border/60 bg-background/80 backdrop-blur-xl sm:sticky sm:top-0 sm:z-40 sm:block sm:pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
-        <Link className="flex min-h-11 min-w-0 items-center gap-2 rounded-xl" href="/">
+        <Link
+          className="flex min-h-11 min-w-0 items-center gap-2 rounded-xl"
+          href="/"
+          prefetch={false}
+        >
           <span className="min-w-0">
             <span className="block truncate text-base font-bold leading-tight tracking-tight">
               DadKit
@@ -39,6 +43,7 @@ export function AppHeader() {
                 )}
                 href={item.href}
                 key={item.href}
+                prefetch={false}
               >
                 <Icon aria-hidden="true" className="size-4" />
                 {item.label}

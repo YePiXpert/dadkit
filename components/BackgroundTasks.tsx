@@ -3,13 +3,20 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 
-import { PwaRegister } from "@/components/PwaRegister";
-import { startCrossTabSync } from "@/lib/data/cross-tab-sync";
+import { SYNC_SETTINGS_CHANGE_EVENT } from "@/lib/data/change-bus";
+import { hasStoredSyncSession } from "@/lib/sync/session-storage-key";
 
 const AndroidNativeMigration = dynamic(
   () =>
     import("@/components/AndroidNativeMigration").then(
       (module) => module.AndroidNativeMigration,
+    ),
+  { ssr: false },
+);
+const PwaRegister = dynamic(
+  () =>
+    import("@/components/PwaRegister").then(
+      (module) => module.PwaRegister,
     ),
   { ssr: false },
 );
@@ -47,19 +54,54 @@ export function BackgroundTasks() {
     }
 
     let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let idleCallback: number | undefined;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const idleCallbacks: number[] = [];
     let stopCrossTabSync: () => void = () => undefined;
+    let autoSyncRequested = false;
+
+    const requestAutoSync = () => {
+      if (cancelled || autoSyncRequested || !hasStoredSyncSession()) return;
+      autoSyncRequested = true;
+      void import("@/lib/sync/auto-sync")
+        .then(({ startAutoSync }) => {
+          if (!cancelled) startAutoSync();
+        })
+        .catch(() => {
+          autoSyncRequested = false;
+        });
+    };
+
+    const scheduleLater = (
+      callback: () => void,
+      delay: number,
+      idleTimeout: number,
+    ) => {
+      timers.push(
+        setTimeout(() => {
+          if (cancelled) return;
+          if ("requestIdleCallback" in window) {
+            idleCallbacks.push(
+              window.requestIdleCallback(callback, { timeout: idleTimeout }),
+            );
+          } else {
+            callback();
+          }
+        }, delay),
+      );
+    };
 
     const start = () => {
       if (cancelled) return;
       setIdle(true);
-      void import("@/lib/storage")
+      void import("@/lib/data/cross-tab-sync")
+        .then(({ startCrossTabSync }) => {
+          if (!cancelled) stopCrossTabSync = startCrossTabSync();
+        })
+        .catch(() => undefined);
+      void import("@/lib/retired-data")
         .then(({ purgeRetiredLocalData }) => purgeRetiredLocalData())
         .catch(() => undefined);
-      void import("@/lib/sync/auto-sync").then(({ startAutoSync }) => {
-        if (!cancelled) startAutoSync();
-      });
+      requestAutoSync();
       void import("@/lib/persistence-status")
         .then(
           async ({ checkStorageCapacity, requestPersistentStorage }) => {
@@ -68,34 +110,41 @@ export function BackgroundTasks() {
           },
         )
         .catch(() => undefined);
-      void Promise.all([import("@/lib/item-photos"), import("@/lib/store")])
-        .then(([photoLibrary, storeModule]) => {
-          if (cancelled) return;
-          const state = storeModule.useDadKitStore.getState();
-          if (!state.hydrated) return;
-          return photoLibrary.pruneOrphanedPhotos(
-            state.checklist.map((item) => item.id),
-          );
-        })
-        .catch(() => undefined);
+      scheduleLater(() => {
+        void Promise.all([import("@/lib/item-photos"), import("@/lib/store")])
+          .then(([photoLibrary, storeModule]) => {
+            if (cancelled) return;
+            const state = storeModule.useDadKitStore.getState();
+            if (!state.hydrated) return;
+            return photoLibrary.pruneOrphanedPhotos(
+              state.checklist.map((item) => item.id),
+            );
+          })
+          .catch(() => undefined);
+      }, 6_000, 2_000);
     };
 
     const scheduleBackgroundWork = () => {
       if (cancelled) return;
-      stopCrossTabSync = startCrossTabSync();
       if ("requestIdleCallback" in window) {
-        idleCallback = window.requestIdleCallback(start, { timeout: 1_500 });
+        idleCallbacks.push(
+          window.requestIdleCallback(start, { timeout: 1_500 }),
+        );
       } else {
-        timer = setTimeout(start, 800);
+        timers.push(setTimeout(start, 800));
       }
     };
 
+    window.addEventListener(SYNC_SETTINGS_CHANGE_EVENT, requestAutoSync);
     scheduleBackgroundWork();
 
     return () => {
       cancelled = true;
-      if (idleCallback !== undefined) window.cancelIdleCallback(idleCallback);
-      if (timer !== undefined) clearTimeout(timer);
+      window.removeEventListener(SYNC_SETTINGS_CHANGE_EVENT, requestAutoSync);
+      for (const idleCallback of idleCallbacks) {
+        window.cancelIdleCallback(idleCallback);
+      }
+      for (const timer of timers) clearTimeout(timer);
       stopCrossTabSync();
     };
   }, [migrationComplete, runtime]);
@@ -105,7 +154,7 @@ export function BackgroundTasks() {
       {runtime === "android" ? (
         <AndroidNativeMigration onComplete={handleMigrationComplete} />
       ) : null}
-      {runtime === "detecting" ? null : <PwaRegister />}
+      {idle ? <PwaRegister /> : null}
       {idle ? <AndroidUpdatePrompt /> : null}
     </>
   );

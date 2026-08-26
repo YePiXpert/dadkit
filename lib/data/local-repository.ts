@@ -4,6 +4,7 @@ export {
   CHECKLIST_PERSISTENCE_EVENT,
   flushPendingChecklistStateSave,
   getChecklistPersistenceStatus,
+  getChecklistStateVersion,
   loadChecklist,
   loadChecklistMode,
   loadCustomItems,

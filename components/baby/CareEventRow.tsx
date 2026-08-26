@@ -16,7 +16,7 @@ export function CareEventRow({ event, onEdit, onDelete, now = Date.now() }: { ev
   useEffect(() => { hydrateHousehold(); }, [hydrateHousehold]);
   const Icon = event.type === "sleep" ? BedDouble : event.type === "diaper" ? ShowerHead : event.type === "breastfeeding" ? Baby : Milk;
   return (
-    <article className="flex min-w-0 items-start gap-3 rounded-card bg-card p-3 shadow-sm">
+    <article className="flex min-w-0 items-start gap-3 rounded-card bg-card p-3 shadow-sm [content-visibility:auto] [contain-intrinsic-size:auto_5.5rem]">
       <span className="icon-tile bg-secondary text-primary"><Icon className="size-5" /></span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center justify-between gap-2">

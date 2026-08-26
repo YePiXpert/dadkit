@@ -65,8 +65,16 @@ import {
   registerChecklistStateSaveRetryHandler,
   resetChecklistPersistenceStatus,
 } from "@/lib/persistence-status";
-import { publishDataChange } from "@/lib/data/change-bus";
+import {
+  publishDataChange,
+  SYNC_SETTINGS_CHANGE_EVENT,
+} from "@/lib/data/change-bus";
 import { applyChecklistRuntimeDocument } from "@/lib/checklist-runtime";
+import {
+  LEGACY_HOSPITAL_STORAGE_KEY,
+  LEGACY_ITEM_PLANNING_STORAGE_KEY,
+} from "@/lib/retired-data";
+import { SYNC_SESSION_STORAGE_KEY } from "@/lib/sync/session-storage-key";
 
 export const STORAGE_KEYS = {
   checklist: "dadkit:v3:checklist",
@@ -80,7 +88,7 @@ export const STORAGE_KEYS = {
   hiddenTemplateStamps: "dadkit:v3:hidden-template-stamps",
   deletedCustomItems: "dadkit:v3:deleted-custom-items",
   growthUpdatedAt: GROWTH_UPDATED_AT_STORAGE_KEY,
-  syncSession: "dadkit:v3:sync-session",
+  syncSession: SYNC_SESSION_STORAGE_KEY,
   syncClientState: "dadkit:v3:sync-client-state",
   syncClockOffset: "dadkit:v3:sync-clock-offset-ms",
   syncClockTimelineInitialized: "dadkit:v3:sync-clock-timeline-initialized",
@@ -88,20 +96,8 @@ export const STORAGE_KEYS = {
   deviceIdentity: DEVICE_IDENTITY_STORAGE_KEY,
 } as const;
 
-const LEGACY_ITEM_PLANNING_STORAGE_KEY = "dadkit:v3:item-planning";
-const LEGACY_HOSPITAL_STORAGE_KEY = "dadkit:v3:hospital-profile";
-
 export const WEBDAV_SESSION_SECRET_KEY = "dadkit:v3:webdav-session-secret";
-
-export function purgeRetiredLocalData() {
-  if (!canUseLocalStorage()) return;
-
-  try {
-    window.localStorage.removeItem(LEGACY_HOSPITAL_STORAGE_KEY);
-  } catch {
-    // Retired data cleanup is best effort and must not block app startup.
-  }
-}
+export { purgeRetiredLocalData } from "@/lib/retired-data";
 
 const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.checklist,
@@ -210,14 +206,47 @@ function canUseSessionStorage() {
   );
 }
 
+// readJson 热路径缓存：同一 key 的原始字符串没变就复用上次解析结果。
+// 清单点按链路每次操作要读多次存储快照做跨端合并，64KB 的 JSON.parse 是
+// 真正的开销，getItem + 字符串比较只是零头；跨标签页写入会改变原始串，
+// 比较失败自然回落到重新解析。
+const readJsonCache = new Map<string, { raw: string | null; value: unknown }>();
+let checklistStateVersion = 0;
+
+export function getChecklistStateVersion() {
+  return checklistStateVersion;
+}
+
+function advanceChecklistStateVersion() {
+  checklistStateVersion += 1;
+}
+
 function readJson<T>(key: string, fallback: T): T {
   if (!canUseLocalStorage()) {
     return fallback;
   }
 
+  let raw: string | null;
   try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
+    raw = window.localStorage.getItem(key);
+  } catch {
+    return fallback;
+  }
+
+  const cached = readJsonCache.get(key);
+  if (cached !== undefined && cached.raw === raw) {
+    return cached.value as T;
+  }
+
+  if (raw === null) {
+    readJsonCache.set(key, { raw, value: fallback });
+    return fallback;
+  }
+
+  try {
+    const value = JSON.parse(raw) as T;
+    readJsonCache.set(key, { raw, value });
+    return value;
   } catch {
     return fallback;
   }
@@ -232,6 +261,7 @@ function writeJson<T>(key: string, value: T) {
 
   if (window.localStorage.getItem(key) !== serialized) {
     window.localStorage.setItem(key, serialized);
+    readJsonCache.delete(key);
     return true;
   }
 
@@ -432,6 +462,7 @@ export function saveChecklist(items: ChecklistItem[]) {
   // tests.  It cannot safely reconstruct the rest of the in-memory document,
   // so make the next export/snapshot read the coherent persisted document.
   latestChecklistState = undefined;
+  advanceChecklistStateVersion();
 }
 
 export function loadCustomItems() {
@@ -449,6 +480,7 @@ export function saveCustomItems(items: ChecklistItem[]) {
     publishDataChange("checklist");
   }
   latestChecklistState = undefined;
+  advanceChecklistStateVersion();
 }
 
 export function loadHiddenTemplateItemIds() {
@@ -471,6 +503,7 @@ export function saveHiddenTemplateItemIds(ids: string[]) {
     publishDataChange("checklist");
   }
   latestChecklistState = undefined;
+  advanceChecklistStateVersion();
 }
 
 export function loadHiddenTemplateItemStamps(): HiddenTemplateItemStamps {
@@ -492,6 +525,7 @@ export function saveHiddenTemplateItemStamps(stamps: HiddenTemplateItemStamps) {
   if (writeJson(STORAGE_KEYS.hiddenTemplateStamps, stamps)) {
     publishDataChange("checklist");
   }
+  advanceChecklistStateVersion();
 }
 
 export function loadDeletedCustomItems(): DeletedCustomItemStamps {
@@ -503,6 +537,7 @@ export function saveDeletedCustomItems(stamps: DeletedCustomItemStamps) {
   if (writeJson(STORAGE_KEYS.deletedCustomItems, stamps)) {
     publishDataChange("checklist");
   }
+  advanceChecklistStateVersion();
 }
 
 export function loadGrowthUpdatedAt(): number {
@@ -557,11 +592,19 @@ export function saveSyncSession(session: SyncSession | undefined) {
   if (!session) {
     window.localStorage.removeItem(STORAGE_KEYS.syncSession);
     publishDataChange("sync-settings");
+    dispatchSyncSettingsChange();
     return;
   }
 
   if (writeJson(STORAGE_KEYS.syncSession, session)) {
     publishDataChange("sync-settings");
+    dispatchSyncSettingsChange();
+  }
+}
+
+function dispatchSyncSettingsChange() {
+  if (typeof window.dispatchEvent === "function") {
+    window.dispatchEvent(new Event(SYNC_SETTINGS_CHANGE_EVENT));
   }
 }
 
@@ -653,6 +696,7 @@ function captureChecklistState(
 
 export function primeChecklistState(payload: ChecklistStatePayload) {
   latestChecklistState = cloneChecklistState(payload);
+  advanceChecklistStateVersion();
 }
 
 function writeChecklistStateNow({
@@ -726,6 +770,7 @@ export function saveChecklistStateWithMetadata(
     applyStorageMutations(mutations);
     recordChecklistStatePersisted(revision);
     publishDataChange("checklist");
+    advanceChecklistStateVersion();
   } catch (error) {
     latestChecklistState = previousLatest;
     if (metadata.retryOnFailure) {
@@ -832,6 +877,7 @@ export function saveChecklistStateSoon(payload: ChecklistStatePayload) {
 
   latestChecklistState = next;
   pendingChecklistStateSave = { payload: next, revision };
+  advanceChecklistStateVersion();
   installChecklistStateSaveListeners();
 
   if (pendingChecklistStateTimer !== undefined) {
@@ -1463,6 +1509,7 @@ function applyStorageMutations(mutations: StorageMutation[]) {
       } else {
         window.localStorage.setItem(mutation.key, mutation.value);
       }
+      readJsonCache.delete(mutation.key);
     }
   } catch {
     let rollbackSucceeded = true;

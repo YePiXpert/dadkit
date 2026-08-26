@@ -10,6 +10,7 @@ import {
   getChecklistViewItems,
   groupChecklistViewItems,
   isChecklistSectionId,
+  splitChecklistItemsBySettled,
 } from "@/lib/checklist-v2";
 import type {
   ChecklistItem,
@@ -166,5 +167,25 @@ describe("V2 checklist views", () => {
         },
       ]),
     ).toBe(2);
+  });
+});
+
+describe("splitChecklistItemsBySettled", () => {
+  it("splits packed and not_needed items into the settled group, keeping order", () => {
+    const items = [
+      checklistItem("todo-1", "todo"),
+      checklistItem("ready-1", "bought"),
+      checklistItem("packed-1", "packed"),
+      checklistItem("todo-2", "todo"),
+      checklistItem("skipped-1", "not_needed"),
+    ];
+
+    const { pending, settled } = splitChecklistItemsBySettled(items);
+    expect(pending.map((item) => item.id)).toEqual(["todo-1", "ready-1", "todo-2"]);
+    expect(settled.map((item) => item.id)).toEqual(["packed-1", "skipped-1"]);
+  });
+
+  it("returns empty groups for empty input", () => {
+    expect(splitChecklistItemsBySettled([])).toEqual({ pending: [], settled: [] });
   });
 });

@@ -54,35 +54,27 @@ export function isDepartureRelevantItem(item: ChecklistItem) {
 export function deriveDepartureGroups(items: readonly ChecklistItem[]) {
   const buckets: Record<
     DepartureGroupId,
-    Array<{ item: ChecklistItem; sourceIndex: number }>
+    { pending: ChecklistItem[]; completed: ChecklistItem[] }
   > = {
-    documents: [],
-    lastMinute: [],
-    car: [],
-    criticalLuggage: [],
+    documents: { pending: [], completed: [] },
+    lastMinute: { pending: [], completed: [] },
+    car: { pending: [], completed: [] },
+    criticalLuggage: { pending: [], completed: [] },
   };
 
-  items.forEach((item, sourceIndex) => {
+  items.forEach((item) => {
     const groupId = getDepartureGroupId(item);
 
     if (groupId) {
-      buckets[groupId].push({ item, sourceIndex });
+      const bucket = buckets[groupId];
+      (item.status === "packed" ? bucket.completed : bucket.pending).push(item);
     }
   });
 
   return DEPARTURE_GROUPS.map((group) => {
-    const groupItems = buckets[group.id]
-      .slice()
-      .sort(
-        (left, right) =>
-          Number(left.item.status === "packed") -
-            Number(right.item.status === "packed") ||
-          left.sourceIndex - right.sourceIndex,
-      )
-      .map(({ item }) => item);
-    const completed = groupItems.filter(
-      (item) => item.status === "packed",
-    ).length;
+    const bucket = buckets[group.id];
+    const groupItems = [...bucket.pending, ...bucket.completed];
+    const completed = bucket.completed.length;
 
     return {
       ...group,
@@ -96,13 +88,19 @@ export function deriveDepartureGroups(items: readonly ChecklistItem[]) {
 export function getDepartureProgress(
   items: readonly ChecklistItem[],
 ): DepartureProgress {
-  const departureItems = deriveDepartureGroups(items).flatMap(
-    (group) => group.items,
+  return getDepartureProgressFromGroups(deriveDepartureGroups(items));
+}
+
+export function getDepartureProgressFromGroups(
+  groups: readonly DepartureGroup[],
+): DepartureProgress {
+  const { completed, total } = groups.reduce(
+    (progress, group) => ({
+      completed: progress.completed + group.completed,
+      total: progress.total + group.total,
+    }),
+    { completed: 0, total: 0 },
   );
-  const total = departureItems.length;
-  const completed = departureItems.filter(
-    (item) => item.status === "packed",
-  ).length;
 
   return {
     completed,

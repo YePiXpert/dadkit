@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { showAppToast } from "@/lib/app-toast";
+import { triggerHaptic } from "@/lib/haptics";
 import { localDateTimeInputToIso, localDateTimeInputValue } from "@/lib/baby/date";
 import { calculateBreastfeedingDuration, formatCareDuration, getActiveBreastfeeding, getActivePumping, getActiveSleep } from "@/lib/baby/selectors";
 import { useBabyStore } from "@/lib/baby/store";
@@ -104,6 +105,7 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
     setBusy(true);
     const result = await operation();
     setBusy(false);
+    if (result.ok) triggerHaptic("success");
     showAppToast({ message: result.ok ? success : result.message ?? "保存失败。", tone: result.ok ? "success" : "warning" });
     if (result.ok && close) onOpenChange(false);
   }
@@ -112,7 +114,7 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent mobileSheet>
         <DialogHeader>
           <DialogTitle>{ACTION_TITLES[action]}</DialogTitle>
           <DialogDescription>{ACTION_DESCRIPTIONS[action]}</DialogDescription>
@@ -135,7 +137,7 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
                 <Button disabled={busy || breastfeeding.segments.at(-1)?.side === "right"} onClick={() => void run(() => switchBreastfeedingSide("right"), "已切换到右侧。", false)} variant="outline">切换右侧</Button>
               </div>
               <NoteField note={note} setNote={setNote} />
-              <Button disabled={busy} onClick={() => void run(() => finishBreastfeeding(note), "亲喂记录已保存。")}>结束亲喂</Button>
+              <Button disabled={busy} size="lg" onClick={() => void run(() => finishBreastfeeding(note), "亲喂记录已保存。")}>结束亲喂</Button>
               <Button disabled={busy} onClick={() => void run(() => deleteEvent(breastfeeding.id), "错误亲喂记录已删除。") } variant="destructive">删除本次记录</Button>
             </div>
           ) : (
@@ -152,7 +154,7 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
             <AmountField amount={amount} setAmount={setAmount} label="奶量 ml *" />
             <TimeField id="baby-bottle-time" value={occurredAt} onChange={setOccurredAt} />
             <NoteField note={note} setNote={setNote} />
-            <Button disabled={busy} onClick={() => {
+            <Button disabled={busy} size="lg" onClick={() => {
               const iso = localDateTimeInputToIso(occurredAt);
               const parsed = Number(amount);
               if (!iso || !/^\d+$/.test(amount) || parsed < 1 || parsed > 2000) { showAppToast({ message: "请输入 1–2000 的整数奶量和有效时间。", tone: "warning" }); return; }
@@ -167,7 +169,7 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
               <TimerLabel label="吸奶计时" value={formatCareDuration(now - Date.parse(pumping.startAt))} />
               <AmountField amount={amount} setAmount={setAmount} label="吸出奶量 ml（可留空）" />
               <NoteField note={note} setNote={setNote} />
-              <Button disabled={busy} onClick={() => {
+              <Button disabled={busy} size="lg" onClick={() => {
                 if (amount && (!/^\d+$/.test(amount) || Number(amount) > 2000)) { showAppToast({ message: "奶量需为 0–2000 的整数。", tone: "warning" }); return; }
                 void run(() => finishPumping({ amountMl: amount === "" ? null : Number(amount), note }), "吸奶记录已保存。");
               }}>结束吸奶</Button>
@@ -180,7 +182,7 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
               <TimeField id="baby-pumping-end" label="结束时间" value={manualEndAt} onChange={setManualEndAt} />
               <AmountField amount={amount} setAmount={setAmount} label="吸出奶量 ml（可留空）" />
               <NoteField note={note} setNote={setNote} />
-              <Button disabled={busy} onClick={() => {
+              <Button disabled={busy} size="lg" onClick={() => {
                 const startAt = localDateTimeInputToIso(manualStartAt);
                 const endAt = localDateTimeInputToIso(manualEndAt);
                 if (!startAt || !endAt || Date.parse(endAt) < Date.parse(startAt) || (amount !== "" && (!/^\d+$/.test(amount) || Number(amount) > 2000))) { showAppToast({ message: "请检查起止时间和 0–2000 的整数奶量。", tone: "warning" }); return; }
@@ -217,7 +219,7 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
               <TimerLabel label="已睡时长" value={formatCareDuration(now - Date.parse(sleep.startAt))} />
               {now - Date.parse(sleep.startAt) > 86_400_000 ? <p className="rounded-lg border border-warning-foreground/25 bg-warning p-3 text-sm text-warning-foreground">计时已超过 24 小时，请确认是否忘记结束；DadKit 不会自动修改记录。</p> : null}
               <NoteField note={note} setNote={setNote} />
-              <Button disabled={busy} onClick={() => void run(() => finishSleep(note), "睡眠记录已保存。")}>结束睡眠</Button>
+              <Button disabled={busy} size="lg" onClick={() => void run(() => finishSleep(note), "睡眠记录已保存。")}>结束睡眠</Button>
               <Button disabled={busy} onClick={() => void run(() => deleteEvent(sleep.id), "错误睡眠记录已删除。") } variant="destructive">删除错误记录</Button>
             </div>
           ) : manualMode ? (
@@ -225,7 +227,7 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
               <TimeField id="baby-sleep-start" label="开始时间" value={manualStartAt} onChange={setManualStartAt} />
               <TimeField id="baby-sleep-end" label="结束时间" value={manualEndAt} onChange={setManualEndAt} />
               <NoteField note={note} setNote={setNote} />
-              <Button disabled={busy} onClick={() => {
+              <Button disabled={busy} size="lg" onClick={() => {
                 const startAt = localDateTimeInputToIso(manualStartAt);
                 const endAt = localDateTimeInputToIso(manualEndAt);
                 if (!startAt || !endAt || Date.parse(endAt) < Date.parse(startAt)) { showAppToast({ message: "结束时间不能早于开始时间。", tone: "warning" }); return; }

@@ -76,7 +76,7 @@ export function CareTimelineWorkspace() {
 
         {activeVisible.length > 0 ? <section className="grid gap-3"><h2 className="px-1 text-sm font-semibold text-primary">进行中</h2>{activeVisible.map((event) => <CareEventRow event={event} key={event.id} onDelete={() => setDeleting(event)} />)}</section> : null}
         {[...groups.entries()].map(([date, events]) => <section className="grid gap-3" key={date}><h2 className="px-1 text-sm font-semibold text-muted-foreground">{date}</h2>{events.map((event) => <CareEventRow event={event} key={event.id} onDelete={() => setDeleting(event)} onEdit={() => setEditing(event)} />)}</section>)}
-        {visible.length === 0 ? <EmptyState variant="dashed" icon={null} title="当前范围没有符合条件的记录。" /> : null}
+        {visible.length === 0 ? <EmptyState illustrationId="state-empty-records" variant="dashed" icon={null} title="当前范围没有符合条件的记录。" /> : null}
         <Button onClick={() => setDays((value) => Math.min(3650, value + 7))} variant="outline">继续加载更早 7 天</Button>
       </section>
 

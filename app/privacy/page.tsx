@@ -41,6 +41,13 @@ export default function PrivacyPage() {
           title="隐私政策"
         />
 
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          alt="信封上放着小锁的插画"
+          className="h-40 w-full rounded-card object-cover shadow-sm"
+          src="/item-art/state-privacy-lock.webp"
+        />
+
         <Card>
           <CardHeader>
             <CardTitle>隐私政策</CardTitle>

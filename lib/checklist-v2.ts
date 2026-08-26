@@ -90,6 +90,23 @@ export function getChecklistItemState(
   return "todo";
 }
 
+/** 「全部」视图把已装包/不需要的物品沉底成一组，页面默认只展开未完成部分。 */
+export function splitChecklistItemsBySettled(items: readonly ChecklistItem[]) {
+  const pending: ChecklistItem[] = [];
+  const settled: ChecklistItem[] = [];
+
+  for (const item of items) {
+    const state = getChecklistItemState(item);
+    if (state === "packed" || state === "not_needed") {
+      settled.push(item);
+    } else {
+      pending.push(item);
+    }
+  }
+
+  return { pending, settled };
+}
+
 export function isShoppingQueueItem(item: ChecklistItem) {
   const normalized = normalizeChecklistItem(item);
 

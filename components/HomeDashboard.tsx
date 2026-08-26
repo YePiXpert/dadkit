@@ -1,37 +1,52 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
-  ArrowRight,
   Baby,
   CarFront,
-  ChevronRight,
   ClipboardList,
   DatabaseBackup,
   Sprout,
   type LucideIcon,
 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
-import { BabyHomeCard } from "@/components/baby/BabyHomeCard";
-import { GrowthAnalogyIllustration } from "@/components/GrowthAnalogyIllustration";
-import { HomeHeroIllustration } from "@/components/HomeHeroIllustration";
-import { HouseholdFeaturePrompt } from "@/components/household/HouseholdFeaturePrompt";
+import {
+  HomeProgressSkeleton,
+  HomeStageSkeleton,
+} from "@/components/HomeDashboardSkeletons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CHECKLIST_PATH } from "@/lib/app-routes";
-import { birthDayNumber } from "@/lib/baby/date";
-import { hasBabyMode } from "@/lib/baby/portable";
-import { useBabyStore } from "@/lib/baby/store";
-import { deriveChecklistView } from "@/lib/checklist-v2";
-import {
-  getCurrentGrowthWeekFromDueDate,
-  getDaysUntilDueDate,
-  getGrowthWeek,
-  MAX_GROWTH_WEEK,
-} from "@/lib/growth";
-import { useGrowthStore } from "@/lib/growth-store";
-import { useHouseholdStore } from "@/lib/household/store";
-import { useDadKitStore } from "@/lib/store";
+
+const HomeStagePanel = dynamic(
+  () =>
+    import("@/components/HomeStagePanel").then(
+      (module) => module.HomeStagePanel,
+    ),
+  { loading: () => <HomeStageSkeleton />, ssr: false },
+);
+const HomeProgressPanel = dynamic(
+  () =>
+    import("@/components/HomeProgressPanel").then(
+      (module) => module.HomeProgressPanel,
+    ),
+  { loading: () => <HomeProgressSkeleton />, ssr: false },
+);
+const HomeHouseholdTitle = dynamic(
+  () =>
+    import("@/components/HomeHouseholdTitle").then(
+      (module) => module.HomeHouseholdTitle,
+    ),
+  { loading: () => <HomeTitleFallback />, ssr: false },
+);
+const HouseholdFeaturePrompt = dynamic(
+  () =>
+    import("@/components/household/HouseholdFeaturePrompt").then(
+      (module) => module.HouseholdFeaturePrompt,
+    ),
+  { ssr: false },
+);
 
 const HOME_ENTRIES = [
   {
@@ -78,172 +93,89 @@ const HOME_ENTRIES = [
 }[];
 
 export function HomeDashboard() {
-  const hydrated = useDadKitStore((state) => state.hydrated);
-  const hydrate = useDadKitStore((state) => state.hydrate);
-  const checklist = useDadKitStore((state) => state.checklist);
-  const checklistMode = useDadKitStore((state) => state.checklistMode);
-  const household = useHouseholdStore((state) => state.household);
-  const householdHydrated = useHouseholdStore((state) => state.hydrated);
-  const hydrateHousehold = useHouseholdStore((state) => state.hydrate);
-  const babyProfile = useBabyStore((state) => state.profile);
-  const babyHydrated = useBabyStore((state) => state.hydrated);
-  const hydrateBaby = useBabyStore((state) => state.hydrate);
-  const dueDate = useGrowthStore((state) => state.dueDate);
-  const growthHydrated = useGrowthStore((state) => state.hydrated);
-  const hydrateGrowth = useGrowthStore((state) => state.hydrate);
+  const [stageReady, setStageReady] = useState(false);
+  const [stageSettled, setStageSettled] = useState(false);
+  const [progressReady, setProgressReady] = useState(false);
+  const [progressSettled, setProgressSettled] = useState(false);
+  const [householdReady, setHouseholdReady] = useState(false);
 
   useEffect(() => {
-    hydrate();
-    hydrateHousehold();
-    hydrateBaby();
-    hydrateGrowth();
-  }, [hydrate, hydrateHousehold, hydrateBaby, hydrateGrowth]);
+    const frame = window.requestAnimationFrame(() => setStageReady(true));
 
-  const { counts, packing } = useMemo(
-    () => deriveChecklistView(checklist, { mode: checklistMode, view: "all" }),
-    [checklist, checklistMode],
-  );
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
-  if (!hydrated || !householdHydrated || !babyHydrated || !growthHydrated) {
-    return <HomeDashboardSkeleton />;
-  }
+  useEffect(() => {
+    if (!stageSettled) return;
+    return scheduleHomeSection(() => setProgressReady(true), 180, 700);
+  }, [stageSettled]);
 
-  const babyBorn = hasBabyMode(babyProfile);
-  const householdName = household.householdName.value.trim();
+  useEffect(() => {
+    if (!progressSettled) return;
+    return scheduleHomeSection(() => setHouseholdReady(true), 450, 900);
+  }, [progressSettled]);
+
+  const handleStageReady = useCallback(() => setStageSettled(true), []);
+  const handleProgressReady = useCallback(() => setProgressSettled(true), []);
 
   return (
     <div className="page-shell page-shell-with-nav">
       <section className="mobile-shell grid gap-4 sm:max-w-[42rem]">
         <header className="grid gap-1 px-1 py-2">
           <p className="text-[13px] font-semibold text-primary">家庭首页</p>
-          <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-[28px]">
-            {householdName || "首页"}
-          </h1>
+          {householdReady ? <HomeHouseholdTitle /> : <HomeTitleFallback />}
           <p className="text-sm leading-6 text-muted-foreground">
             今天也一起稳稳准备。
           </p>
         </header>
 
-        <StageHero
-          babyBirthDate={babyProfile.fields.birthDate.value}
-          babyBorn={babyBorn}
-          babyNickname={babyProfile.fields.nickname.value}
-          dueDate={dueDate}
-        />
-
-        {babyBorn ? <BabyHomeCard /> : null}
+        {stageReady ? (
+          <HomeStagePanel onReady={handleStageReady} />
+        ) : (
+          <HomeStageSkeleton />
+        )}
 
         <HomeEntryGrid />
 
-        <ProgressSummaryCard counts={counts} packing={packing} />
+        {progressReady ? (
+          <HomeProgressPanel onReady={handleProgressReady} />
+        ) : (
+          <HomeProgressSkeleton />
+        )}
 
-        <HouseholdFeaturePrompt />
+        {householdReady ? <HouseholdFeaturePrompt /> : null}
       </section>
     </div>
   );
 }
 
-function StageHero({
-  babyBirthDate,
-  babyBorn,
-  babyNickname,
-  dueDate,
-}: {
-  babyBirthDate: string;
-  babyBorn: boolean;
-  babyNickname: string;
-  dueDate: string;
-}) {
-  if (babyBorn) {
-    const days = birthDayNumber(babyBirthDate) ?? 1;
-    const nickname = babyNickname.trim() || "宝宝";
+function scheduleHomeSection(
+  callback: () => void,
+  delay: number,
+  idleTimeout: number,
+) {
+  let idleCallback: number | undefined;
+  const timer = setTimeout(() => {
+    if ("requestIdleCallback" in window) {
+      idleCallback = window.requestIdleCallback(callback, {
+        timeout: idleTimeout,
+      });
+    } else {
+      callback();
+    }
+  }, delay);
 
-    return (
-      <Link
-        className="app-highlight-card group flex items-center gap-4 p-5 transition-opacity active:opacity-90 sm:p-6"
-        href="/baby"
-      >
-        <span className="relative z-10 flex size-12 shrink-0 items-center justify-center rounded-2xl bg-on-highlight/15 text-on-highlight">
-          <Baby aria-hidden="true" className="size-6" />
-        </span>
-        <span className="relative z-10 min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-on-highlight">
-            宝宝已经来到身边
-          </span>
-          <span className="mt-1 block break-words text-2xl font-bold leading-tight text-on-highlight">
-            {nickname}出生第 {days} 天
-          </span>
-          <span className="mt-1 block text-sm leading-6 text-on-highlight">
-            点这里记录喂养、尿布和睡眠。
-          </span>
-        </span>
-        <ChevronRight aria-hidden="true" className="relative z-10 size-5 shrink-0 text-on-highlight transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
-      </Link>
-    );
-  }
+  return () => {
+    clearTimeout(timer);
+    if (idleCallback !== undefined) window.cancelIdleCallback(idleCallback);
+  };
+}
 
-  const daysUntilDue = getDaysUntilDueDate(dueDate);
-
-  if (daysUntilDue === undefined) {
-    return (
-      <Link className="app-highlight-card group block p-5 transition-opacity active:opacity-90 sm:p-6" href="/growth">
-        <span className="relative z-10 flex items-start justify-between gap-4">
-          <span className="min-w-0">
-            <span className="block text-sm font-semibold text-on-highlight">
-              孕周状态
-            </span>
-            <span className="mt-1 block text-2xl font-bold leading-tight text-on-highlight">
-              宝宝现在多大了？
-            </span>
-          </span>
-          <HomeHeroIllustration className="w-24 shrink-0 sm:w-28" />
-        </span>
-        <span className="relative z-10 mt-2 block text-sm leading-6 text-on-highlight">
-          设置预产期后，这里会显示孕周、倒计时和成长类比。
-        </span>
-        <span className="relative z-10 mt-4 inline-flex min-h-11 items-center gap-1 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm">
-          设置预产期
-          <ArrowRight
-            aria-hidden="true"
-            className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
-          />
-        </span>
-      </Link>
-    );
-  }
-
-  const daysPregnant = Math.max(0, 280 - daysUntilDue);
-  const overdue = daysUntilDue < 0;
-  const displayWeek = Math.min(MAX_GROWTH_WEEK, Math.floor(daysPregnant / 7));
-  const displayDay = overdue ? 0 : daysPregnant % 7;
-  const weekData = getGrowthWeek(getCurrentGrowthWeekFromDueDate(dueDate));
-
+function HomeTitleFallback() {
   return (
-    <Link className="app-highlight-card group block p-5 transition-opacity active:opacity-90 sm:p-6" href="/growth">
-      <div className="relative z-10 flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-on-highlight">
-            {weekData.trimester}
-          </p>
-          <p className="mt-1 text-3xl font-bold leading-tight text-on-highlight">
-            孕 {displayWeek} 周{displayDay > 0 ? ` + ${displayDay} 天` : ""}
-          </p>
-          <p className="mt-1.5 text-sm font-medium text-on-highlight">
-            {overdue
-              ? `预产期已过 ${Math.abs(daysUntilDue)} 天`
-              : `距预产期约 ${daysUntilDue} 天`}
-          </p>
-          <p className="mt-1 text-sm leading-6 text-on-highlight">
-            宝宝现在约有{weekData.analogy}那么大。
-          </p>
-        </div>
-        <GrowthAnalogyIllustration
-          analogy={weekData.analogy}
-          className="w-24 shrink-0 sm:w-28"
-          week={weekData.week}
-        />
-      </div>
-    </Link>
+    <h1 className="text-2xl font-bold leading-tight tracking-tight sm:text-[28px]">
+      首页
+    </h1>
   );
 }
 
@@ -258,6 +190,7 @@ function HomeEntryGrid() {
             className="group flex min-w-0 flex-col gap-3 rounded-card bg-card p-4 shadow-sm transition-colors hover:shadow-md active:bg-secondary/30"
             href={entry.href}
             key={entry.href}
+            prefetch={false}
           >
             <span
               className={`flex size-11 shrink-0 items-center justify-center rounded-2xl ${entry.accent}`}
@@ -279,114 +212,27 @@ function HomeEntryGrid() {
   );
 }
 
-function ProgressSummaryCard({
-  counts,
-  packing,
-}: {
-  counts: { shopping: number; packing: number; packed: number };
-  packing: { percent: number; completed: number; total: number };
-}) {
-  return (
-    <Link
-      className="group block rounded-card bg-card p-5 shadow-sm transition-colors hover:shadow-md active:bg-secondary/25"
-      href={CHECKLIST_PATH}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-primary">准备进度</p>
-          <div className="mt-1.5 flex flex-wrap items-end gap-x-2.5 gap-y-1">
-            <span className="text-4xl font-bold leading-none text-foreground">
-              {packing.percent}
-              <span className="ml-0.5 text-xl">%</span>
-            </span>
-            <span className="pb-0.5 text-[13px] text-muted-foreground">
-              已装包 {packing.completed} 项，共 {packing.total} 项
-            </span>
-          </div>
-        </div>
-        <span className="flex shrink-0 items-center gap-1 pt-1 text-[13px] font-semibold text-muted-foreground transition-colors group-hover:text-primary">
-          查看完整清单
-          <ArrowRight
-            aria-hidden="true"
-            className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
-          />
-        </span>
-      </div>
-
-      <div
-        aria-label={`清单完成 ${packing.percent}%`}
-        aria-valuemax={100}
-        aria-valuemin={0}
-        aria-valuenow={packing.percent}
-        className="mt-4 h-2 overflow-hidden rounded-full bg-muted"
-        role="progressbar"
-      >
-        <span
-          className="block h-full rounded-full bg-primary transition-[width] duration-500 motion-reduce:transition-none"
-          style={{ width: `${packing.percent}%` }}
-        />
-      </div>
-
-      <div className="mt-3 grid grid-cols-3 divide-x divide-border rounded-2xl bg-background py-3 text-center">
-        <ProgressStat label="待买" value={counts.shopping} />
-        <ProgressStat label="待装" value={counts.packing} />
-        <ProgressStat label="已装" value={counts.packed} />
-      </div>
-      <span className="sr-only">
-        待买 {counts.shopping}，待装 {counts.packing}，已装 {counts.packed} 项
-      </span>
-    </Link>
-  );
-}
-
-function ProgressStat({ label, value }: { label: string; value: number }) {
-  return (
-    <span className="grid gap-0.5 px-1">
-      <strong className="text-lg font-bold leading-none text-foreground">
-        {value}
-      </strong>
-      <span className="text-xs font-medium text-muted-foreground">
-        {label}
-      </span>
-    </span>
-  );
-}
-
 export function HomeDashboardSkeleton() {
   return (
-    <div role="status" className="page-shell page-shell-with-nav" aria-label="正在准备首页">
+    <div
+      aria-label="正在准备首页"
+      className="page-shell page-shell-with-nav"
+      role="status"
+    >
       <section className="mobile-shell grid gap-4 sm:max-w-[42rem]">
         <div className="grid gap-2 px-1 py-2">
           <Skeleton className="h-7 w-24 rounded-xl" />
           <Skeleton className="h-4 w-40 rounded-lg" />
         </div>
-        <div className="rounded-card bg-muted p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="grid gap-3">
-              <Skeleton className="h-4 w-20 rounded-lg bg-background/70" />
-              <Skeleton className="h-9 w-32 rounded-xl bg-background/70" />
-              <Skeleton className="h-4 w-28 rounded-lg bg-background/70" />
-            </div>
-            <Skeleton className="h-[4.5rem] w-24 rounded-inset bg-background/70" />
-          </div>
-        </div>
+        <HomeStageSkeleton />
         <div className="grid grid-cols-2 gap-3">
           <Skeleton className="h-24 rounded-card" />
           <Skeleton className="h-24 rounded-card" />
           <Skeleton className="h-24 rounded-card" />
           <Skeleton className="h-24 rounded-card" />
           <Skeleton className="h-24 rounded-card" />
-          <Skeleton className="h-24 rounded-card" />
         </div>
-        <div className="grid gap-3 rounded-card bg-muted p-5">
-          <Skeleton className="h-8 w-24 rounded-lg bg-background/70" />
-          <Skeleton className="h-2 rounded-full bg-background/70" />
-          <div className="grid grid-cols-3 gap-2">
-            <Skeleton className="h-10 rounded-xl bg-background/70" />
-            <Skeleton className="h-10 rounded-xl bg-background/70" />
-            <Skeleton className="h-10 rounded-xl bg-background/70" />
-          </div>
-        </div>
+        <HomeProgressSkeleton />
       </section>
     </div>
   );

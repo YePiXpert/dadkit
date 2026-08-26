@@ -12,6 +12,11 @@ import {
   createSnapshotAsync,
 } from "@/lib/data/backup";
 import {
+  getRetainedDataChange,
+  isCurrentDataChangeSource,
+} from "@/lib/data/change-bus";
+import {
+  getChecklistStateVersion,
   loadChecklist,
   loadChecklistMode,
   loadCustomItems,
@@ -78,6 +83,8 @@ type PendingRemoval = {
 const pendingRemovals = new Map<string, PendingRemoval>();
 const REMOVE_UNDO_MS = 5_000;
 let pendingRemovalListenerTarget: Window | undefined;
+let checklistStateVersionSeen = -1;
+let checklistSignalSeen: string | undefined;
 
 function itemId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -191,7 +198,44 @@ function clearAllPendingRemovals() {
   pendingRemovals.clear();
 }
 
+function dataChangeMessageId(message: {
+  sourceId: string;
+  version: number;
+}) {
+  return `${message.sourceId}:${message.version}`;
+}
+
+function rememberChecklistBaseline() {
+  checklistStateVersionSeen = getChecklistStateVersion();
+  const signal = getRetainedDataChange("checklist");
+  checklistSignalSeen = signal ? dataChangeMessageId(signal) : undefined;
+}
+
+function checklistNeedsRebase() {
+  if (getChecklistStateVersion() !== checklistStateVersionSeen) {
+    return true;
+  }
+
+  const signal = getRetainedDataChange("checklist");
+  const signalId = signal ? dataChangeMessageId(signal) : undefined;
+
+  if (signalId === checklistSignalSeen) {
+    return false;
+  }
+
+  if (!signal || isCurrentDataChangeSource(signal)) {
+    checklistSignalSeen = signalId;
+    return false;
+  }
+
+  return true;
+}
+
 function latestChecklistState(state: DadKitState) {
+  if (!checklistNeedsRebase()) {
+    return state;
+  }
+
   const hiddenTemplateItemStamps = loadHiddenTemplateItemStamps();
   const deletedCustomItems = loadDeletedCustomItems();
   const merged = mergeChecklistDocuments(
@@ -222,7 +266,36 @@ function latestChecklistState(state: DadKitState) {
     latest = { ...latest, ...removePendingItemFromState(latest, pending) };
   }
 
+  rememberChecklistBaseline();
   return latest;
+}
+
+// 状态推进链路每次点按只合并一次存储快照：advance/toggle 复用同一份
+// latest 快照，不再经 updateItem 二次合并。同一同步执行内存储不可能变化。
+function applyItemPatch(
+  state: ReturnType<typeof latestChecklistState>,
+  id: string,
+  patch: Partial<ChecklistItem>,
+) {
+  const checklist = state.checklist.map((item) =>
+    item.id === id ? patchChecklistItem(item, patch) : item,
+  );
+  const customItems = state.customItems.map((item) =>
+    item.id === id ? patchChecklistItem(item, patch) : item,
+  );
+
+  saveChecklistStateSoon({
+    checklist,
+    customItems,
+    hiddenTemplateItemIds: state.hiddenTemplateItemIds,
+  });
+  rememberChecklistBaseline();
+  useDadKitStore.setState((current) => ({
+    checklist,
+    customItems,
+    changeOrigin: "local" as const,
+    changeRevision: current.changeRevision + 1,
+  }));
 }
 
 function commitPendingRemoval(id: string) {
@@ -336,6 +409,7 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       customItems,
       hiddenTemplateItemIds,
     });
+    rememberChecklistBaseline();
     set({
       hydrated: true,
       changeOrigin: "hydrate",
@@ -437,28 +511,13 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     return restoredCount;
   },
   updateItem: (id, patch) => {
-    const state = latestChecklistState(get());
-    const checklist = state.checklist.map((item) =>
-      item.id === id ? patchChecklistItem(item, patch) : item,
-    );
-    const customItems = state.customItems.map((item) =>
-      item.id === id ? patchChecklistItem(item, patch) : item,
-    );
-
-    saveChecklistStateSoon({
-      checklist,
-      customItems,
-      hiddenTemplateItemIds: state.hiddenTemplateItemIds,
-    });
-    set((current) => ({
-      checklist,
-      customItems,
-      changeOrigin: "local",
-      changeRevision: current.changeRevision + 1,
-    }));
+    applyItemPatch(latestChecklistState(get()), id, patch);
   },
   advanceItem: (id) => {
-    const item = latestChecklistState(get()).checklist.find((candidate) => candidate.id === id);
+    const state = latestChecklistState(get());
+    const item = state.checklist.find(
+      (candidate) => candidate.id === id,
+    );
 
     if (!item) return;
 
@@ -471,14 +530,17 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
           ? "packed"
           : "bought";
 
-    get().updateItem(id, { status: nextStatus });
+    applyItemPatch(state, id, { status: nextStatus });
   },
   toggleItemSkipped: (id) => {
-    const item = latestChecklistState(get()).checklist.find((candidate) => candidate.id === id);
+    const state = latestChecklistState(get());
+    const item = state.checklist.find(
+      (candidate) => candidate.id === id,
+    );
 
     if (!item) return;
 
-    get().updateItem(id, {
+    applyItemPatch(state, id, {
       status: item.status === "not_needed" ? "todo" : "not_needed",
     });
   },
