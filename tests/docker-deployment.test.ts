@@ -125,7 +125,9 @@ describe("VPS Docker deployment", () => {
 
     expect(workflow).toContain("branches: [main]");
     expect(workflow).toContain("packages: write");
-    expect(workflow).toContain("docker/build-push-action@v6");
+    expect(workflow).toContain("docker/setup-buildx-action@v4");
+    expect(workflow).toContain("docker/login-action@v4");
+    expect(workflow).toContain("docker/build-push-action@v7");
     expect(workflow).toContain("ghcr.io/yepixpert/dadkit:latest");
     expect(workflow).toContain("secrets.GITHUB_TOKEN");
     expect(workflow).toContain("npm test");
