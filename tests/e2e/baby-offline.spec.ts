@@ -5,6 +5,7 @@ import {
   type Page,
 } from "@playwright/test";
 import {
+  dismissBirthCelebration,
   seedCompletedOnboarding,
   waitForOfflineReady,
 } from "@/tests/e2e/helpers";
@@ -18,6 +19,7 @@ async function setupBaby(page: Page) {
   await page.getByRole("button", { name: "宝宝已出生，开始记录" }).click();
   await page.locator("#baby-profile-birthDate").fill("2026-08-01");
   await page.getByRole("button", { name: "保存资料" }).click();
+  await dismissBirthCelebration(page);
   await expect(page.getByRole("heading", { name: "宝宝", exact: true })).toBeVisible();
 }
 

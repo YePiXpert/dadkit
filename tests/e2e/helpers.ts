@@ -3,6 +3,20 @@ import type { PrimaryNavigationItem } from "@/lib/navigation";
 
 export type PrimaryNavigationLabel = PrimaryNavigationItem["label"];
 
+export async function dismissBirthCelebration(
+  page: Page,
+  babyName?: string,
+) {
+  const name = babyName?.trim();
+  const dialog = page.getByRole("dialog", {
+    name: name ? `${name}出生了！` : "宝宝出生了！",
+  });
+
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "知道了" }).click();
+  await expect(dialog).toBeHidden();
+}
+
 export async function expectOnlyPrimaryNavigationItemActive(
   page: Page,
   label: PrimaryNavigationLabel,

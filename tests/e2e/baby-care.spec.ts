@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
+  dismissBirthCelebration,
   expectOnlyPrimaryNavigationItemActive,
   seedCompletedOnboarding,
 } from "@/tests/e2e/helpers";
@@ -15,6 +16,7 @@ async function setupBaby(page: Page, nickname = "满满") {
   await page.locator("#baby-profile-birthDate").fill("2026-08-01");
   await page.locator("#baby-profile-birthTime").fill("08:30");
   await page.getByRole("button", { name: "保存资料" }).click();
+  await dismissBirthCelebration(page, nickname);
   await expect(page.getByRole("heading", { name: nickname, exact: true })).toBeVisible();
 }
 
