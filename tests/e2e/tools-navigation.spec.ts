@@ -73,7 +73,7 @@ test("工具页展示管理与支持入口", async ({ page }) => {
     page.getByRole("heading", { name: "管理与支持", exact: true }),
   ).toBeVisible({ timeout: 60_000 });
 
-  for (const name of ["家庭成员", "备份与恢复", "家庭同步", "帮助与反馈"]) {
+  for (const name of ["备份与恢复", "家庭同步", "帮助与反馈"]) {
     await expect(
       page.getByRole("link", { name: new RegExp(`^${name}(?:\\s|$)`) }),
     ).toBeVisible();

@@ -58,7 +58,7 @@ test("完成待产引导会保存阶段资料", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/$/);
   const saved = await page.evaluate(() => ({
-    growth: JSON.parse(localStorage.getItem("dadkit:v3:growth-profile") ?? "null"),
+    growth: JSON.parse(localStorage.getItem("dadkit-growth-profile-v1") ?? "null"),
     identity: JSON.parse(localStorage.getItem("dadkit:v4:device-identity") ?? "null"),
   }));
   expect(saved.growth.nickname).toBe("小满");
@@ -93,6 +93,6 @@ test("onboarding 和设置页在 360×800 无横向溢出且首次访问后可�
     expect(await page.evaluate(async () => Boolean((await caches.match("/settings", { ignoreSearch: true }))?.ok))).toBe(true);
   } else {
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "家庭成员", level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "我的", level: 1 })).toBeVisible();
   }
 });

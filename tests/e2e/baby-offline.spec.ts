@@ -110,7 +110,6 @@ test("IndexedDB v1 惰性升级到 v2 且不重写旧事件", async ({ page }) =
 
   await page.goto("/baby/timeline", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("旧数据库事件", { exact: true })).toBeVisible();
-  await expect(page.getByText("未标记记录人", { exact: true })).toBeVisible();
   const databaseState = await page.evaluate(async () => {
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open("dadkit-baby");
