@@ -6,7 +6,6 @@ const COMPLETE_EVENT = "dadkit:android-migration-complete";
 
 type NativeDataMigrationBridge = {
   getNativeData(): string;
-  getRecordedByMemberId(): string;
   markMigrationComplete(): void;
 };
 
@@ -73,10 +72,9 @@ async function migrateNativeAndroidData(
   bridge: NativeDataMigrationBridge,
   nativeData: string,
 ) {
-  const [storage, merger, identity] = await Promise.all([
+  const [storage, merger] = await Promise.all([
     import("@/lib/storage"),
     import("@/lib/sync/merge"),
-    import("@/lib/device-identity/repository"),
   ]);
   const validation = storage.validateImportData(nativeData);
 
@@ -87,21 +85,6 @@ async function migrateNativeAndroidData(
   const result = await storage.applyImportDataAsync(merged);
 
   if (!result.ok) return false;
-
-  const memberId = bridge.getRecordedByMemberId().trim();
-  if (memberId) {
-    const currentIdentity = identity.loadDeviceIdentity();
-    try {
-      identity.saveDeviceIdentity({
-        ...currentIdentity,
-        currentMemberId: memberId,
-        onboardingCompletedAt:
-          currentIdentity.onboardingCompletedAt ?? Date.now(),
-      });
-    } catch {
-      // A removed/invalid native member should not block the document migration.
-    }
-  }
 
   bridge.markMigrationComplete();
   return true;

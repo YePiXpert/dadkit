@@ -25,7 +25,6 @@ export function startBreastfeedingEvent(
   timestamp: number,
   iso = new Date(timestamp).toISOString(),
   id = newCareEventId(),
-  recordedByMemberId: string | null = null,
 ): BreastfeedingEvent {
   return {
     id,
@@ -34,7 +33,6 @@ export function startBreastfeedingEvent(
     createdAt: timestamp,
     updatedAt: timestamp,
     deletedAt: null,
-    recordedByMemberId,
     startAt: iso,
     endAt: null,
     segments: [{ side, startAt: iso, endAt: null }],
@@ -86,7 +84,6 @@ export function startPumpingEvent(
   timestamp: number,
   iso = new Date(timestamp).toISOString(),
   id = newCareEventId(),
-  recordedByMemberId: string | null = null,
 ): PumpingEvent {
   return {
     id,
@@ -95,7 +92,6 @@ export function startPumpingEvent(
     createdAt: timestamp,
     updatedAt: timestamp,
     deletedAt: null,
-    recordedByMemberId,
     startAt: iso,
     endAt: null,
     side,
@@ -123,7 +119,6 @@ export function startSleepEvent(
   timestamp: number,
   iso = new Date(timestamp).toISOString(),
   id = newCareEventId(),
-  recordedByMemberId: string | null = null,
 ): SleepEvent {
   return {
     id,
@@ -132,7 +127,6 @@ export function startSleepEvent(
     createdAt: timestamp,
     updatedAt: timestamp,
     deletedAt: null,
-    recordedByMemberId,
     startAt: iso,
     endAt: null,
   };

@@ -19,7 +19,6 @@ import {
   type CareEvent,
   type CareEventV1,
 } from "@/lib/baby/types";
-import { isSafeHouseholdMemberId } from "@/lib/household/validation";
 
 const CONTROL_CHARACTERS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g;
 const SAFE_EVENT_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/;
@@ -97,10 +96,8 @@ export function isSafeCareEventId(value: unknown): value is string {
 }
 
 export function isCareEvent(value: unknown): value is CareEvent {
-  if (!isPlainRecord(value) || !isCareEventBase(value)) return false;
-
-  if (value.type === "breastfeeding") {
-    if (!hasOnlyKeys(value, [...BASE_KEYS, "startAt", "endAt", "segments"])) return false;
+  if (!isPlainRecord(value) || !isCareEventBase(value)) return false;  if (value.type === "breastfeeding") {
+    if (!hasEventKeys(value, ["startAt", "endAt", "segments"])) return false;
     if (!isIsoUtcTimestamp(value.startAt) || !isNullableIso(value.endAt) || !Array.isArray(value.segments)) return false;
     if (value.segments.length < 1 || value.segments.length > BREASTFEEDING_SEGMENT_LIMIT) return false;
     let previousEnd = -Infinity;
@@ -122,7 +119,7 @@ export function isCareEvent(value: unknown): value is CareEvent {
 
   if (value.type === "bottle") {
     return (
-      hasOnlyKeys(value, [...BASE_KEYS, "occurredAt", "milkType", "amountMl"]) &&
+      hasEventKeys(value, ["occurredAt", "milkType", "amountMl"]) &&
       isIsoUtcTimestamp(value.occurredAt) &&
       (value.milkType === "breastmilk" || value.milkType === "formula") &&
       isIntegerInRange(value.amountMl, 1, BABY_MILK_AMOUNT_MAX_ML)
@@ -131,7 +128,7 @@ export function isCareEvent(value: unknown): value is CareEvent {
 
   if (value.type === "pumping") {
     return (
-      hasOnlyKeys(value, [...BASE_KEYS, "startAt", "endAt", "side", "amountMl"]) &&
+      hasEventKeys(value, ["startAt", "endAt", "side", "amountMl"]) &&
       isTimedEvent(value.startAt, value.endAt) &&
       (value.side === "left" || value.side === "right" || value.side === "both") &&
       (value.amountMl === null || isIntegerInRange(value.amountMl, 0, BABY_MILK_AMOUNT_MAX_ML))
@@ -140,7 +137,7 @@ export function isCareEvent(value: unknown): value is CareEvent {
 
   if (value.type === "diaper") {
     return (
-      hasOnlyKeys(value, [...BASE_KEYS, "occurredAt", "kind"]) &&
+      hasEventKeys(value, ["occurredAt", "kind"]) &&
       isIsoUtcTimestamp(value.occurredAt) &&
       (value.kind === "wet" || value.kind === "dirty" || value.kind === "both")
     );
@@ -148,14 +145,9 @@ export function isCareEvent(value: unknown): value is CareEvent {
 
   return (
     value.type === "sleep" &&
-    hasOnlyKeys(value, [...BASE_KEYS, "startAt", "endAt"]) &&
+    hasEventKeys(value, ["startAt", "endAt"]) &&
     isTimedEvent(value.startAt, value.endAt)
   );
-}
-
-export function isCareEventV1(value: unknown): value is CareEventV1 {
-  if (!isPlainRecord(value) || "recordedByMemberId" in value) return false;
-  return isCareEvent({ ...value, recordedByMemberId: null });
 }
 
 export function isBabyCarePortableData(value: unknown): value is BabyCarePortableData {
@@ -188,7 +180,7 @@ export function isBabyPortableDataV1(value: unknown): value is BabyPortableDataV
     isSafeTimestamp(value.care.clearedAt) &&
     Array.isArray(value.care.events) &&
     value.care.events.length <= BABY_EVENT_LIMIT &&
-    value.care.events.every(isCareEventV1) &&
+    value.care.events.every(isCareEvent) &&
     new Set(value.care.events.map((event) => (event as CareEventV1).id)).size === value.care.events.length
   );
 }
@@ -198,7 +190,20 @@ export function assertBabyPortableData(value: unknown): BabyPortableData {
   return value;
 }
 
-const BASE_KEYS = ["id", "type", "note", "createdAt", "updatedAt", "deletedAt", "recordedByMemberId"] as const;
+const BASE_KEYS = ["id", "type", "note", "createdAt", "updatedAt", "deletedAt"] as const;
+// 家庭成员功能已下线：旧数据中的 recordedByMemberId 允许通过校验，读取时由克隆函数丢弃。
+const LEGACY_RECORDED_BY_KEY = "recordedByMemberId";
+
+function hasEventKeys(value: Record<string, unknown>, extra: readonly string[]) {
+  const allowed = new Set<string>([...BASE_KEYS, ...extra, LEGACY_RECORDED_BY_KEY]);
+  const keys = Object.keys(value);
+  return keys.length <= allowed.size && keys.every((key) => allowed.has(key));
+}
+
+function isLegacyRecordedByOk(value: Record<string, unknown>) {
+  const legacy = value[LEGACY_RECORDED_BY_KEY];
+  return legacy === undefined || legacy === null || isSafeCareEventId(legacy);
+}
 
 function isCareEventBase(value: Record<string, unknown>) {
   return (
@@ -211,7 +216,7 @@ function isCareEventBase(value: Record<string, unknown>) {
     isSafeTimestamp(value.updatedAt) &&
     value.updatedAt >= value.createdAt &&
     (value.deletedAt === null || (isSafeTimestamp(value.deletedAt) && value.deletedAt === value.updatedAt)) &&
-    (value.recordedByMemberId === null || isSafeHouseholdMemberId(value.recordedByMemberId))
+    isLegacyRecordedByOk(value)
   );
 }
 

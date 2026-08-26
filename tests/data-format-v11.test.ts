@@ -37,8 +37,8 @@ describe("DadKit v11 portable format", () => {
 
     expect(latest.version).toBe(11);
     expect(latest).not.toHaveProperty("planning");
-    expect(latest.household.members).toEqual({});
-    expect(latest.baby.care.events[0].recordedByMemberId).toBeNull();
+    expect(latest).not.toHaveProperty("household");
+    expect(latest.baby.care.events.map((event) => event.id)).toEqual(["event-a"]);
   });
 
   it("round trips v11 and projects empty compatibility fields for v10/v9/v8", () => {
@@ -80,14 +80,9 @@ describe("DadKit v11 portable format", () => {
     expect(latest.version).toBe(11);
   });
 
-  it("includes household and baby recorder changes in stable checksums", () => {
+  it("includes baby care changes in stable checksums", () => {
     const latest = portableV11();
-    latest.household.householdName = { value: "小满之家", updatedAt: 1 };
     const base = calculateChecksum(latest);
-
-    const changed = structuredClone(latest);
-    changed.household.householdName.value = "另一个家";
-    expect(calculateChecksum(changed)).not.toBe(base);
 
     const recorded = structuredClone(latest);
     recorded.baby.care.events = [
@@ -98,7 +93,6 @@ describe("DadKit v11 portable format", () => {
         createdAt: 3,
         updatedAt: 3,
         deletedAt: null,
-        recordedByMemberId: "member-a",
         occurredAt: "2026-08-01T00:00:00.000Z",
         kind: "wet",
       },

@@ -148,8 +148,7 @@ describe("baby store", () => {
       createdAt: index + 1,
       updatedAt: index + 1,
       deletedAt: null,
-      recordedByMemberId: null,
-      occurredAt,
+            occurredAt,
       kind: "wet",
     }));
     await repository.putEvents(events);
@@ -167,8 +166,7 @@ describe("baby store", () => {
       createdAt: 1,
       updatedAt: 1,
       deletedAt: null,
-      recordedByMemberId: null,
-      occurredAt,
+            occurredAt,
       kind: "wet",
     };
     await repository.putEvent(event);
@@ -194,8 +192,7 @@ describe("baby store", () => {
       createdAt: timestamp,
       updatedAt: timestamp,
       deletedAt: null,
-      recordedByMemberId: null,
-      occurredAt,
+            occurredAt,
       kind: "wet",
     });
 

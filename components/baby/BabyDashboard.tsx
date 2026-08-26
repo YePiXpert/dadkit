@@ -5,7 +5,6 @@ import { Baby, BedDouble, Container, Droplets, Milk, Pencil } from "lucide-react
 import { useEffect, useMemo, useState } from "react";
 
 import { BabyQuickActionDialog } from "@/components/baby/BabyQuickActionDialog";
-import { CurrentDeviceMemberCard } from "@/components/household/CurrentDeviceMemberCard";
 import { CareEventRow } from "@/components/baby/CareEventRow";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,6 @@ import { birthDayNumber } from "@/lib/baby/date";
 import { deriveTodayCareSummary, formatCareDuration, getLastFeedingEvent } from "@/lib/baby/selectors";
 import { careEventSortTime, formatCareRelativeTime } from "@/lib/baby/time";
 import { useBabyStore } from "@/lib/baby/store";
-import { useHouseholdStore } from "@/lib/household/store";
 import type { CareEventType } from "@/lib/baby/types";
 
 export function BabyDashboard({ onEditProfile }: { onEditProfile(): void }) {
@@ -23,7 +21,6 @@ export function BabyDashboard({ onEditProfile }: { onEditProfile(): void }) {
   const activeEvents = useBabyStore((state) => state.activeEvents);
   const careClearedAt = useBabyStore((state) => state.careClearedAt);
   const [action, setAction] = useState<CareEventType>();
-  const household = useHouseholdStore((state) => state.household);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     setNow(Date.now());
@@ -51,8 +48,6 @@ export function BabyDashboard({ onEditProfile }: { onEditProfile(): void }) {
         </div>
         <p className="mt-4 rounded-inset bg-secondary p-3 text-sm">{lastFeeding ? `最近喂养：${formatCareRelativeTime(lastFeeding.type === "bottle" ? lastFeeding.occurredAt : lastFeeding.startAt, now)}` : "还没有喂养记录"}</p>
       </header>
-
-      <CurrentDeviceMemberCard compact household={household} />
 
       <section aria-label="快速记录" className="grid grid-cols-5 gap-2">
         {QUICK_ACTIONS.map(({ type, label, Icon }) => (

@@ -1,44 +1,47 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { DEVICE_IDENTITY_STORAGE_KEY, clearCurrentMemberIfUnavailable, loadDeviceIdentity, saveDeviceIdentity } from "@/lib/device-identity/repository";
-import { createEmptyHousehold } from "@/lib/household/defaults";
-import { buildLatestPortableData, createSnapshotAsync, exportData } from "@/lib/storage";
+import { DEVICE_IDENTITY_STORAGE_KEY, loadDeviceIdentity, saveDeviceIdentity } from "@/lib/device-identity/repository";
+import { buildLatestPortableData, createSnapshotAsync, exportData, saveChecklist } from "@/lib/storage";
 import { installBrowserStorage } from "@/tests/helpers/browser-storage";
 import { buildDadKitWebDavBackup } from "@/lib/webdav/client";
-import { saveHousehold } from "@/lib/household/repository";
 import { useDeviceIdentityStore } from "@/lib/device-identity/store";
 import { failNextStorageWrite } from "@/tests/helpers/browser-storage";
+import { portableTestItem } from "@/tests/helpers/portable-data";
 
 beforeEach(() => installBrowserStorage());
 
 describe("device identity isolation", () => {
   it("persists locally but never enters portable data", () => {
-    saveDeviceIdentity({ version: 1, currentMemberId: "member-a", preferredEntry: "baby", onboardingCompletedAt: 10 });
-    expect(loadDeviceIdentity().currentMemberId).toBe("member-a");
-    expect(window.localStorage.getItem(DEVICE_IDENTITY_STORAGE_KEY)).toContain("member-a");
-    expect(JSON.stringify(exportData())).not.toContain("currentMemberId");
+    saveDeviceIdentity({ version: 1, preferredEntry: "baby", onboardingCompletedAt: 10 });
+    expect(loadDeviceIdentity().preferredEntry).toBe("baby");
+    expect(window.localStorage.getItem(DEVICE_IDENTITY_STORAGE_KEY)).toContain("preferredEntry");
+    expect(JSON.stringify(exportData())).not.toContain("preferredEntry");
   });
 
-  it("clears the local selection after a member is removed", () => {
-    const household = createEmptyHousehold();
-    household.members["member-a"] = { id: "member-a", createdAt: 1, displayName: { value: "小江", updatedAt: 1 }, relationshipLabel: { value: "", updatedAt: 1 }, deleted: { value: true, updatedAt: 2 } };
-    saveDeviceIdentity({ version: 1, currentMemberId: "member-a", preferredEntry: "auto", onboardingCompletedAt: null });
-    expect(clearCurrentMemberIfUnavailable(household)).toBe(true);
-    expect(loadDeviceIdentity().currentMemberId).toBeNull();
+  it("drops the retired currentMemberId field from legacy storage", () => {
+    window.localStorage.setItem(
+      DEVICE_IDENTITY_STORAGE_KEY,
+      JSON.stringify({ version: 1, currentMemberId: "member-a", preferredEntry: "auto", onboardingCompletedAt: 10 }),
+    );
+    expect(loadDeviceIdentity()).toEqual({
+      version: 1,
+      preferredEntry: "auto",
+      onboardingCompletedAt: 10,
+    });
   });
 
   it("never enters complete JSON, IndexedDB snapshots or WebDAV envelopes", async () => {
-    const household = createEmptyHousehold();
-    household.householdName = { value: "隔离测试家庭", updatedAt: 1 };
-    saveHousehold(household);
-    saveDeviceIdentity({ version: 1, currentMemberId: "member-secret", preferredEntry: "baby", onboardingCompletedAt: 10 });
+    saveDeviceIdentity({ version: 1, preferredEntry: "baby", onboardingCompletedAt: 10 });
+    saveChecklist([portableTestItem("snapshot-seed")]);
 
     const portable = await buildLatestPortableData();
     const snapshot = await createSnapshotAsync("设备身份隔离测试");
     const webDav = buildDadKitWebDavBackup(portable, "device-1");
     for (const value of [portable, snapshot, webDav]) {
-      expect(JSON.stringify(value)).not.toContain("member-secret");
-      expect(JSON.stringify(value)).not.toContain("currentMemberId");
+      const serialized = JSON.stringify(value);
+      expect(serialized).toBeDefined();
+      expect(serialized).not.toContain("onboardingCompletedAt");
+      expect(serialized).not.toContain("preferredEntry");
     }
   });
 
@@ -66,7 +69,6 @@ describe("device identity isolation", () => {
     });
     saveDeviceIdentity({
       version: 1,
-      currentMemberId: "member-external",
       preferredEntry: "auto",
       onboardingCompletedAt: 10,
     });
@@ -77,7 +79,6 @@ describe("device identity isolation", () => {
 
     expect(result.ok).toBe(true);
     expect(loadDeviceIdentity()).toMatchObject({
-      currentMemberId: "member-external",
       preferredEntry: "baby",
       onboardingCompletedAt: 10,
     });

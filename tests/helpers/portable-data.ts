@@ -9,7 +9,6 @@ import {
 } from "@/lib/data/format";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
 import { projectBabyV2ToV1 } from "@/lib/baby/portable";
-import { createEmptyHousehold } from "@/lib/household/defaults";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
 import {
   createEmptyLegacyPlanningV1,
@@ -101,7 +100,6 @@ export function portableV9(
   return {
     ...portableV8(),
     version: 9,
-    household: createEmptyHousehold(),
     planning: createEmptyLegacyPlanningV2(),
     baby: createEmptyBabyData(),
     ...patch,

@@ -48,8 +48,6 @@ import {
 } from "@/lib/webdav/client";
 import { DEFAULT_WEBDAV_CONFIG } from "@/lib/webdav/types";
 import { MemoryBabyRepository, setBabyRepositoryForTests } from "@/lib/baby/repository";
-import { createEmptyHousehold } from "@/lib/household/defaults";
-import { loadHousehold, saveHousehold } from "@/lib/household/repository";
 import { portableV8 } from "@/tests/helpers/portable-data";
 import type { DadKitWebDavBackup } from "@/lib/webdav/types";
 
@@ -434,15 +432,15 @@ describe("webdav helpers", () => {
     const localBaby = await babyRepository.getAllBabyData();
     localBaby.profile.fields.birthDate = { value: "2026-08-01", updatedAt: 10 };
     localBaby.care.events = [
-      { id: "active-sleep", type: "sleep", note: "", createdAt: 20, updatedAt: 20, deletedAt: null, recordedByMemberId: null, startAt: "2026-08-01T00:00:00.000Z", endAt: null },
-      { id: "deleted-diaper", type: "diaper", note: "", createdAt: 21, updatedAt: 40, deletedAt: 40, recordedByMemberId: null, occurredAt: "2026-08-01T00:10:00.000Z", kind: "wet" },
+      { id: "active-sleep", type: "sleep", note: "", createdAt: 20, updatedAt: 20, deletedAt: null, startAt: "2026-08-01T00:00:00.000Z", endAt: null },
+      { id: "deleted-diaper", type: "diaper", note: "", createdAt: 21, updatedAt: 40, deletedAt: 40, occurredAt: "2026-08-01T00:10:00.000Z", kind: "wet" },
     ];
     await babyRepository.replaceBabyDataTransaction(localBaby);
 
     const remote = exportData();
     remote.baby.care.events = [
-      { id: "active-pumping", type: "pumping", note: "", createdAt: 30, updatedAt: 30, deletedAt: null, recordedByMemberId: null, startAt: "2026-08-01T00:20:00.000Z", endAt: null, side: "both", amountMl: null },
-      { id: "deleted-diaper", type: "diaper", note: "", createdAt: 21, updatedAt: 21, deletedAt: null, recordedByMemberId: null, occurredAt: "2026-08-01T00:10:00.000Z", kind: "wet" },
+      { id: "active-pumping", type: "pumping", note: "", createdAt: 30, updatedAt: 30, deletedAt: null, startAt: "2026-08-01T00:20:00.000Z", endAt: null, side: "both", amountMl: null },
+      { id: "deleted-diaper", type: "diaper", note: "", createdAt: 21, updatedAt: 21, deletedAt: null, occurredAt: "2026-08-01T00:10:00.000Z", kind: "wet" },
     ];
     const backup = buildDadKitWebDavBackup(remote, "remote-baby");
 
@@ -457,23 +455,13 @@ describe("webdav helpers", () => {
     expect((await babyRepository.getActiveEvents()).map((event) => event.type).sort()).toEqual(["pumping", "sleep"]);
   });
 
-  it("merges an actual v8 WebDAV backup without clearing v10 household or recorder", async () => {
+  it("merges an actual v8 WebDAV backup and keeps the newer edit", async () => {
     const { babyRepository } = installStorage();
-    const household = createEmptyHousehold();
-    household.members["member-a"] = {
-      id: "member-a",
-      createdAt: 1,
-      displayName: { value: "小江", updatedAt: 1 },
-      relationshipLabel: { value: "家长", updatedAt: 1 },
-      deleted: { value: false, updatedAt: 1 },
-    };
-    saveHousehold(household);
     const localBaby = await babyRepository.getAllBabyData();
     localBaby.care.events = [{
       id: "shared-event",
       type: "diaper",
       note: "v10 原备注",
-      recordedByMemberId: "member-a",
       createdAt: 10,
       updatedAt: 10,
       deletedAt: null,
@@ -505,10 +493,8 @@ describe("webdav helpers", () => {
     };
 
     expect((await importDadKitWebDavBackup(backup)).ok).toBe(true);
-    expect(loadHousehold().members["member-a"].displayName.value).toBe("小江");
     const event = (await babyRepository.getAllBabyData()).care.events[0];
     expect(event.note).toBe("v8 WebDAV 编辑");
-    expect(event.recordedByMemberId).toBe("member-a");
   });
 
   it("prefills the default WebDAV target without storing secrets", () => {

@@ -4,7 +4,7 @@ import { mergeBabyCare } from "@/lib/baby/merge";
 import type { BabyCarePortableData, CareEvent, DiaperEvent } from "@/lib/baby/types";
 
 function diaper(id: string, updatedAt: number, deletedAt: number | null = null): DiaperEvent {
-  return { id, type: "diaper", note: "", createdAt: 1, updatedAt, deletedAt, recordedByMemberId: null, occurredAt: "2026-08-01T00:00:00.000Z", kind: "wet" };
+  return { id, type: "diaper", note: "", createdAt: 1, updatedAt, deletedAt, occurredAt: "2026-08-01T00:00:00.000Z", kind: "wet" };
 }
 const care = (events: CareEvent[], clearedAt = 0): BabyCarePortableData => ({ version: 2, clearedAt, events });
 

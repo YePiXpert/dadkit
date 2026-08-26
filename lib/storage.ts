@@ -43,10 +43,6 @@ import { createEmptyBabyData } from "@/lib/baby/defaults";
 import { cloneBabyData, latestBabyTimestamp, migrateBabyV1ToV2 } from "@/lib/baby/portable";
 import { DEVICE_IDENTITY_STORAGE_KEY, loadDeviceIdentity, saveDeviceIdentity } from "@/lib/device-identity/repository";
 import { useDeviceIdentityStore } from "@/lib/device-identity/store";
-import { clearHouseholdPortable, latestHouseholdTimestamp } from "@/lib/household/portable";
-import { HOUSEHOLD_STORAGE_KEY, loadHousehold } from "@/lib/household/repository";
-import { resolveHouseholdMember } from "@/lib/household/selectors";
-import { useHouseholdStore } from "@/lib/household/store";
 import { getBabyRepository } from "@/lib/baby/repository";
 import { careEventsForLocalDay } from "@/lib/baby/selectors";
 import { timelineEventsForRange, useBabyStore } from "@/lib/baby/store";
@@ -92,7 +88,7 @@ export const STORAGE_KEYS = {
   syncClientState: "dadkit:v3:sync-client-state",
   syncClockOffset: "dadkit:v3:sync-clock-offset-ms",
   syncClockTimelineInitialized: "dadkit:v3:sync-clock-timeline-initialized",
-  household: HOUSEHOLD_STORAGE_KEY,
+  household: "dadkit:v4:household", // 已下线的家庭成员功能，仅保留键名用于清理旧数据
   deviceIdentity: DEVICE_IDENTITY_STORAGE_KEY,
 } as const;
 
@@ -1042,15 +1038,6 @@ export function resetAllData(initialChecklist?: ChecklistItem[]) {
   cancelPendingChecklistStateSave();
 
   if (canUseLocalStorage()) {
-    const previousHousehold = loadHousehold();
-    const clearedHousehold = clearHouseholdPortable(
-      previousHousehold,
-      Math.max(
-        getSyncAdjustedNow() + 1,
-        previousHousehold.clearedAt + 1,
-        latestHouseholdTimestamp(previousHousehold) + 1,
-      ),
-    );
     applyStorageMutations(
       DATA_STORAGE_KEYS.map((key) => {
         if (initialChecklist && key === STORAGE_KEYS.checklist) {
@@ -1059,10 +1046,6 @@ export function resetAllData(initialChecklist?: ChecklistItem[]) {
 
         if (initialChecklist && key === STORAGE_KEYS.checklistMode) {
           return { key, value: JSON.stringify("lean") };
-        }
-
-        if (key === STORAGE_KEYS.household) {
-          return { key, value: JSON.stringify(clearedHousehold) };
         }
 
         return { key, value: null };
@@ -1082,7 +1065,6 @@ export function resetAllData(initialChecklist?: ChecklistItem[]) {
       ...DEFAULT_GROWTH_VIEW,
       hydrated: true,
     });
-    useHouseholdStore.setState({ hydrated: true, household: clearedHousehold });
   }
 
   let sessionSecretCleared = true;
@@ -1115,7 +1097,6 @@ export function exportData(): DadKitExportData {
     deletedCustomItems: loadDeletedCustomItems(),
     growthUpdatedAt: loadGrowthUpdatedAt(),
     baby: createEmptyBabyData(),
-    household: loadHousehold(),
   };
 }
 
@@ -1221,27 +1202,6 @@ export function applyImportData(data: DadKitImportData): ImportResult {
   }
 
   data = sanitizeDadKitImportData(data) as DadKitImportData;
-  const currentHousehold = loadHousehold();
-  const householdClearedAt = Math.max(
-    getSyncAdjustedNow() + 1,
-    currentHousehold.clearedAt + 1,
-    latestHouseholdTimestamp(currentHousehold) + 1,
-  );
-  const legacyHousehold = clearHouseholdPortable(currentHousehold, householdClearedAt);
-  const household = data.version === 9 || data.version === 10 || data.version === 11
-    ? data.household
-    : legacyHousehold;
-  const currentIdentity = loadDeviceIdentity();
-  const selectedMember = resolveHouseholdMember(
-    household,
-    currentIdentity.currentMemberId,
-  );
-  const nextIdentity =
-    data.version < 9 ||
-    (currentIdentity.currentMemberId !== null &&
-      (!selectedMember || selectedMember.deleted.value))
-      ? { ...currentIdentity, currentMemberId: null }
-      : undefined;
 
   if (!canUseLocalStorage()) {
     return { ok: false, message: "当前环境无法访问本地存储，未修改本地数据。" };
@@ -1262,10 +1222,7 @@ export function applyImportData(data: DadKitImportData): ImportResult {
     },
     { key: LEGACY_HOSPITAL_STORAGE_KEY, value: null },
     { key: LEGACY_ITEM_PLANNING_STORAGE_KEY, value: null },
-    { key: STORAGE_KEYS.household, value: JSON.stringify(household) },
-    ...(nextIdentity
-      ? [{ key: STORAGE_KEYS.deviceIdentity, value: JSON.stringify(nextIdentity) }]
-      : []),
+    { key: STORAGE_KEYS.household, value: null },
   ];
 
   if (data.version !== 3) {
@@ -1339,17 +1296,13 @@ export function applyImportData(data: DadKitImportData): ImportResult {
         hydrated: true,
       });
     }
-    useHouseholdStore.setState({ hydrated: true, household });
-    if (nextIdentity) {
-      useDeviceIdentityStore.setState({ ...nextIdentity, hydrated: true });
-    }
     return {
       ok: true,
       message:
         data.version === 11 || data.version === 10 || data.version === 9
           ? "导入成功"
           : data.version === 8
-            ? "导入成功（v8 备份中的宝宝记录不包含记录人信息）"
+            ? "导入成功"
           : data.version === 7
             ? "导入成功（v7 备份不包含宝宝资料和照护记录）"
             : data.version === 6
@@ -1465,7 +1418,7 @@ export async function applyImportDataAsync(
     return { ok: true, message: "导入成功" };
   }
   if (clean.version === 8) {
-    return { ok: true, message: "导入成功。v8 备份中的宝宝记录不包含记录人信息。" };
+    return { ok: true, message: "导入成功。" };
   }
   if (clean.version === 7) {
     return {
@@ -1547,8 +1500,6 @@ function hasSnapshotData(data: DadKitExportData) {
     data.growth.profile.nickname.length > 0 ||
     data.growth.profile.dueDate.length > 0 ||
     data.growth.progress.completedTaskIds.length > 0 ||
-    data.household.householdName.value.length > 0 ||
-    Object.keys(data.household.members).length > 0 ||
     data.baby.profile.fields.birthDate.value.length > 0 ||
     data.baby.profile.fields.nickname.value.length > 0 ||
     data.baby.care.events.length > 0 ||

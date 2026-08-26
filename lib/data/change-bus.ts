@@ -3,7 +3,6 @@
 export type DataDomain =
   | "checklist"
   | "growth"
-  | "household"
   | "device-identity"
   | "baby"
   | "item-photo"
@@ -66,7 +65,7 @@ export function publishDataChange(domain: DataDomain, entityId?: string) {
     const serialized = JSON.stringify(message);
     // Keep the legacy shared key for already-open older clients, and retain a
     // durable slot per domain so an unrelated change cannot overwrite the only
-    // recoverable checklist/household/etc. notification.
+    // recoverable checklist/growth/etc. notification.
     window.localStorage.setItem(DATA_CHANGE_SIGNAL_KEY, serialized);
     window.localStorage.setItem(domainSignalKey(domain), serialized);
   } catch {
@@ -232,7 +231,6 @@ function isDataChangeMessage(value: unknown): value is DataChangeMessage {
 const DATA_DOMAINS = new Set<DataDomain>([
   "checklist",
   "growth",
-  "household",
   "device-identity",
   "baby",
   "item-photo",

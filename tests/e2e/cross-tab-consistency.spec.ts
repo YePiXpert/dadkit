@@ -2,13 +2,13 @@ import path from "node:path";
 
 import { expect, test } from "@playwright/test";
 
-import { seedFamily } from "@/tests/e2e/helpers";
+import { seedCompletedOnboarding } from "@/tests/e2e/helpers";
 
 const SAMPLE_IMAGE_PATH = path.join(process.cwd(), "public", "icon-192.png");
 
 test.describe.configure({ timeout: 180_000 });
 test.beforeEach(async ({ page }) => {
-  await seedFamily(page);
+  await seedCompletedOnboarding(page);
 });
 
 test("双标签实时同步清单、宝宝记录和物品照片", async ({

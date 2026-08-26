@@ -6,15 +6,16 @@ export function cloneBabyProfile(profile: BabyProfilePortableData): BabyProfileP
 }
 
 export function cloneCareEvent(event: CareEvent): CareEvent {
-  return event.type === "breastfeeding"
-    ? { ...event, segments: event.segments.map((segment) => ({ ...segment })) }
-    : { ...event };
+  // 旧版本数据可能带有已下线的"记录人"字段（recordedByMemberId），克隆时统一丢弃。
+  const { recordedByMemberId: _legacy, ...rest } = event as CareEvent & { recordedByMemberId?: unknown };
+  void _legacy;
+  return rest.type === "breastfeeding"
+    ? { ...rest, segments: rest.segments.map((segment) => ({ ...segment })) }
+    : { ...rest };
 }
 
 export function cloneCareEventV1(event: CareEventV1): CareEventV1 {
-  return event.type === "breastfeeding"
-    ? { ...event, segments: event.segments.map((segment) => ({ ...segment })) }
-    : { ...event };
+  return cloneCareEvent(event);
 }
 
 export function cloneBabyCare(care: BabyCarePortableData): BabyCarePortableData {
@@ -56,19 +57,13 @@ export function projectBabyV2ToV1(data: BabyPortableData): BabyPortableDataV1 {
     care: {
       version: 1,
       clearedAt: data.care.clearedAt,
-      events: data.care.events.map(({ recordedByMemberId: _recordedByMemberId, ...event }) => {
-        void _recordedByMemberId;
-        return event.type === "breastfeeding" ? { ...event, segments: event.segments.map((segment) => ({ ...segment })) } : { ...event };
-      }).sort((a, b) => a.id.localeCompare(b.id)) as CareEventV1[],
+      events: data.care.events.map(cloneCareEvent).sort((a, b) => a.id.localeCompare(b.id)) as CareEventV1[],
     },
   };
 }
 
 export function upgradeCareEvent(event: CareEvent | CareEventV1): CareEvent {
-  const next = "recordedByMemberId" in event ? event : { ...event, recordedByMemberId: null };
-  return next.type === "breastfeeding"
-    ? { ...next, segments: next.segments.map((segment) => ({ ...segment })) } as CareEvent
-    : { ...next } as CareEvent;
+  return cloneCareEvent(event);
 }
 
 export function updateBabyProfileValues(profile: BabyProfilePortableData, values: BabyProfileValues, timestamp: number) {

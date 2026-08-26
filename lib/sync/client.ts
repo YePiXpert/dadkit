@@ -287,23 +287,6 @@ export function alignExportDataToServerTime(
       ]),
     ),
     growthUpdatedAt: shiftTimestamp(data.growthUpdatedAt),
-    household: {
-      version: 1,
-      clearedAt: shiftTimestamp(data.household.clearedAt),
-      householdName: {
-        ...data.household.householdName,
-        updatedAt: shiftTimestamp(data.household.householdName.updatedAt),
-      },
-      members: Object.fromEntries(
-        Object.entries(data.household.members).map(([id, member]) => [id, {
-          ...member,
-          createdAt: shiftTimestamp(member.createdAt),
-          displayName: { ...member.displayName, updatedAt: shiftTimestamp(member.displayName.updatedAt) },
-          relationshipLabel: { ...member.relationshipLabel, updatedAt: shiftTimestamp(member.relationshipLabel.updatedAt) },
-          deleted: { ...member.deleted, updatedAt: shiftTimestamp(member.deleted.updatedAt) },
-        }]),
-      ),
-    },
     baby: alignBabyDataToServerTime(data.baby, offset),
   };
 }

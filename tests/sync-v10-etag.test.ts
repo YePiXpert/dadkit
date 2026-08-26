@@ -74,55 +74,20 @@ describe("v10 representation ETags", () => {
     expect(pushResponse.headers.get("vary")).toBe(DADKIT_DATA_VERSION_HEADER);
   });
 
-  it("preserves a canonical recorder when an actual v8 device edits the event", async () => {
-    const device = await createRandomSpace("v8 记录人兼容家庭", "v10 设备");
+  it("keeps baby events intact after v5, v6, v7 and v8 pushes", async () => {
+    const device = await createRandomSpace("旧设备兼容家庭", "v10 设备");
     if (!device) throw new Error("测试同步空间创建失败");
     const canonical = portableV10();
-    canonical.household.members["member-a"] = {
-      id: "member-a",
-      createdAt: 1,
-      displayName: { value: "小江", updatedAt: 1 },
-      relationshipLabel: { value: "家长", updatedAt: 1 },
-      deleted: { value: false, updatedAt: 1 },
-    };
     canonical.baby.care.events = [{
       id: "event-a",
       type: "diaper",
       note: "v10 原备注",
-      recordedByMemberId: "member-a",
       createdAt: 10,
       updatedAt: 10,
       deletedAt: null,
       occurredAt: "2026-08-01T00:00:00.000Z",
       kind: "wet",
     }];
-    await pushSpace(device.token, canonical, 10);
-
-    const legacy = await pullSpace(device.token, 8);
-    const legacyData = legacy?.data;
-    if (!legacyData || legacyData.version !== 8) throw new Error("v8 投影失败");
-    legacyData.baby.care.events[0]!.note = "v8 已编辑";
-    legacyData.baby.care.events[0]!.updatedAt = 20;
-    await pushSpace(device.token, legacyData, 8);
-
-    const latest = await pullSpace(device.token, 10);
-    const latestData = latest?.data;
-    if (!latestData || latestData.version !== 10) throw new Error("v10 拉取失败");
-    expect(latestData.baby.care.events[0]!.note).toBe("v8 已编辑");
-    expect(latestData.baby.care.events[0]!.recordedByMemberId).toBe("member-a");
-  });
-
-  it("preserves household after v5, v6, v7 and v8 pushes", async () => {
-    const device = await createRandomSpace("旧设备 household 兼容家庭", "v10 设备");
-    if (!device) throw new Error("测试同步空间创建失败");
-    const canonical = portableV10();
-    canonical.household.members["member-custom"] = {
-      id: "member-custom",
-      createdAt: 10,
-      displayName: { value: "王阿姨", updatedAt: 10 },
-      relationshipLabel: { value: "月嫂", updatedAt: 10 },
-      deleted: { value: false, updatedAt: 10 },
-    };
     await pushSpace(device.token, canonical, 10);
 
     for (const [version, data] of [
@@ -135,7 +100,8 @@ describe("v10 representation ETags", () => {
       const latest = await pullSpace(device.token, 10);
       const latestData = latest?.data;
       if (!latestData || latestData.version !== 10) throw new Error("v10 拉取失败");
-      expect(latestData.household.members["member-custom"].displayName.value).toBe("王阿姨");
+      expect(latestData.baby.care.events[0]!.id).toBe("event-a");
+      expect(latestData).not.toHaveProperty("household");
     }
   });
 });

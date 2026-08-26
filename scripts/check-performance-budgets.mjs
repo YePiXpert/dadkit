@@ -25,7 +25,6 @@ const routeBudgets = new Map([
   ["/join/page", 200 * 1024],
   ["/settings/sync/page", 250 * 1024],
   ["/onboarding/page", 225 * 1024],
-  ["/settings/family/page", 225 * 1024],
   // v3.4.3 adds the shared Android bundle/theme bridge; measured +0.8 KiB.
   ["/settings/checklist/page", 232 * 1024],
   // Household, baby and legacy backup validation make this the densest form.
@@ -48,7 +47,6 @@ const routeLabels = new Map([
   ["/join/page", "家庭同步加入页"],
   ["/settings/sync/page", "家庭同步管理页"],
   ["/onboarding/page", "首次使用引导页"],
-  ["/settings/family/page", "家庭成员设置页"],
   ["/settings/checklist/page", "清单设置页"],
   ["/settings/backup/page", "备份页"],
   ["/privacy/page", "隐私说明页"],

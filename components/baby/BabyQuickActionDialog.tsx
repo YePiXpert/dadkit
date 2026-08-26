@@ -26,9 +26,6 @@ import { triggerHaptic } from "@/lib/haptics";
 import { localDateTimeInputToIso, localDateTimeInputValue } from "@/lib/baby/date";
 import { calculateBreastfeedingDuration, formatCareDuration, getActiveBreastfeeding, getActivePumping, getActiveSleep } from "@/lib/baby/selectors";
 import { useBabyStore } from "@/lib/baby/store";
-import { useDeviceIdentityStore } from "@/lib/device-identity/store";
-import { getActiveHouseholdMembers, householdMemberLabel } from "@/lib/household/selectors";
-import { useHouseholdStore } from "@/lib/household/store";
 import type { BottleMilkType, CareEvent, CareEventType, DiaperKind, PumpingSide } from "@/lib/baby/types";
 import { useOpenDraftInitializer } from "@/lib/use-open-draft";
 
@@ -58,26 +55,9 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
   const [manualEndAt, setManualEndAt] = useState(() => localDateTimeInputValue());
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const [recordedByMemberId, setRecordedByMemberId] = useState<string | null>(null);
-  const household = useHouseholdStore((state) => state.household);
-  const hydrateHousehold = useHouseholdStore((state) => state.hydrate);
-  const currentMemberId = useDeviceIdentityStore((state) => state.currentMemberId);
-  const hydrateIdentity = useDeviceIdentityStore((state) => state.hydrate);
   const breastfeeding = getActiveBreastfeeding(activeEvents, careClearedAt);
   const pumping = getActivePumping(activeEvents, careClearedAt);
   const sleep = getActiveSleep(activeEvents, careClearedAt);
-  const activeEvent = action === "breastfeeding"
-    ? breastfeeding
-    : action === "pumping"
-      ? pumping
-      : action === "sleep"
-        ? sleep
-        : undefined;
-
-  useEffect(() => {
-    hydrateHousehold();
-    hydrateIdentity();
-  }, [hydrateHousehold, hydrateIdentity]);
 
   useOpenDraftInitializer(open, action, () => {
     setNote("");
@@ -87,12 +67,6 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
     setManualMode(false);
     setManualStartAt(localDateTimeInputValue(new Date(Date.now() - 10 * 60_000)));
     setManualEndAt(localDateTimeInputValue());
-    const currentIsActive = getActiveHouseholdMembers(household).some(
-      (member) => member.id === currentMemberId,
-    );
-    setRecordedByMemberId(
-      activeEvent?.recordedByMemberId ?? (currentIsActive ? currentMemberId : null),
-    );
   });
 
   useEffect(() => {
@@ -120,13 +94,6 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
           <DialogDescription>{ACTION_DESCRIPTIONS[action]}</DialogDescription>
         </DialogHeader>
 
-        <RecorderField
-          disabled={Boolean(activeEvent)}
-          household={household}
-          onChange={setRecordedByMemberId}
-          value={recordedByMemberId}
-        />
-
         {action === "breastfeeding" ? (
           breastfeeding ? (
             <div className="grid gap-4">
@@ -142,8 +109,8 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              <Button disabled={busy} onClick={() => void run(() => startBreastfeeding("left", recordedByMemberId), "已开始左侧亲喂。")}>左侧开始</Button>
-              <Button disabled={busy} onClick={() => void run(() => startBreastfeeding("right", recordedByMemberId), "已开始右侧亲喂。")}>右侧开始</Button>
+              <Button disabled={busy} onClick={() => void run(() => startBreastfeeding("left"), "已开始左侧亲喂。")}>左侧开始</Button>
+              <Button disabled={busy} onClick={() => void run(() => startBreastfeeding("right"), "已开始右侧亲喂。")}>右侧开始</Button>
             </div>
           )
         ) : null}
@@ -158,7 +125,7 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
               const iso = localDateTimeInputToIso(occurredAt);
               const parsed = Number(amount);
               if (!iso || !/^\d+$/.test(amount) || parsed < 1 || parsed > 2000) { showAppToast({ message: "请输入 1–2000 的整数奶量和有效时间。", tone: "warning" }); return; }
-              void run(() => addBottleRecord({ occurredAt: iso, milkType, amountMl: parsed, note }, recordedByMemberId), "瓶喂记录已保存。");
+              void run(() => addBottleRecord({ occurredAt: iso, milkType, amountMl: parsed, note }), "瓶喂记录已保存。");
             }}>保存瓶喂记录</Button>
           </div>
         ) : null}
@@ -186,14 +153,14 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
                 const startAt = localDateTimeInputToIso(manualStartAt);
                 const endAt = localDateTimeInputToIso(manualEndAt);
                 if (!startAt || !endAt || Date.parse(endAt) < Date.parse(startAt) || (amount !== "" && (!/^\d+$/.test(amount) || Number(amount) > 2000))) { showAppToast({ message: "请检查起止时间和 0–2000 的整数奶量。", tone: "warning" }); return; }
-                const event: CareEvent = { id: "manual-pumping-draft", type: "pumping", note, createdAt: 0, updatedAt: 0, deletedAt: null, recordedByMemberId: null, startAt, endAt, side: pumpingSide, amountMl: amount === "" ? null : Number(amount) };
-                void run(() => createManualEvent(event, recordedByMemberId), "吸奶补录已保存。");
+                const event: CareEvent = { id: "manual-pumping-draft", type: "pumping", note, createdAt: 0, updatedAt: 0, deletedAt: null, startAt, endAt, side: pumpingSide, amountMl: amount === "" ? null : Number(amount) };
+                void run(() => createManualEvent(event), "吸奶补录已保存。");
               }}>保存吸奶补录</Button>
               <Button disabled={busy} onClick={() => setManualMode(false)} variant="outline">返回计时</Button>
             </div>
           ) : (
             <div className="grid gap-3">
-              <div className="grid grid-cols-3 gap-2">{(["left", "right", "both"] as PumpingSide[]).map((side) => <Button disabled={busy} key={side} onClick={() => void run(() => startPumping(side, recordedByMemberId), "已开始吸奶计时。")}>{side === "left" ? "左侧" : side === "right" ? "右侧" : "双侧"}</Button>)}</div>
+              <div className="grid grid-cols-3 gap-2">{(["left", "right", "both"] as PumpingSide[]).map((side) => <Button disabled={busy} key={side} onClick={() => void run(() => startPumping(side), "已开始吸奶计时。")}>{side === "left" ? "左侧" : side === "right" ? "右侧" : "双侧"}</Button>)}</div>
               <Button disabled={busy} onClick={() => setManualMode(true)} variant="outline">手动补录已完成吸奶</Button>
             </div>
           )
@@ -207,7 +174,7 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
               {(["wet", "dirty", "both"] as DiaperKind[]).map((kind) => <Button disabled={busy} key={kind} onClick={() => {
                 const iso = localDateTimeInputToIso(occurredAt);
                 if (!iso) { showAppToast({ message: "请选择有效时间。", tone: "warning" }); return; }
-                void run(() => addDiaperRecord({ occurredAt: iso, kind, note }, recordedByMemberId), "尿布记录已保存。");
+                void run(() => addDiaperRecord({ occurredAt: iso, kind, note }), "尿布记录已保存。");
               }}>{kind === "wet" ? "小便" : kind === "dirty" ? "大便" : "都有"}</Button>)}
             </div>
           </div>
@@ -231,55 +198,17 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
                 const startAt = localDateTimeInputToIso(manualStartAt);
                 const endAt = localDateTimeInputToIso(manualEndAt);
                 if (!startAt || !endAt || Date.parse(endAt) < Date.parse(startAt)) { showAppToast({ message: "结束时间不能早于开始时间。", tone: "warning" }); return; }
-                const event: CareEvent = { id: "manual-sleep-draft", type: "sleep", note, createdAt: 0, updatedAt: 0, deletedAt: null, recordedByMemberId: null, startAt, endAt };
-                void run(() => createManualEvent(event, recordedByMemberId), "睡眠补录已保存。");
+                const event: CareEvent = { id: "manual-sleep-draft", type: "sleep", note, createdAt: 0, updatedAt: 0, deletedAt: null, startAt, endAt };
+                void run(() => createManualEvent(event), "睡眠补录已保存。");
               }}>保存睡眠补录</Button>
               <Button disabled={busy} onClick={() => setManualMode(false)} variant="outline">返回计时</Button>
             </div>
-          ) : <div className="grid gap-3"><Button disabled={busy} onClick={() => void run(() => startSleep(recordedByMemberId), "已开始睡眠计时。")}>开始睡眠</Button><Button disabled={busy} onClick={() => setManualMode(true)} variant="outline">手动补录已完成睡眠</Button></div>
+          ) : <div className="grid gap-3"><Button disabled={busy} onClick={() => void run(() => startSleep(), "已开始睡眠计时。")}>开始睡眠</Button><Button disabled={busy} onClick={() => setManualMode(true)} variant="outline">手动补录已完成睡眠</Button></div>
         ) : null}
 
         <DialogFooter><Button disabled={busy} onClick={() => onOpenChange(false)} variant="outline">关闭</Button></DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function RecorderField({
-  disabled,
-  household,
-  onChange,
-  value,
-}: {
-  disabled: boolean;
-  household: ReturnType<typeof useHouseholdStore.getState>["household"];
-  onChange(value: string | null): void;
-  value: string | null;
-}) {
-  const members = getActiveHouseholdMembers(household);
-  return (
-    <div className="grid gap-2 rounded-inset bg-muted/50 p-3">
-      <Label htmlFor="baby-care-recorder">记录人</Label>
-      <Select
-        disabled={disabled}
-        onValueChange={(memberId) => onChange(memberId === "none" ? null : memberId)}
-        value={value ?? "none"}
-      >
-        <SelectTrigger id="baby-care-recorder"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">未标记记录人</SelectItem>
-          {members.map((member) => (
-            <SelectItem key={member.id} value={member.id}>{member.displayName.value}</SelectItem>
-          ))}
-          {value && !members.some((member) => member.id === value) ? (
-            <SelectItem value={value}>{householdMemberLabel(household, value)}</SelectItem>
-          ) : null}
-        </SelectContent>
-      </Select>
-      <p className="text-xs text-muted-foreground">
-        {disabled ? "计时开始后记录人保持不变。" : "默认使用当前设备使用者，也可以为本次记录单独修改。"}
-      </p>
-    </div>
   );
 }
 

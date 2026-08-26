@@ -1,8 +1,6 @@
 "use client";
 
 import type { DeviceIdentityLocalData } from "@/lib/device-identity/types";
-import type { HouseholdPortableData } from "@/lib/household/types";
-import { isSafeHouseholdMemberId } from "@/lib/household/validation";
 import { publishDataChange } from "@/lib/data/change-bus";
 
 export const DEVICE_IDENTITY_STORAGE_KEY = "dadkit:v4:device-identity";
@@ -10,7 +8,6 @@ export const DEVICE_IDENTITY_STORAGE_KEY = "dadkit:v4:device-identity";
 export function createDefaultDeviceIdentity(): DeviceIdentityLocalData {
   return {
     version: 1,
-    currentMemberId: null,
     preferredEntry: "auto",
     onboardingCompletedAt: null,
   };
@@ -21,10 +18,18 @@ export function loadDeviceIdentity(): DeviceIdentityLocalData {
   try {
     const raw = window.localStorage.getItem(DEVICE_IDENTITY_STORAGE_KEY);
     const value = raw ? (JSON.parse(raw) as unknown) : undefined;
-    return isDeviceIdentity(value) ? { ...value } : createDefaultDeviceIdentity();
+    if (!isRecordLike(value)) return createDefaultDeviceIdentity();
+    // 旧版本可能带有已下线的 currentMemberId 字段，读取时直接丢弃。
+    const { currentMemberId: _legacy, ...rest } = value;
+    void _legacy;
+    return isDeviceIdentity(rest) ? { ...rest } : createDefaultDeviceIdentity();
   } catch {
     return createDefaultDeviceIdentity();
   }
+}
+
+function isRecordLike(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function saveDeviceIdentity(identity: DeviceIdentityLocalData) {
@@ -37,30 +42,18 @@ export function saveDeviceIdentity(identity: DeviceIdentityLocalData) {
   }
 }
 
-export function clearCurrentMemberIfUnavailable(household: HouseholdPortableData) {
-  if (typeof window === "undefined") return false;
-  const identity = loadDeviceIdentity();
-  if (!identity.currentMemberId) return false;
-  const member = household.members[identity.currentMemberId];
-  const active =
-    member &&
-    member.displayName.updatedAt > household.clearedAt &&
-    member.deleted.updatedAt > household.clearedAt &&
-    !member.deleted.value;
-  if (active) return false;
-  saveDeviceIdentity({ ...identity, currentMemberId: null });
-  return true;
-}
-
 function isDeviceIdentity(value: unknown): value is DeviceIdentityLocalData {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
   const candidate = value as Record<string, unknown>;
-  const keys = Object.keys(candidate);
+  const hasRequired =
+    ["version", "preferredEntry", "onboardingCompletedAt"].every((key) => key in candidate);
+  if (!hasRequired) return false;
+  const extraKeys = Object.keys(candidate).filter(
+    (key) => key !== "version" && key !== "preferredEntry" && key !== "onboardingCompletedAt",
+  );
   return (
-    keys.length === 4 &&
-    ["version", "currentMemberId", "preferredEntry", "onboardingCompletedAt"].every((key) => key in candidate) &&
+    extraKeys.length === 0 &&
     candidate.version === 1 &&
-    (candidate.currentMemberId === null || isSafeHouseholdMemberId(candidate.currentMemberId)) &&
     (candidate.preferredEntry === "checklist" || candidate.preferredEntry === "baby" || candidate.preferredEntry === "auto") &&
     (candidate.onboardingCompletedAt === null ||
       (typeof candidate.onboardingCompletedAt === "number" &&

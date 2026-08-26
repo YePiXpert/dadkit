@@ -1,19 +1,13 @@
 "use client";
 
 import { Baby, BedDouble, Milk, Pencil, ShowerHead, Trash2 } from "lucide-react";
-import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
-import { householdRecorderLabel } from "@/lib/household/selectors";
-import { useHouseholdStore } from "@/lib/household/store";
 import { calculateBreastfeedingDuration, formatCareDuration } from "@/lib/baby/selectors";
 import { careEventSortTime } from "@/lib/baby/time";
 import type { CareEvent } from "@/lib/baby/types";
 
 export function CareEventRow({ event, onEdit, onDelete, now = Date.now() }: { event: CareEvent; onEdit?(): void; onDelete?(): void; now?: number }) {
-  const household = useHouseholdStore((state) => state.household);
-  const hydrateHousehold = useHouseholdStore((state) => state.hydrate);
-  useEffect(() => { hydrateHousehold(); }, [hydrateHousehold]);
   const Icon = event.type === "sleep" ? BedDouble : event.type === "diaper" ? ShowerHead : event.type === "breastfeeding" ? Baby : Milk;
   return (
     <article className="flex min-w-0 items-start gap-3 rounded-card bg-card p-3 shadow-sm [content-visibility:auto] [contain-intrinsic-size:auto_5.5rem]">
@@ -24,7 +18,6 @@ export function CareEventRow({ event, onEdit, onDelete, now = Date.now() }: { ev
           <time className="text-xs text-muted-foreground" dateTime={new Date(careEventSortTime(event)).toISOString()}>{new Date(careEventSortTime(event)).toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">{eventSummary(event, now)}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{householdRecorderLabel(household, event.recordedByMemberId)}</p>
         {event.note ? <p className="mt-2 break-words text-sm">{event.note}</p> : null}
       </div>
       {onEdit || onDelete ? (

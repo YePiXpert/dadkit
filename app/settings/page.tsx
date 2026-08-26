@@ -3,7 +3,6 @@ import {
   ClipboardCheck,
   Cloud,
   Share2,
-  Users,
 } from "lucide-react";
 
 import { AndroidUpdateSettingsCard } from "@/components/AndroidUpdateSettingsCard";
@@ -14,12 +13,11 @@ import {
   type LinkEntry,
 } from "@/components/LinkEntryGrid";
 import { PageHeader } from "@/components/PageHeader";
-import { FamilySetupPrompt } from "@/components/household/FamilySetupPrompt";
 import packageJson from "@/package.json";
 
 export const metadata: Metadata = {
   title: "我的设置 | DadKit",
-  description: "管理家庭同步、成员、清单显示方式、外观与本机备份。",
+  description: "管理家庭同步、清单显示方式、外观与本机备份。",
 };
 
 const SETTINGS_GROUPS: readonly { label: string; entries: readonly LinkEntry[] }[] = [
@@ -32,13 +30,6 @@ const SETTINGS_GROUPS: readonly { label: string; entries: readonly LinkEntry[] }
         description: "管理同步空间、邀请和已加入的设备。",
         icon: Share2,
         accent: "bg-tile-dad-bg text-tile-dad-fg",
-      },
-      {
-        href: "/settings/family",
-        title: "家庭成员",
-        description: "管理照护者和这台设备的使用者。",
-        icon: Users,
-        accent: "bg-tile-baby-bg text-tile-baby-fg",
       },
     ],
   },
@@ -69,11 +60,9 @@ export default function SettingsPage() {
       <section className="mobile-shell grid gap-6 sm:max-w-[42rem]">
         <PageHeader
           kicker="家庭与设置"
-          subtitle="管理家庭同步、成员、清单偏好与数据备份。"
+          subtitle="管理家庭同步、清单偏好与数据备份。"
           title="我的"
         />
-
-        <FamilySetupPrompt />
 
         {SETTINGS_GROUPS.map((group) => (
           <section className="grid gap-2.5" key={group.label}>

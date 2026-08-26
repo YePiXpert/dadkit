@@ -11,7 +11,6 @@ import {
 import { hospitalValuesFromPortable, updateHospitalProfile } from "@/lib/hospital/portable";
 import { portableTestItem, portableV5, portableV6, portableV11 } from "@/tests/helpers/portable-data";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
-import { createEmptyHousehold } from "@/lib/household/defaults";
 
 const v3: DadKitExportDataV3 = {
   version: 3,
@@ -62,7 +61,6 @@ describe("DadKit v6 hospital compatibility inside the v11 portable format", () =
     expect(upgradeExportDataToLatest(data)).toEqual({
       ...withoutHospital,
       version: 11,
-      household: createEmptyHousehold(),
       baby: createEmptyBabyData(),
     });
   });

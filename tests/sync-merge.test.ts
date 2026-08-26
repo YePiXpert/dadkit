@@ -5,7 +5,6 @@ import type { DadKitExportData } from "@/lib/storage";
 import type { ChecklistItem } from "@/lib/types";
 import { portableV6 } from "@/tests/helpers/portable-data";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
-import { createEmptyHousehold } from "@/lib/household/defaults";
 
 function testItem(
   id: string,
@@ -47,7 +46,6 @@ function exportData(patch: Partial<DadKitExportData> = {}): DadKitExportData {
     deletedCustomItems: {},
     growthUpdatedAt: 0,
     baby: createEmptyBabyData(),
-    household: createEmptyHousehold(),
     ...patch,
   };
 }

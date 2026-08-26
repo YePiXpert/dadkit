@@ -6,7 +6,6 @@ import {
   ListChecks,
   RefreshCw,
   Sprout,
-  Users,
 } from "lucide-react";
 
 import {
@@ -45,13 +44,6 @@ const TOOL_ENTRIES = [
 ] as const satisfies readonly LinkEntry[];
 
 const SUPPORT_ENTRIES = [
-  {
-    href: "/settings/family",
-    title: "家庭成员",
-    description: "管理家庭名称和宝宝记录人。",
-    icon: Users,
-    accent: "bg-tile-docs-bg text-tile-docs-fg",
-  },
   {
     href: "/settings/backup",
     title: "备份与恢复",

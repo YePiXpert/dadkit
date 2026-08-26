@@ -44,7 +44,6 @@ describe("settings information architecture", () => {
     expect(settingsPage).not.toContain('href: "/hospital"');
     expect(settingsPage).not.toContain('href: "/growth"');
     expect(settingsPage).toContain('href: "/settings/sync"');
-    expect(settingsPage).toContain('href: "/settings/family"');
     expect(settingsPage).toContain('href: "/settings/checklist"');
     expect(settingsPage).toContain('href: "/settings/backup"');
     expect(settingsPage).toContain("<AndroidUpdateSettingsCard");

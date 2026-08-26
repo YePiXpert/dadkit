@@ -41,7 +41,6 @@ describe("tools hub page and navigation", () => {
 
     expect(page).toContain("管理与支持");
     for (const entry of [
-      { href: "/settings/family", title: "家庭成员" },
       { href: "/settings/backup", title: "备份与恢复" },
       { href: "/settings/sync", title: "家庭同步" },
       { href: "/support", title: "帮助与反馈" },

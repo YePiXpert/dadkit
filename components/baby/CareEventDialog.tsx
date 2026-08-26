@@ -10,8 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { showAppToast } from "@/lib/app-toast";
-import { getActiveHouseholdMembers, getRemovedHouseholdMembers, householdMemberLabel } from "@/lib/household/selectors";
-import { useHouseholdStore } from "@/lib/household/store";
 import { localDateTimeInputToIso } from "@/lib/baby/date";
 import { cloneCareEvent } from "@/lib/baby/portable";
 import { useBabyStore } from "@/lib/baby/store";
@@ -20,8 +18,6 @@ import { isCareEvent, normalizeBabyText } from "@/lib/baby/validation";
 
 export function CareEventDialog({ event, open, onOpenChange }: { event?: CareEvent; open: boolean; onOpenChange(open: boolean): void }) {
   const updateEvent = useBabyStore((state) => state.updateEvent);
-  const household = useHouseholdStore((state) => state.household);
-  const hydrateHousehold = useHouseholdStore((state) => state.hydrate);
   const [draft, setDraft] = useState<CareEvent>();
   const [conflictedExternal, setConflictedExternal] = useState<CareEvent>();
   const baseRef = useRef<CareEvent | undefined>(undefined);
@@ -51,7 +47,6 @@ export function CareEventDialog({ event, open, onOpenChange }: { event?: CareEve
       setConflictedExternal(undefined);
     }
   }, [draft, event, open]);
-  useEffect(() => { hydrateHousehold(); }, [hydrateHousehold]);
   if (!event || !draft) return null;
 
   function updateTime(key: "occurredAt" | "startAt" | "endAt", value: string) {
@@ -97,7 +92,6 @@ export function CareEventDialog({ event, open, onOpenChange }: { event?: CareEve
           {draft.type === "diaper" ? <><DateTimeField id="edit-diaper-occurred" label="发生时间" value={draft.occurredAt} onChange={(value) => updateTime("occurredAt", value)} /><div className="grid gap-2"><Label htmlFor="edit-diaper-kind">尿布类型</Label><Select value={draft.kind} onValueChange={(kind) => setDraft({ ...draft, kind: kind as typeof draft.kind })}><SelectTrigger id="edit-diaper-kind"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="wet">小便</SelectItem><SelectItem value="dirty">大便</SelectItem><SelectItem value="both">都有</SelectItem></SelectContent></Select></div></> : null}
           {draft.type === "sleep" || draft.type === "pumping" ? <><DateTimeField id={`edit-${draft.type}-start`} label="开始时间" value={draft.startAt} onChange={(value) => updateTime("startAt", value)} /><DateTimeField id={`edit-${draft.type}-end`} label="结束时间" value={draft.endAt!} onChange={(value) => updateTime("endAt", value)} />{draft.type === "pumping" ? <><div className="grid gap-2"><Label htmlFor="edit-pumping-side">侧别</Label><Select value={draft.side} onValueChange={(side) => setDraft({ ...draft, side: side as typeof draft.side })}><SelectTrigger id="edit-pumping-side"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="left">左侧</SelectItem><SelectItem value="right">右侧</SelectItem><SelectItem value="both">双侧</SelectItem></SelectContent></Select></div><Amount id="edit-pumping-amount" allowEmpty value={draft.amountMl} onChange={(amountMl) => setDraft({ ...draft, amountMl })} /></> : null}</> : null}
           {draft.type === "breastfeeding" ? <div className="grid gap-3">{draft.segments.map((segment, index) => <div className="grid gap-3 rounded-inset bg-card p-3 shadow-sm" key={`${event.id}-${index}`}><p className="text-[15px] font-semibold">第 {index + 1} 段</p><Select value={segment.side} onValueChange={(side) => setDraft({ ...draft, segments: draft.segments.map((item, candidate) => candidate === index ? { ...item, side: side as BreastSide } : item) })}><SelectTrigger aria-label={`第 ${index + 1} 段侧别`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="left">左侧</SelectItem><SelectItem value="right">右侧</SelectItem></SelectContent></Select><DateTimeField id={`edit-breastfeeding-${index}-start`} label="开始" value={segment.startAt} onChange={(value) => { const iso = localDateTimeInputToIso(value); if (iso) setDraft({ ...draft, segments: draft.segments.map((item, candidate) => candidate === index ? { ...item, startAt: iso } : item) }); }} /><DateTimeField id={`edit-breastfeeding-${index}-end`} label="结束" value={segment.endAt!} onChange={(value) => { const iso = localDateTimeInputToIso(value); if (iso) setDraft({ ...draft, segments: draft.segments.map((item, candidate) => candidate === index ? { ...item, endAt: iso } : item) }); }} /></div>)}</div> : null}
-          <div className="grid gap-2"><Label htmlFor="edit-care-recorder">记录人</Label><Select value={draft.recordedByMemberId ?? "none"} onValueChange={(value) => setDraft({ ...draft, recordedByMemberId: value === "none" ? null : value })}><SelectTrigger id="edit-care-recorder"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">未标记记录人</SelectItem>{getActiveHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}</SelectItem>)}{getRemovedHouseholdMembers(household).map((member) => <SelectItem key={member.id} value={member.id}>{member.displayName.value}（已移除）</SelectItem>)}{draft.recordedByMemberId && !household.members[draft.recordedByMemberId] ? <SelectItem value={draft.recordedByMemberId}>{householdMemberLabel(household, draft.recordedByMemberId)}</SelectItem> : null}</SelectContent></Select></div>
           <div className="grid gap-2"><Label htmlFor="edit-care-note">备注</Label><Textarea id="edit-care-note" maxLength={1000} onChange={(change) => setDraft({ ...draft, note: change.target.value })} value={draft.note} /></div>
         </div>
         <DialogFooter><Button disabled={saving} onClick={() => onOpenChange(false)} variant="outline">取消</Button><Button disabled={saving || Boolean(conflictedExternal)} onClick={() => void save()}>{saving ? "正在保存…" : "保存修改"}</Button></DialogFooter>

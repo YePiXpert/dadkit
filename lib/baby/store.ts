@@ -2,9 +2,6 @@
 
 import { create } from "zustand";
 
-import { loadDeviceIdentity } from "@/lib/device-identity/repository";
-import { loadHousehold } from "@/lib/household/repository";
-import { resolveHouseholdMember } from "@/lib/household/selectors";
 import { createEmptyBabyProfile } from "@/lib/baby/defaults";
 import { mergeBabyData } from "@/lib/baby/merge";
 import { cloneCareEvent, latestBabyTimestamp, updateBabyProfileValues } from "@/lib/baby/portable";
@@ -68,16 +65,16 @@ type BabyState = {
   saveProfile(draft: BabyProfileDraft): Promise<CareActionResult>;
   clearProfile(): Promise<CareActionResult>;
   clearAllBabyData(): Promise<CareActionResult>;
-  startBreastfeeding(side: BreastSide, recordedByMemberId?: string | null): Promise<CareActionResult>;
+  startBreastfeeding(side: BreastSide): Promise<CareActionResult>;
   switchBreastfeedingSide(side: BreastSide): Promise<CareActionResult>;
   finishBreastfeeding(note?: string): Promise<CareActionResult>;
-  addBottleRecord(draft: BottleRecordDraft, recordedByMemberId?: string | null): Promise<CareActionResult>;
-  startPumping(side: PumpingSide, recordedByMemberId?: string | null): Promise<CareActionResult>;
+  addBottleRecord(draft: BottleRecordDraft): Promise<CareActionResult>;
+  startPumping(side: PumpingSide): Promise<CareActionResult>;
   finishPumping(draft: PumpingFinishDraft): Promise<CareActionResult>;
-  addDiaperRecord(draft: DiaperRecordDraft, recordedByMemberId?: string | null): Promise<CareActionResult>;
-  startSleep(recordedByMemberId?: string | null): Promise<CareActionResult>;
+  addDiaperRecord(draft: DiaperRecordDraft): Promise<CareActionResult>;
+  startSleep(): Promise<CareActionResult>;
   finishSleep(note?: string): Promise<CareActionResult>;
-  createManualEvent(event: CareEvent, recordedByMemberId?: string | null): Promise<CareActionResult>;
+  createManualEvent(event: CareEvent): Promise<CareActionResult>;
   updateEvent(eventId: string, event: CareEvent): Promise<CareActionResult>;
   deleteEvent(eventId: string): Promise<CareActionResult>;
   loadRecentEvents(): Promise<void>;
@@ -169,9 +166,9 @@ export const useBabyStore = create<BabyState>((set, get) => ({
     return ok();
   }),
 
-  startBreastfeeding: async (side, recordedByMemberId) => writeEvent(async (data, timestamp) => {
+  startBreastfeeding: async (side) => writeEvent(async (data, timestamp) => {
     if (getActiveBreastfeeding(data.care.events, data.care.clearedAt)) return fail("已有正在进行的亲喂记录。");
-    return startBreastfeedingEvent(side, timestamp, undefined, undefined, resolveRecorder(recordedByMemberId));
+    return startBreastfeedingEvent(side, timestamp);
   }),
 
   switchBreastfeedingSide: async (side) => writeEvent(async (data, timestamp) => {
@@ -186,7 +183,7 @@ export const useBabyStore = create<BabyState>((set, get) => ({
     return event ? finishBreastfeedingEvent(event, timestamp, note ?? event.note) : fail("没有正在进行的亲喂记录。");
   }),
 
-  addBottleRecord: async (draft, recordedByMemberId) => writeEvent(async (_data, timestamp) => {
+  addBottleRecord: async (draft) => writeEvent(async (_data, timestamp) => {
     const event: CareEvent = {
       id: newCareEventId(),
       type: "bottle",
@@ -194,7 +191,6 @@ export const useBabyStore = create<BabyState>((set, get) => ({
       createdAt: timestamp,
       updatedAt: timestamp,
       deletedAt: null,
-      recordedByMemberId: resolveRecorder(recordedByMemberId),
       occurredAt: draft.occurredAt,
       milkType: draft.milkType,
       amountMl: draft.amountMl,
@@ -202,9 +198,9 @@ export const useBabyStore = create<BabyState>((set, get) => ({
     return isCareEvent(event) ? event : fail("瓶喂记录无效，请检查时间和奶量。");
   }),
 
-  startPumping: async (side, recordedByMemberId) => writeEvent(async (data, timestamp) => {
+  startPumping: async (side) => writeEvent(async (data, timestamp) => {
     if (getActivePumping(data.care.events, data.care.clearedAt)) return fail("已有正在进行的吸奶记录。");
-    return startPumpingEvent(side, timestamp, undefined, undefined, resolveRecorder(recordedByMemberId));
+    return startPumpingEvent(side, timestamp);
   }),
 
   finishPumping: async (draft) => writeEvent(async (data, timestamp) => {
@@ -214,7 +210,7 @@ export const useBabyStore = create<BabyState>((set, get) => ({
     return isCareEvent(next) ? next : fail("吸奶记录无效，请检查奶量。");
   }),
 
-  addDiaperRecord: async (draft, recordedByMemberId) => writeEvent(async (_data, timestamp) => {
+  addDiaperRecord: async (draft) => writeEvent(async (_data, timestamp) => {
     const event: CareEvent = {
       id: newCareEventId(),
       type: "diaper",
@@ -222,16 +218,15 @@ export const useBabyStore = create<BabyState>((set, get) => ({
       createdAt: timestamp,
       updatedAt: timestamp,
       deletedAt: null,
-      recordedByMemberId: resolveRecorder(recordedByMemberId),
       occurredAt: draft.occurredAt,
       kind: draft.kind,
     };
     return isCareEvent(event) ? event : fail("尿布记录无效，请检查时间。");
   }),
 
-  startSleep: async (recordedByMemberId) => writeEvent(async (data, timestamp) => {
+  startSleep: async () => writeEvent(async (data, timestamp) => {
     if (getActiveSleep(data.care.events, data.care.clearedAt)) return fail("宝宝已经在睡眠计时中。");
-    return startSleepEvent(timestamp, undefined, undefined, resolveRecorder(recordedByMemberId));
+    return startSleepEvent(timestamp);
   }),
 
   finishSleep: async (note) => writeEvent(async (data, timestamp) => {
@@ -239,8 +234,8 @@ export const useBabyStore = create<BabyState>((set, get) => ({
     return event ? finishSleepEvent(event, timestamp, note ?? event.note) : fail("没有正在进行的睡眠记录。");
   }),
 
-  createManualEvent: async (event, recordedByMemberId) => writeEvent(async (_data, timestamp) => {
-    const next = { ...cloneCareEvent(event), id: newCareEventId(), note: normalizeBabyText(event.note, true), createdAt: timestamp, updatedAt: timestamp, deletedAt: null, recordedByMemberId: resolveRecorder(recordedByMemberId) } as CareEvent;
+  createManualEvent: async (event) => writeEvent(async (_data, timestamp) => {
+    const next = { ...cloneCareEvent(event), id: newCareEventId(), note: normalizeBabyText(event.note, true), createdAt: timestamp, updatedAt: timestamp, deletedAt: null } as CareEvent;
     return isCareEvent(next) ? next : fail("照护记录无效。");
   }),
 
@@ -408,13 +403,4 @@ export function timelineEventsForRange(
 
 function errorMessage(error: unknown) {
   return error instanceof Error && error.message ? error.message : "宝宝记录保存失败，请重试。";
-}
-
-function resolveRecorder(explicitMemberId?: string | null) {
-  const memberId = explicitMemberId === undefined
-    ? loadDeviceIdentity().currentMemberId
-    : explicitMemberId;
-  if (!memberId) return null;
-  const member = resolveHouseholdMember(loadHousehold(), memberId);
-  return member && !member.deleted.value ? memberId : null;
 }

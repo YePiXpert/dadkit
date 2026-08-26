@@ -49,7 +49,6 @@ export type CareEventBase = {
   createdAt: number;
   updatedAt: number;
   deletedAt: number | null;
-  recordedByMemberId: string | null;
 };
 
 export type BreastSide = "left" | "right";
@@ -107,11 +106,8 @@ export type CareEvent =
   | DiaperEvent
   | SleepEvent;
 
-export type CareEventV1 = CareEvent extends infer Event
-  ? Event extends CareEventBase
-    ? Omit<Event, "recordedByMemberId">
-    : never
-  : never;
+// 家庭成员功能下线后，V1/V2 记录结构一致，仅保留版本号区分旧数据。
+export type CareEventV1 = CareEvent;
 
 export type BabyCarePortableDataV1 = {
   version: 1;

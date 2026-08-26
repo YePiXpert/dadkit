@@ -16,8 +16,6 @@ import {
 import { installBrowserStorage } from "@/tests/helpers/browser-storage";
 import { portableTestItem, portableV7, portableV8 } from "@/tests/helpers/portable-data";
 import { loadDeviceIdentity, saveDeviceIdentity } from "@/lib/device-identity/repository";
-import { createEmptyHousehold } from "@/lib/household/defaults";
-import { loadHousehold, saveHousehold } from "@/lib/household/repository";
 import { createEmptyLegacyPlanningRecordV1 } from "@/lib/data/legacy-planning";
 import { useDadKitStore } from "@/lib/store";
 import { generateChecklist } from "@/lib/rules";
@@ -25,7 +23,7 @@ import { generateChecklist } from "@/lib/rules";
 let repository: MemoryBabyRepository;
 
 function diaper(id: string, updatedAt: number): CareEvent {
-  return { id, type: "diaper", note: "", createdAt: updatedAt, updatedAt, deletedAt: null, recordedByMemberId: null, occurredAt: "2026-08-01T00:00:00.000Z", kind: "wet" };
+  return { id, type: "diaper", note: "", createdAt: updatedAt, updatedAt, deletedAt: null, occurredAt: "2026-08-01T00:00:00.000Z", kind: "wet" };
 }
 
 beforeEach(() => {
@@ -132,24 +130,13 @@ describe("baby snapshots and compensated import rollback", () => {
     const oldChecklist = [portableTestItem("old-item")];
     saveChecklist(oldChecklist);
     useDadKitStore.setState({ hydrated: true, checklist: oldChecklist });
-    const oldHousehold = createEmptyHousehold();
-    oldHousehold.members["member-a"] = {
-      id: "member-a",
-      createdAt: 1,
-      displayName: { value: "小江", updatedAt: 1 },
-      relationshipLabel: { value: "家长", updatedAt: 1 },
-      deleted: { value: false, updatedAt: 1 },
-    };
-    saveHousehold(oldHousehold);
-    const oldIdentity = { version: 1 as const, currentMemberId: "member-a", preferredEntry: "baby" as const, onboardingCompletedAt: 10 };
+    const oldIdentity = { version: 1 as const, preferredEntry: "baby" as const, onboardingCompletedAt: 10 };
     saveDeviceIdentity(oldIdentity);
     await repository.putEvent(diaper("old-baby-event", 10));
     const beforeBaby = await repository.getAllBabyData();
 
     const incoming = portableV8({ checklist: [portableTestItem("new-item")] });
-    const { recordedByMemberId: _recordedByMemberId, ...legacyEvent } = diaper("new-baby-event", 20);
-    void _recordedByMemberId;
-    incoming.baby.care.events = [legacyEvent];
+    incoming.baby.care.events = [diaper("new-baby-event", 20)];
     repository.failNextWrite = true;
     const result = await applyImportDataAsync(incoming);
 
@@ -161,30 +148,16 @@ describe("baby snapshots and compensated import rollback", () => {
       hiddenTemplateItemIds: [],
     }));
     expect(await repository.getAllBabyData()).toEqual(beforeBaby);
-    expect(loadHousehold()).toEqual(oldHousehold);
     expect(loadDeviceIdentity()).toEqual(oldIdentity);
   });
 
-  it("fully restores v8 while discarding retired planning members", async () => {
-    const current = createEmptyHousehold();
-    current.members["custom-before"] = {
-      id: "custom-before",
-      createdAt: 500,
-      displayName: { value: "导入前成员", updatedAt: 500 },
-      relationshipLabel: { value: "自定义", updatedAt: 500 },
-      deleted: { value: false, updatedAt: 500 },
-    };
-    saveHousehold(current);
-    saveDeviceIdentity({ version: 1, currentMemberId: "custom-before", preferredEntry: "baby", onboardingCompletedAt: 10 });
-
+  it("fully restores v8 while discarding retired planning records", async () => {
     const incoming = portableV8();
     incoming.planning.items.bag = {
       ...createEmptyLegacyPlanningRecordV1(),
       assignee: { value: "dad", updatedAt: 20 },
     };
-    const { recordedByMemberId: _recorder, ...legacyEvent } = diaper("legacy-v8-event", 30);
-    void _recorder;
-    incoming.baby.care.events = [legacyEvent];
+    incoming.baby.care.events = [diaper("legacy-v8-event", 30)];
 
     const result = await applyImportDataAsync(incoming);
     expect(result.ok).toBe(true);
@@ -194,10 +167,7 @@ describe("baby snapshots and compensated import rollback", () => {
       customItems: incoming.customItems,
       hiddenTemplateItemIds: incoming.hiddenTemplateItemIds,
     }));
-    const household = loadHousehold();
-    expect(household.members["custom-before"]).toBeUndefined();
-    expect(household.members).toEqual({});
-    expect(loadDeviceIdentity().currentMemberId).toBeNull();
-    expect((await repository.getAllBabyData()).care.events[0].recordedByMemberId).toBeNull();
+    expect(window.localStorage.getItem(STORAGE_KEYS.household)).toBeNull();
+    expect((await repository.getAllBabyData()).care.events.map((event) => event.id)).toEqual(["legacy-v8-event"]);
   });
 });

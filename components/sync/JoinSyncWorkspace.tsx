@@ -120,7 +120,7 @@ export function JoinSyncWorkspace() {
             <div className="grid gap-2">
               <Label htmlFor="join-device-name">设备名称</Label>
               <Input id="join-device-name" maxLength={60} onChange={(event) => setDeviceName(event.target.value)} placeholder="例如：家中 iPad" value={deviceName} />
-              <p className="text-[13px] leading-5 text-muted-foreground">设备名称与家庭成员是两回事，不会自动成为记录人。</p>
+              <p className="text-[13px] leading-5 text-muted-foreground">设备名称仅用于在同步空间中区分设备。</p>
             </div>
             <fieldset className="grid gap-2">
               <legend className="text-sm font-medium">这台设备已有数据怎么处理</legend>

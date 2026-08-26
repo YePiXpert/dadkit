@@ -35,7 +35,6 @@ import {
 import type { ChecklistItem } from "@/lib/types";
 import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
-import { createEmptyHousehold } from "@/lib/household/defaults";
 import { loadDeviceIdentity, saveDeviceIdentity } from "@/lib/device-identity/repository";
 import { portableV8 } from "@/tests/helpers/portable-data";
 import {
@@ -83,7 +82,6 @@ function backupData(
     deletedCustomItems: {},
     growthUpdatedAt: 0,
     baby: createEmptyBabyData(),
-    household: createEmptyHousehold(),
     ...patch,
   };
 }
@@ -106,11 +104,9 @@ function backupDataV4(patch: Record<string, unknown> = {}) {
 function backupDataV5(patch: Record<string, unknown> = {}) {
   const {
     baby: _baby,
-    household: _household,
     ...current
   } = backupData();
   void _baby;
-  void _household;
 
   return { ...current, version: 5 as const, ...patch };
 }
@@ -197,7 +193,6 @@ describe("v6 portable backup with the existing local namespace", () => {
         "deletedCustomItems",
         "growthUpdatedAt",
         "baby",
-        "household",
       ].sort(),
     );
     expect(exported).toMatchObject({
@@ -286,9 +281,8 @@ describe("v6 portable backup with the existing local namespace", () => {
   it("imports a v6 backup while discarding retired hospital data", () => {
     installBrowserStorage();
     const latest = backupData();
-    const { baby: _baby, household: _household, ...withoutBaby } = latest;
+    const { baby: _baby, ...withoutBaby } = latest;
     void _baby;
-    void _household;
     const v6 = {
       ...withoutBaby,
       version: 6 as const,
@@ -304,12 +298,12 @@ describe("v6 portable backup with the existing local namespace", () => {
     expect(window.localStorage.getItem("dadkit:v3:hospital-profile")).toBeNull();
   });
 
-  it("rolls back the full old import when resetting device identity fails", () => {
+  it("rolls back the full old import when the checklist write fails", () => {
     installBrowserStorage();
     saveChecklist([testItem("before-identity-failure")]);
-    const identity = { version: 1 as const, currentMemberId: "member-a", preferredEntry: "baby" as const, onboardingCompletedAt: 10 };
+    const identity = { version: 1 as const, preferredEntry: "baby" as const, onboardingCompletedAt: 10 };
     saveDeviceIdentity(identity);
-    failNextStorageWrite(STORAGE_KEYS.deviceIdentity);
+    failNextStorageWrite(STORAGE_KEYS.checklist);
 
     const result = importData(JSON.stringify(portableV8({ checklist: [testItem("after-identity-failure")] })));
 
@@ -593,9 +587,8 @@ describe("local recovery snapshots", () => {
   it("restores a legacy v6 snapshot while discarding hospital data", () => {
     installBrowserStorage();
     const latest = backupData();
-    const { baby: _baby, household: _household, ...withoutBaby } = latest;
+    const { baby: _baby, ...withoutBaby } = latest;
     void _baby;
-    void _household;
     const v6: DadKitExportDataV6 = {
       ...withoutBaby,
       version: 6,

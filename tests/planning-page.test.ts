@@ -21,8 +21,6 @@ describe("retired planning product surface", () => {
     const visibleSources = [
       source("components/HomeDashboard.tsx"),
       source("components/ChecklistItemDetailsDialog.tsx"),
-      source("components/household/HouseholdFeaturePrompt.tsx"),
-      source("components/household/HouseholdSettingsWorkspace.tsx"),
       source("app/tools/page.tsx"),
     ].join("\n");
 

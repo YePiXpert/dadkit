@@ -4,7 +4,7 @@ import { createEmptyBabyData } from "@/lib/baby/defaults";
 import { MemoryBabyRepository } from "@/lib/baby/repository";
 import type { CareEvent } from "@/lib/baby/types";
 
-const diaper = (id: string, updatedAt = 1): CareEvent => ({ id, type: "diaper", note: "", createdAt: 1, updatedAt, deletedAt: null, recordedByMemberId: null, occurredAt: "2026-08-01T00:00:00.000Z", kind: "wet" });
+const diaper = (id: string, updatedAt = 1): CareEvent => ({ id, type: "diaper", note: "", createdAt: 1, updatedAt, deletedAt: null, occurredAt: "2026-08-01T00:00:00.000Z", kind: "wet" });
 
 describe("baby repository contract", () => {
   it("saves profiles and events, queries ranges and active records", async () => {
@@ -12,7 +12,7 @@ describe("baby repository contract", () => {
     const data = createEmptyBabyData();
     data.profile.fields.birthDate = { value: "2026-08-01", updatedAt: 2 };
     await repository.saveBabyProfile(data.profile);
-    await repository.putEvents([diaper("d1"), { id: "sleep", type: "sleep", note: "", createdAt: 2, updatedAt: 2, deletedAt: null, recordedByMemberId: null, startAt: "2026-08-01T01:00:00.000Z", endAt: null }]);
+    await repository.putEvents([diaper("d1"), { id: "sleep", type: "sleep", note: "", createdAt: 2, updatedAt: 2, deletedAt: null, startAt: "2026-08-01T01:00:00.000Z", endAt: null }]);
     expect((await repository.loadBabyProfile()).fields.birthDate.value).toBe("2026-08-01");
     expect(await repository.getEventsByRange(Date.parse("2026-08-01T00:00:00.000Z"), Date.parse("2026-08-02T00:00:00.000Z"))).toHaveLength(2);
     expect(await repository.getActiveEvents()).toHaveLength(1);

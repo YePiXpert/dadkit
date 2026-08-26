@@ -16,7 +16,6 @@ import { showAppToast } from "@/lib/app-toast";
 import { hasBabyMode } from "@/lib/baby/portable";
 import { triggerHaptic } from "@/lib/haptics";
 import { useBabyStore } from "@/lib/baby/store";
-import { useHouseholdStore } from "@/lib/household/store";
 
 export function BabyWorkspace() {
   const hydrate = useBabyStore((state) => state.hydrate);
@@ -29,9 +28,8 @@ export function BabyWorkspace() {
   const [clearOpen, setClearOpen] = useState(false);
   const [birthCelebrationOpen, setBirthCelebrationOpen] = useState(false);
   const babyModeRef = useRef<boolean | null>(null);
-  const hydrateHousehold = useHouseholdStore((state) => state.hydrate);
 
-  useEffect(() => { void hydrate(); hydrateHousehold(); }, [hydrate, hydrateHousehold]);
+  useEffect(() => { void hydrate(); }, [hydrate]);
 
   // 宝宝资料从「未出生」变为「已出生」的这一刻庆祝一次；首次加载已出生的老用户不打扰。
   useEffect(() => {

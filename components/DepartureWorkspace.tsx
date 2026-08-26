@@ -260,7 +260,7 @@ export function DepartureWorkspace() {
 
       <ConfirmDialog
         confirmLabel="确认本组项目"
-        description={`将“${confirmGroup?.label ?? "本组"}”中的 ${confirmIds.length} 项标记为已确认。状态会同步到首页、家庭成员和备份。`}
+        description={`将“${confirmGroup?.label ?? "本组"}”中的 ${confirmIds.length} 项标记为已确认。状态会同步到首页、家庭的其他设备和备份。`}
         onConfirm={confirmCurrentGroup}
         onOpenChange={(open) => {
           if (!open) setConfirmGroupId(undefined);

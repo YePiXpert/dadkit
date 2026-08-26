@@ -282,7 +282,6 @@ describe("release endpoints and product surface", () => {
       "/settings/about",
       "/settings/backup",
       "/settings/checklist",
-      "/settings/family",
       "/settings/sync",
       "/privacy",
       "/support",
@@ -601,7 +600,6 @@ describe("release endpoints and product surface", () => {
     await expect(cacheRoutesInBackground(cache)).resolves.toBeUndefined();
     expect(cachedUrls).toContain("/checklist");
     expect(cachedUrls).toContain("/onboarding");
-    expect(cachedUrls).toContain("/settings/family");
     expect(cachedUrls).toContain("/settings/about");
     expect(cachedUrls).toContain("/join");
     expect(cachedUrls).toContain("/settings/sync");

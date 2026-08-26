@@ -14,7 +14,6 @@ const BACKGROUND_ROUTES = [
   "/settings/about",
   "/settings/backup",
   "/settings/checklist",
-  "/settings/family",
   "/settings/sync",
   "/privacy",
   "/support",

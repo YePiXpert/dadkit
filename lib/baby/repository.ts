@@ -9,7 +9,7 @@ import type {
   CareEvent,
 } from "@/lib/baby/types";
 import { BABY_EVENT_LIMIT } from "@/lib/baby/types";
-import { isBabyPortableData, isBabyProfilePortableData, isCareEvent, isCareEventV1 } from "@/lib/baby/validation";
+import { isBabyPortableData, isBabyProfilePortableData, isCareEvent } from "@/lib/baby/validation";
 
 export const BABY_DATABASE_NAME = "dadkit-baby";
 export const BABY_DATABASE_VERSION = 2;
@@ -94,7 +94,7 @@ export class IndexedDbBabyRepository implements BabyRepository {
     const database = await this.openDatabase();
     const transaction = database.transaction(EVENTS_STORE, "readonly");
     const value = await requestPromise<unknown>(transaction.objectStore(EVENTS_STORE).get(id));
-    return isCareEvent(value) || isCareEventV1(value) ? upgradeCareEvent(value) : undefined;
+    return isCareEvent(value) ? upgradeCareEvent(value) : undefined;
   }
 
   async getEventsByRange(start: number, end: number) {
@@ -146,7 +146,7 @@ export class IndexedDbBabyRepository implements BabyRepository {
     if (profileEntry && !isBabyProfilePortableData(profileEntry.value)) {
       throw new Error("宝宝资料数据库内容损坏，未读取任何照护记录。");
     }
-    if (rawEvents.some((event) => !isCareEvent(event) && !isCareEventV1(event))) {
+    if (rawEvents.some((event) => !isCareEvent(event))) {
       throw new Error("宝宝照护记录数据库内容损坏，未返回不完整数据。");
     }
     const profile = profileEntry
@@ -186,7 +186,7 @@ export class IndexedDbBabyRepository implements BabyRepository {
     const transaction = database.transaction(EVENTS_STORE, "readwrite");
     const store = transaction.objectStore(EVENTS_STORE);
     const current = await requestPromise<unknown>(store.get(id));
-    if (!isCareEvent(current) && !isCareEventV1(current)) {
+    if (!isCareEvent(current)) {
       // A readwrite transaction with no writes may complete normally. Waiting
       // for it avoids leaving a late abort/error event detached from this call.
       await transactionComplete(transaction);
@@ -272,7 +272,7 @@ export class IndexedDbBabyRepository implements BabyRepository {
     const transaction = database.transaction(EVENTS_STORE, "readonly");
     const values = await requestPromise<unknown[]>(transaction.objectStore(EVENTS_STORE).getAll());
     return values
-      .filter((value) => isCareEvent(value) || isCareEventV1(value))
+      .filter(isCareEvent)
       .map((value) => upgradeCareEvent(value as CareEvent));
   }
 }

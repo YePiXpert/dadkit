@@ -55,19 +55,6 @@ async function refreshDomain(message: DataChangeMessage) {
       reloadGrowthFromStorage();
       return;
     }
-    case "household": {
-      const [{ mergeHousehold }, repository, { useHouseholdStore }] =
-        await Promise.all([
-          import("@/lib/household/merge"),
-          import("@/lib/household/repository"),
-          import("@/lib/household/store"),
-        ]);
-      const current = useHouseholdStore.getState().household;
-      const merged = mergeHousehold(current, repository.loadHousehold());
-      repository.saveHousehold(merged);
-      useHouseholdStore.setState({ hydrated: true, household: merged });
-      return;
-    }
     case "device-identity": {
       const [{ useDeviceIdentityStore }, { loadDeviceIdentity }] =
         await Promise.all([

@@ -11,13 +11,11 @@ import type {
   DeviceIdentityLocalData,
   PreferredEntry,
 } from "@/lib/device-identity/types";
-import { isSafeHouseholdMemberId } from "@/lib/household/validation";
 import type { DataActionResult } from "@/lib/data/action-result";
 
 type DeviceIdentityState = DeviceIdentityLocalData & {
   hydrated: boolean;
   hydrate(): void;
-  setCurrentMemberId(memberId: string | null): DataActionResult;
   setPreferredEntry(preferredEntry: PreferredEntry): DataActionResult;
   completeOnboarding(timestamp?: number): DataActionResult;
   resetOnboarding(): DataActionResult;
@@ -29,12 +27,6 @@ export const useDeviceIdentityStore = create<DeviceIdentityState>((set, get) => 
   hydrate: () => {
     if (get().hydrated) return;
     set({ ...loadDeviceIdentity(), hydrated: true });
-  },
-  setCurrentMemberId: (memberId) => {
-    if (memberId !== null && !isSafeHouseholdMemberId(memberId)) {
-      return { ok: false, changed: false, message: "家庭成员标识无效。" };
-    }
-    return persist({ ...loadDeviceIdentity(), currentMemberId: memberId }, set);
   },
   setPreferredEntry: (preferredEntry) => {
     return persist({ ...loadDeviceIdentity(), preferredEntry }, set);
@@ -50,7 +42,6 @@ export const useDeviceIdentityStore = create<DeviceIdentityState>((set, get) => 
 function pickIdentity(state: DeviceIdentityState): DeviceIdentityLocalData {
   return {
     version: 1,
-    currentMemberId: state.currentMemberId,
     preferredEntry: state.preferredEntry,
     onboardingCompletedAt: state.onboardingCompletedAt,
   };

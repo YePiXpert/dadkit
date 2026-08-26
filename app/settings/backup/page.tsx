@@ -555,7 +555,7 @@ export default function BackupSettingsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <p className="text-sm leading-6 text-muted-foreground">导出完整 JSON 可携带清单、家庭成员、宝宝资料、全部照护事件、活动计时和删除墓碑。导入属于完整恢复；不含宝宝数据的旧备份会安全清空本机宝宝记录。</p>
+            <p className="text-sm leading-6 text-muted-foreground">导出完整 JSON 可携带清单、宝宝资料、全部照护事件、活动计时和删除墓碑。导入属于完整恢复；不含宝宝数据的旧备份会安全清空本机宝宝记录。</p>
             <input ref={jsonBackupInputRef} accept="application/json,.json" aria-label="选择 JSON 备份文件" className="sr-only" type="file" onChange={chooseJsonBackup} />
             <div className="flex flex-wrap gap-2">
               <Button disabled={jsonBackupBusy} onClick={() => void exportJsonBackup()}><Download />导出 JSON 备份</Button>
@@ -721,7 +721,7 @@ export default function BackupSettingsPage() {
           </div>
         </details>
 
-        <DangerZone title="清空并重新开始" description="清单、家庭成员、宝宝记录、本机恢复点、WebDAV 设置、家庭同步登录状态和本机物品照片都会清除。请先导出 JSON 或 WebDAV 备份；本操作完成后无法从本机恢复点找回。">
+        <DangerZone title="清空并重新开始" description="清单、宝宝记录、本机恢复点、WebDAV 设置、家庭同步登录状态和本机物品照片都会清除。请先导出 JSON 或 WebDAV 备份；本操作完成后无法从本机恢复点找回。">
           <Button
             className="justify-self-start"
             variant="destructive"
@@ -750,7 +750,7 @@ export default function BackupSettingsPage() {
             <DialogHeader>
               <DialogTitle>确认清空本机数据</DialogTitle>
               <DialogDescription>
-                系统会先验证完整恢复点能够成功写入；随后清单、家庭成员、宝宝记录、全部本机恢复点、WebDAV 设置和本机物品照片都会清除，已连接的家庭同步会退出。请先导出外部备份。
+                系统会先验证完整恢复点能够成功写入；随后清单、宝宝记录、全部本机恢复点、WebDAV 设置和本机物品照片都会清除，已连接的家庭同步会退出。请先导出外部备份。
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-2">

@@ -10,15 +10,8 @@ import {
 } from "@/tests/helpers/portable-data";
 
 describe("v8/v9/v11 canonical compatibility", () => {
-  it("preserves household and recorder when v8 edits an existing event", () => {
+  it("keeps the v8 edit when it merges into a canonical document", () => {
     const canonical = portableV11();
-    canonical.household.members["member-a"] = {
-      id: "member-a",
-      createdAt: 1,
-      displayName: { value: "小江", updatedAt: 1 },
-      relationshipLabel: { value: "家长", updatedAt: 1 },
-      deleted: { value: false, updatedAt: 1 },
-    };
     canonical.baby.care.events = [
       {
         id: "event-a",
@@ -27,7 +20,6 @@ describe("v8/v9/v11 canonical compatibility", () => {
         createdAt: 10,
         updatedAt: 10,
         deletedAt: null,
-        recordedByMemberId: "member-a",
         occurredAt: "2026-08-01T00:00:00.000Z",
         kind: "wet",
       },
@@ -39,9 +31,8 @@ describe("v8/v9/v11 canonical compatibility", () => {
 
     const merged = mergeExportData(canonical, legacy);
 
-    expect(merged.household.members["member-a"].displayName.value).toBe("小江");
+    expect(merged).not.toHaveProperty("household");
     expect(merged.baby.care.events[0].note).toBe("旧设备编辑");
-    expect(merged.baby.care.events[0].recordedByMemberId).toBe("member-a");
   });
 
   it("discards planning sent by v8 and v9 clients", () => {

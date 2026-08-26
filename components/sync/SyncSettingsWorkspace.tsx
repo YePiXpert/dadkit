@@ -222,7 +222,7 @@ export function SyncSettingsWorkspace() {
   return (
     <div className="page-shell page-shell-with-nav">
       <section className="mobile-shell grid gap-5 pb-28 sm:max-w-[42rem]">
-        <PageHeader backHref="/settings" backLabel="返回我的" kicker="多设备协作" subtitle="同步设备与家庭成员是两套独立概念；设备角色只控制同步空间管理。" title="家庭同步" />
+        <PageHeader backHref="/settings" backLabel="返回我的" kicker="多设备协作" subtitle="设备角色只控制同步空间管理。" title="家庭同步" />
         {!online ? <Feedback message="当前离线：可查看本机已知状态，管理操作需要联网。" ok={false} /> : null}
         {serviceError ? (
           <div className="grid gap-2">

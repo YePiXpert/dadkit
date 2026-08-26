@@ -32,7 +32,7 @@ describe("public PWA support pages", () => {
     expect(privacyPage).toContain("不要求注册账号");
     expect(privacyPage).toContain("待产清单");
     expect(privacyPage).not.toContain("医院名称、地址、电话和入院要求");
-    expect(privacyPage).toContain("家庭成员名称与关系");
+    expect(privacyPage).toContain("待产清单进度");
     expect(privacyPage).toContain("产检时间表完成状态");
     expect(privacyPage).toContain("本地快照");
     expect(privacyPage).toContain("当前不使用广告 SDK");

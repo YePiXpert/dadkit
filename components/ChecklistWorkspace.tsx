@@ -482,7 +482,7 @@ export function ChecklistWorkspace() {
       />
       <ConfirmDialog
         confirmLabel="全部标记装包"
-        description={`将当前页 ${bulkPackingIds.length} 件待装物品标记为已装包。此操作会同步到家庭成员。`}
+        description={`将当前页 ${bulkPackingIds.length} 件待装物品标记为已装包。此操作会同步到家庭的其他设备。`}
         onConfirm={confirmBulkPack}
         onOpenChange={setBulkConfirmOpen}
         open={bulkConfirmOpen}

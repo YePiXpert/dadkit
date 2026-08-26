@@ -2,7 +2,6 @@
 
 import { useGrowthStore } from "@/lib/growth-store";
 import { useBabyStore } from "@/lib/baby/store";
-import { useHouseholdStore } from "@/lib/household/store";
 import { useDadKitStore } from "@/lib/store";
 import {
   isApplyingRemote,
@@ -72,11 +71,6 @@ export function startAutoSync() {
     ) {
       scheduleSync();
     }
-  });
-
-  useHouseholdStore.subscribe((state, previous) => {
-    if (isApplyingRemote() || !state.hydrated) return;
-    if (state.household !== previous.household) scheduleSync();
   });
 
   useBabyStore.subscribe((state, previous) => {

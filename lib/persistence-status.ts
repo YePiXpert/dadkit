@@ -15,7 +15,6 @@ export type ChecklistPersistenceStatus = {
 export type PersistenceDomain =
   | "checklist"
   | "growth"
-  | "household"
   | "device-identity"
   | "baby"
   | "item-photo";

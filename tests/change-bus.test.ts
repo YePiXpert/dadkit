@@ -30,8 +30,8 @@ describe("cross-tab data change bus", () => {
     storageListener?.({
       key: DATA_CHANGE_SIGNAL_KEY,
       newValue: JSON.stringify({
-        domain: "household",
-        entityId: "member-a",
+        domain: "baby",
+        entityId: "event-a",
         sourceId: "another-tab",
         version: 12,
       }),
@@ -39,8 +39,8 @@ describe("cross-tab data change bus", () => {
 
     expect(received).toEqual([
       {
-        domain: "household",
-        entityId: "member-a",
+        domain: "baby",
+        entityId: "event-a",
         sourceId: "another-tab",
         version: 12,
       },
@@ -207,8 +207,8 @@ describe("cross-tab data change bus", () => {
     const unsubscribe = changeBus.subscribeToDataChanges((message) =>
       received.push(message),
     );
-    const household: DataChangeMessage = {
-      domain: "household",
+    const growth: DataChangeMessage = {
+      domain: "growth",
       sourceId: "background-tab",
       version: 91,
     };
@@ -221,8 +221,8 @@ describe("cross-tab data change bus", () => {
     // Simulate durable writes whose BroadcastChannel and storage events were
     // both dropped. Separate slots ensure neither domain overwrites the other.
     retained.set(
-      `${changeBus.DATA_CHANGE_SIGNAL_KEY}:household`,
-      JSON.stringify(household),
+      `${changeBus.DATA_CHANGE_SIGNAL_KEY}:growth`,
+      JSON.stringify(growth),
     );
     retained.set(
       `${changeBus.DATA_CHANGE_SIGNAL_KEY}:checklist`,
@@ -230,7 +230,7 @@ describe("cross-tab data change bus", () => {
     );
     await vi.advanceTimersByTimeAsync(1_000);
 
-    expect(received).toEqual([checklist, household]);
+    expect(received).toEqual([checklist, growth]);
     expect(storageListener).toBeTypeOf("function");
     unsubscribe();
   });

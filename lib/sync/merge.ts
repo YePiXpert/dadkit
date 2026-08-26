@@ -6,7 +6,6 @@ import {
   type HiddenTemplateItemStamps,
 } from "@/lib/data/format";
 import { mergeBabyData } from "@/lib/baby/merge";
-import { mergeHousehold } from "@/lib/household/merge";
 import type { ChecklistItem } from "@/lib/types";
 
 // 多端条目级合并:同一对象(updatedAt 新者胜),删除墓碑优先于更旧的数据。
@@ -123,14 +122,6 @@ export function mergeExportData(
 ): DadKitExportData {
   const cleanLocal = upgradeExportDataToLatest(local);
   const cleanRemote = upgradeExportDataToLatest(remote);
-  if (remote.version < 9) {
-    const localEvents = new Map(cleanLocal.baby.care.events.map((event) => [event.id, event]));
-    cleanRemote.baby.care.events = cleanRemote.baby.care.events.map((event) => ({
-      ...event,
-      recordedByMemberId: localEvents.get(event.id)?.recordedByMemberId ?? null,
-    }));
-  }
-
   const checklistDocument = mergeChecklistDocuments(cleanLocal, cleanRemote);
   const remoteGrowthWins =
     cleanRemote.growthUpdatedAt > cleanLocal.growthUpdatedAt;
@@ -150,7 +141,6 @@ export function mergeExportData(
       ? cleanRemote.growthUpdatedAt
       : cleanLocal.growthUpdatedAt,
     baby: mergeBabyData(cleanLocal.baby, cleanRemote.baby),
-    household: mergeHousehold(cleanLocal.household, cleanRemote.household),
   };
 }
 

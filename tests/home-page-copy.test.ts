@@ -14,7 +14,6 @@ const homeDashboardFeatures = [
   homeDashboard,
   readSource("components", "HomeStagePanel.tsx"),
   readSource("components", "HomeProgressPanel.tsx"),
-  readSource("components", "HomeHouseholdTitle.tsx"),
 ].join("\n");
 const checklistWorkspace = readSource("components", "ChecklistWorkspace.tsx");
 
@@ -40,13 +39,11 @@ describe("checklist and home dashboard pages", () => {
 
   it("leads with the pregnancy stage header and a quick-entry grid", () => {
     expect(homeDashboardFeatures).toContain("BabyHomeCard");
-    expect(homeDashboardFeatures).toContain("HouseholdFeaturePrompt");
     expect(homeDashboardFeatures).toContain("GrowthAnalogyIllustration");
     expect(homeDashboardFeatures).toContain("距预产期");
     expect(homeDashboardFeatures).toContain("设置预产期");
     expect(homeDashboardFeatures).toContain("出生第");
     expect(homeDashboard).toContain("mobile-shell grid gap-4 sm:max-w-[42rem]");
-    expect(homeDashboardFeatures).toContain("useHouseholdStore");
     expect(homeDashboardFeatures).toContain("useGrowthStore");
 
     for (const href of ["/growth", "/baby", "/departure", "/settings/backup"]) {

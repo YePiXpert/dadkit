@@ -33,21 +33,6 @@ const HomeProgressPanel = dynamic(
     ),
   { loading: () => <HomeProgressSkeleton />, ssr: false },
 );
-const HomeHouseholdTitle = dynamic(
-  () =>
-    import("@/components/HomeHouseholdTitle").then(
-      (module) => module.HomeHouseholdTitle,
-    ),
-  { loading: () => <HomeTitleFallback />, ssr: false },
-);
-const HouseholdFeaturePrompt = dynamic(
-  () =>
-    import("@/components/household/HouseholdFeaturePrompt").then(
-      (module) => module.HouseholdFeaturePrompt,
-    ),
-  { ssr: false },
-);
-
 const HOME_ENTRIES = [
   {
     href: CHECKLIST_PATH,
@@ -96,8 +81,6 @@ export function HomeDashboard() {
   const [stageReady, setStageReady] = useState(false);
   const [stageSettled, setStageSettled] = useState(false);
   const [progressReady, setProgressReady] = useState(false);
-  const [progressSettled, setProgressSettled] = useState(false);
-  const [householdReady, setHouseholdReady] = useState(false);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setStageReady(true));
@@ -110,20 +93,15 @@ export function HomeDashboard() {
     return scheduleHomeSection(() => setProgressReady(true), 180, 700);
   }, [stageSettled]);
 
-  useEffect(() => {
-    if (!progressSettled) return;
-    return scheduleHomeSection(() => setHouseholdReady(true), 450, 900);
-  }, [progressSettled]);
-
   const handleStageReady = useCallback(() => setStageSettled(true), []);
-  const handleProgressReady = useCallback(() => setProgressSettled(true), []);
+  const handleProgressReady = useCallback(() => undefined, []);
 
   return (
     <div className="page-shell page-shell-with-nav">
       <section className="mobile-shell grid gap-4 sm:max-w-[42rem]">
         <header className="grid gap-1 px-1 py-2">
           <p className="text-[13px] font-semibold text-primary">家庭首页</p>
-          {householdReady ? <HomeHouseholdTitle /> : <HomeTitleFallback />}
+          <HomeTitleFallback />
           <p className="text-sm leading-6 text-muted-foreground">
             今天也一起稳稳准备。
           </p>
@@ -143,7 +121,6 @@ export function HomeDashboard() {
           <HomeProgressSkeleton />
         )}
 
-        {householdReady ? <HouseholdFeaturePrompt /> : null}
       </section>
     </div>
   );
