@@ -26,7 +26,7 @@ export function PhotoBackupCard({
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2">
-          <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
+          <span className="flex size-10 items-center justify-center rounded-inset bg-secondary text-primary">
             <Download className="size-4" />
           </span>
           <span className="text-base">照片备份包</span>

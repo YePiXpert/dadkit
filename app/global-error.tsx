@@ -34,7 +34,7 @@ export default function GlobalError({
             style={{
               display: "grid",
               gap: "1rem",
-              borderRadius: "1.75rem",
+              borderRadius: "1.5rem",
               background: "#FFFFFF",
               padding: "1.5rem",
               boxShadow: "0 10px 28px -12px rgb(64 45 31 / 0.18)",

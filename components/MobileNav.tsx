@@ -31,7 +31,7 @@ export function MobileNav() {
             <Link
               aria-current={active ? "page" : undefined}
               className={cn(
-                "relative flex h-[4rem] min-h-11 flex-col items-center justify-center gap-0.5 rounded-2xl text-xs font-medium text-muted-foreground transition-colors hover:text-foreground active:bg-secondary/60",
+                "relative flex h-[4rem] min-h-11 flex-col items-center justify-center gap-0.5 rounded-inset text-xs font-medium text-muted-foreground transition-colors hover:text-foreground active:bg-secondary/60",
                 active && "font-semibold text-primary",
               )}
               href={item.href}
@@ -40,7 +40,7 @@ export function MobileNav() {
             >
               <span
                 className={cn(
-                  "grid size-8 place-items-center rounded-xl transition-colors",
+                  "grid size-8 place-items-center rounded-inset transition-colors",
                   active && "bg-secondary",
                 )}
               >

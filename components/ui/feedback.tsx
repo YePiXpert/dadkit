@@ -12,7 +12,7 @@ export function Feedback({ message, ok }: FeedbackProps) {
     <p
       aria-live="polite"
       className={cn(
-        "rounded-xl px-3 py-2 text-sm",
+        "rounded-inset px-3 py-2 text-sm",
         ok === false
           ? "bg-destructive/10 text-destructive"
           : "bg-secondary text-primary",

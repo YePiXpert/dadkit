@@ -28,14 +28,14 @@ export function SyncSessionWarning() {
 
   return (
     <aside
-      className="fixed inset-x-3 top-16 z-[69] mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl bg-warning p-3 text-xs text-warning-foreground shadow-md ring-1 ring-warning-foreground/25 sm:top-24"
+      className="fixed inset-x-3 top-16 z-[69] mx-auto flex max-w-md items-center justify-between gap-3 rounded-inset bg-warning p-3 text-xs text-warning-foreground shadow-md ring-1 ring-warning-foreground/25 sm:top-24"
       role="alert"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         alt=""
         aria-hidden="true"
-        className="size-10 shrink-0 rounded-xl object-cover"
+        className="size-10 shrink-0 rounded-inset object-cover"
         src="/item-art/state-sync-offline.webp"
       />
       <span>{status.message ?? "家庭同步已断开，请重新加入后继续同步。"}</span>

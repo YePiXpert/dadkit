@@ -75,7 +75,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(globals).toContain("--muted-foreground: 28 12% 42%");
     expect(globals).toContain("--border: 36 32% 86%");
     expect(globals).toContain("--ring: 7 58% 52%");
-    expect(globals).toContain("--radius: 1.75rem");
+    expect(globals).toContain("--radius: 1.5rem");
     expect(globals).toContain("sm:max-w-[42rem]");
     expect(globals).toContain("@apply grid grid-cols-1 gap-3 xs:grid-cols-2");
     expect(tailwindConfig).toContain('xs: "360px"');

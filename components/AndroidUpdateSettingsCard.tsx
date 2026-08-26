@@ -78,7 +78,7 @@ export function AndroidUpdateSettingsCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-3">
-        <div className="flex items-center justify-between gap-3 rounded-2xl bg-muted/35 px-4 py-3 text-sm">
+        <div className="flex items-center justify-between gap-3 rounded-inset bg-muted/35 px-4 py-3 text-sm">
           <span className="text-muted-foreground">页面版本</span>
           <span className="font-mono font-semibold">
             {appVersion}
@@ -86,7 +86,7 @@ export function AndroidUpdateSettingsCard({
         </div>
 
         {androidApp && currentVersionCode !== undefined ? (
-          <div className="flex items-center justify-between gap-3 rounded-2xl bg-muted/35 px-4 py-3 text-sm">
+          <div className="flex items-center justify-between gap-3 rounded-inset bg-muted/35 px-4 py-3 text-sm">
             <span className="text-muted-foreground">Android 外壳</span>
             <span className="font-mono font-semibold">
               versionCode {currentVersionCode}

@@ -77,11 +77,11 @@ const config: Config = {
           "hsl(var(--checklist-hero-foreground) / <alpha-value>)",
       },
       borderRadius: {
-        card: "1.75rem",
-        inset: "1.35rem",
+        card: "1.5rem",
+        inset: "1rem",
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 0.5rem)",
+        sm: "calc(var(--radius) - 0.75rem)",
       },
       boxShadow: {
         sm: "0 1px 2px rgb(64 45 31 / 0.04), 0 10px 28px -12px rgb(64 45 31 / 0.10)",

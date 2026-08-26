@@ -285,7 +285,7 @@ export function ChecklistWorkspace() {
             <ChecklistProgressRing label="清单完成" value={packing.percent} />
           </div>
 
-          <div className="relative z-10 mt-4 grid grid-cols-3 divide-x divide-on-highlight/20 rounded-2xl bg-on-highlight/10 py-3 text-center text-on-highlight">
+          <div className="relative z-10 mt-4 grid grid-cols-3 divide-x divide-on-highlight/20 rounded-inset bg-on-highlight/10 py-3 text-center text-on-highlight">
             <HeroStat label="待买" value={counts.shopping} />
             <HeroStat label="待装" value={counts.packing} />
             <HeroStat label="已装" value={counts.packed} />
@@ -366,7 +366,7 @@ export function ChecklistWorkspace() {
           <div className="rounded-card bg-secondary/35 p-3 ring-1 ring-primary/30">
             <p className="mb-2 text-sm font-medium">浏览器未授权复制，请手动复制以下内容：</p>
             <textarea
-              className="min-h-36 w-full rounded-xl border border-border bg-card p-3 text-base leading-6 outline-none focus:ring-2 focus:ring-ring"
+              className="min-h-36 w-full rounded-inset border border-border bg-card p-3 text-base leading-6 outline-none focus:ring-2 focus:ring-ring"
               id="checklist-copy-fallback"
               readOnly
               value={copyFallbackText}
@@ -573,7 +573,7 @@ export function ChecklistWorkspaceSkeleton() {
         <div className="flex items-start justify-between gap-4 px-1 py-2">
           <div className="grid gap-2">
             <Skeleton className="h-4 w-20 rounded-lg" />
-            <Skeleton className="h-7 w-32 rounded-xl" />
+            <Skeleton className="h-7 w-32 rounded-inset" />
             <Skeleton className="h-4 w-52 rounded-lg" />
           </div>
           <Skeleton className="size-11 rounded-full" />
@@ -582,11 +582,11 @@ export function ChecklistWorkspaceSkeleton() {
           <div className="flex items-center justify-between gap-4">
             <div className="grid flex-1 gap-3">
               <Skeleton className="h-6 w-24 rounded-full bg-background/70" />
-              <Skeleton className="h-8 w-48 rounded-xl bg-background/70" />
+              <Skeleton className="h-8 w-48 rounded-inset bg-background/70" />
             </div>
             <Skeleton className="size-24 rounded-full bg-background/70" />
           </div>
-          <Skeleton className="h-14 rounded-2xl bg-background/70" />
+          <Skeleton className="h-14 rounded-inset bg-background/70" />
         </div>
         <div className="grid h-16 grid-cols-4 gap-1 rounded-card bg-muted p-1">
           <Skeleton className="rounded-full bg-background/70" />

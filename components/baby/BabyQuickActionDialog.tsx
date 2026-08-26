@@ -258,7 +258,7 @@ function RecorderField({
 }) {
   const members = getActiveHouseholdMembers(household);
   return (
-    <div className="grid gap-2 rounded-xl bg-muted/50 p-3">
+    <div className="grid gap-2 rounded-inset bg-muted/50 p-3">
       <Label htmlFor="baby-care-recorder">记录人</Label>
       <Select
         disabled={disabled}

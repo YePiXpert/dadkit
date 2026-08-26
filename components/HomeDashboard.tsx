@@ -193,7 +193,7 @@ function HomeEntryGrid() {
             prefetch={false}
           >
             <span
-              className={`flex size-11 shrink-0 items-center justify-center rounded-2xl ${entry.accent}`}
+              className={`flex size-11 shrink-0 items-center justify-center rounded-inset ${entry.accent}`}
             >
               <Icon aria-hidden="true" className="size-5" />
             </span>
@@ -221,7 +221,7 @@ export function HomeDashboardSkeleton() {
     >
       <section className="mobile-shell grid gap-4 sm:max-w-[42rem]">
         <div className="grid gap-2 px-1 py-2">
-          <Skeleton className="h-7 w-24 rounded-xl" />
+          <Skeleton className="h-7 w-24 rounded-inset" />
           <Skeleton className="h-4 w-40 rounded-lg" />
         </div>
         <HomeStageSkeleton />

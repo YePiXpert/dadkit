@@ -14,7 +14,7 @@ export function DraftConflictNotice({
   if (fields.length === 0) return null;
 
   return (
-    <section className="grid gap-3 rounded-xl bg-warning p-3 text-sm text-warning-foreground" role="alert">
+    <section className="grid gap-3 rounded-inset bg-warning p-3 text-sm text-warning-foreground" role="alert">
       <p>
         其他页面也修改了{fields.length ? `“${fields.join("、")}”` : "当前内容"}。
         请选择要采用的版本后再保存。

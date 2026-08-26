@@ -111,7 +111,7 @@ export default function ChecklistSettingsPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
+              <span className="flex size-10 items-center justify-center rounded-inset bg-secondary text-primary">
                 <FileText className="size-4" />
               </span>
               物品说明
@@ -131,7 +131,7 @@ export default function ChecklistSettingsPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
+              <span className="flex size-10 items-center justify-center rounded-inset bg-secondary text-primary">
                 <ListTodo className="size-4" />
               </span>
               清单范围
@@ -146,10 +146,10 @@ export default function ChecklistSettingsPage() {
                   <button
                     aria-pressed={active}
                     className={cn(
-                      "min-h-24 rounded-2xl bg-card p-3 text-left shadow-sm transition-shadow hover:shadow-md",
+                      "min-h-24 rounded-inset p-3 text-left transition-colors",
                       active
-                        ? "ring-1 ring-primary bg-secondary text-foreground"
-                        : "text-muted-foreground",
+                        ? "bg-secondary text-primary shadow-sm ring-1 ring-primary/40"
+                        : "bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground",
                     )}
                     key={mode.value}
                     onClick={() => {
@@ -171,7 +171,7 @@ export default function ChecklistSettingsPage() {
               })}
             </div>
 
-            <div className="mt-1 grid gap-2 rounded-2xl bg-muted/35 p-4 shadow-sm">
+            <div className="mt-1 grid gap-2 rounded-inset bg-muted/35 p-4 shadow-sm">
               <p className="text-sm font-semibold">补回缺失的通用物品</p>
               <p className="text-[13px] leading-5 text-muted-foreground">
                 仅补回被移除的默认物品，不会清除勾选进度，也不会删除自定义物品。

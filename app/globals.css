@@ -26,7 +26,7 @@
     --border: 36 32% 86%;
     --input: 36 28% 82%;
     --ring: 7 58% 52%;
-    --radius: 1.75rem;
+    --radius: 1.5rem;
     --coral: 7 62% 66%;
     --coral-strong: 7 58% 52%;
     --coral-soft: 12 75% 94%;
@@ -302,7 +302,7 @@
   }
 
   .icon-tile {
-    @apply flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary;
+    @apply flex size-10 shrink-0 items-center justify-center rounded-inset bg-secondary text-primary;
   }
 
   .section-kicker {

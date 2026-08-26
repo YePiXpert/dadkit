@@ -158,7 +158,7 @@ export function DepartureWorkspace() {
               <ul className="mt-4 grid gap-2">
                 {groups.map((group) => (
                   <li
-                    className="flex items-center justify-between gap-3 rounded-2xl bg-on-highlight/10 px-3 py-2.5 text-on-highlight"
+                    className="flex items-center justify-between gap-3 rounded-inset bg-on-highlight/10 px-3 py-2.5 text-on-highlight"
                     key={group.id}
                   >
                     <span className="flex min-w-0 items-center gap-2 break-words text-sm font-semibold">

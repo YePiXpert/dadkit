@@ -131,7 +131,7 @@ export function ChecklistCategoryCard({
           <span className="flex items-start justify-between gap-3">
             <span
               className={cn(
-                "flex size-12 shrink-0 items-center justify-center rounded-2xl bg-card/85 shadow-sm",
+                "flex size-12 shrink-0 items-center justify-center rounded-inset bg-card/85 shadow-sm",
                 meta.className,
               )}
             >

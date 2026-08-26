@@ -49,14 +49,14 @@ export function BabyDashboard({ onEditProfile }: { onEditProfile(): void }) {
           <div><p className="section-kicker text-primary">宝宝记录</p><h1 className="mt-1 text-2xl font-bold break-words sm:text-[28px]">{nickname}</h1><p className="mt-1 text-sm text-muted-foreground">{day ? `出生第 ${day} 天` : "出生日期待确认"}</p></div>
           <Button aria-label="编辑宝宝资料" onClick={onEditProfile} size="icon" variant="outline"><Pencil className="size-4" /></Button>
         </div>
-        <p className="mt-4 rounded-xl bg-secondary p-3 text-sm">{lastFeeding ? `最近喂养：${formatCareRelativeTime(lastFeeding.type === "bottle" ? lastFeeding.occurredAt : lastFeeding.startAt, now)}` : "还没有喂养记录"}</p>
+        <p className="mt-4 rounded-inset bg-secondary p-3 text-sm">{lastFeeding ? `最近喂养：${formatCareRelativeTime(lastFeeding.type === "bottle" ? lastFeeding.occurredAt : lastFeeding.startAt, now)}` : "还没有喂养记录"}</p>
       </header>
 
       <CurrentDeviceMemberCard compact household={household} />
 
       <section aria-label="快速记录" className="grid grid-cols-5 gap-2">
         {QUICK_ACTIONS.map(({ type, label, Icon }) => (
-          <button className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-2xl bg-card px-1 py-3 text-xs font-semibold shadow-sm transition-shadow hover:shadow-md" key={type} onClick={() => setAction(type)} type="button"><Icon className="size-5 text-primary" /><span>{label}</span></button>
+          <button className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-inset bg-card px-1 py-3 text-xs font-semibold shadow-sm transition-shadow hover:shadow-md" key={type} onClick={() => setAction(type)} type="button"><Icon className="size-5 text-primary" /><span>{label}</span></button>
         ))}
       </section>
 
@@ -88,7 +88,7 @@ export function BabyDashboard({ onEditProfile }: { onEditProfile(): void }) {
 }
 
 function SummaryItem({ label, value }: { label: string; value: string }) {
-  return <div className="min-w-0 rounded-xl bg-secondary p-3"><p className="text-[13px] text-muted-foreground">{label}</p><p className="mt-1 break-words font-semibold">{value}</p></div>;
+  return <div className="min-w-0 rounded-inset bg-secondary p-3"><p className="text-[13px] text-muted-foreground">{label}</p><p className="mt-1 break-words font-semibold">{value}</p></div>;
 }
 
 const QUICK_ACTIONS = [

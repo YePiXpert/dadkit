@@ -203,7 +203,7 @@ export function ChecklistSectionWorkspace({
             />
           </div>
 
-          <div className="relative z-10 mt-5 grid grid-cols-3 divide-x divide-on-highlight/20 rounded-2xl bg-on-highlight/15 py-3 text-center text-on-highlight">
+          <div className="relative z-10 mt-5 grid grid-cols-3 divide-x divide-on-highlight/20 rounded-inset bg-on-highlight/15 py-3 text-center text-on-highlight">
             <SectionStat label="待买" value={counts.shopping} />
             <SectionStat label="待装" value={counts.packing} />
             <SectionStat label="已装" value={counts.packed} />
@@ -260,7 +260,7 @@ export function ChecklistSectionWorkspace({
                 <button
                   aria-expanded={settledOpen}
                   aria-label={`${settledOpen ? "收起" : "展开"}已完成的 ${settledItems.length} 件物品`}
-                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-muted/60 px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-inset bg-muted/60 px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted"
                   onClick={() => setSettledOpenOverride(!settledOpen)}
                   type="button"
                 >

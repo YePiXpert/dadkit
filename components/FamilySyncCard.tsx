@@ -42,7 +42,7 @@ export function FamilySyncCard() {
       <CardContent className="grid gap-4">
         {joined && session ? (
           <>
-            <div className="rounded-xl bg-muted/35 p-3 text-sm leading-6 shadow-sm">
+            <div className="rounded-inset bg-muted/35 p-3 text-sm leading-6 shadow-sm">
               <p className="font-semibold">{session.displayName}</p>
               <p className="text-muted-foreground">
                 {session.deviceName} · {session.role === "owner" ? "管理员" : "成员"}

@@ -65,9 +65,9 @@ const rootBlock = globals.slice(0, globals.indexOf(".dark {"));
 
 describe("three-tier border radius convergence", () => {
   it("registers card and inset radii in the tailwind theme", () => {
-    expect(tailwindConfig).toContain('card: "1.75rem"');
-    expect(tailwindConfig).toContain('inset: "1.35rem"');
-    expect(globals).toContain("--radius: 1.75rem");
+    expect(tailwindConfig).toContain('card: "1.5rem"');
+    expect(tailwindConfig).toContain('inset: "1rem"');
+    expect(globals).toContain("--radius: 1.5rem");
   });
 
   it("keeps arbitrary radius values out of the interface sources", () => {
@@ -171,7 +171,7 @@ describe("dead CSS and repeated pattern cleanup", () => {
 
     for (const { path, source } of sourceFiles) {
       expect(source, path).not.toContain(
-        "flex size-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary",
+        "flex size-10 shrink-0 items-center justify-center rounded-inset bg-secondary text-primary",
       );
     }
   });

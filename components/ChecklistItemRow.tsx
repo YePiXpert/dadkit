@@ -295,7 +295,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
         </p>
 
         {showFullDescription ? (
-          <p className="mt-2 min-h-10 whitespace-pre-wrap break-words rounded-xl bg-background/75 px-2 py-1.5 text-sm leading-6 text-muted-foreground">
+          <p className="mt-2 min-h-10 whitespace-pre-wrap break-words rounded-inset bg-background/75 px-2 py-1.5 text-sm leading-6 text-muted-foreground">
             {displayNote}
           </p>
         ) : null}

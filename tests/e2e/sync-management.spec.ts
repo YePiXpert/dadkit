@@ -62,7 +62,7 @@ test("随机空间、邀请、设备角色和永久删除完成闭环", async ({
   await expect(memberPage.getByRole("button", { name: "生成邀请" })).toHaveCount(0);
 
   await page.reload();
-  const memberRow = page.locator("div.rounded-xl").filter({ hasText: "副设备" }).first();
+  const memberRow = page.locator("div.rounded-inset").filter({ hasText: "副设备" }).first();
   await expect(memberRow).toBeVisible();
   await memberRow.getByLabel("设备角色").selectOption("owner");
   await expect(page.getByText("设备角色已更新。")).toBeVisible();

@@ -125,7 +125,7 @@ export function CelebrationOverlay({
           <DialogDescription>{copy.description}</DialogDescription>
         </DialogHeader>
         {variant === "complete" && departureItemCount > 0 ? (
-          <p className="rounded-xl bg-secondary px-3 py-2 text-sm text-primary">
+          <p className="rounded-inset bg-secondary px-3 py-2 text-sm text-primary">
             别忘了临出门拿 {departureItemCount} 件。
           </p>
         ) : null}

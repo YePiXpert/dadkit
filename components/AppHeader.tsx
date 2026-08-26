@@ -16,7 +16,7 @@ export function AppHeader() {
     <header className="hidden border-b border-border/60 bg-background/80 backdrop-blur-xl sm:sticky sm:top-0 sm:z-40 sm:block sm:pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-6">
         <Link
-          className="flex min-h-11 min-w-0 items-center gap-2 rounded-xl"
+          className="flex min-h-11 min-w-0 items-center gap-2 rounded-inset"
           href="/"
           prefetch={false}
         >

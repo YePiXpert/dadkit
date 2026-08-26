@@ -145,7 +145,7 @@ export function ChecklistItemDetailsDialog({
         {!photoController.loading && !photoController.photoUrl ? (
           <section className="rounded-card bg-card p-4 shadow-sm">
             <p className="text-[15px] font-semibold">物品示意</p>
-            <div className="relative mt-2 aspect-[4/3] max-h-52 overflow-hidden rounded-xl bg-background">
+            <div className="relative mt-2 aspect-[4/3] max-h-52 overflow-hidden rounded-inset bg-background">
               <ChecklistItemArt
                 alt={`${displayName}的物品插画`}
                 item={item}

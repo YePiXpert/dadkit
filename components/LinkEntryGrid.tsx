@@ -22,7 +22,7 @@ export function LinkEntryGrid({ entries }: { entries: readonly LinkEntry[] }) {
             key={entry.href}
           >
             <span
-              className={`flex size-11 shrink-0 items-center justify-center rounded-2xl ${entry.accent}`}
+              className={`flex size-11 shrink-0 items-center justify-center rounded-inset ${entry.accent}`}
             >
               <Icon className="size-5" />
             </span>

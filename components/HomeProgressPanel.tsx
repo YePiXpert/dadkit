@@ -81,7 +81,7 @@ function ProgressSummaryCard({
         />
       </div>
 
-      <div className="mt-3 grid grid-cols-3 divide-x divide-border rounded-2xl bg-background py-3 text-center">
+      <div className="mt-3 grid grid-cols-3 divide-x divide-border rounded-inset bg-background py-3 text-center">
         <ProgressStat label="待买" value={counts.shopping} />
         <ProgressStat label="待装" value={counts.packing} />
         <ProgressStat label="已装" value={counts.packed} />

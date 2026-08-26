@@ -226,7 +226,7 @@ export function GrowthWorkspace() {
                 </p>
               </div>
               {projectedDate ? (
-                <div className="rounded-2xl bg-card/75 px-3 py-2 text-right">
+                <div className="rounded-inset bg-card/75 px-3 py-2 text-right">
                   <p className="text-[13px] text-muted-foreground">按预产期推算</p>
                   <p className="mt-0.5 text-sm font-semibold">
                     约 {formatFullDate(projectedDate)}
@@ -301,7 +301,7 @@ export function GrowthWorkspace() {
               </p>
             ) : null}
 
-            <div className="rounded-2xl bg-card/70 p-4">
+            <div className="rounded-inset bg-card/70 p-4">
               <h3 className="text-[15px] font-semibold">这周可能在发生</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 {current.summary}
@@ -350,7 +350,7 @@ export function GrowthWorkspace() {
             <label className="grid gap-1 text-center text-[13px] text-muted-foreground" htmlFor="growth-week-select">
               逐周切换
               <select
-                className="h-11 w-full rounded-xl border border-input bg-card px-3 text-center text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-11 w-full rounded-inset border border-input bg-card px-3 text-center text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 id="growth-week-select"
                 onChange={(event) => selectWeek(Number(event.target.value))}
                 value={current.week}
@@ -469,13 +469,13 @@ export function GrowthWorkspace() {
                     >
                       <button
                         aria-current={active ? "step" : undefined}
-                        className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-2xl px-2 text-left transition-shadow hover:shadow-md"
+                        className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-inset px-2 text-left transition-shadow hover:shadow-md"
                         onClick={() => selectWeek(entry.week, true)}
                         type="button"
                       >
                         <span
                           className={cn(
-                            "flex size-10 shrink-0 items-center justify-center rounded-2xl ring-1 text-sm font-bold tabular-nums",
+                            "flex size-10 shrink-0 items-center justify-center rounded-inset ring-1 text-sm font-bold tabular-nums",
                             active
                               ? "ring-primary bg-primary text-primary-foreground"
                               : "ring-border bg-muted text-foreground",
@@ -541,7 +541,7 @@ export function GrowthWorkspace() {
             {GROWTH_SOURCES.map((source) => (
               <li key={source.href}>
                 <a
-                  className="inline-flex min-h-11 items-center rounded-xl px-2 text-primary underline decoration-primary/35 underline-offset-4 transition-shadow hover:shadow-md"
+                  className="inline-flex min-h-11 items-center rounded-inset px-2 text-primary underline decoration-primary/35 underline-offset-4 transition-shadow hover:shadow-md"
                   href={source.href}
                   rel="noreferrer"
                   target="_blank"
@@ -593,7 +593,7 @@ function Metric({
   value: string;
 }) {
   return (
-    <div className={cn("rounded-2xl bg-card/75 p-3 shadow-sm", className)}>
+    <div className={cn("rounded-inset bg-card/75 p-3 shadow-sm", className)}>
       <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground [&_svg]:size-3.5">
         {icon}
         {label}

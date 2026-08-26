@@ -489,13 +489,13 @@ export default function BackupSettingsPage() {
             </div>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-card/75 px-4 py-3 shadow-sm">
+            <div className="rounded-inset bg-card/75 px-4 py-3 shadow-sm">
               <p className="text-[13px] text-muted-foreground">家庭同步</p>
               <p className="mt-1 text-lg font-bold">
                 {syncJoined ? "已连接" : "未连接"}
               </p>
             </div>
-            <div className="rounded-2xl bg-card/75 px-4 py-3 shadow-sm">
+            <div className="rounded-inset bg-card/75 px-4 py-3 shadow-sm">
               <p className="text-[13px] text-muted-foreground">本机恢复点</p>
               <p className="mt-1 text-lg font-bold tabular-nums">{snapshots.length} 份</p>
             </div>
@@ -507,7 +507,7 @@ export default function BackupSettingsPage() {
         <Card className="overflow-hidden">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
-              <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary">
+              <span className="flex size-10 items-center justify-center rounded-inset bg-secondary text-primary">
                 <Database className="size-4" />
               </span>
               <span className="text-base">本机恢复点</span>
@@ -518,7 +518,7 @@ export default function BackupSettingsPage() {
               恢复、清空或重建前自动保存完整便携数据，包含宝宝资料与照护记录，最多保留 2 份。恢复点保存在 IndexedDB，不含照片和 WebDAV 配置。
             </p>
             {recentSnapshots.length === 0 ? (
-              <p className="rounded-2xl bg-muted px-4 py-4 text-sm text-muted-foreground">
+              <p className="rounded-inset bg-muted px-4 py-4 text-sm text-muted-foreground">
                 暂无恢复点。
               </p>
             ) : (
@@ -550,7 +550,7 @@ export default function BackupSettingsPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
-              <span className="flex size-10 items-center justify-center rounded-2xl bg-secondary text-primary"><Database className="size-4" /></span>
+              <span className="flex size-10 items-center justify-center rounded-inset bg-secondary text-primary"><Database className="size-4" /></span>
               <span className="text-base">完整 JSON 备份</span>
             </CardTitle>
           </CardHeader>
@@ -618,7 +618,7 @@ export default function BackupSettingsPage() {
             <form
               aria-label="WebDAV 配置"
               autoComplete="off"
-              className="grid gap-3 rounded-2xl bg-muted/35 p-3 shadow-sm sm:grid-cols-2"
+              className="grid gap-3 rounded-inset bg-muted/35 p-3 shadow-sm sm:grid-cols-2"
               onSubmit={(event) => event.preventDefault()}
             >
               <Field label="WebDAV 地址" htmlFor="webdav-endpoint">
@@ -653,7 +653,7 @@ export default function BackupSettingsPage() {
               </Field>
               <Field label="凭据类型" htmlFor="webdav-auth-mode">
                 <select
-                  className="flex h-11 w-full rounded-2xl border border-input bg-card px-3.5 py-2 text-base outline-none ring-offset-background focus:ring-2 focus:ring-ring"
+                  className="flex h-11 w-full rounded-inset border border-input bg-card px-3.5 py-2 text-base outline-none ring-offset-background focus:ring-2 focus:ring-ring"
                   id="webdav-auth-mode"
                   value={webDavConfig.authMode}
                   onChange={(event) =>
@@ -694,7 +694,7 @@ export default function BackupSettingsPage() {
             </form>
 
             {pendingRemoteBackup ? (
-              <div className="grid gap-3 rounded-xl bg-muted/35 p-3 text-sm shadow-sm">
+              <div className="grid gap-3 rounded-inset bg-muted/35 p-3 text-sm shadow-sm">
                 <div className="grid gap-2 sm:grid-cols-2">
                   <StatusTile label="远端更新时间" value={formatSnapshotTime(pendingRemoteBackup.updatedAt)} />
                   <StatusTile label="清单项目" value={`${pendingRemoteBackup.data.checklist.length} 项`} />
@@ -866,7 +866,7 @@ function SnapshotRow({
   onRestore: (id: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-muted/40 p-3 shadow-sm">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-inset bg-muted/40 p-3 shadow-sm">
       <div className="min-w-0">
         <p className="text-sm font-semibold">{formatSnapshotTime(snapshot.createdAt)}</p>
         <p className="mt-1 text-[13px] text-muted-foreground">{snapshot.reason}</p>

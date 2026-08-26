@@ -50,10 +50,10 @@ export function AppearanceCard() {
               <button
                 aria-pressed={active}
                 className={cn(
-                  "min-h-11 rounded-2xl bg-card px-3 py-2 text-sm font-semibold shadow-sm transition-shadow hover:shadow-md",
+                  "min-h-11 rounded-inset px-3 py-2 text-sm font-semibold transition-colors",
                   active
-                    ? "ring-1 ring-primary bg-secondary text-foreground"
-                    : "text-muted-foreground",
+                    ? "bg-secondary text-primary shadow-sm ring-1 ring-primary/40"
+                    : "bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground",
                 )}
                 key={option.value}
                 onClick={() => setPreference(option.value)}

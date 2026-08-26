@@ -124,19 +124,19 @@ export function JoinSyncWorkspace() {
             </div>
             <fieldset className="grid gap-2">
               <legend className="text-sm font-medium">这台设备已有数据怎么处理</legend>
-              <label className={`grid cursor-pointer grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-xl border p-3 shadow-sm ${initialDataMode === "remote" ? "border-primary bg-secondary/50" : "border-border bg-card"}`}>
+              <label className={`grid cursor-pointer grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-inset border p-3 shadow-sm ${initialDataMode === "remote" ? "border-primary bg-secondary/50" : "border-border bg-card"}`}>
                 <input checked={initialDataMode === "remote"} className="mt-1 size-4 accent-primary" name="initial-data-mode" onChange={() => setInitialDataMode("remote")} type="radio" />
                 <span className="font-medium">使用家庭数据（推荐）</span>
                 <span className="col-start-2 text-[13px] leading-5 text-muted-foreground">用远端家庭数据替换本机业务数据。加入前会自动保存恢复点；本机设备偏好和物品照片不受影响。</span>
               </label>
-              <label className={`grid cursor-pointer grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-xl border p-3 shadow-sm ${initialDataMode === "merge" ? "border-primary bg-secondary/50" : "border-border bg-card"}`}>
+              <label className={`grid cursor-pointer grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-inset border p-3 shadow-sm ${initialDataMode === "merge" ? "border-primary bg-secondary/50" : "border-border bg-card"}`}>
                 <input checked={initialDataMode === "merge"} className="mt-1 size-4 accent-primary" name="initial-data-mode" onChange={() => setInitialDataMode("merge")} type="radio" />
                 <span className="font-medium">合并本机数据</span>
                 <span className="col-start-2 text-[13px] leading-5 text-muted-foreground">保留并合并本机已有的清单、家庭资料和宝宝记录，合并结果会上传到家庭空间。</span>
               </label>
             </fieldset>
             {hasExistingSession ? (
-              <label className="flex items-start gap-3 rounded-xl bg-muted/35 p-3 text-sm leading-6 shadow-sm">
+              <label className="flex items-start gap-3 rounded-inset bg-muted/35 p-3 text-sm leading-6 shadow-sm">
                 <input checked={replaceConfirmed} className="mt-1 size-4 accent-primary" onChange={(event) => setReplaceConfirmed(event.target.checked)} type="checkbox" />
                 <span>当前连接“{existingName ?? "现有家庭同步空间"}”。我确认切换同步空间；切换前会保存恢复点，随后按上方选项处理本机数据。</span>
               </label>

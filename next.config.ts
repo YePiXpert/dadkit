@@ -6,7 +6,10 @@ const vpsSecurityHeaders = [
     value: [
       "default-src 'self'",
       // 根布局的内联主题脚本与 Next 水合数据需要 'unsafe-inline'。
-      "script-src 'self' 'unsafe-inline'",
+      // 开发模式下 Next 的模块加载与 React Refresh 依赖 eval，仅开发环境放行。
+      process.env.NODE_ENV === "development"
+        ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+        : "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self'",

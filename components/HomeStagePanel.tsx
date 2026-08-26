@@ -80,7 +80,7 @@ function StageHero({
         href="/baby"
         prefetch={false}
       >
-        <span className="relative z-10 flex size-12 shrink-0 items-center justify-center rounded-2xl bg-on-highlight/15 text-on-highlight">
+        <span className="relative z-10 flex size-12 shrink-0 items-center justify-center rounded-inset bg-on-highlight/15 text-on-highlight">
           <Baby aria-hidden="true" className="size-6" />
         </span>
         <span className="relative z-10 min-w-0 flex-1">

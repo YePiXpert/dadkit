@@ -205,7 +205,7 @@ export function ItemPhotoField({
       </div>
 
       {controller.photoUrl ? (
-        <div className="relative aspect-[4/3] max-h-52 overflow-hidden rounded-xl bg-background">
+        <div className="relative aspect-[4/3] max-h-52 overflow-hidden rounded-inset bg-background">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             alt={`${itemName}的物品照片`}
@@ -214,7 +214,7 @@ export function ItemPhotoField({
           />
         </div>
       ) : (
-        <div className="flex min-h-20 items-center justify-center rounded-xl border border-dashed border-border bg-background px-4 text-center text-[13px] leading-5 text-muted-foreground">
+        <div className="flex min-h-20 items-center justify-center rounded-inset border border-dashed border-border bg-background px-4 text-center text-[13px] leading-5 text-muted-foreground">
           拍下实物或包装，家人找东西时更快。
         </div>
       )}
