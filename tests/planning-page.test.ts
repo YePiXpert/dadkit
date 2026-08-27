@@ -34,17 +34,17 @@ describe("retired planning product surface", () => {
     }
   });
 
-  it("redirects stale planning links to the tools hub", () => {
+  it("redirects stale planning links to the merged 我的 hub", () => {
     const page = source("app/planning/page.tsx");
 
-    expect(page).toContain('redirect("/tools")');
+    expect(page).toContain('redirect("/settings")');
     expect(page).not.toContain("PlanningWorkspace");
   });
 
-  it("keeps six useful dashboard shortcuts after retirement", () => {
+  it("keeps the home dashboard free of backup shortcuts", () => {
     const home = source("components/HomeDashboard.tsx");
 
-    expect(home).toContain('href: "/settings/backup"');
-    expect(home).toContain('title: "备份与恢复"');
+    expect(home).not.toContain('href: "/settings/backup"');
+    expect(home).not.toContain('title: "备份与恢复"');
   });
 });

@@ -18,9 +18,8 @@ const routeBudgets = new Map([
   ["/baby/page", 260 * 1024],
   ["/baby/timeline/page", 260 * 1024],
   ["/growth/page", 190 * 1024],
-  // /tools 是轻量中转页（与 /settings 类似），仅渲染 4 个入口卡片。
-  ["/tools/page", 170 * 1024],
   // v3.4.11 把“关于 DadKit”版本卡并入我的页，原 /settings/about（200 KiB 预算）下线。
+  // 工具页已并入我的页，/tools 改为重定向，不再单独出现在构建产物预算中。
   ["/settings/page", 190 * 1024],
   ["/join/page", 200 * 1024],
   ["/settings/sync/page", 250 * 1024],
@@ -42,7 +41,6 @@ const routeLabels = new Map([
   ["/baby/page", "宝宝记录页"],
   ["/baby/timeline/page", "宝宝时间线页"],
   ["/growth/page", "成长记页"],
-  ["/tools/page", "工具页"],
   ["/settings/page", "我的页"],
   ["/join/page", "家庭同步加入页"],
   ["/settings/sync/page", "家庭同步管理页"],

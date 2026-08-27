@@ -59,7 +59,7 @@ describe("public PWA support pages", () => {
   it("uses ordinary web routes for public pages", () => {
     expect(DEPARTURE_PATH).toBe("/departure");
     expect(departurePage).toContain("DepartureWorkspace");
-    expect(planningPage).toContain('redirect("/tools")');
+    expect(planningPage).toContain('redirect("/settings")');
     expect(planningPage).not.toContain("PlanningWorkspace");
     expect(PUBLIC_PRIVACY_PATH).toBe("/privacy");
     expect(PUBLIC_SUPPORT_PATH).toBe("/support");

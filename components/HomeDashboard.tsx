@@ -6,7 +6,6 @@ import {
   Baby,
   CarFront,
   ClipboardList,
-  DatabaseBackup,
   Sprout,
   type LucideIcon,
 } from "lucide-react";
@@ -61,13 +60,6 @@ const HOME_ENTRIES = [
     description: "临产出发逐项确认",
     icon: CarFront,
     accent: "bg-tile-car-bg text-tile-car-fg",
-  },
-  {
-    href: "/settings/backup",
-    title: "备份与恢复",
-    description: "导出备份，安心换设备",
-    icon: DatabaseBackup,
-    accent: "bg-tile-lastminute-bg text-tile-lastminute-fg",
   },
 ] as const satisfies readonly {
   href: string;
@@ -203,7 +195,6 @@ export function HomeDashboardSkeleton() {
         </div>
         <HomeStageSkeleton />
         <div className="grid grid-cols-2 gap-3">
-          <Skeleton className="h-24 rounded-card" />
           <Skeleton className="h-24 rounded-card" />
           <Skeleton className="h-24 rounded-card" />
           <Skeleton className="h-24 rounded-card" />

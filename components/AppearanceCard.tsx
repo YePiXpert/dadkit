@@ -3,8 +3,14 @@
 import { SunMoon } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useTheme, type ThemePreference } from "@/lib/use-theme";
-import { cn } from "@/lib/utils";
 
 const THEME_OPTIONS = [
   {
@@ -42,28 +48,27 @@ export function AppearanceCard() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label="外观模式">
-          {THEME_OPTIONS.map((option) => {
-            const active = preference === option.value;
+        <Select
+          value={preference}
+          onValueChange={(value) => {
+            const option = THEME_OPTIONS.find((item) => item.value === value);
 
-            return (
-              <button
-                aria-pressed={active}
-                className={cn(
-                  "min-h-11 rounded-inset px-3 py-2 text-sm font-semibold transition-colors",
-                  active
-                    ? "bg-secondary text-primary shadow-sm ring-1 ring-primary/40"
-                    : "bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground",
-                )}
-                key={option.value}
-                onClick={() => setPreference(option.value)}
-                type="button"
-              >
+            if (option) {
+              setPreference(option.value);
+            }
+          }}
+        >
+          <SelectTrigger aria-label="外观模式">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {THEME_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
                 {option.label}
-              </button>
-            );
-          })}
-        </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {preference === "night" ? (
           <p className="mt-3 text-[13px] leading-5 text-muted-foreground">
             夜间在深色基础上再降一档亮度，适合凌晨喂奶、换尿布时查看。

@@ -23,7 +23,7 @@ const backupSettingsPage = [
 const sharedFeedback = readSource("components", "ui", "feedback.tsx");
 
 describe("settings information architecture", () => {
-  it("uses 首页 / 清单 / 宝宝 / 工具 / 我的 as the five primary destinations", () => {
+  it("uses 首页 / 清单 / 宝宝 / 我的 as the four primary destinations", () => {
     expect(
       PRIMARY_NAVIGATION_ITEMS.map(({ href, id, label }) => ({
         href,
@@ -34,15 +34,16 @@ describe("settings information architecture", () => {
       { href: "/", id: "home", label: "首页" },
       { href: "/checklist", id: "checklist", label: "清单" },
       { href: "/baby", id: "baby", label: "宝宝" },
-      { href: "/tools", id: "tools", label: "工具" },
       { href: "/settings", id: "mine", label: "我的" },
     ]);
   });
 
-  it("keeps /settings as a focused 我的 entry page", () => {
+  it("keeps /settings as the merged 我的 hub with tools and management", () => {
     expect(settingsPage).toContain("我的");
     expect(settingsPage).not.toContain('href: "/hospital"');
-    expect(settingsPage).not.toContain('href: "/growth"');
+    expect(settingsPage).toContain('href: "/growth"');
+    expect(settingsPage).toContain('href: "/departure"');
+    expect(settingsPage).toContain('href: "/support"');
     expect(settingsPage).toContain('href: "/settings/sync"');
     expect(settingsPage).toContain('href: "/settings/checklist"');
     expect(settingsPage).toContain('href: "/settings/backup"');

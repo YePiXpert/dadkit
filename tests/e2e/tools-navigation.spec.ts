@@ -25,7 +25,7 @@ test.beforeEach(async ({ page }) => {
   await seedCompletedOnboarding(page);
 });
 
-test("首页宫格入口可到达各工具页面且只激活工具导航", async ({
+test("首页宫格入口可到达各工具页面且只激活我的导航", async ({
   page,
 }) => {
   for (const route of TOOL_ROUTES) {
@@ -34,19 +34,23 @@ test("首页宫格入口可到达各工具页面且只激活工具导航", async
       await expect(
         page.getByRole("heading", { name: route.heading, exact: true }),
       ).toBeVisible({ timeout: 60_000 });
-      await expectOnlyPrimaryNavigationItemActive(page, "工具");
+      await expectOnlyPrimaryNavigationItemActive(page, "我的");
     });
   }
 });
 
-test("家庭分工入口已下线且旧链接回到工具页", async ({ page }) => {
+test("家庭分工入口已下线且旧链接回到我的页", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("家庭分工", { exact: false })).toHaveCount(0);
 
   await page.goto("/planning", { waitUntil: "domcontentloaded" });
-  await expectPathname(page, "/tools");
-  await expect(page.getByRole("heading", { name: "工具", exact: true })).toBeVisible();
-  await expectOnlyPrimaryNavigationItemActive(page, "工具");
+  await expectPathname(page, "/settings");
+  await expect(page.getByRole("heading", { name: "我的", exact: true })).toBeVisible();
+  await expectOnlyPrimaryNavigationItemActive(page, "我的");
+
+  await page.goto("/tools", { waitUntil: "domcontentloaded" });
+  await expectPathname(page, "/settings");
+  await expect(page.getByRole("heading", { name: "我的", exact: true })).toBeVisible();
 });
 
 test("成长时间表默认聚焦当前阶段并可展开全部孕周", async ({ page }) => {
@@ -67,15 +71,18 @@ test("成长时间表默认聚焦当前阶段并可展开全部孕周", async ({
   await expect(timeline.getByRole("heading", { level: 3 })).toHaveCount(1);
 });
 
-test("工具页展示管理与支持入口", async ({ page }) => {
-  await page.goto("/tools", { waitUntil: "domcontentloaded" });
-  await expect(
-    page.getByRole("heading", { name: "管理与支持", exact: true }),
-  ).toBeVisible({ timeout: 60_000 });
+test("我的页展示工具与管理支持入口", async ({ page }) => {
+  await page.goto("/settings", { waitUntil: "domcontentloaded" });
 
-  for (const name of ["备份与恢复", "家庭同步", "帮助与反馈"]) {
+  for (const name of [
+    "孕期成长记",
+    "准备出发",
+    "备份与恢复",
+    "家庭同步",
+    "帮助与反馈",
+  ]) {
     await expect(
       page.getByRole("link", { name: new RegExp(`^${name}(?:\\s|$)`) }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 60_000 });
   }
 });

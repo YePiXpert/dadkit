@@ -275,7 +275,6 @@ describe("release endpoints and product surface", () => {
       "/checklist",
       "/baby",
       "/baby/timeline",
-      "/tools",
       "/growth",
       "/departure",
       "/settings",
@@ -289,6 +288,7 @@ describe("release endpoints and product surface", () => {
       expect(sw).toContain(`"${route}"`);
     }
     expect(sw).not.toContain('"/planning"');
+    expect(sw).not.toContain('"/tools"');
     for (const route of REMOVED_PRODUCT_ROUTES) {
       expect(sw).not.toContain(`"/${route}"`);
     }

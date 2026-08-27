@@ -7,7 +7,6 @@ const BACKGROUND_ROUTES = [
   "/join",
   "/baby",
   "/baby/timeline",
-  "/tools",
   "/growth",
   "/departure",
   "/settings",

@@ -154,23 +154,19 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(pwaRegister).not.toContain("window.location.reload()");
   });
 
-  it("uses a five-tab navigation model on mobile and desktop", () => {
+  it("uses a four-tab navigation model on mobile and desktop", () => {
     expect(
       PRIMARY_NAVIGATION_ITEMS.map(({ href, id, label }) => ({ href, id, label })),
     ).toEqual([
       { href: "/", id: "home", label: "首页" },
       { href: "/checklist", id: "checklist", label: "清单" },
       { href: "/baby", id: "baby", label: "宝宝" },
-      { href: "/tools", id: "tools", label: "工具" },
       { href: "/settings", id: "mine", label: "我的" },
     ]);
 
     const homeNav = PRIMARY_NAVIGATION_ITEMS[0];
     const checklistNav = PRIMARY_NAVIGATION_ITEMS.find(
       (item) => item.id === "checklist",
-    )!;
-    const toolsNav = PRIMARY_NAVIGATION_ITEMS.find(
-      (item) => item.id === "tools",
     )!;
     const mineNav = PRIMARY_NAVIGATION_ITEMS.find((item) => item.id === "mine")!;
 
@@ -182,18 +178,12 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(isPrimaryNavigationItemActive("/planning", checklistNav)).toBe(false);
     expect(isPrimaryNavigationItemActive("/settings", checklistNav)).toBe(false);
 
-    expect(isPrimaryNavigationItemActive("/tools", toolsNav)).toBe(true);
-    expect(isPrimaryNavigationItemActive("/growth", toolsNav)).toBe(true);
-    expect(isPrimaryNavigationItemActive("/departure", toolsNav)).toBe(true);
-    expect(isPrimaryNavigationItemActive("/hospital", toolsNav)).toBe(false);
-    expect(isPrimaryNavigationItemActive("/planning", toolsNav)).toBe(false);
-    expect(isPrimaryNavigationItemActive("/settings", toolsNav)).toBe(false);
-
     expect(isPrimaryNavigationItemActive("/settings", mineNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/settings/backup", mineNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/privacy", mineNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/support", mineNav)).toBe(true);
-    expect(isPrimaryNavigationItemActive("/growth", mineNav)).toBe(false);
+    expect(isPrimaryNavigationItemActive("/growth", mineNav)).toBe(true);
+    expect(isPrimaryNavigationItemActive("/departure", mineNav)).toBe(true);
     expect(isPrimaryNavigationItemActive("/hospital", mineNav)).toBe(false);
     expect(isPrimaryNavigationItemActive("/timeline/today", mineNav)).toBe(false);
     expect(isPrimaryNavigationItemActive("/", mineNav)).toBe(false);
@@ -208,7 +198,6 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(showsMobileNavigation("/settings/backup/")).toBe(false);
     expect(showsMobileNavigation("/")).toBe(true);
     expect(showsMobileNavigation("/growth")).toBe(true);
-    expect(showsMobileNavigation("/tools")).toBe(true);
 
     for (const source of [mobileNav, appHeader]) {
       expect(source).toContain("PRIMARY_NAVIGATION_ITEMS.map");
@@ -216,7 +205,7 @@ describe("V3 PWA visual and navigation contract", () => {
       expect(source).toContain('aria-current={active ? "page" : undefined}');
     }
 
-    expect(mobileNav).toContain("grid grid-cols-5");
+    expect(mobileNav).toContain("grid grid-cols-4");
     expect(mobileNav).toContain(
       "fixed inset-x-0 bottom-0",
     );
@@ -292,10 +281,11 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(checklistWorkspace).toContain("safe-bottom-fab");
   });
 
-  it("keeps 我的 as a simple entry surface with subordinate settings pages", () => {
+  it("keeps 我的 as the merged tools and settings hub", () => {
     expect(settingsPage).toContain("我的");
     expect(settingsPage).not.toContain('href: "/hospital"');
-    expect(settingsPage).not.toContain('href: "/growth"');
+    expect(settingsPage).toContain('href: "/growth"');
+    expect(settingsPage).toContain('href: "/departure"');
     expect(settingsPage).toContain('href: "/settings/checklist"');
     expect(settingsPage).toContain('href: "/settings/backup"');
     expect(settingsPage).toContain("<AndroidUpdateSettingsCard");
@@ -305,7 +295,7 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(backupSettingsPage).toContain("清空并重新开始");
     expect(backupSettingsPage).not.toContain("复制 JSON");
     expect(settingsPage).not.toContain("添加可选资料");
-    expect(settingsPage).not.toContain("常用工具");
+    expect(settingsPage).toContain("常用工具");
 
     for (const route of [
       "/setup",

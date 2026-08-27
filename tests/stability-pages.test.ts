@@ -16,10 +16,10 @@ describe("stability page contracts", () => {
     expect(errorPage).not.toContain("clearAll");
   });
 
-  it("gives settings, tools, backup and checklist sections distinct titles", () => {
+  it("gives settings, backup and checklist sections distinct titles", () => {
     expect(source("app", "settings", "page.tsx")).toContain("我的设置 | DadKit");
-    expect(source("app", "tools", "page.tsx")).toContain("工具 | DadKit");
-    expect(source("app", "planning", "page.tsx")).toContain('redirect("/tools")');
+    expect(source("app", "tools", "page.tsx")).toContain('redirect("/settings")');
+    expect(source("app", "planning", "page.tsx")).toContain('redirect("/settings")');
     expect(source("app", "settings", "checklist", "layout.tsx")).toContain("清单设置 | DadKit");
     expect(source("app", "settings", "backup", "layout.tsx")).toContain("备份与恢复 | DadKit");
     expect(source("app", "checklist", "[sectionId]", "page.tsx")).toContain("generateMetadata");

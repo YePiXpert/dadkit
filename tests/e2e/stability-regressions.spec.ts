@@ -9,7 +9,8 @@ test.beforeEach(async ({ page }) => {
 test("跟随系统时实时切换页面深浅色", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light" });
   await page.goto("/settings", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "跟随系统", exact: true }).click();
+  await page.getByRole("combobox", { name: "外观模式" }).click();
+  await page.getByRole("option", { name: "跟随系统", exact: true }).click();
   await expect(page.locator("html")).not.toHaveClass(/\bdark\b/);
 
   await page.emulateMedia({ colorScheme: "dark" });

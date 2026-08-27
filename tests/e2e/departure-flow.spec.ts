@@ -64,7 +64,7 @@ test("可以直接访问准备出发页面", async ({ page }) => {
   await expect(firstItem).toBeVisible();
   const firstItemBox = await firstItem.boundingBox();
   expect(firstItemBox?.height).toBeLessThan(120);
-  await expectOnlyPrimaryNavigationItemActive(page, "工具");
+  await expectOnlyPrimaryNavigationItemActive(page, "我的");
   await expect
     .poll(() =>
       page.evaluate(

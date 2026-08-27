@@ -46,9 +46,10 @@ describe("checklist and home dashboard pages", () => {
     expect(homeDashboard).toContain("mobile-shell grid gap-4 sm:max-w-[42rem]");
     expect(homeDashboardFeatures).toContain("useGrowthStore");
 
-    for (const href of ["/growth", "/baby", "/departure", "/settings/backup"]) {
+    for (const href of ["/growth", "/baby", "/departure"]) {
       expect(homeDashboard).toContain(`href: "${href}"`);
     }
+    expect(homeDashboard).not.toContain('href: "/settings/backup"');
     expect(homeDashboard).toContain("CHECKLIST_PATH");
     expect(homeDashboard).not.toContain("PlanningSummaryCard");
     expect(homeDashboard).not.toContain('href: "/planning"');

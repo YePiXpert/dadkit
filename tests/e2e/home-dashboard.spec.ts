@@ -53,12 +53,14 @@ test("孕期中首页显示孕周状态头、宫格入口和进度卡", async ({
     "孕期成长记",
     "宝宝记录",
     "准备出发",
-    "备份与恢复",
   ]) {
     await expect(
       page.getByRole("link", { name: new RegExp(`^${name}(?:\\s|$)`) }),
     ).toBeVisible();
   }
+  await expect(
+    page.getByRole("link", { name: /^备份与恢复(?:\s|$)/ }),
+  ).toHaveCount(0);
 
   const progress = page.getByRole("link", { name: /准备进度/ });
   await expect(progress).toBeVisible();
