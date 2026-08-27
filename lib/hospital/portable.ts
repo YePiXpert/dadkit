@@ -1,52 +1,38 @@
-import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
-import {
-  HOSPITAL_FIELD_KEYS,
-  type HospitalProfilePortableData,
-  type HospitalProfileValues,
-} from "@/lib/hospital/types";
+// 医院档案已在 v3.4.13 下线。此文件只为旧数据格式保留:
+// 导入 v6-v10 备份时 hospital 字段整体忽略;向旧客户端投影时下发空档案,
+// 空档案必须保持旧客户端严格校验要求的完整 15 字段结构。
+export type StampedTextField = {
+  value: string;
+  updatedAt: number;
+};
 
-export function cloneHospitalProfile(
-  profile: HospitalProfilePortableData,
-): HospitalProfilePortableData {
+export type HospitalProfilePortableData = {
+  version: 1;
+  fields: Record<string, StampedTextField>;
+};
+
+const HOSPITAL_FIELD_KEYS = [
+  "hospitalName",
+  "campusName",
+  "maternityPhone",
+  "emergencyPhone",
+  "address",
+  "laborEntranceNote",
+  "inpatientEntranceNote",
+  "parkingNote",
+  "admissionProcessNote",
+  "companionRuleNote",
+  "providedItemsNote",
+  "restrictedItemsNote",
+  "requiredDocumentsNote",
+  "generalNote",
+] as const;
+
+export function createEmptyHospitalProfile(): HospitalProfilePortableData {
   return {
     version: 1,
     fields: Object.fromEntries(
-      HOSPITAL_FIELD_KEYS.map((key) => [key, { ...profile.fields[key] }]),
-    ) as HospitalProfilePortableData["fields"],
+      HOSPITAL_FIELD_KEYS.map((key) => [key, { value: "", updatedAt: 0 }]),
+    ),
   };
-}
-
-export function hospitalValuesFromPortable(
-  profile: HospitalProfilePortableData,
-): HospitalProfileValues {
-  return Object.fromEntries(
-    HOSPITAL_FIELD_KEYS.map((key) => [key, profile.fields[key].value]),
-  ) as HospitalProfileValues;
-}
-
-export function updateHospitalProfile(
-  current: HospitalProfilePortableData,
-  values: HospitalProfileValues,
-  now: number,
-) {
-  let changed = false;
-  const next = cloneHospitalProfile(current);
-
-  for (const key of HOSPITAL_FIELD_KEYS) {
-    if (current.fields[key].value !== values[key]) {
-      next.fields[key] = { value: values[key], updatedAt: now };
-      changed = true;
-    }
-  }
-
-  return { changed, profile: next };
-}
-
-export function clearHospitalProfile(
-  current: HospitalProfilePortableData,
-  now: number,
-) {
-  const empty = createEmptyHospitalProfile();
-  const values = hospitalValuesFromPortable(empty);
-  return updateHospitalProfile(current, values, now);
 }

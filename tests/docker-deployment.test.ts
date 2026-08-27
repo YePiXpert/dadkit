@@ -26,9 +26,6 @@ describe("VPS Docker deployment", () => {
     expect(compose).toContain(
       'DADKIT_TRUSTED_ORIGINS: "${DADKIT_TRUSTED_ORIGINS:-}"',
     );
-    expect(compose).toContain(
-      'DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS: "${DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS:-}"',
-    );
     for (const variable of [
       "DADKIT_SYNC_REGISTRATION_MODE",
       "DADKIT_SYNC_MAX_SPACE_BYTES",
@@ -43,7 +40,7 @@ describe("VPS Docker deployment", () => {
     }
   });
 
-  it("documents HTTPS ingress and the explicit WebDAV allowlist", () => {
+  it("documents HTTPS ingress and deployment env", () => {
     const readme = workspaceFile("README.md");
     const exampleEnv = workspaceFile(".env.example");
     const dockerIgnore = workspaceFile(".dockerignore");
@@ -51,14 +48,9 @@ describe("VPS Docker deployment", () => {
     expect(readme).toContain("HTTPS 反向代理");
     expect(readme).toContain("DADKIT_BIND_ADDRESS");
     expect(readme).toContain("DADKIT_PUBLIC_ORIGIN");
-    expect(readme).toContain("DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS");
     expect(exampleEnv).toContain("DADKIT_BIND_ADDRESS=127.0.0.1");
     expect(exampleEnv).toContain("DADKIT_PUBLIC_ORIGIN=https://dadkit.505f.com");
     expect(exampleEnv).toMatch(/^DADKIT_TRUSTED_ORIGINS=$/m);
-    expect(exampleEnv).toMatch(/^DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS=$/m);
-    expect(exampleEnv).toContain(
-      "# Example: webdav.example.com,dav.example.com:8443",
-    );
     expect(exampleEnv).toContain("DADKIT_SYNC_REGISTRATION_MODE=open");
     expect(exampleEnv).toContain("DADKIT_SYNC_MAX_SPACE_BYTES=25165824");
     expect(exampleEnv).toContain("DADKIT_TRUST_PROXY_HOPS=1");
@@ -91,13 +83,10 @@ describe("VPS Docker deployment", () => {
       expect(script).not.toMatch(/^DADKIT_PUBLIC_ORIGIN="\$\{DADKIT_PUBLIC_ORIGIN:-/m);
       expect(script).not.toMatch(/^DADKIT_TRUSTED_ORIGINS="\$\{DADKIT_TRUSTED_ORIGINS:-/m);
       expect(script).not.toMatch(
-        /^DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS="\$\{DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS:-/m,
-      );
-      expect(script).not.toMatch(
-        /^export DADKIT_(?:PORT|BIND_ADDRESS|PUBLIC_ORIGIN|TRUSTED_ORIGINS|WEBDAV_PROXY_ALLOWED_HOSTS)$/m,
+        /^export DADKIT_(?:PORT|BIND_ADDRESS|PUBLIC_ORIGIN|TRUSTED_ORIGINS)$/m,
       );
       expect(script).toContain(
-        "unset DADKIT_PORT DADKIT_BIND_ADDRESS DADKIT_PUBLIC_ORIGIN DADKIT_TRUSTED_ORIGINS DADKIT_WEBDAV_PROXY_ALLOWED_HOSTS",
+        "unset DADKIT_PORT DADKIT_BIND_ADDRESS DADKIT_PUBLIC_ORIGIN DADKIT_TRUSTED_ORIGINS",
       );
       expect(script).toContain('DADKIT_PORT_WAS_SET="${DADKIT_PORT+x}"');
       expect(script).toContain(

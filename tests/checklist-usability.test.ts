@@ -70,7 +70,6 @@ const confirmDialog = readSource("components", "ConfirmDialog.tsx");
 const emptyState = readSource("components", "EmptyState.tsx");
 const growthWorkspace = readSource("components", "GrowthWorkspace.tsx");
 const homeGrowthHint = readSource("components", "HomeGrowthHint.tsx");
-const itemPhotoField = readSource("components", "ItemPhotoField.tsx");
 const backupSettingsPage = readSource("app", "settings", "backup", "page.tsx");
 const store = readSource("lib", "store.ts");
 
@@ -148,11 +147,7 @@ describe("in-app confirmation dialogs", () => {
   });
 
   it("routes the former native confirms through the shared ConfirmDialog", () => {
-    for (const source of [
-      checklistItemDetailsDialog,
-      itemPhotoField,
-      backupSettingsPage,
-    ]) {
+    for (const source of [checklistItemDetailsDialog, backupSettingsPage]) {
       expect(source).toContain("ConfirmDialog");
       expect(source).toContain("@/components/ConfirmDialog");
     }

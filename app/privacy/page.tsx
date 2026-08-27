@@ -8,7 +8,7 @@ import { getReviewPageHref, PUBLIC_SUPPORT_PATH } from "@/lib/app-routes";
 export const metadata: Metadata = {
   title: "隐私政策 | DadKit",
   description:
-    "DadKit 的本地优先隐私说明：清单与宝宝记录默认保存在当前设备，家庭同步和 WebDAV 由用户主动启用。",
+    "DadKit 的本地优先隐私说明：清单与宝宝记录默认保存在当前设备，家庭同步由用户主动启用。",
 };
 
 const localDataItems = [
@@ -18,16 +18,13 @@ const localDataItems = [
   "可选的宝宝称呼、预产期和产检时间表完成状态",
   "自动创建的本地恢复快照",
   "仅存于当前设备 IndexedDB 的物品照片",
-  "WebDAV 服务器地址、用户名、备份路径和可选的本机保存密码",
 ];
 
 const userControls = [
   "在“我的”中管理清单设置和备份恢复",
-  "手动上传或下载 WebDAV 备份",
   "导出或完整恢复包含清单和宝宝记录的完整 JSON",
   "从自动创建的本地快照恢复完整便携数据",
   "清空当前浏览器中的清单、宝宝记录和本机物品照片",
-  "清除 WebDAV 配置和本机保存的凭据",
 ];
 
 export default function PrivacyPage() {
@@ -64,10 +61,10 @@ export default function PrivacyPage() {
           </CardHeader>
           <CardContent className="grid gap-2 text-sm leading-6 text-muted-foreground">
             <p>
-              JSON、本地恢复快照和 WebDAV 使用同一份便携备份数据，包括清单、宝宝成长记，以及宝宝昵称、出生资料、全部喂养、吸奶、尿布、睡眠记录、活动计时、删除墓碑和用户备注。包含宝宝事件的恢复快照保存在 IndexedDB，不写入 localStorage。
+              JSON 与本地恢复快照使用同一份便携备份数据，包括清单、宝宝成长记，以及宝宝昵称、出生资料、全部喂养、吸奶、尿布、睡眠记录、活动计时、删除墓碑和用户备注。包含宝宝事件的恢复快照保存在 IndexedDB，不写入 localStorage。
             </p>
             <p>
-              这些备份不包含物品照片，也不包含 WebDAV 地址、用户名、备份路径、同步状态或密码等本机设置。
+              这些备份不包含物品照片，也不包含同步状态等本机设置。
             </p>
           </CardContent>
         </Card>
@@ -102,23 +99,6 @@ export default function PrivacyPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>WebDAV 备份</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-2 text-sm leading-6 text-muted-foreground">
-            <p>
-              WebDAV 是用户手动配置的第三方备份位置。只有你主动测试连接、上传或下载时，DadKit 才会向你填写的 WebDAV 服务发送请求。
-            </p>
-            <p>
-              WebDAV 用户名、服务器地址和备份路径保存在当前设备，但不会写入清单备份文件；应用密码默认只存在当前会话，只有开启“记住密码在本设备”时才会保存在本机。
-            </p>
-            <p>
-              第三方网盘或 WebDAV 服务如何处理数据，取决于该服务自己的隐私政策和账号设置。
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
             <CardTitle>家庭同步</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2 text-sm leading-6 text-muted-foreground">
@@ -126,7 +106,7 @@ export default function PrivacyPage() {
               加入家庭同步后，待产清单、成长记录会与同一家庭中的设备同步。不同设备对不同字段的修改会按字段时间戳合并。
             </p>
             <p>
-              这些信息可能包含家庭安排，请只与信任的家庭成员共享邀请链接或短口令，并妥善保管 WebDAV 账号。
+              这些信息可能包含家庭安排，请只与信任的家庭成员共享邀请链接或短口令。
             </p>
             <p>
               宝宝资料与照护记录也会进入家庭同步。照护事件按记录时间戳合并，删除和全局清空使用墓碑阻止旧设备数据复活；当前仍传输完整文档，不是增量事件同步。

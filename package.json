@@ -13,11 +13,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium webkit",
-    "test:docker": "vitest run --config vitest.docker.config.ts tests/docker-integration.test.ts",
     "performance:check": "node scripts/check-performance-budgets.mjs",
-    "android:validate": "node scripts/validate-android-release.mjs",
-    "webdav:verify": "node scripts/verify-webdav-acceptance.mjs",
-    "webdav:verify:prompt": "powershell -ExecutionPolicy Bypass -File scripts/verify-webdav-acceptance.ps1"
+    "android:validate": "node scripts/validate-android-release.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",

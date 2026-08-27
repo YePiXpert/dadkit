@@ -2,18 +2,15 @@ import { syncError, syncJson } from "@/lib/sync/http";
 import { pullSpace, SyncStoreError } from "@/lib/sync/server-store";
 import {
   clientKeyFromHeaders as proxyClientKey,
-  createRateLimiter as createWebDavProxyRateLimiter,
+  createRateLimiter,
   rateLimitHeaders,
 } from "@/lib/http/rate-limit";
-import {
-  getRequestedDataVersion,
-  syncDataVersionResponseHeaders,
-} from "@/lib/sync/data-version";
+import { createSyncEtag } from "@/lib/sync/data-version";
 import { requestCredential } from "@/lib/sync/request-auth";
 
 export const runtime = "nodejs";
 
-const pullRateLimiter = createWebDavProxyRateLimiter(120, 60_000);
+const pullRateLimiter = createRateLimiter(120, 60_000);
 
 export async function GET(request: Request) {
   const credential = requestCredential(request);
@@ -29,25 +26,20 @@ export async function GET(request: Request) {
   }
 
   try {
-    const dataVersion = getRequestedDataVersion(request.headers);
-    const snapshot = await pullSpace(credential.token, dataVersion);
+    const snapshot = await pullSpace(credential.token);
 
     if (!snapshot) {
       return syncError("同步会话已失效，请重新加入家庭。", 401);
     }
 
-    const versionedHeaders = syncDataVersionResponseHeaders(
-      snapshot.version,
-      dataVersion,
-    );
-    const etag = versionedHeaders.etag;
+    const etag = createSyncEtag(snapshot.version);
 
     if (request.headers.get("if-none-match") === etag) {
       return new Response(null, {
         status: 304,
         headers: {
           "cache-control": "private, no-cache",
-          ...versionedHeaders,
+          etag,
           "x-dadkit-server-time": snapshot.serverTime,
         },
       });
@@ -55,7 +47,7 @@ export async function GET(request: Request) {
 
     return syncJson(snapshot, 200, {
       "cache-control": "private, no-cache",
-      ...versionedHeaders,
+      etag,
       "x-dadkit-server-time": snapshot.serverTime,
     });
   } catch (error) {

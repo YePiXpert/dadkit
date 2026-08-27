@@ -8,7 +8,7 @@ import {
   Sprout,
 } from "lucide-react";
 
-import { AndroidUpdateSettingsCard } from "@/components/AndroidUpdateSettingsCard";
+import { AboutCard } from "@/components/AboutCard";
 import { AppearanceCard } from "@/components/AppearanceCard";
 import { InstallPromptSettingsEntry } from "@/components/InstallPromptSettingsEntry";
 import {
@@ -68,7 +68,7 @@ const SETTINGS_GROUPS: readonly { label: string; entries: readonly LinkEntry[] }
       {
         href: "/settings/backup",
         title: "备份与恢复",
-        description: "本机恢复点、JSON 与 WebDAV 备份。",
+        description: "本机恢复点、JSON 备份与家庭同步。",
         icon: Cloud,
         accent: "bg-tile-car-bg text-tile-car-fg",
       },
@@ -109,7 +109,7 @@ export default function SettingsPage() {
 
         <section className="grid gap-3" aria-label="应用">
           <AppearanceCard />
-          <AndroidUpdateSettingsCard appVersion={packageJson.version} />
+          <AboutCard appVersion={packageJson.version} />
         </section>
       </section>
     </div>

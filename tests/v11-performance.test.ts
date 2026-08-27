@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import { migrateBabyV1ToV2, projectBabyV2ToV1 } from "@/lib/baby/portable";
 import type { CareEventV1 } from "@/lib/baby/types";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
-import { projectExportDataForVersion } from "@/lib/data/format";
+import { upgradeExportDataToLatest } from "@/lib/data/format";
 import { mergeExportData } from "@/lib/sync/merge";
-import { calculateChecksum } from "@/lib/webdav/checksum";
-import { portableV11 } from "@/tests/helpers/portable-data";
+import { calculateChecksum } from "@/lib/checksum";
+import { portableV8, portableV11 } from "@/tests/helpers/portable-data";
 
 function withinBudget<T>(operation: () => T, milliseconds = 3_000) {
   const started = performance.now();
@@ -37,7 +37,9 @@ describe("v11 migration and validation performance", () => {
     expect(migrated.care.events).toHaveLength(25_000);
 
     const canonical = portableV11({ baby: migrated });
-    const legacy = withinBudget(() => projectExportDataForVersion(canonical, 8));
+    const legacy = withinBudget(() =>
+      upgradeExportDataToLatest(portableV8({ baby: projectBabyV2ToV1(migrated) })),
+    );
     const merged = withinBudget(() => mergeExportData(canonical, legacy));
     expect(merged.baby.care.events).toHaveLength(25_000);
     const checksum = withinBudget(() => calculateChecksum(merged));

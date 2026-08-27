@@ -5,7 +5,6 @@ export type DataDomain =
   | "growth"
   | "device-identity"
   | "baby"
-  | "item-photo"
   | "sync-settings";
 
 export type DataChangeMessage = {
@@ -233,7 +232,6 @@ const DATA_DOMAINS = new Set<DataDomain>([
   "growth",
   "device-identity",
   "baby",
-  "item-photo",
   "sync-settings",
 ]);
 

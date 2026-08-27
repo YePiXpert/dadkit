@@ -1,33 +1,7 @@
-import type { DadKitSyncDataVersion } from "@/lib/data/format";
+// 同步数据格式固定为 v11。旧版本协商(v5-v10)已下线;本地 JSON 导入的
+// 旧格式升级仍由 lib/data/format.ts 的 upgradeExportDataToLatest 负责。
+export const SYNC_DATA_VERSION = 11 as const;
 
-export const DADKIT_DATA_VERSION_HEADER = "X-DadKit-Data-Version";
-
-export function createSyncEtag(
-  revision: number,
-  dataVersion: DadKitSyncDataVersion,
-) {
-  return `"dadkit-sync-${revision}-v${dataVersion}"`;
-}
-
-export function syncDataVersionResponseHeaders(
-  revision: number,
-  dataVersion: DadKitSyncDataVersion,
-) {
-  return {
-    etag: createSyncEtag(revision, dataVersion),
-    vary: DADKIT_DATA_VERSION_HEADER,
-  };
-}
-
-export function getRequestedDataVersion(
-  headers: Pick<Headers, "get">,
-): DadKitSyncDataVersion {
-  const requested = headers.get(DADKIT_DATA_VERSION_HEADER);
-  if (requested === "11") return 11;
-  if (requested === "10") return 10;
-  if (requested === "9") return 9;
-  if (requested === "8") return 8;
-  if (requested === "7") return 7;
-  if (requested === "6") return 6;
-  return 5;
+export function createSyncEtag(revision: number) {
+  return `"dadkit-sync-${revision}-v${SYNC_DATA_VERSION}"`;
 }

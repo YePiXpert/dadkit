@@ -6,7 +6,6 @@ import { Ban, Check, PackageCheck, Trash2 } from "lucide-react";
 
 import { ChecklistItemArt } from "@/components/ChecklistItemArt";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { ItemPhotoField, useItemPhoto } from "@/components/ItemPhotoField";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,7 +52,6 @@ export function ChecklistItemDetailsDialog({
   onOpenChange: (open: boolean) => void;
   open: boolean;
 }) {
-  const photoController = useItemPhoto(item.id, open);
   const advanceItem = useDadKitStore((state) => state.advanceItem);
   const updateItem = useDadKitStore((state) => state.updateItem);
   const toggleItemSkipped = useDadKitStore((state) => state.toggleItemSkipped);
@@ -142,22 +140,18 @@ export function ChecklistItemDetailsDialog({
           </p>
         </section>
 
-        {!photoController.loading && !photoController.photoUrl ? (
-          <section className="rounded-card bg-card p-4 shadow-sm">
-            <p className="text-[15px] font-semibold">物品示意</p>
-            <div className="relative mt-2 aspect-[4/3] max-h-52 overflow-hidden rounded-inset bg-background">
-              <ChecklistItemArt
-                alt={`${displayName}的物品插画`}
-                item={item}
-              />
-            </div>
-            <p className="mt-2 text-[13px] leading-5 text-muted-foreground">
-              无品牌示意图，具体物品以医院和家庭实际需要为准。
-            </p>
-          </section>
-        ) : null}
-
-        <ItemPhotoField controller={photoController} itemName={displayName} />
+        <section className="rounded-card bg-card p-4 shadow-sm">
+          <p className="text-[15px] font-semibold">物品示意</p>
+          <div className="relative mt-2 aspect-[4/3] max-h-52 overflow-hidden rounded-inset bg-background">
+            <ChecklistItemArt
+              alt={`${displayName}的物品插画`}
+              item={item}
+            />
+          </div>
+          <p className="mt-2 text-[13px] leading-5 text-muted-foreground">
+            无品牌示意图，具体物品以医院和家庭实际需要为准。
+          </p>
+        </section>
 
         <section className="grid gap-2 rounded-card bg-card p-3 shadow-sm">
           <div className="flex min-h-11 items-center justify-between gap-3 px-1">

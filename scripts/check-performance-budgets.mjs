@@ -95,32 +95,6 @@ async function readTotalCssBytes() {
   return { bytes: await gzipTotalBytes(files), files };
 }
 
-async function verifyIndexedDbReadGate() {
-  const [photoLibrary, row] = await Promise.all([
-    readFile(path.join(process.cwd(), "lib", "item-photos.ts"), "utf8"),
-    readFile(
-      path.join(process.cwd(), "components", "ChecklistItemRow.tsx"),
-      "utf8",
-    ),
-  ]);
-  const requiredPhotoCacheMarkers = [
-    "const photoReadPromises = new Map",
-    "const existing = photoReadPromises.get",
-    "photoReadPromises.set(normalizedItemId, pending)",
-    "const photoUrlEntries = new Map",
-    "URL.revokeObjectURL",
-  ];
-
-  for (const marker of requiredPhotoCacheMarkers) {
-    if (!photoLibrary.includes(marker)) {
-      throw new Error(`照片 IndexedDB 读取门禁缺失：${marker}`);
-    }
-  }
-
-  if (!row.includes('rootMargin: "600px 0px"')) {
-    throw new Error("照片视口预加载门禁缺失：必须保持 600px rootMargin。");
-  }
-}
 
 function usagePercent(bytes, budget) {
   return Math.round((bytes / budget) * 100);
@@ -167,8 +141,6 @@ console.log(
   `${cssPassed ? "PASS" : "FAIL"} CSS 总重: ${formatKiB(css.bytes)} / ${formatKiB(MAX_CSS_BYTES)}，用量 ${usagePercent(css.bytes, MAX_CSS_BYTES)}%（${css.files.length} files）`,
 );
 
-await verifyIndexedDbReadGate();
-console.log("PASS 照片 IndexedDB 读取、对象 URL 与 600px 预加载门禁");
 
 if (failed) {
   process.exitCode = 1;

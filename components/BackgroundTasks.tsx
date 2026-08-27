@@ -20,13 +20,6 @@ const PwaRegister = dynamic(
     ),
   { ssr: false },
 );
-const AndroidUpdatePrompt = dynamic(
-  () =>
-    import("@/components/AndroidUpdatePrompt").then(
-      (module) => module.AndroidUpdatePrompt,
-    ),
-  { ssr: false },
-);
 
 export function BackgroundTasks() {
   const [idle, setIdle] = useState(false);
@@ -79,25 +72,6 @@ export function BackgroundTasks() {
         .catch(() => undefined);
     };
 
-    const scheduleLater = (
-      callback: () => void,
-      delay: number,
-      idleTimeout: number,
-    ) => {
-      timers.push(
-        setTimeout(() => {
-          if (cancelled) return;
-          if ("requestIdleCallback" in window) {
-            idleCallbacks.push(
-              window.requestIdleCallback(callback, { timeout: idleTimeout }),
-            );
-          } else {
-            callback();
-          }
-        }, delay),
-      );
-    };
-
     const start = () => {
       if (cancelled) return;
       setIdle(true);
@@ -113,18 +87,6 @@ export function BackgroundTasks() {
           },
         )
         .catch(() => undefined);
-      scheduleLater(() => {
-        void Promise.all([import("@/lib/item-photos"), import("@/lib/store")])
-          .then(([photoLibrary, storeModule]) => {
-            if (cancelled) return;
-            const state = storeModule.useDadKitStore.getState();
-            if (!state.hydrated) return;
-            return photoLibrary.pruneOrphanedPhotos(
-              state.checklist.map((item) => item.id),
-            );
-          })
-          .catch(() => undefined);
-      }, 6_000, 2_000);
     };
 
     const scheduleBackgroundWork = () => {
@@ -159,7 +121,6 @@ export function BackgroundTasks() {
         <AndroidNativeMigration onComplete={handleMigrationComplete} />
       ) : null}
       {idle ? <PwaRegister /> : null}
-      {idle ? <AndroidUpdatePrompt /> : null}
     </>
   );
 }

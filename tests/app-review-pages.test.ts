@@ -36,7 +36,6 @@ describe("public PWA support pages", () => {
     expect(privacyPage).toContain("产检时间表完成状态");
     expect(privacyPage).toContain("本地快照");
     expect(privacyPage).toContain("当前不使用广告 SDK");
-    expect(privacyPage).toContain("WebDAV 是用户手动配置的第三方备份位置");
     expect(privacyPage).toContain("getReviewPageHref(PUBLIC_SUPPORT_PATH)");
     expect(privacyPage).not.toContain("地区、医院、生产方式");
     expect(privacyPage).not.toContain("宫缩记录");
@@ -49,7 +48,7 @@ describe("public PWA support pages", () => {
     expect(supportPage).toContain("支持与反馈");
     expect(supportPage).toContain("GitHub Issues");
     expect(supportPage).toContain("https://github.com/YePiXpert/dadkit/issues");
-    expect(supportPage).toContain("不要发送账号或密码");
+    expect(supportPage).toContain("任何账号密码都不要发");
     expect(supportPage).toContain("PWA 使用检查");
     expect(supportPage).toContain("备份与恢复");
     expect(supportPage).not.toContain("TestFlight");

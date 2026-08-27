@@ -58,7 +58,6 @@ const homeHeroIllustration = readSource(
   "HomeHeroIllustration.tsx",
 );
 const badge = readSource("components", "ui", "badge.tsx");
-const backupSettingsPage = readSource("app", "settings", "backup", "page.tsx");
 
 const darkBlock = globals.slice(globals.indexOf(".dark {"));
 const rootBlock = globals.slice(0, globals.indexOf(".dark {"));
@@ -167,7 +166,6 @@ describe("dead CSS and repeated pattern cleanup", () => {
 
   it("shares the icon-tile component class instead of hand-written copies", () => {
     expect(globals).toContain(".icon-tile");
-    expect(backupSettingsPage).toContain('className="icon-tile"');
 
     for (const { path, source } of sourceFiles) {
       expect(source, path).not.toContain(

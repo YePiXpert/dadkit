@@ -1,7 +1,7 @@
 {
   "name": "DadKit 待产包清单",
   "short_name": "DadKit",
-  "description": "打开即用的待产包清单、孕期工具与单宝宝记录，支持记录人、本机恢复点、家庭同步和 WebDAV 备份。",
+  "description": "打开即用的待产包清单、孕期工具与单宝宝记录，支持记录人、本机恢复点、JSON 备份和家庭同步。",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -1,9 +1,7 @@
-import path from "node:path";
 
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { seedCompletedOnboarding } from "@/tests/e2e/helpers";
 
-const SAMPLE_IMAGE_PATH = path.join(process.cwd(), "public", "icon-192.png");
 
 test.beforeEach(async ({ page }) => { await seedCompletedOnboarding(page); });
 
@@ -68,33 +66,13 @@ test("移动端输入保持 16px，安装入口仅在可用时显示", async ({ 
   await expect(installEntry).toHaveCount(0);
 });
 
-test("Android 设置页区分页面与外壳版本并允许手动检查更新", async ({ page }: { page: Page }) => {
+test("Android 设置页区分页面与外壳版本并提供外链更新入口", async ({ page }: { page: Page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(window.navigator, "userAgent", {
       configurable: true,
       value: `${window.navigator.userAgent} DadKitAndroid/22`,
     });
     window.localStorage.setItem("dadkit:android-version-code", "19");
-    window.localStorage.setItem(
-      "dadkit:android-version-checked-at",
-      String(Date.now()),
-    );
-  });
-
-  let checks = 0;
-  await page.route("**/api/app-version", async (route) => {
-    checks += 1;
-    await route.fulfill({
-      contentType: "application/json",
-      json: {
-        versionCode: 26,
-        versionName: "3.4.13",
-        notes: "下一版本测试更新。",
-        sha256: "a".repeat(64),
-        url: "/api/app-version/apk?versionCode=26",
-      },
-      status: 200,
-    });
   });
 
   await page.goto("/settings", { waitUntil: "domcontentloaded" });
@@ -103,18 +81,16 @@ test("Android 设置页区分页面与外壳版本并允许手动检查更新", 
   ).toBeVisible();
   await expect(page.getByText("3.4.13")).toBeVisible();
   await expect(page.getByText("versionCode 22")).toBeVisible();
-  const checkButton = page.getByRole("button", { name: "检查更新" });
-  await expect(checkButton).toBeVisible();
-  await checkButton.click();
-
-  await expect(page.getByText("发现新版本 3.4.13")).toBeVisible();
-  await expect(page.getByRole("link", { name: "下载更新" })).toHaveAttribute(
+  await expect(
+    page.getByRole("link", { name: "打开 GitHub Releases" }),
+  ).toHaveAttribute(
     "href",
-    "/api/app-version/apk?versionCode=26",
+    "https://github.com/YePiXpert/dadkit/releases/latest",
   );
-  expect(checks).toBe(1);
+  await expect(
+    page.getByRole("button", { name: "检查更新" }),
+  ).toHaveCount(0);
 });
-
 test("清单和成长记在移动端完成 hydrate 并持久化", async ({ page }: { page: Page }) => {
   // Playwright WebKit on Windows can defer the first hydrated interaction
   // while its process warms up. This is a functional workflow, not a
@@ -143,28 +119,23 @@ test("清单和成长记在移动端完成 hydrate 并持久化", async ({ page 
   await expect(page.locator("#growth-nickname")).toHaveValue(nickname);
 });
 
-test("照片保存在当前浏览器且备份页不再提供设备迁移", async ({ page }: { page: Page }) => {
+test("物品照片功能已下线且备份页只保留照片包迁移", async ({ page }: { page: Page }) => {
   test.setTimeout(150_000);
 
   await page.goto("/checklist/documents", { waitUntil: "domcontentloaded" });
   const firstDetailsButton = page.getByRole("button", { name: "详情" }).first();
   await expect(firstDetailsButton).toBeVisible({ timeout: 60_000 });
   await firstDetailsButton.click();
-  const photoInput = page.locator(
-    'input[aria-label="从相册选择物品照片"]',
-  );
-  await expect(photoInput).toBeAttached();
-  await photoInput.setInputFiles(SAMPLE_IMAGE_PATH);
-  await expect(page.locator('img[src^="blob:"]').last()).toBeVisible();
-  await page.keyboard.press("Escape");
-
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: "详情" }).first().click();
-  await expect(page.locator('img[src^="blob:"]').last()).toBeVisible();
+  await expect(page.getByText("物品示意")).toBeVisible();
+  await expect(
+    page.locator('input[aria-label="从相册选择物品照片"]'),
+  ).toHaveCount(0);
   await page.keyboard.press("Escape");
 
   await page.goto("/settings/backup", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("加密设备迁移")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "导出照片包" })).toBeVisible();
+  await expect(page.getByText("物品照片功能已在新版下线")).toBeVisible();
 });
 
 test("家庭同步摘要只提供新邀请入口", async ({ page }: { page: Page }) => {

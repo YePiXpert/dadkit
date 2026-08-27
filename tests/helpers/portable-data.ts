@@ -9,12 +9,27 @@ import {
 } from "@/lib/data/format";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
 import { projectBabyV2ToV1 } from "@/lib/baby/portable";
-import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
+import { createEmptyHospitalProfile } from "@/lib/hospital/portable";
 import {
   createEmptyLegacyPlanningV1,
   createEmptyLegacyPlanningV2,
+  type LegacyItemPlanningRecordV1,
 } from "@/lib/data/legacy-planning";
 import type { ChecklistItem } from "@/lib/types";
+
+export function portablePlanningRecordV1(
+  patch: Partial<LegacyItemPlanningRecordV1> = {},
+): LegacyItemPlanningRecordV1 {
+  return {
+    assignee: { value: "unassigned", updatedAt: 0 },
+    dueDate: { value: "", updatedAt: 0 },
+    estimatedPriceFen: { value: null, updatedAt: 0 },
+    actualPriceFen: { value: null, updatedAt: 0 },
+    purchaseChannel: { value: "", updatedAt: 0 },
+    storageLocation: { value: "", updatedAt: 0 },
+    ...patch,
+  };
+}
 
 export function portableTestItem(
   id: string,

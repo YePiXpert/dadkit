@@ -6,7 +6,7 @@ import { cloneBabyCare } from "@/lib/baby/portable";
 import { deriveRecentCareEvents, deriveTodayCareSummary } from "@/lib/baby/selectors";
 import type { CareEvent } from "@/lib/baby/types";
 import { isBabyCarePortableData } from "@/lib/baby/validation";
-import { calculateChecksum } from "@/lib/webdav/checksum";
+import { calculateChecksum } from "@/lib/checksum";
 
 const now = new Date();
 now.setHours(12, 0, 0, 0);

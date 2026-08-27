@@ -47,7 +47,7 @@ describe("settings information architecture", () => {
     expect(settingsPage).toContain('href: "/settings/sync"');
     expect(settingsPage).toContain('href: "/settings/checklist"');
     expect(settingsPage).toContain('href: "/settings/backup"');
-    expect(settingsPage).toContain("<AndroidUpdateSettingsCard");
+    expect(settingsPage).toContain("<AboutCard");
     expect(settingsPage).not.toContain("登录");
     expect(settingsPage).not.toContain("心愿单");
   });
@@ -60,7 +60,6 @@ describe("settings information architecture", () => {
     expect(backupSettingsPage).toContain("备份与恢复");
     expect(backupSettingsPage).toContain("本机恢复点");
     expect(backupSettingsPage).toContain("最多保留 2 份");
-    expect(backupSettingsPage).toContain("WebDAV 备份");
     expect(backupSettingsPage).toContain("照片备份包");
     expect(backupSettingsPage).toContain("导出照片包");
     expect(backupSettingsPage).toContain("导入照片包");

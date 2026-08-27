@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 
 import { ChecklistItemArt } from "@/components/ChecklistItemArt";
-import { useItemPhoto } from "@/components/ItemPhotoField";
 import { Badge } from "@/components/ui/badge";
 import {
   getChecklistItemState,
@@ -45,39 +44,6 @@ const STATE_SPINE_CLASSES: Record<ChecklistItemState, string> = {
   not_needed: "bg-muted-foreground/30",
 };
 
-// 所有卡片共享一个 IntersectionObserver，避免整页清单为每行各建一个实例。
-const visibilityCallbacks = new Map<Element, (visible: boolean) => void>();
-let sharedVisibilityObserver: IntersectionObserver | undefined;
-
-function observeRowVisibility(
-  element: Element,
-  callback: (visible: boolean) => void,
-) {
-  if (typeof IntersectionObserver === "undefined") {
-    callback(true);
-    return () => {};
-  }
-
-  if (!sharedVisibilityObserver) {
-    sharedVisibilityObserver = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          visibilityCallbacks.get(entry.target)?.(entry.isIntersecting);
-        }
-      },
-      { rootMargin: "600px 0px" },
-    );
-  }
-
-  visibilityCallbacks.set(element, callback);
-  sharedVisibilityObserver.observe(element);
-
-  return () => {
-    visibilityCallbacks.delete(element);
-    sharedVisibilityObserver?.unobserve(element);
-  };
-}
-
 type ChecklistItemRowProps = {
   compact?: boolean;
   departureMode?: boolean;
@@ -93,15 +59,12 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   onOpenDetails,
   showFullDescription = true,
 }: ChecklistItemRowProps) {
-  const articleRef = useRef<HTMLElement | null>(null);
-  const [mediaEnabled, setMediaEnabled] = useState(false);
   const [justPacked, setJustPacked] = useState(false);
   const previousItemStateRef = useRef<ChecklistItemState | undefined>(undefined);
   const advanceItem = useDadKitStore((state) => state.advanceItem);
   const updateItem = useDadKitStore((state) => state.updateItem);
   const itemState = getChecklistItemState(item);
   const actionLabel = getActionLabel(itemState, departureMode);
-  const itemPhoto = useItemPhoto(item.id, mediaEnabled && !compact);
   const StateIcon = STATE_ICONS[itemState];
   const displayOptions = {
     transformAlternatives: item.source === "general",
@@ -115,21 +78,6 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
     item.quantity || "1 件",
     displayOptions,
   );
-
-  useEffect(() => {
-    if (compact) return;
-
-    const element = articleRef.current;
-
-    if (!element) {
-      setMediaEnabled(true);
-      return;
-    }
-
-    return observeRowVisibility(element, (visible) => {
-      if (visible) setMediaEnabled(true);
-    });
-  }, [compact]);
 
   useEffect(() => {
     const previous = previousItemStateRef.current;
@@ -165,8 +113,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   if (compact) {
     return (
       <article
-        ref={articleRef}
-        className={cn(
+          className={cn(
           "relative flex min-h-16 min-w-0 items-center gap-2.5 overflow-hidden rounded-card bg-card px-3 py-2 shadow-sm transition-shadow hover:shadow-md [content-visibility:auto] [contain-intrinsic-size:auto_4.5rem]",
           itemState === "ready" && "bg-secondary/35 ring-1 ring-primary/30",
           itemState === "packed" && "bg-secondary/55 ring-1 ring-primary/35",
@@ -236,7 +183,6 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
 
   return (
     <article
-      ref={articleRef}
       className={cn(
         "flex min-w-0 flex-col overflow-hidden rounded-card bg-card p-2.5 shadow-sm transition-shadow hover:shadow-md [content-visibility:auto] [contain-intrinsic-size:auto_22rem]",
         itemState === "ready" && "bg-secondary/35 ring-1 ring-primary/30",
@@ -245,25 +191,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
       )}
     >
       <div className="relative flex aspect-[16/9] items-center justify-center overflow-hidden rounded-inset bg-muted/75 xs:aspect-[4/3]">
-        {!mediaEnabled || itemPhoto.loading ? (
-          <div
-            aria-hidden="true"
-            className="size-full animate-pulse bg-muted/70"
-          />
-        ) : itemPhoto.photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            alt={`${displayName}的物品照片`}
-            className="size-full object-cover"
-            loading="lazy"
-            src={itemPhoto.photoUrl}
-          />
-        ) : (
-          <ChecklistItemArt
-            alt={`${displayName}的物品插画`}
-            item={item}
-          />
-        )}
+        <ChecklistItemArt alt={`${displayName}的物品插画`} item={item} />
 
         <Badge
           className="absolute right-2 top-2 min-h-7 shadow-sm"

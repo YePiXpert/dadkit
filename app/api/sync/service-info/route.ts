@@ -13,7 +13,7 @@ export function GET(request: Request) {
     const config = getSyncSpaceConfig();
     return syncJson({
       syncProtocolVersion: DADKIT_SYNC_PROTOCOL_VERSION,
-      supportedDataVersions: [5, 6, 7, 8, 9],
+      dataVersion: 11,
       registrationMode: config.registrationMode,
       maxSpaceBytes: config.maxSpaceBytes,
       maxDevices: config.maxDevices,

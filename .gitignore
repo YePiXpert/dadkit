@@ -64,3 +64,6 @@ android/signing.properties
 .trellis/
 AGENTS.md
 tmp/
+
+# ZCode local session data
+.zcode/

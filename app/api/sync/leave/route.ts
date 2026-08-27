@@ -2,7 +2,7 @@ import { syncError, syncJson } from "@/lib/sync/http";
 import { leaveSpace, SyncStoreError } from "@/lib/sync/server-store";
 import {
   clientKeyFromHeaders as proxyClientKey,
-  createRateLimiter as createWebDavProxyRateLimiter,
+  createRateLimiter,
 } from "@/lib/http/rate-limit";
 import { requestCredential } from "@/lib/sync/request-auth";
 import { rejectInvalidMutationOrigin, syncStoreErrorResponse } from "@/lib/sync/route-utils";
@@ -10,7 +10,7 @@ import { clearSessionCookie } from "@/lib/sync/session-cookie";
 
 export const runtime = "nodejs";
 
-const leaveRateLimiter = createWebDavProxyRateLimiter(30, 60_000);
+const leaveRateLimiter = createRateLimiter(30, 60_000);
 
 export async function POST(request: Request) {
   const rateLimit = leaveRateLimiter.consume(proxyClientKey(request.headers));

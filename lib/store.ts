@@ -3,7 +3,7 @@
 import { create } from "zustand";
 
 import { showAppToast } from "@/lib/app-toast";
-import { clearItemPhotos, deleteItemPhoto } from "@/lib/item-photos";
+import { clearItemPhotos } from "@/lib/item-photos";
 import { generateChecklist, normalizeChecklistItem } from "@/lib/rules";
 import { getSyncAdjustedNow } from "@/lib/sync-clock";
 import { mergeChecklistDocuments } from "@/lib/sync/merge";
@@ -333,7 +333,6 @@ function commitPendingRemoval(id: string) {
       deletedCustomItems: tombstones,
     });
 
-    void deleteItemPhoto(active.item.id).catch(() => undefined);
     pendingRemovals.delete(id);
     useDadKitStore.setState({
       ...committed,
@@ -784,10 +783,9 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
     await requireSnapshotBeforeChange("清空本地数据前");
 
     const checklist = generateChecklist();
-    let sessionSecretCleared = true;
 
     try {
-      ({ sessionSecretCleared } = await resetAllDataAsync(checklist));
+      await resetAllDataAsync(checklist);
     } catch {
       throw new Error("本机数据清空失败，原有数据已保留。");
     }
@@ -812,14 +810,9 @@ export const useDadKitStore = create<DadKitState>((set, get) => ({
       photosCleared = false;
     }
 
-    if (!photosCleared || !sessionSecretCleared) {
-      const remaining = [
-        !photosCleared ? "物品照片" : "",
-        !sessionSecretCleared ? "当前会话中的 WebDAV 密码" : "",
-      ].filter(Boolean);
-
+    if (!photosCleared) {
       throw new Error(
-        `清单与成长数据已清空，但${remaining.join("和")}未能清理，请关闭其他 DadKit 页面后重试。`,
+        "清单与成长数据已清空，但物品照片未能清理，请关闭其他 DadKit 页面后重试。",
       );
     }
   },

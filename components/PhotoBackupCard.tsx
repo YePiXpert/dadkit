@@ -34,7 +34,7 @@ export function PhotoBackupCard({
       </CardHeader>
       <CardContent className="grid gap-3">
         <p className="text-sm leading-6 text-muted-foreground">
-          物品照片保存在设备的本地照片库，不会混入普通恢复点或 WebDAV 备份。换设备前可导出独立照片备份包，并在新设备导入。
+          物品照片功能已在新版下线。此前拍摄的照片仍保存在本机照片库，可导出照片包留档，或导入到仍在使用旧版本的设备。
         </p>
         <input
           ref={inputRef}

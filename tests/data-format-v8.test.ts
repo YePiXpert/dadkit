@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { createEmptyBabyData } from "@/lib/baby/defaults";
 import { isBabyCarePortableData, isBabyPortableData, isBabyProfilePortableData } from "@/lib/baby/validation";
-import { isDadKitImportData, projectExportDataForVersion, upgradeExportDataToLatest, type DadKitExportDataV3, type DadKitExportDataV4 } from "@/lib/data/format";
+import { isDadKitImportData, upgradeExportDataToLatest, type DadKitExportDataV3, type DadKitExportDataV4 } from "@/lib/data/format";
 import { portableV5, portableV6, portableV7, portableV8, portableV11 } from "@/tests/helpers/portable-data";
 import { exportData, validateImportData } from "@/lib/storage";
-import { calculateChecksum } from "@/lib/webdav/checksum";
+import { calculateChecksum } from "@/lib/checksum";
 
 describe("DadKit v8 portable format", () => {
   it("validates empty baby data and a complete v8 document", () => {
@@ -44,10 +44,7 @@ describe("DadKit v8 portable format", () => {
   it("projects v5-v8 without mutating canonical data", () => {
     const canonical = portableV11();
     const before = structuredClone(canonical);
-    expect(projectExportDataForVersion(canonical, 5)).not.toHaveProperty("baby");
-    expect(projectExportDataForVersion(canonical, 6)).not.toHaveProperty("baby");
-    expect(projectExportDataForVersion(canonical, 7)).not.toHaveProperty("baby");
-    expect(projectExportDataForVersion(canonical, 8)).toHaveProperty("baby");
+    expect(upgradeExportDataToLatest(canonical)).toHaveProperty("baby");
     expect(canonical).toEqual(before);
   });
 

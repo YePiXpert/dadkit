@@ -1,17 +1,13 @@
-import path from "node:path";
-
 import { expect, test } from "@playwright/test";
 
 import { seedCompletedOnboarding } from "@/tests/e2e/helpers";
-
-const SAMPLE_IMAGE_PATH = path.join(process.cwd(), "public", "icon-192.png");
 
 test.describe.configure({ timeout: 180_000 });
 test.beforeEach(async ({ page }) => {
   await seedCompletedOnboarding(page);
 });
 
-test("双标签实时同步清单、宝宝记录和物品照片", async ({
+test("双标签实时同步清单和宝宝记录", async ({
   context,
   page,
 }) => {
@@ -51,16 +47,6 @@ test("双标签实时同步清单、宝宝记录和物品照片", async ({
     await itemCard.getByRole("button", { name: "详情" }).click();
     await otherPage.bringToFront();
     await otherItemCard.getByRole("button", { name: "详情" }).click();
-    await page.bringToFront();
-    await page
-      .locator('input[aria-label="从相册选择物品照片"]')
-      .setInputFiles(SAMPLE_IMAGE_PATH);
-    await otherPage.bringToFront();
-    await expect(
-      otherPage.getByRole("img", { name: `${itemName}的物品照片` }),
-    ).toBeVisible({ timeout: 60_000 });
-    await page.keyboard.press("Escape");
-    await otherPage.keyboard.press("Escape");
 
     await page.goto("/baby", { waitUntil: "domcontentloaded" });
     await otherPage.goto("/baby", { waitUntil: "domcontentloaded" });

@@ -33,14 +33,10 @@ import {
   exportGrowthData,
 } from "@/lib/growth-store";
 import type { ChecklistItem } from "@/lib/types";
-import { createEmptyHospitalProfile } from "@/lib/hospital/defaults";
+import { createEmptyHospitalProfile } from "@/lib/hospital/portable";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
 import { loadDeviceIdentity, saveDeviceIdentity } from "@/lib/device-identity/repository";
 import { portableV8 } from "@/tests/helpers/portable-data";
-import {
-  hospitalValuesFromPortable,
-  updateHospitalProfile,
-} from "@/lib/hospital/portable";
 import { useDadKitStore } from "@/lib/store";
 
 function testItem(id = "item-1", patch: Partial<ChecklistItem> = {}): ChecklistItem {
@@ -116,10 +112,10 @@ function hospitalProfile(
   updatedAt = 100,
 ) {
   const profile = createEmptyHospitalProfile();
-  const values = hospitalValuesFromPortable(profile);
-
-  Object.assign(values, patch);
-  return updateHospitalProfile(profile, values, updatedAt).profile;
+  for (const [key, value] of Object.entries(patch)) {
+    profile.fields[key] = { value, updatedAt };
+  }
+  return profile;
 }
 
 function backupDataV3(
@@ -546,7 +542,7 @@ describe("local recovery snapshots", () => {
     ]);
   });
 
-  it("stores only the exact v6 portable payload", () => {
+  it("stores only the exact v11 portable payload", () => {
     installBrowserStorage();
     saveChecklist([testItem("snapshot")]);
 
@@ -565,7 +561,7 @@ describe("local recovery snapshots", () => {
         "hiddenTemplateItemStamps",
         "deletedCustomItems",
         "growthUpdatedAt",
-        "hospital",
+        "baby",
       ].sort(),
     );
   });
@@ -640,14 +636,13 @@ describe("destructive storage scope", () => {
   it("clears owned v3 data but preserves snapshots, v2 data and unrelated keys", () => {
     const v2Sentinel = "dadkit:v2:checklist";
     const unrelated = "another-app:data";
-    const { localValues, sessionValues } = installBrowserStorage({
+    const { localValues } = installBrowserStorage({
       [v2Sentinel]: "v2-sentinel",
       [unrelated]: "unrelated-sentinel",
     });
 
     saveChecklist([testItem("current")]);
     createSnapshot("保留恢复点");
-    localValues.set(STORAGE_KEYS.webDavSecret, "secret");
     localValues.set(
       GROWTH_STORAGE_KEYS.profile,
       JSON.stringify({ nickname: "小满", dueDate: "2026-08-20" }),
@@ -656,18 +651,14 @@ describe("destructive storage scope", () => {
       GROWTH_STORAGE_KEYS.progress,
       JSON.stringify({ completedTaskIds: ["first-prenatal-contact"] }),
     );
-    sessionValues.set("dadkit:v3:webdav-session-secret", "session-secret");
-
     resetAllData();
 
     expect(loadChecklist()).toEqual([]);
     expect(loadSnapshots()).toHaveLength(1);
     expect(localValues.get(v2Sentinel)).toBe("v2-sentinel");
     expect(localValues.get(unrelated)).toBe("unrelated-sentinel");
-    expect(localValues.has(STORAGE_KEYS.webDavSecret)).toBe(false);
     expect(localValues.has(GROWTH_STORAGE_KEYS.profile)).toBe(false);
     expect(localValues.has(GROWTH_STORAGE_KEYS.progress)).toBe(false);
-    expect(sessionValues.has("dadkit:v3:webdav-session-secret")).toBe(false);
   });
 });
 

@@ -72,13 +72,6 @@ async function refreshDomain(message: DataChangeMessage) {
       await useBabyStore.getState().reloadFromRepository();
       return;
     }
-    case "item-photo": {
-      const { notifyExternalItemPhotoChange } = await import(
-        "@/lib/item-photos"
-      );
-      notifyExternalItemPhotoChange(message.entityId);
-      return;
-    }
     case "sync-settings": {
       const { refreshSyncStatus } = await import("@/lib/sync/client");
       refreshSyncStatus();

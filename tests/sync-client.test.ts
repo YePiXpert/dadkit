@@ -30,7 +30,6 @@ import {
 } from "@/lib/sync-session-status";
 import { useDadKitStore } from "@/lib/store";
 import type { ChecklistItem } from "@/lib/types";
-import { DADKIT_DATA_VERSION_HEADER } from "@/lib/sync/data-version";
 import { portableV5, portableV11 } from "@/tests/helpers/portable-data";
 import { generateChecklist } from "@/lib/rules";
 
@@ -400,15 +399,9 @@ describe("family sync client", () => {
     const legacy = portableV5({
       checklist: [testItem("legacy-server", { updatedAt: 200 })],
     });
-    const requestVersions: string[] = [];
-
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: string, init?: RequestInit) => {
-        requestVersions.push(
-          new Headers(init?.headers).get(DADKIT_DATA_VERSION_HEADER) ?? "",
-        );
-
+      vi.fn(async (url: string) => {
         if (url === "/api/sync/pull") {
           return jsonResponse({ version: 1, updatedAt: "", data: legacy });
         }
@@ -420,8 +413,6 @@ describe("family sync client", () => {
     );
 
     await expect(syncNow()).resolves.toMatchObject({ ok: true });
-
-    expect(requestVersions).toEqual(["11", "11"]);
     expect(localValues.has("dadkit:v3:hospital-profile")).toBe(false);
   });
 

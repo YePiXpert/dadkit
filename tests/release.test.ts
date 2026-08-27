@@ -76,7 +76,6 @@ describe("release endpoints and product surface", () => {
     );
     expect(readme).toContain("清单");
     expect(readme).toContain("恢复快照");
-    expect(readme).toContain("WebDAV 备份");
     expect(readme).toContain("宝宝成长记");
     expect(readme).not.toContain("医院档案");
     expect(readme).toContain("兼容既有备份和较旧的数据格式");
@@ -123,15 +122,9 @@ describe("release endpoints and product surface", () => {
     expect(activity).not.toContain('getAssets().open("www/"');
     expect(activity).toContain("loadDataWithBaseURL");
     expect(activity).toContain("DadKitAndroidMigration");
-    expect(activity).toContain("appVersionCode=26");
-    expect(manifest).toContain("android.permission.REQUEST_INSTALL_PACKAGES");
-    expect(manifest).toContain("androidx.core.content.FileProvider");
-    expect(activity).toContain("DadKitAndroidUpdate");
-    expect(activity).toContain('MessageDigest.getInstance("SHA-256")');
-    expect(activity).toContain("Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES");
-    expect(activity).toContain('"(?i)^[0-9a-f]{64}$"');
-    expect(activity).toContain('"/api/app-version/apk".equals');
-    expect(activity).toContain("UPDATE_MAX_BYTES");
+    expect(activity).toContain("appVersionCode=27");
+    expect(manifest).not.toContain("REQUEST_INSTALL_PACKAGES");
+    expect(activity).not.toContain("DadKitAndroidUpdate");
     expect(validator).toContain("no local request interception");
     expect(validator).toContain("no APK web asset loader");
     expect(existsSync(join(process.cwd(), "scripts", "build-android-web.mjs"))).toBe(false);

@@ -2,14 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   isDadKitImportData,
-  projectExportDataForVersion,
   sanitizeDadKitImportData,
   upgradeExportDataToLatest,
   type DadKitExportDataV3,
   type DadKitExportDataV4,
 } from "@/lib/data/format";
-import { hospitalValuesFromPortable, updateHospitalProfile } from "@/lib/hospital/portable";
-import { portableTestItem, portableV5, portableV6, portableV11 } from "@/tests/helpers/portable-data";
+import { portableTestItem, portableV5, portableV6 } from "@/tests/helpers/portable-data";
 import { createEmptyBabyData } from "@/lib/baby/defaults";
 
 const v3: DadKitExportDataV3 = {
@@ -46,13 +44,10 @@ describe("DadKit v6 hospital compatibility inside the v11 portable format", () =
   });
 
   it("validates v6 hospital data but drops it during the v11 upgrade", () => {
-    const base = portableV6();
-    const values = hospitalValuesFromPortable(base.hospital);
-    values.hospitalName = "市妇幼保健院";
-    values.address = "健康路 1 号";
-    const data = portableV6({
-      hospital: updateHospitalProfile(base.hospital, values, 123).profile,
-    });
+    const hospital = portableV6().hospital;
+    hospital.fields.hospitalName = { value: "市妇幼保健院", updatedAt: 123 };
+    hospital.fields.address = { value: "健康路 1 号", updatedAt: 123 };
+    const data = portableV6({ hospital });
 
     expect(isDadKitImportData(data)).toBe(true);
     expect(sanitizeDadKitImportData(data)).toEqual(data);
@@ -65,41 +60,18 @@ describe("DadKit v6 hospital compatibility inside the v11 portable format", () =
     });
   });
 
-  it("projects canonical v6 to a legal v5 payload without mutating canonical data", () => {
-    const data = portableV11();
-    const before = structuredClone(data);
-    const projected = projectExportDataForVersion(data, 5);
-
-    expect(projected.version).toBe(5);
-    expect(projected).not.toHaveProperty("hospital");
-    expect(isDadKitImportData(projected)).toBe(true);
-    expect(data).toEqual(before);
-  });
-
-  it("returns an empty legacy compatibility field to a v6 client", () => {
-    const projected = projectExportDataForVersion(portableV11(), 6);
-
-    expect(projected.version).toBe(6);
-    expect(projected).toHaveProperty(
-      "hospital.fields.hospitalName.value",
-      "",
-    );
-    expect(projected).not.toHaveProperty("planning");
-  });
-
-  it("rejects invalid or incomplete hospital structures", () => {
-    const missing = structuredClone(portableV6()) as unknown as {
-      hospital: { fields: Record<string, unknown> };
-    };
+  it("tolerates malformed legacy hospital structures while importing the checklist", () => {
+    const missing = structuredClone(portableV6());
     delete missing.hospital.fields.address;
 
-    expect(isDadKitImportData(missing)).toBe(false);
+    expect(isDadKitImportData(missing)).toBe(true);
     expect(
       isDadKitImportData({
         ...portableV6(),
-        hospital: { version: 1, fields: { __proto__: {} } },
+        hospital: { version: 1, fields: {} },
       }),
-    ).toBe(false);
+    ).toBe(true);
+    expect(upgradeExportDataToLatest(missing)).not.toHaveProperty("hospital");
   });
 
   it("tolerates unknown top-level v6 fields and strips them before saving", () => {

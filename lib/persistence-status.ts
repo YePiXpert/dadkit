@@ -16,8 +16,7 @@ export type PersistenceDomain =
   | "checklist"
   | "growth"
   | "device-identity"
-  | "baby"
-  | "item-photo";
+  | "baby";
 
 export type DomainPersistenceStatus = {
   domain: PersistenceDomain;

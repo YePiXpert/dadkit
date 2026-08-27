@@ -2,11 +2,9 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import type { ChangeEvent, ReactNode } from "react";
+import type { ChangeEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import {
-  Cloud,
-  ChevronDown,
   Database,
   Download,
   RotateCcw,
@@ -31,7 +29,6 @@ import {
 import { Feedback } from "@/components/ui/feedback";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   getReviewPageHref,
   PUBLIC_PRIVACY_PATH,
@@ -39,17 +36,10 @@ import {
 } from "@/lib/app-routes";
 import {
   clearSnapshotsAsync,
-  clearWebDavSettings,
   buildLatestPortableData,
   importDataAsync,
   loadSnapshotsAsync,
-  loadWebDavConfig,
-  loadWebDavSecret,
-  loadWebDavSyncState,
   restoreSnapshotAsync,
-  saveWebDavConfig,
-  saveWebDavSecret,
-  saveWebDavSyncState,
   type DadKitSnapshot,
 } from "@/lib/storage";
 import { useDadKitStore } from "@/lib/store";
@@ -58,12 +48,6 @@ import {
   refreshSyncStatus,
   useSyncStatusStore,
 } from "@/lib/sync/client";
-import {
-  DEFAULT_WEBDAV_CONFIG,
-  type DadKitWebDavBackup,
-  type WebDavConfig,
-  type WebDavSyncState,
-} from "@/lib/webdav/types";
 
 const FamilySyncCard = dynamic(
   () =>
@@ -88,9 +72,7 @@ const PhotoBackupCard = dynamic(
 type BackupConfirmation =
   | { type: "restoreSnapshot"; snapshotId: string }
   | { type: "restoreJson" }
-  | { type: "deleteSnapshots" }
-  | { type: "downloadRemote" }
-  | { type: "clearWebDav" };
+  | { type: "deleteSnapshots" };
 
 export default function BackupSettingsPage() {
   const clearAll = useDadKitStore((state) => state.clearAll);
@@ -102,20 +84,9 @@ export default function BackupSettingsPage() {
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [clearConfirmation, setClearConfirmation] = useState("");
   const [snapshots, setSnapshots] = useState<DadKitSnapshot[]>([]);
-  const [webDavConfig, setWebDavConfig] =
-    useState<WebDavConfig>(DEFAULT_WEBDAV_CONFIG);
-  const [webDavSecret, setWebDavSecret] = useState("");
-  const [webDavSyncState, setWebDavSyncState] = useState<WebDavSyncState>({
-    deviceId: "",
-  });
-  const [webDavMessage, setWebDavMessage] = useState("");
-  const [webDavMessageOk, setWebDavMessageOk] = useState<boolean>();
-  const [webDavBusy, setWebDavBusy] = useState(false);
   const [photoPackageBusy, setPhotoPackageBusy] = useState(false);
   const [photoPackageMessage, setPhotoPackageMessage] = useState("");
   const [photoPackageMessageOk, setPhotoPackageMessageOk] = useState<boolean>();
-  const [pendingRemoteBackup, setPendingRemoteBackup] =
-    useState<DadKitWebDavBackup>();
   const [confirmation, setConfirmation] = useState<BackupConfirmation>();
   const photoPackageInputRef = useRef<HTMLInputElement>(null);
   const jsonBackupInputRef = useRef<HTMLInputElement>(null);
@@ -125,9 +96,6 @@ export default function BackupSettingsPage() {
   const [pendingJsonBackup, setPendingJsonBackup] = useState<string>();
   const syncJoined = useSyncStatusStore((state) => state.joined);
   const recentSnapshots = snapshots.slice(0, 2);
-  const webDavConfigured = Boolean(
-    webDavConfig.endpoint.trim() && webDavConfig.username.trim(),
-  );
 
   async function refreshSnapshots() {
     try {
@@ -137,19 +105,9 @@ export default function BackupSettingsPage() {
     }
   }
 
-  function refreshWebDavSettings() {
-    const config = loadWebDavConfig();
-
-    setWebDavConfig(config);
-    setWebDavSecret(loadWebDavSecret(config.rememberSecret));
-    setWebDavSyncState(loadWebDavSyncState());
-    setPendingRemoteBackup(undefined);
-  }
-
   useEffect(() => {
     hydrate();
     void refreshSnapshots();
-    refreshWebDavSettings();
     refreshSyncStatus();
   }, [hydrate]);
 
@@ -191,171 +149,8 @@ export default function BackupSettingsPage() {
     setClearDialogOpen(false);
     setClearConfirmation("");
     await refreshSnapshots();
-    refreshWebDavSettings();
     setClearMessage("本机数据已清空，并生成一份全新的通用清单。");
     setClearMessageOk(true);
-  }
-
-  function updateWebDavConfig(patch: Partial<WebDavConfig>) {
-    const next = normalizeWebDavConfig({ ...webDavConfig, ...patch });
-
-    setWebDavConfig(next);
-    saveWebDavConfig(next);
-    saveWebDavSecret(webDavSecret, next.rememberSecret);
-  }
-
-  function updateWebDavSecret(value: string) {
-    setWebDavSecret(value);
-    saveWebDavSecret(value, webDavConfig.rememberSecret);
-  }
-
-  function updateWebDavSyncState(patch: Partial<WebDavSyncState>) {
-    const next = { ...webDavSyncState, ...patch };
-
-    setWebDavSyncState(next);
-    saveWebDavSyncState(next);
-  }
-
-  function prepareWebDavOperation() {
-    const config = normalizeWebDavConfig({ ...webDavConfig, enabled: true });
-
-    setWebDavConfig(config);
-    saveWebDavConfig(config);
-    saveWebDavSecret(webDavSecret, config.rememberSecret);
-
-    return config;
-  }
-
-  function reportWebDavResult(result: { message: string; ok: boolean }) {
-    setWebDavMessage(result.message);
-    setWebDavMessageOk(result.ok);
-  }
-
-  function reportWebDavClientLoadError(stopBusy = false) {
-    reportWebDavResult({ message: WEB_DAV_CLIENT_LOAD_ERROR, ok: false });
-    if (stopBusy) setWebDavBusy(false);
-  }
-
-  async function testWebDav() {
-    const config = prepareWebDavOperation();
-
-    setWebDavBusy(true);
-    setPendingRemoteBackup(undefined);
-    const client = await loadWebDavClient();
-
-    if (!client) {
-      reportWebDavClientLoadError(true);
-      return;
-    }
-
-    const result = await client.testWebDavConnection(config, webDavSecret);
-
-    reportWebDavResult(result);
-    updateWebDavSyncState({
-      lastError: result.ok ? undefined : result.message,
-    });
-    setWebDavBusy(false);
-  }
-
-  async function uploadCurrentBackup() {
-    const config = prepareWebDavOperation();
-    const currentData = await buildLatestPortableData();
-
-    setWebDavBusy(true);
-    setPendingRemoteBackup(undefined);
-
-    const client = await loadWebDavClient();
-
-    if (!client) {
-      reportWebDavClientLoadError(true);
-      return;
-    }
-
-    const result = await client.uploadWebDavBackup(config, webDavSecret, currentData, {
-      deviceId: webDavSyncState.deviceId,
-    });
-    reportWebDavResult(result);
-
-    if (result.ok) {
-      const timestamp = new Date().toISOString();
-      updateWebDavSyncState({
-        lastUploadAt: timestamp,
-        lastSyncAt: timestamp,
-        lastRemoteUpdatedAt: timestamp,
-        lastError: undefined,
-      });
-    } else {
-      updateWebDavSyncState({ lastError: result.message });
-    }
-
-    setWebDavBusy(false);
-  }
-
-  async function downloadRemoteBackup() {
-    const config = prepareWebDavOperation();
-
-    setWebDavBusy(true);
-    setPendingRemoteBackup(undefined);
-
-    const client = await loadWebDavClient();
-
-    if (!client) {
-      reportWebDavClientLoadError(true);
-      return;
-    }
-
-    const result = await client.downloadWebDavBackup(config, webDavSecret);
-
-    reportWebDavResult(result);
-
-    if (result.ok && result.backup) {
-      setPendingRemoteBackup(result.backup);
-      updateWebDavSyncState({
-        lastRemoteUpdatedAt: result.backup.updatedAt,
-        lastError: undefined,
-      });
-    } else {
-      updateWebDavSyncState({ lastError: result.message });
-    }
-
-    setWebDavBusy(false);
-  }
-
-  async function restoreRemoteBackup() {
-    if (!pendingRemoteBackup) {
-      return;
-    }
-
-    const client = await loadWebDavClient();
-
-    if (!client) {
-      reportWebDavClientLoadError();
-      return;
-    }
-
-    const result = await client.importDadKitWebDavBackup(pendingRemoteBackup);
-
-    if (result.ok) {
-      const timestamp = new Date().toISOString();
-
-      updateWebDavSyncState({
-        lastDownloadAt: timestamp,
-        lastSyncAt: timestamp,
-        lastRemoteUpdatedAt: pendingRemoteBackup.updatedAt,
-        lastError: undefined,
-      });
-      setPendingRemoteBackup(undefined);
-    }
-
-    await refreshSnapshots();
-    reportWebDavResult(result);
-  }
-
-  function clearWebDav() {
-    clearWebDavSettings();
-    refreshWebDavSettings();
-    setWebDavMessage("WebDAV 配置已清除。");
-    setWebDavMessageOk(true);
   }
 
   async function exportPhotoPackage() {
@@ -515,7 +310,7 @@ export default function BackupSettingsPage() {
           </CardHeader>
           <CardContent className="grid gap-3">
             <p className="text-sm leading-6 text-muted-foreground">
-              恢复、清空或重建前自动保存完整便携数据，包含宝宝资料与照护记录，最多保留 2 份。恢复点保存在 IndexedDB，不含照片和 WebDAV 配置。
+              恢复、清空或重建前自动保存完整便携数据，包含宝宝资料与照护记录，最多保留 2 份。恢复点保存在 IndexedDB，不含照片。
             </p>
             {recentSnapshots.length === 0 ? (
               <p className="rounded-inset bg-muted px-4 py-4 text-sm text-muted-foreground">
@@ -574,154 +369,7 @@ export default function BackupSettingsPage() {
           onImport={importPhotoPackage}
         />
 
-        <details className="group overflow-hidden rounded-card bg-card shadow-sm">
-          <summary className="flex min-h-20 cursor-pointer list-none items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
-            <span className="icon-tile">
-              <Cloud className="size-4" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold">WebDAV 备份</span>
-              <span className="mt-0.5 block text-[13px] leading-5 text-muted-foreground">
-                {webDavConfigured
-                  ? `已配置 · 上次上传 ${formatOptionalTime(webDavSyncState.lastUploadAt)}`
-                  : "高级功能：跨设备手动上传或恢复备份"}
-              </span>
-            </span>
-            <span className="rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
-              {webDavConfigured ? "已配置" : "未配置"}
-            </span>
-            <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
-          </summary>
-          <div className="grid gap-4 border-t border-border/70 p-5">
-            <p className="text-sm leading-6 text-muted-foreground">
-              只在你主动操作时上传或下载完整备份。上传与恢复会合并清单字段、宝宝资料字段和照护事件，不会自动同步，也不上传照片或 WebDAV 凭据。地址必须使用 HTTPS。
-            </p>
-
-            <div className="flex flex-wrap gap-2">
-              <Button disabled={webDavBusy} onClick={uploadCurrentBackup}>
-                <Upload />
-                合并并上传当前备份
-              </Button>
-              <Button
-                disabled={webDavBusy}
-                variant="outline"
-                onClick={() => setConfirmation({ type: "downloadRemote" })}
-              >
-                <Download />
-                检查远端备份
-              </Button>
-              <Button disabled={webDavBusy} variant="outline" onClick={testWebDav}>
-                测试连接
-              </Button>
-            </div>
-
-            <form
-              aria-label="WebDAV 配置"
-              autoComplete="off"
-              className="grid gap-3 rounded-inset bg-muted/35 p-3 shadow-sm sm:grid-cols-2"
-              onSubmit={(event) => event.preventDefault()}
-            >
-              <Field label="WebDAV 地址" htmlFor="webdav-endpoint">
-                <>
-                  <Input
-                    id="webdav-endpoint"
-                    type="url"
-                    value={webDavConfig.endpoint}
-                    onChange={(event) => updateWebDavConfig({ endpoint: event.target.value })}
-                  />
-                  <p className="text-[13px] leading-5 text-muted-foreground">
-                    默认地址适用于 123 云盘；其他服务请填写自己的 WebDAV 地址。
-                  </p>
-                </>
-              </Field>
-              <Field label="用户名" htmlFor="webdav-username">
-                <Input
-                  autoComplete="username"
-                  id="webdav-username"
-                  value={webDavConfig.username}
-                  onChange={(event) => updateWebDavConfig({ username: event.target.value })}
-                />
-              </Field>
-              <Field label="应用密码或普通密码" htmlFor="webdav-secret">
-                <Input
-                  autoComplete="current-password"
-                  id="webdav-secret"
-                  type="password"
-                  value={webDavSecret}
-                  onChange={(event) => updateWebDavSecret(event.target.value)}
-                />
-              </Field>
-              <Field label="凭据类型" htmlFor="webdav-auth-mode">
-                <select
-                  className="flex h-11 w-full rounded-inset border border-input bg-card px-3.5 py-2 text-base outline-none ring-offset-background focus:ring-2 focus:ring-ring"
-                  id="webdav-auth-mode"
-                  value={webDavConfig.authMode}
-                  onChange={(event) =>
-                    updateWebDavConfig({ authMode: event.target.value as WebDavConfig["authMode"] })
-                  }
-                >
-                  <option value="app_password">应用密码</option>
-                  <option value="basic">普通密码</option>
-                </select>
-              </Field>
-              <Field label="远端目录" htmlFor="webdav-remote-dir">
-                <Input
-                  id="webdav-remote-dir"
-                  value={webDavConfig.remoteDir}
-                  onChange={(event) => updateWebDavConfig({ remoteDir: event.target.value })}
-                />
-              </Field>
-              <Field label="文件名" htmlFor="webdav-filename">
-                <Input
-                  id="webdav-filename"
-                  value={webDavConfig.filename}
-                  onChange={(event) => updateWebDavConfig({ filename: event.target.value })}
-                />
-              </Field>
-              <div className="flex items-center justify-between gap-3 rounded-lg bg-card p-3 shadow-sm sm:col-span-2">
-                <div>
-                  <Label htmlFor="webdav-remember-secret">记住密码在本设备</Label>
-                  <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
-                    默认只保留到当前浏览器会话结束。开启后会明文保存在此设备的本地存储，仅在可信设备上使用。
-                  </p>
-                </div>
-                <Switch
-                  id="webdav-remember-secret"
-                  checked={webDavConfig.rememberSecret}
-                  onCheckedChange={(checked) => updateWebDavConfig({ rememberSecret: checked })}
-                />
-              </div>
-            </form>
-
-            {pendingRemoteBackup ? (
-              <div className="grid gap-3 rounded-inset bg-muted/35 p-3 text-sm shadow-sm">
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <StatusTile label="远端更新时间" value={formatSnapshotTime(pendingRemoteBackup.updatedAt)} />
-                  <StatusTile label="清单项目" value={`${pendingRemoteBackup.data.checklist.length} 项`} />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button onClick={restoreRemoteBackup}>合并这个远端备份</Button>
-                  <Button variant="outline" onClick={() => setPendingRemoteBackup(undefined)}>
-                    取消
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-
-            <Feedback message={webDavMessage} ok={webDavMessageOk} />
-
-            <div className="grid gap-1 text-[13px] leading-5 text-muted-foreground sm:grid-cols-2">
-              <span>上次上传：{formatOptionalTime(webDavSyncState.lastUploadAt)}</span>
-              <span>上次下载：{formatOptionalTime(webDavSyncState.lastDownloadAt)}</span>
-            </div>
-
-            <Button className="justify-self-start" size="sm" variant="ghost" onClick={() => setConfirmation({ type: "clearWebDav" })}>
-              清除 WebDAV 配置
-            </Button>
-          </div>
-        </details>
-
-        <DangerZone title="清空并重新开始" description="清单、宝宝记录、本机恢复点、WebDAV 设置、家庭同步登录状态和本机物品照片都会清除。请先导出 JSON 或 WebDAV 备份；本操作完成后无法从本机恢复点找回。">
+        <DangerZone title="清空并重新开始" description="清单、宝宝记录、本机恢复点、家庭同步登录状态和本机物品照片都会清除。请先导出 JSON 备份；本操作完成后无法从本机恢复点找回。">
           <Button
             className="justify-self-start"
             variant="destructive"
@@ -750,7 +398,7 @@ export default function BackupSettingsPage() {
             <DialogHeader>
               <DialogTitle>确认清空本机数据</DialogTitle>
               <DialogDescription>
-                系统会先验证完整恢复点能够成功写入；随后清单、宝宝记录、全部本机恢复点、WebDAV 设置和本机物品照片都会清除，已连接的家庭同步会退出。请先导出外部备份。
+                系统会先验证完整恢复点能够成功写入；随后清单、宝宝记录、全部本机恢复点和本机物品照片都会清除，已连接的家庭同步会退出。请先导出外部备份。
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-2">
@@ -787,34 +435,22 @@ export default function BackupSettingsPage() {
                 ? "恢复恢复点"
                 : confirmation.type === "restoreJson"
                   ? "导入 JSON 备份"
-                : confirmation.type === "deleteSnapshots"
-                  ? "删除全部恢复点"
-                  : confirmation.type === "clearWebDav"
-                    ? "清除 WebDAV 配置"
-                    : "继续检查"
+                  : "删除全部恢复点"
             }
             description={
               confirmation.type === "restoreSnapshot"
                 ? "恢复此恢复点会完整替换当前便携数据，包括宝宝资料与照护记录。"
                 : confirmation.type === "restoreJson"
                   ? "JSON 导入属于完整恢复。系统会先创建恢复点；不含宝宝数据的旧备份会安全清空宝宝资料和照护记录。"
-                : confirmation.type === "deleteSnapshots"
-                  ? "全部本机恢复点将被永久删除。"
-                  : confirmation.type === "clearWebDav"
-                    ? "本设备保存的 WebDAV 配置和凭据会被清除。"
-                    : "检查远端备份后可以选择是否恢复。恢复前会先保存本机恢复点。"
+                  : "全部本机恢复点将被永久删除。"
             }
             onConfirm={() => {
               if (confirmation.type === "restoreSnapshot") {
                 void restoreLocalSnapshot(confirmation.snapshotId);
               } else if (confirmation.type === "restoreJson") {
                 void restoreJsonBackup();
-              } else if (confirmation.type === "deleteSnapshots") {
-                void deleteAllSnapshots();
-              } else if (confirmation.type === "clearWebDav") {
-                clearWebDav();
               } else {
-                void downloadRemoteBackup();
+                void deleteAllSnapshots();
               }
             }}
             onOpenChange={(open) => {
@@ -826,18 +462,9 @@ export default function BackupSettingsPage() {
                 ? "确认恢复本机恢复点？"
                 : confirmation.type === "restoreJson"
                   ? "确认导入 JSON 备份？"
-                : confirmation.type === "deleteSnapshots"
-                  ? "确认删除全部恢复点？"
-                  : confirmation.type === "clearWebDav"
-                    ? "确认清除 WebDAV 配置？"
-                    : "确认检查远端备份？"
+                  : "确认删除全部恢复点？"
             }
-            variant={
-              confirmation.type === "deleteSnapshots" ||
-              confirmation.type === "clearWebDav"
-                ? "destructive"
-                : "default"
-            }
+            variant={confirmation.type === "deleteSnapshots" ? "destructive" : "default"}
           />
         ) : null}
 
@@ -878,26 +505,6 @@ function SnapshotRow({
   );
 }
 
-const WEB_DAV_CLIENT_LOAD_ERROR = "WebDAV 模块加载失败，请检查网络后重试。";
-
-async function loadWebDavClient() {
-  try {
-    return await import("@/lib/webdav/client");
-  } catch {
-    return undefined;
-  }
-}
-
-function normalizeWebDavConfig(config: WebDavConfig): WebDavConfig {
-  return {
-    ...config,
-    endpoint: config.endpoint.trim(),
-    username: config.username.trim(),
-    remoteDir: config.remoteDir.trim() || DEFAULT_WEBDAV_CONFIG.remoteDir,
-    filename: config.filename.trim() || DEFAULT_WEBDAV_CONFIG.filename,
-  };
-}
-
 function formatSnapshotTime(value: string) {
   const date = new Date(value);
 
@@ -906,10 +513,6 @@ function formatSnapshotTime(value: string) {
   }
 
   return date.toLocaleString("zh-CN", { hour12: false });
-}
-
-function formatOptionalTime(value?: string) {
-  return value ? formatSnapshotTime(value) : "暂无";
 }
 
 function downloadJsonFile(payload: unknown, filename: string) {
@@ -925,28 +528,3 @@ function downloadJsonFile(payload: unknown, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-function Field({
-  children,
-  htmlFor,
-  label,
-}: {
-  children: ReactNode;
-  htmlFor: string;
-  label: string;
-}) {
-  return (
-    <div className="grid gap-2">
-      <Label htmlFor={htmlFor}>{label}</Label>
-      {children}
-    </div>
-  );
-}
-
-function StatusTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg bg-card px-3 py-2 shadow-sm">
-      <p className="text-[13px] text-muted-foreground">{label}</p>
-      <p className="mt-1 break-words font-semibold">{value}</p>
-    </div>
-  );
-}

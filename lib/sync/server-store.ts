@@ -20,10 +20,8 @@ import {
   isDadKitImportData,
   isRecord,
   isValidDateString,
-  projectExportDataForVersion,
   upgradeExportDataToLatest,
   type DadKitImportData,
-  type DadKitSyncDataVersion,
 } from "@/lib/data/format";
 import { SYNC_ERROR_CODES, type SyncErrorCode } from "@/lib/sync/error-codes";
 import {
@@ -364,21 +362,12 @@ function touchMetadata(space: SyncSpaceFileV2, now = new Date().toISOString()) {
   space.metadataUpdatedAt = now;
 }
 
-function snapshotOf(
-  space: SyncSpaceFileV2,
-  targetVersion: DadKitSyncDataVersion,
-): SyncSpaceSnapshot {
+function snapshotOf(space: SyncSpaceFileV2): SyncSpaceSnapshot {
   return {
     version: space.dataRevision,
     updatedAt: space.dataUpdatedAt,
     serverTime: new Date().toISOString(),
-    data:
-      space.data === null
-        ? null
-        : projectExportDataForVersion(
-            upgradeExportDataToLatest(space.data),
-            targetVersion,
-          ),
+    data: space.data === null ? null : upgradeExportDataToLatest(space.data),
   };
 }
 
@@ -476,13 +465,12 @@ function requireOwner(session: SyncSpaceSessionV2) {
 
 export async function pullSpace(
   token: string,
-  targetVersion: DadKitSyncDataVersion = 11,
 ): Promise<SyncSpaceSnapshot | undefined> {
   const parsed = parseSessionToken(token);
   if (!parsed) return undefined;
   return withSpaceLock(parsed.spaceId, async () => {
     const auth = await authenticateLocked(parsed.spaceId, parsed.secret);
-    return auth ? snapshotOf(auth.space, targetVersion) : undefined;
+    return auth ? snapshotOf(auth.space) : undefined;
   });
 }
 
@@ -493,7 +481,6 @@ function canonicalComparable(data: DadKitImportData) {
 export async function pushSpace(
   token: string,
   incoming: DadKitImportData,
-  targetVersion: DadKitSyncDataVersion = 11,
 ): Promise<SyncSpaceSnapshot | undefined> {
   const parsed = parseSessionToken(token);
   if (!parsed) return undefined;
@@ -527,7 +514,7 @@ export async function pushSpace(
       }
       await writeSpace(space, { rotateDataBackups: true });
     }
-    return snapshotOf(space, targetVersion);
+    return snapshotOf(space);
   });
 }
 

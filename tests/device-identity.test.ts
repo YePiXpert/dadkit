@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { DEVICE_IDENTITY_STORAGE_KEY, loadDeviceIdentity, saveDeviceIdentity } from "@/lib/device-identity/repository";
 import { buildLatestPortableData, createSnapshotAsync, exportData, saveChecklist } from "@/lib/storage";
 import { installBrowserStorage } from "@/tests/helpers/browser-storage";
-import { buildDadKitWebDavBackup } from "@/lib/webdav/client";
 import { useDeviceIdentityStore } from "@/lib/device-identity/store";
 import { failNextStorageWrite } from "@/tests/helpers/browser-storage";
 import { portableTestItem } from "@/tests/helpers/portable-data";
@@ -30,14 +29,13 @@ describe("device identity isolation", () => {
     });
   });
 
-  it("never enters complete JSON, IndexedDB snapshots or WebDAV envelopes", async () => {
+  it("never enters complete JSON or IndexedDB snapshots", async () => {
     saveDeviceIdentity({ version: 1, preferredEntry: "baby", onboardingCompletedAt: 10 });
     saveChecklist([portableTestItem("snapshot-seed")]);
 
     const portable = await buildLatestPortableData();
     const snapshot = await createSnapshotAsync("设备身份隔离测试");
-    const webDav = buildDadKitWebDavBackup(portable, "device-1");
-    for (const value of [portable, snapshot, webDav]) {
+    for (const value of [portable, snapshot]) {
       const serialized = JSON.stringify(value);
       expect(serialized).toBeDefined();
       expect(serialized).not.toContain("onboardingCompletedAt");

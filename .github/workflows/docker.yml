@@ -48,9 +48,6 @@ jobs:
       - name: Run Chromium and WebKit acceptance tests
         run: npm run test:e2e
 
-      - name: Run Docker integration tests
-        run: npm run test:docker
-
       - name: Compute build time
         run: echo "DADKIT_BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
 

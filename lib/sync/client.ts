@@ -31,7 +31,6 @@ import {
   saveSyncClockTimelineInitialized,
 } from "@/lib/sync-clock";
 import { mergeExportData } from "@/lib/sync/merge";
-import { DADKIT_DATA_VERSION_HEADER } from "@/lib/sync/data-version";
 import {
   DADKIT_SYNC_PROTOCOL_HEADER,
   DADKIT_SYNC_PROTOCOL_VERSION,
@@ -41,7 +40,7 @@ import {
   markSyncSessionExpired,
 } from "@/lib/sync-session-status";
 import { useDadKitStore } from "@/lib/store";
-import { calculateChecksum } from "@/lib/webdav/checksum";
+import { calculateChecksum } from "@/lib/checksum";
 
 export type SyncOutcome = {
   ok: boolean;
@@ -163,7 +162,6 @@ export async function apiRequest<T>(
   if (init.body && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
-  headers.set(DADKIT_DATA_VERSION_HEADER, "11");
   headers.set(DADKIT_SYNC_PROTOCOL_HEADER, String(DADKIT_SYNC_PROTOCOL_VERSION));
 
   const parentSignal = init.signal;
@@ -705,7 +703,6 @@ export type SyncInviteMetadata = {
 
 export type SyncServiceInfo = {
   syncProtocolVersion: 2;
-  supportedDataVersions: number[];
   registrationMode: "open" | "closed";
   maxSpaceBytes: number;
   maxDevices: number;

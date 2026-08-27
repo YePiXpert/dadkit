@@ -23,7 +23,6 @@ import {
 } from "@/lib/growth-store";
 import {
   isDadKitImportData as isDadKitPortableData,
-  projectExportDataForVersion,
   sanitizeDadKitImportData,
   V3_EXPORT_KEYS,
   V4_EXPORT_KEYS,
@@ -49,11 +48,6 @@ import { timelineEventsForRange, useBabyStore } from "@/lib/baby/store";
 import { getSyncAdjustedNow } from "@/lib/sync-clock";
 import { CHECKLIST_MILESTONES_KEY } from "@/lib/checklist-milestones";
 import {
-  DEFAULT_WEBDAV_CONFIG,
-  type WebDavConfig,
-  type WebDavSyncState,
-} from "@/lib/webdav/types";
-import {
   markChecklistStateDirty,
   recordChecklistPersistenceError,
   recordChecklistStatePersisted,
@@ -78,9 +72,6 @@ export const STORAGE_KEYS = {
   hiddenTemplateItems: "dadkit:v3:hidden-template-items",
   checklistMode: "dadkit:v3:checklist-mode",
   snapshots: "dadkit:v3:snapshots",
-  webDavConfig: "dadkit:v3:webdav-config",
-  webDavSyncState: "dadkit:v3:webdav-sync-state",
-  webDavSecret: "dadkit:v3:webdav-secret",
   hiddenTemplateStamps: "dadkit:v3:hidden-template-stamps",
   deletedCustomItems: "dadkit:v3:deleted-custom-items",
   growthUpdatedAt: GROWTH_UPDATED_AT_STORAGE_KEY,
@@ -92,7 +83,6 @@ export const STORAGE_KEYS = {
   deviceIdentity: DEVICE_IDENTITY_STORAGE_KEY,
 } as const;
 
-export const WEBDAV_SESSION_SECRET_KEY = "dadkit:v3:webdav-session-secret";
 export { purgeRetiredLocalData } from "@/lib/retired-data";
 
 const DATA_STORAGE_KEYS = [
@@ -100,9 +90,6 @@ const DATA_STORAGE_KEYS = [
   STORAGE_KEYS.customItems,
   STORAGE_KEYS.hiddenTemplateItems,
   STORAGE_KEYS.checklistMode,
-  STORAGE_KEYS.webDavConfig,
-  STORAGE_KEYS.webDavSyncState,
-  STORAGE_KEYS.webDavSecret,
   STORAGE_KEYS.hiddenTemplateStamps,
   STORAGE_KEYS.deletedCustomItems,
   STORAGE_KEYS.growthUpdatedAt,
@@ -195,13 +182,6 @@ function canUseLocalStorage() {
   );
 }
 
-function canUseSessionStorage() {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.sessionStorage !== "undefined"
-  );
-}
-
 // readJson 热路径缓存：同一 key 的原始字符串没变就复用上次解析结果。
 // 清单点按链路每次操作要读多次存储快照做跨端合并，64KB 的 JSON.parse 是
 // 真正的开销，getItem + 字符串比较只是零头；跨标签页写入会改变原始串，
@@ -262,14 +242,6 @@ function writeJson<T>(key: string, value: T) {
   }
 
   return false;
-}
-
-function deviceId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `device-${crypto.randomUUID()}`;
-  }
-
-  return `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -898,142 +870,6 @@ export function saveChecklistMode(mode: ChecklistMode) {
   }
 }
 
-export function loadWebDavConfig(): WebDavConfig {
-  const saved = readJson<Partial<WebDavConfig> | undefined>(
-    STORAGE_KEYS.webDavConfig,
-    undefined,
-  );
-
-  if (!saved || typeof saved !== "object") {
-    return DEFAULT_WEBDAV_CONFIG;
-  }
-
-  return {
-    enabled:
-      typeof saved.enabled === "boolean"
-        ? saved.enabled
-        : DEFAULT_WEBDAV_CONFIG.enabled,
-    endpoint:
-      typeof saved.endpoint === "string"
-        ? saved.endpoint
-        : DEFAULT_WEBDAV_CONFIG.endpoint,
-    username:
-      typeof saved.username === "string"
-        ? saved.username
-        : DEFAULT_WEBDAV_CONFIG.username,
-    remoteDir:
-      typeof saved.remoteDir === "string" && saved.remoteDir.trim()
-        ? saved.remoteDir
-        : DEFAULT_WEBDAV_CONFIG.remoteDir,
-    filename:
-      typeof saved.filename === "string" && saved.filename.trim()
-        ? saved.filename
-        : DEFAULT_WEBDAV_CONFIG.filename,
-    authMode:
-      saved.authMode === "basic" || saved.authMode === "app_password"
-        ? saved.authMode
-        : DEFAULT_WEBDAV_CONFIG.authMode,
-    rememberSecret:
-      typeof saved.rememberSecret === "boolean"
-        ? saved.rememberSecret
-        : DEFAULT_WEBDAV_CONFIG.rememberSecret,
-  };
-}
-
-export function saveWebDavConfig(config: WebDavConfig) {
-  writeJson(STORAGE_KEYS.webDavConfig, config);
-}
-
-export function loadWebDavSyncState(): WebDavSyncState {
-  const saved = readJson<Partial<WebDavSyncState> | undefined>(
-    STORAGE_KEYS.webDavSyncState,
-    undefined,
-  );
-
-  if (saved && typeof saved.deviceId === "string" && saved.deviceId) {
-    return {
-      deviceId: saved.deviceId,
-      lastSyncAt:
-        typeof saved.lastSyncAt === "string" ? saved.lastSyncAt : undefined,
-      lastUploadAt:
-        typeof saved.lastUploadAt === "string" ? saved.lastUploadAt : undefined,
-      lastDownloadAt:
-        typeof saved.lastDownloadAt === "string"
-          ? saved.lastDownloadAt
-          : undefined,
-      lastRemoteUpdatedAt:
-        typeof saved.lastRemoteUpdatedAt === "string"
-          ? saved.lastRemoteUpdatedAt
-          : undefined,
-      lastError: typeof saved.lastError === "string" ? saved.lastError : undefined,
-    };
-  }
-
-  return { deviceId: deviceId() };
-}
-
-export function saveWebDavSyncState(state: WebDavSyncState) {
-  writeJson(STORAGE_KEYS.webDavSyncState, state);
-}
-
-export function loadWebDavSecret(
-  rememberSecret = loadWebDavConfig().rememberSecret,
-) {
-  if (canUseSessionStorage()) {
-    try {
-      const sessionSecret = window.sessionStorage.getItem(
-        WEBDAV_SESSION_SECRET_KEY,
-      );
-
-      if (sessionSecret) return sessionSecret;
-    } catch {
-      // Fall through to the optional local copy.
-    }
-  }
-
-  if (!rememberSecret || !canUseLocalStorage()) {
-    return "";
-  }
-
-  try {
-    return window.localStorage.getItem(STORAGE_KEYS.webDavSecret) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-export function saveWebDavSecret(secret: string, rememberSecret: boolean) {
-  if (canUseLocalStorage()) {
-    if (rememberSecret && secret) {
-      window.localStorage.setItem(STORAGE_KEYS.webDavSecret, secret);
-    } else {
-      window.localStorage.removeItem(STORAGE_KEYS.webDavSecret);
-    }
-  }
-
-  if (canUseSessionStorage()) {
-    if (!rememberSecret && secret) {
-      window.sessionStorage.setItem(WEBDAV_SESSION_SECRET_KEY, secret);
-    } else {
-      window.sessionStorage.removeItem(WEBDAV_SESSION_SECRET_KEY);
-    }
-  }
-}
-
-export function clearWebDavSettings() {
-  if (canUseLocalStorage()) {
-    applyStorageMutations([
-      { key: STORAGE_KEYS.webDavConfig, value: null },
-      { key: STORAGE_KEYS.webDavSyncState, value: null },
-      { key: STORAGE_KEYS.webDavSecret, value: null },
-    ]);
-  }
-
-  if (canUseSessionStorage()) {
-    window.sessionStorage.removeItem(WEBDAV_SESSION_SECRET_KEY);
-  }
-}
-
 export function resetAllData(initialChecklist?: ChecklistItem[]) {
   cancelPendingChecklistStateSave();
 
@@ -1067,17 +903,6 @@ export function resetAllData(initialChecklist?: ChecklistItem[]) {
     });
   }
 
-  let sessionSecretCleared = true;
-
-  if (canUseSessionStorage()) {
-    try {
-      window.sessionStorage.removeItem(WEBDAV_SESSION_SECRET_KEY);
-    } catch {
-      sessionSecretCleared = false;
-    }
-  }
-
-  return { sessionSecretCleared };
 }
 
 export function exportData(): DadKitExportData {
@@ -1555,10 +1380,9 @@ export function createSnapshot(reason: string): DadKitSnapshot | undefined {
       return undefined;
     }
 
-    // Legacy localStorage snapshots remain readable as v6. Complete snapshots
-    // (including baby events) are created by createSnapshotAsync()
-    // and stored only in IndexedDB.
-    const data = projectExportDataForVersion(latest, 6);
+    // 旧版本写入的 v6 快照在读取时升级;此处直接保存 v11。完整快照
+    // (含宝宝事件)由 createSnapshotAsync() 写入 IndexedDB。
+    const data = latest;
 
     const snapshot: DadKitSnapshot = {
       id: snapshotId(),
@@ -1697,7 +1521,7 @@ export async function resetAllDataAsync(initialChecklist?: ChecklistItem[]) {
     getSyncAdjustedNow() + 1,
     latestBabyTimestamp(previousBaby) + 1,
   );
-  const result = resetAllData(initialChecklist);
+  resetAllData(initialChecklist);
   await getBabyRepository().clearAllBabyData(clearedAt);
   await clearSnapshotsAsync();
   useBabyStore.setState((state) => ({
@@ -1711,5 +1535,4 @@ export async function resetAllDataAsync(initialChecklist?: ChecklistItem[]) {
     repositoryError: undefined,
     changeToken: state.changeToken + 1,
   }));
-  return result;
 }

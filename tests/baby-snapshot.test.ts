@@ -14,9 +14,14 @@ import {
   saveSnapshots,
 } from "@/lib/storage";
 import { installBrowserStorage } from "@/tests/helpers/browser-storage";
-import { portableTestItem, portableV7, portableV8 } from "@/tests/helpers/portable-data";
+import {
+  portablePlanningRecordV1,
+  portableTestItem,
+  portableV7,
+  portableV8,
+} from "@/tests/helpers/portable-data";
 import { loadDeviceIdentity, saveDeviceIdentity } from "@/lib/device-identity/repository";
-import { createEmptyLegacyPlanningRecordV1 } from "@/lib/data/legacy-planning";
+
 import { useDadKitStore } from "@/lib/store";
 import { generateChecklist } from "@/lib/rules";
 
@@ -154,7 +159,7 @@ describe("baby snapshots and compensated import rollback", () => {
   it("fully restores v8 while discarding retired planning records", async () => {
     const incoming = portableV8();
     incoming.planning.items.bag = {
-      ...createEmptyLegacyPlanningRecordV1(),
+      ...portablePlanningRecordV1(),
       assignee: { value: "dad", updatedAt: 20 },
     };
     incoming.baby.care.events = [diaper("legacy-v8-event", 30)];

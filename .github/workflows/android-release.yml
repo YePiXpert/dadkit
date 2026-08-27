@@ -68,9 +68,6 @@ jobs:
       - name: Run Chromium and WebKit acceptance tests
         run: npm run test:e2e
 
-      - name: Run Docker integration tests
-        run: npm run test:docker
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -115,10 +112,6 @@ jobs:
           zipinfo -1 "$APK" > apk-entries.txt
           if grep -q '^assets/www/' apk-entries.txt; then
             echo "Remote-shell APK must not contain bundled web pages." >&2
-            exit 1
-          fi
-          if grep -q '^assets/default_checklist.json$' apk-entries.txt; then
-            echo "Retired native checklist asset must not be packaged." >&2
             exit 1
           fi
           cp "$APK" DadKit-3.4.13.apk

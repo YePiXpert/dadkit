@@ -14,8 +14,7 @@ export async function hasExistingDadKitData() {
       checklist.some((item) => typeof item === "object" && item !== null && ((item as { status?: unknown }).status !== "todo" || Number((item as { updatedAt?: unknown }).updatedAt ?? 0) > 0)) ||
       customItems.length > 0 || hidden.length > 0 ||
       Boolean(growth.nickname || growth.dueDate) ||
-      Boolean(window.localStorage.getItem("dadkit:v3:sync-session")) ||
-      Boolean(window.localStorage.getItem("dadkit:v3:webdav-config"));
+      Boolean(window.localStorage.getItem("dadkit:v3:sync-session"));
     if (localExisting) return true;
     const baby = await getBabyRepository().getAllBabyData();
     return hasBabyMode(baby.profile) || baby.care.events.length > 0 || baby.care.clearedAt > 0;

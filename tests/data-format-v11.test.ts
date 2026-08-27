@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { createEmptyLegacyPlanningRecordV1 } from "@/lib/data/legacy-planning";
 import {
   isDadKitImportData,
-  projectExportDataForVersion,
   upgradeExportDataToLatest,
 } from "@/lib/data/format";
-import { calculateChecksum } from "@/lib/webdav/checksum";
+import { calculateChecksum } from "@/lib/checksum";
 import {
+  portablePlanningRecordV1,
   portableV8,
   portableV9,
   portableV11,
@@ -17,7 +16,7 @@ describe("DadKit v11 portable format", () => {
   it("upgrades legacy data while discarding retired planning records", () => {
     const legacy = portableV8();
     legacy.planning.items.bag = {
-      ...createEmptyLegacyPlanningRecordV1(),
+      ...portablePlanningRecordV1(),
       assignee: { value: "dad", updatedAt: 10 },
     };
     legacy.baby.care.events = [
@@ -41,26 +40,9 @@ describe("DadKit v11 portable format", () => {
     expect(latest.baby.care.events.map((event) => event.id)).toEqual(["event-a"]);
   });
 
-  it("round trips v11 and projects empty compatibility fields for v10/v9/v8", () => {
+  it("round trips v11 and tolerates unknown top-level fields", () => {
     const latest = portableV11();
     expect(isDadKitImportData(JSON.parse(JSON.stringify(latest)))).toBe(true);
-
-    const v10 = projectExportDataForVersion(latest, 10);
-    if (v10.version !== 10) throw new Error("v10 投影失败");
-    expect(v10.hospital.fields.hospitalName.value).toBe("");
-    expect(isDadKitImportData(v10)).toBe(true);
-
-    const v9 = projectExportDataForVersion(latest, 9);
-    if (v9.version !== 9) throw new Error("v9 投影失败");
-    expect(v9.planning).toEqual({ version: 2, clearedAt: 0, items: {} });
-    expect(isDadKitImportData(v9)).toBe(true);
-
-    const v8 = projectExportDataForVersion(latest, 8);
-    if (v8.version !== 8) throw new Error("v8 投影失败");
-    expect(v8).not.toHaveProperty("household");
-    expect(v8.planning).toEqual({ version: 1, clearedAt: 0, items: {} });
-    expect(v8.baby.version).toBe(1);
-    expect(isDadKitImportData(v8)).toBe(true);
     expect(isDadKitImportData({ ...latest, unexpected: true })).toBe(true);
   });
 

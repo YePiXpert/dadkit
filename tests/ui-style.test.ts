@@ -288,10 +288,9 @@ describe("V3 PWA visual and navigation contract", () => {
     expect(settingsPage).toContain('href: "/departure"');
     expect(settingsPage).toContain('href: "/settings/checklist"');
     expect(settingsPage).toContain('href: "/settings/backup"');
-    expect(settingsPage).toContain("<AndroidUpdateSettingsCard");
+    expect(settingsPage).toContain("<AboutCard");
     expect(checklistSettingsPage).toContain("显示物品说明");
     expect(backupSettingsPage).toContain("本机恢复点");
-    expect(backupSettingsPage).toContain("WebDAV 备份");
     expect(backupSettingsPage).toContain("清空并重新开始");
     expect(backupSettingsPage).not.toContain("复制 JSON");
     expect(settingsPage).not.toContain("添加可选资料");
