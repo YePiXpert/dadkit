@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 
 import {
   expectOnlyPrimaryNavigationItemActive,
-  expectPathname,
   openToolFromHome,
   seedCompletedOnboarding,
 } from "@/tests/e2e/helpers";
@@ -39,18 +38,14 @@ test("首页宫格入口可到达各工具页面且只激活我的导航", async
   }
 });
 
-test("家庭分工入口已下线且旧链接回到我的页", async ({ page }) => {
+test("家庭分工入口已下线且旧链接不再提供兼容跳转", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("家庭分工", { exact: false })).toHaveCount(0);
 
-  await page.goto("/planning", { waitUntil: "domcontentloaded" });
-  await expectPathname(page, "/settings");
-  await expect(page.getByRole("heading", { name: "我的", exact: true })).toBeVisible();
-  await expectOnlyPrimaryNavigationItemActive(page, "我的");
-
-  await page.goto("/tools", { waitUntil: "domcontentloaded" });
-  await expectPathname(page, "/settings");
-  await expect(page.getByRole("heading", { name: "我的", exact: true })).toBeVisible();
+  for (const route of ["/planning", "/tools", "/settings/about"]) {
+    const response = await page.goto(route, { waitUntil: "domcontentloaded" });
+    expect(response?.status()).toBe(404);
+  }
 });
 
 test("成长时间表默认聚焦当前阶段并可展开全部孕周", async ({ page }) => {

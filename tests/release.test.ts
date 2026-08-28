@@ -250,15 +250,18 @@ describe("release endpoints and product surface", () => {
     expect(existsSync(join(process.cwd(), "app", "hospital", "page.tsx"))).toBe(
       false,
     );
-    expect(existsSync(join(process.cwd(), "app", "planning", "page.tsx"))).toBe(
-      true,
-    );
+    // v3.4.13 起兼容跳转也下线：/planning、/tools、/settings/about 直接 404。
+    for (const route of ["planning", "tools", join("settings", "about")]) {
+      expect(existsSync(join(process.cwd(), "app", route, "page.tsx"))).toBe(
+        false,
+      );
+    }
   });
 
   it("installs the entry shell, then keeps all core routes in the background cache list", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.13-pwa-r2"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.13-pwa-r3"');
     expect(sw).toContain('const PRECACHE_ROUTES = ["/"]');
     expect(sw).toContain("BACKGROUND_ROUTES");
     expect(sw).toContain("networkFirstNavigation(event.request)");
@@ -271,7 +274,6 @@ describe("release endpoints and product surface", () => {
       "/growth",
       "/departure",
       "/settings",
-      "/settings/about",
       "/settings/backup",
       "/settings/checklist",
       "/settings/sync",
@@ -282,6 +284,7 @@ describe("release endpoints and product surface", () => {
     }
     expect(sw).not.toContain('"/planning"');
     expect(sw).not.toContain('"/tools"');
+    expect(sw).not.toContain('"/settings/about"');
     for (const route of REMOVED_PRODUCT_ROUTES) {
       expect(sw).not.toContain(`"/${route}"`);
     }
@@ -593,13 +596,13 @@ describe("release endpoints and product surface", () => {
     await expect(cacheRoutesInBackground(cache)).resolves.toBeUndefined();
     expect(cachedUrls).toContain("/checklist");
     expect(cachedUrls).toContain("/onboarding");
-    expect(cachedUrls).toContain("/settings/about");
     expect(cachedUrls).toContain("/join");
     expect(cachedUrls).toContain("/settings/sync");
     expect(cachedUrls).toContain("/settings");
     expect(cachedUrls).toContain("/growth");
     expect(cachedUrls).toContain("/baby/timeline");
     expect(cachedUrls).not.toContain("/hospital");
+    expect(cachedUrls).not.toContain("/settings/about");
 
     for (const route of REMOVED_PRODUCT_ROUTES) {
       expect(cachedUrls).not.toContain(`/${route}`);

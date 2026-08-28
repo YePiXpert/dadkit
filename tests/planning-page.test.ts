@@ -21,7 +21,6 @@ describe("retired planning product surface", () => {
     const visibleSources = [
       source("components/HomeDashboard.tsx"),
       source("components/ChecklistItemDetailsDialog.tsx"),
-      source("app/tools/page.tsx"),
     ].join("\n");
 
     expect(visibleSources).not.toContain("家庭分工");
@@ -34,11 +33,9 @@ describe("retired planning product surface", () => {
     }
   });
 
-  it("redirects stale planning links to the merged 我的 hub", () => {
-    const page = source("app/planning/page.tsx");
-
-    expect(page).toContain('redirect("/settings")');
-    expect(page).not.toContain("PlanningWorkspace");
+  it("不再为已下线的 planning/tools 路由保留兼容跳转", () => {
+    expect(existsSync(join(process.cwd(), "app/planning/page.tsx"))).toBe(false);
+    expect(existsSync(join(process.cwd(), "app/tools/page.tsx"))).toBe(false);
   });
 
   it("keeps the home dashboard free of backup shortcuts", () => {

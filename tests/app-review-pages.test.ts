@@ -22,10 +22,6 @@ const departurePage = readFileSync(
   join(process.cwd(), "app", "departure", "page.tsx"),
   "utf8",
 );
-const planningPage = readFileSync(
-  join(process.cwd(), "app", "planning", "page.tsx"),
-  "utf8",
-);
 
 describe("public PWA support pages", () => {
   it("describes checklist, growth and backup data", () => {
@@ -58,8 +54,6 @@ describe("public PWA support pages", () => {
   it("uses ordinary web routes for public pages", () => {
     expect(DEPARTURE_PATH).toBe("/departure");
     expect(departurePage).toContain("DepartureWorkspace");
-    expect(planningPage).toContain('redirect("/settings")');
-    expect(planningPage).not.toContain("PlanningWorkspace");
     expect(PUBLIC_PRIVACY_PATH).toBe("/privacy");
     expect(PUBLIC_SUPPORT_PATH).toBe("/support");
     expect(getReviewPageHref(PUBLIC_PRIVACY_PATH)).toBe("/privacy");
