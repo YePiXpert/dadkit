@@ -270,7 +270,11 @@ test("Chromium 移动端在 4x CPU 下保持交互与视觉稳定性", async ({
   expect(medianLcp).toBeLessThanOrEqual(2_500);
 
   await page.goto("/checklist/documents", { waitUntil: "domcontentloaded" });
-  const action = page.locator("article button[title]").first();
+  // 行上还有「标记不需要」按钮（title 含「不需要」）排在主操作前，点击后按钮
+  // 会卸载、title 不再变化；这里必须选中状态流转的主操作按钮。
+  const action = page
+    .locator('article button[title]:not([title*="不需要"])')
+    .first();
   await expect(action).toBeVisible();
 
   const interactionSamples = await action.evaluate(async (button: HTMLElement) => {
