@@ -91,6 +91,16 @@ describe("V2 checklist experience", () => {
     expect(checklistItemRow).toContain("memo(function ChecklistItemRow");
   });
 
+  it("crosses an item out directly on the row without opening details", () => {
+    expect(checklistItemRow).toContain("toggleItemSkipped(item.id)");
+    expect(checklistItemRow).toContain("标记不需要：${displayName}");
+    expect(checklistItemRow).toContain("标记不需要，不占进度");
+    // 只在普通清单的未跳过行显示：出发核对页与已「不需要」的行都靠现有入口恢复。
+    expect(checklistItemRow).toContain(
+      '!departureMode && itemState !== "not_needed"',
+    );
+  });
+
   it("keeps unrelated product routes out of the checklist UI", () => {
     const checklistSources = `${checklistWorkspace}\n${checklistItemRow}`;
 

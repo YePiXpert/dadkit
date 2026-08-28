@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   CHECKLIST_SECTIONS,
   CHECKLIST_VIEWS,
+  deriveChecklistView,
   getDepartureItemCount,
   getChecklistItemState,
   getChecklistSection,
@@ -150,6 +151,20 @@ describe("V2 checklist views", () => {
     }
 
     expect(counts).toEqual({ all: 5, shopping: 1, packing: 2, packed: 1 });
+  });
+
+  it("keeps not-needed items out of the packing progress denominator", () => {
+    const { packing } = deriveChecklistView(
+      [
+        checklistItem("pending", "todo"),
+        checklistItem("done", "packed"),
+        checklistItem("skipped", "not_needed"),
+      ],
+      { mode: "full", view: "all" },
+    );
+
+    // 叉掉的物品既不进分母也不进分子，进度只按剩余物品计算。
+    expect(packing).toEqual({ total: 2, completed: 1, percent: 50 });
   });
 
   it("keeps departure and car items outside the completion celebration count", () => {

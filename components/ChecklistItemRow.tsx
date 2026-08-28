@@ -63,6 +63,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
   const previousItemStateRef = useRef<ChecklistItemState | undefined>(undefined);
   const advanceItem = useDadKitStore((state) => state.advanceItem);
   const updateItem = useDadKitStore((state) => state.updateItem);
+  const toggleItemSkipped = useDadKitStore((state) => state.toggleItemSkipped);
   const itemState = getChecklistItemState(item);
   const actionLabel = getActionLabel(itemState, departureMode);
   const StateIcon = STATE_ICONS[itemState];
@@ -92,6 +93,15 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
 
     return () => window.clearTimeout(timeout);
   }, [itemState]);
+
+  // 出发核对页只做最终勾选；已「不需要」的行由主按钮（重新打开）提供恢复入口，
+  // 所以快速叉掉按钮只出现在普通清单的未跳过行上。
+  const showSkipAction = !departureMode && itemState !== "not_needed";
+
+  function handleSkipAction() {
+    triggerHaptic("tap");
+    toggleItemSkipped(item.id);
+  }
 
   function handleAction() {
     triggerHaptic(
@@ -149,6 +159,18 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
         >
           <MoreHorizontal className="size-5" />
         </button>
+
+        {showSkipAction ? (
+          <button
+            aria-label={`标记不需要：${displayName}`}
+            className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
+            title="标记不需要，不占进度"
+            type="button"
+            onClick={handleSkipAction}
+          >
+            <Ban className="size-5" />
+          </button>
+        ) : null}
 
         <button
           aria-label={`${actionLabel}：${displayName}`}
@@ -238,33 +260,47 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             <span className="truncate">详情</span>
           </button>
 
-          <button
-            aria-label={`${actionLabel}：${displayName}`}
-            className={cn(
-              "flex size-[44px] shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground ring-2 ring-border transition-all hover:bg-secondary/70 hover:text-primary hover:ring-primary/40 active:scale-95",
-              itemState === "ready" &&
-                "bg-secondary text-primary ring-primary/30",
-              itemState === "packed" &&
-                "bg-primary text-primary-foreground ring-primary",
-              itemState === "not_needed" && "bg-muted ring-border",
-            )}
-            title={actionLabel}
-            type="button"
-            onClick={handleAction}
-          >
-            {itemState === "packed" ? (
-              <Check
-                className={cn("size-5", justPacked && "sticker-pop")}
-                strokeWidth={2.8}
-              />
-            ) : itemState === "ready" ? (
-              <PackageCheck className="size-5" />
-            ) : itemState === "not_needed" ? (
-              <RotateCcw className="size-4" />
-            ) : (
-              <Circle className="size-5" />
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            {showSkipAction ? (
+              <button
+                aria-label={`标记不需要：${displayName}`}
+                className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95"
+                title="标记不需要，不占进度"
+                type="button"
+                onClick={handleSkipAction}
+              >
+                <Ban className="size-5" />
+              </button>
+            ) : null}
+
+            <button
+              aria-label={`${actionLabel}：${displayName}`}
+              className={cn(
+                "flex size-[44px] shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground ring-2 ring-border transition-all hover:bg-secondary/70 hover:text-primary hover:ring-primary/40 active:scale-95",
+                itemState === "ready" &&
+                  "bg-secondary text-primary ring-primary/30",
+                itemState === "packed" &&
+                  "bg-primary text-primary-foreground ring-primary",
+                itemState === "not_needed" && "bg-muted ring-border",
+              )}
+              title={actionLabel}
+              type="button"
+              onClick={handleAction}
+            >
+              {itemState === "packed" ? (
+                <Check
+                  className={cn("size-5", justPacked && "sticker-pop")}
+                  strokeWidth={2.8}
+                />
+              ) : itemState === "ready" ? (
+                <PackageCheck className="size-5" />
+              ) : itemState === "not_needed" ? (
+                <RotateCcw className="size-4" />
+              ) : (
+                <Circle className="size-5" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </article>
