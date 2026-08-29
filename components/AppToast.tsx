@@ -35,15 +35,17 @@ export function AppToast() {
     return null;
   }
 
+  const isWarning = toast.tone === "warning";
+
   return (
     <div
-      aria-live="polite"
+      aria-live={isWarning ? "assertive" : "polite"}
       className={cn(
         "safe-bottom-toast fixed inset-x-3 z-[70] mx-auto flex max-w-md items-center gap-3 rounded-inset bg-card p-3 text-sm shadow-lg",
         toast.tone === "warning" && "ring-1 ring-warning-foreground/25 bg-warning text-warning-foreground",
         toast.tone === "success" && "ring-1 ring-primary/20",
       )}
-      role="status"
+      role={isWarning ? "alert" : "status"}
     >
       <span className="min-w-0 flex-1 leading-5">{toast.message}</span>
       {toast.actionLabel && toast.onAction ? (
@@ -61,7 +63,7 @@ export function AppToast() {
       ) : null}
       <button
         aria-label="关闭提示"
-        className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
+        className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground"
         onClick={() => dismissAppToast(toast.id)}
         type="button"
       >

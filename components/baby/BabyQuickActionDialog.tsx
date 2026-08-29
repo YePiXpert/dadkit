@@ -31,6 +31,8 @@ import { useOpenDraftInitializer } from "@/lib/use-open-draft";
 
 type QuickAction = CareEventType;
 
+type CareFieldErrorKey = "amount" | "occurredAt" | "manualStartAt" | "manualEndAt";
+
 export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?: QuickAction; open: boolean; onOpenChange(open: boolean): void }) {
   const activeEvents = useBabyStore((state) => state.activeEvents);
   const careClearedAt = useBabyStore((state) => state.careClearedAt);
@@ -55,6 +57,7 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
   const [manualEndAt, setManualEndAt] = useState(() => localDateTimeInputValue());
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<CareFieldErrorKey, string>>>({});
   const breastfeeding = getActiveBreastfeeding(activeEvents, careClearedAt);
   const pumping = getActivePumping(activeEvents, careClearedAt);
   const sleep = getActiveSleep(activeEvents, careClearedAt);
@@ -67,7 +70,32 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
     setManualMode(false);
     setManualStartAt(localDateTimeInputValue(new Date(Date.now() - 10 * 60_000)));
     setManualEndAt(localDateTimeInputValue());
+    setFieldErrors({});
   });
+
+  function clearFieldError(key: CareFieldErrorKey) {
+    setFieldErrors((previous) => (previous[key] ? { ...previous, [key]: undefined } : previous));
+  }
+
+  function updateAmount(value: string) {
+    setAmount(value);
+    clearFieldError("amount");
+  }
+
+  function updateOccurredAt(value: string) {
+    setOccurredAt(value);
+    clearFieldError("occurredAt");
+  }
+
+  function updateManualStartAt(value: string) {
+    setManualStartAt(value);
+    clearFieldError("manualStartAt");
+  }
+
+  function updateManualEndAt(value: string) {
+    setManualEndAt(value);
+    clearFieldError("manualEndAt");
+  }
 
   useEffect(() => {
     if (!open || (!breastfeeding && !pumping && !sleep)) return;
@@ -118,13 +146,15 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
         {action === "bottle" ? (
           <div className="grid gap-4">
             <div className="grid gap-2"><Label htmlFor="baby-bottle-type">奶类</Label><Select value={milkType} onValueChange={(value) => setMilkType(value as BottleMilkType)}><SelectTrigger id="baby-bottle-type"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="breastmilk">瓶喂母乳</SelectItem><SelectItem value="formula">配方奶</SelectItem></SelectContent></Select></div>
-            <AmountField amount={amount} setAmount={setAmount} label="奶量 ml *" />
-            <TimeField id="baby-bottle-time" value={occurredAt} onChange={setOccurredAt} />
+            <AmountField amount={amount} error={fieldErrors.amount} setAmount={updateAmount} label="奶量 ml *" />
+            <TimeField id="baby-bottle-time" error={fieldErrors.occurredAt} value={occurredAt} onChange={updateOccurredAt} />
             <NoteField note={note} setNote={setNote} />
             <Button disabled={busy} size="lg" onClick={() => {
               const iso = localDateTimeInputToIso(occurredAt);
               const parsed = Number(amount);
-              if (!iso || !/^\d+$/.test(amount) || parsed < 1 || parsed > 2000) { showAppToast({ message: "请输入 1–2000 的整数奶量和有效时间。", tone: "warning" }); return; }
+              const amountError = /^\d+$/.test(amount) && parsed >= 1 && parsed <= 2000 ? undefined : "请输入 1–2000 的整数奶量。";
+              const timeError = iso ? undefined : "请选择有效时间。";
+              if (amountError || timeError || !iso) { setFieldErrors({ amount: amountError, occurredAt: timeError }); return; }
               void run(() => addBottleRecord({ occurredAt: iso, milkType, amountMl: parsed, note }), "瓶喂记录已保存。");
             }}>保存瓶喂记录</Button>
           </div>
@@ -134,10 +164,11 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
           pumping ? (
             <div className="grid gap-4">
               <TimerLabel label="吸奶计时" value={formatCareDuration(now - Date.parse(pumping.startAt))} />
-              <AmountField amount={amount} setAmount={setAmount} label="吸出奶量 ml（可留空）" />
+              <AmountField amount={amount} error={fieldErrors.amount} setAmount={updateAmount} label="吸出奶量 ml（可留空）" />
               <NoteField note={note} setNote={setNote} />
               <Button disabled={busy} size="lg" onClick={() => {
-                if (amount && (!/^\d+$/.test(amount) || Number(amount) > 2000)) { showAppToast({ message: "奶量需为 0–2000 的整数。", tone: "warning" }); return; }
+                const amountError = amount !== "" && (!/^\d+$/.test(amount) || Number(amount) > 2000) ? "奶量需为 0–2000 的整数。" : undefined;
+                if (amountError) { setFieldErrors({ amount: amountError }); return; }
                 void run(() => finishPumping({ amountMl: amount === "" ? null : Number(amount), note }), "吸奶记录已保存。");
               }}>结束吸奶</Button>
               <Button disabled={busy} onClick={() => void run(() => deleteEvent(pumping.id), "错误吸奶记录已删除。") } variant="destructive">删除本次记录</Button>
@@ -145,14 +176,17 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
           ) : manualMode ? (
             <div className="grid gap-4">
               <div className="grid gap-2"><Label htmlFor="baby-manual-pumping-side">侧别</Label><Select value={pumpingSide} onValueChange={(value) => setPumpingSide(value as PumpingSide)}><SelectTrigger id="baby-manual-pumping-side"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="left">左侧</SelectItem><SelectItem value="right">右侧</SelectItem><SelectItem value="both">双侧</SelectItem></SelectContent></Select></div>
-              <TimeField id="baby-pumping-start" label="开始时间" value={manualStartAt} onChange={setManualStartAt} />
-              <TimeField id="baby-pumping-end" label="结束时间" value={manualEndAt} onChange={setManualEndAt} />
-              <AmountField amount={amount} setAmount={setAmount} label="吸出奶量 ml（可留空）" />
+              <TimeField id="baby-pumping-start" error={fieldErrors.manualStartAt} label="开始时间" value={manualStartAt} onChange={updateManualStartAt} />
+              <TimeField id="baby-pumping-end" error={fieldErrors.manualEndAt} label="结束时间" value={manualEndAt} onChange={updateManualEndAt} />
+              <AmountField amount={amount} error={fieldErrors.amount} setAmount={updateAmount} label="吸出奶量 ml（可留空）" />
               <NoteField note={note} setNote={setNote} />
               <Button disabled={busy} size="lg" onClick={() => {
                 const startAt = localDateTimeInputToIso(manualStartAt);
                 const endAt = localDateTimeInputToIso(manualEndAt);
-                if (!startAt || !endAt || Date.parse(endAt) < Date.parse(startAt) || (amount !== "" && (!/^\d+$/.test(amount) || Number(amount) > 2000))) { showAppToast({ message: "请检查起止时间和 0–2000 的整数奶量。", tone: "warning" }); return; }
+                const startError = startAt ? undefined : "请选择有效的开始时间。";
+                const endError = !endAt ? "请选择有效的结束时间。" : startAt && endAt && Date.parse(endAt) < Date.parse(startAt) ? "结束时间不能早于开始时间。" : undefined;
+                const amountError = amount !== "" && (!/^\d+$/.test(amount) || Number(amount) > 2000) ? "奶量需为 0–2000 的整数。" : undefined;
+                if (amountError || startError || endError || !startAt || !endAt) { setFieldErrors({ manualStartAt: startError, manualEndAt: endError, amount: amountError }); return; }
                 const event: CareEvent = { id: "manual-pumping-draft", type: "pumping", note, createdAt: 0, updatedAt: 0, deletedAt: null, startAt, endAt, side: pumpingSide, amountMl: amount === "" ? null : Number(amount) };
                 void run(() => createManualEvent(event), "吸奶补录已保存。");
               }}>保存吸奶补录</Button>
@@ -168,12 +202,12 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
 
         {action === "diaper" ? (
           <div className="grid gap-4">
-            <TimeField id="baby-diaper-time" value={occurredAt} onChange={setOccurredAt} />
+            <TimeField id="baby-diaper-time" error={fieldErrors.occurredAt} value={occurredAt} onChange={updateOccurredAt} />
             <NoteField note={note} setNote={setNote} />
             <div className="grid grid-cols-3 gap-2">
               {(["wet", "dirty", "both"] as DiaperKind[]).map((kind) => <Button disabled={busy} key={kind} onClick={() => {
                 const iso = localDateTimeInputToIso(occurredAt);
-                if (!iso) { showAppToast({ message: "请选择有效时间。", tone: "warning" }); return; }
+                if (!iso) { setFieldErrors({ occurredAt: "请选择有效时间。" }); return; }
                 void run(() => addDiaperRecord({ occurredAt: iso, kind, note }), "尿布记录已保存。");
               }}>{kind === "wet" ? "小便" : kind === "dirty" ? "大便" : "都有"}</Button>)}
             </div>
@@ -191,13 +225,15 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
             </div>
           ) : manualMode ? (
             <div className="grid gap-4">
-              <TimeField id="baby-sleep-start" label="开始时间" value={manualStartAt} onChange={setManualStartAt} />
-              <TimeField id="baby-sleep-end" label="结束时间" value={manualEndAt} onChange={setManualEndAt} />
+              <TimeField id="baby-sleep-start" error={fieldErrors.manualStartAt} label="开始时间" value={manualStartAt} onChange={updateManualStartAt} />
+              <TimeField id="baby-sleep-end" error={fieldErrors.manualEndAt} label="结束时间" value={manualEndAt} onChange={updateManualEndAt} />
               <NoteField note={note} setNote={setNote} />
               <Button disabled={busy} size="lg" onClick={() => {
                 const startAt = localDateTimeInputToIso(manualStartAt);
                 const endAt = localDateTimeInputToIso(manualEndAt);
-                if (!startAt || !endAt || Date.parse(endAt) < Date.parse(startAt)) { showAppToast({ message: "结束时间不能早于开始时间。", tone: "warning" }); return; }
+                const startError = startAt ? undefined : "请选择有效的开始时间。";
+                const endError = !endAt ? "请选择有效的结束时间。" : startAt && endAt && Date.parse(endAt) < Date.parse(startAt) ? "结束时间不能早于开始时间。" : undefined;
+                if (startError || endError || !startAt || !endAt) { setFieldErrors({ manualStartAt: startError, manualEndAt: endError }); return; }
                 const event: CareEvent = { id: "manual-sleep-draft", type: "sleep", note, createdAt: 0, updatedAt: 0, deletedAt: null, startAt, endAt };
                 void run(() => createManualEvent(event), "睡眠补录已保存。");
               }}>保存睡眠补录</Button>
@@ -212,12 +248,12 @@ export function BabyQuickActionDialog({ action, open, onOpenChange }: { action?:
   );
 }
 
-function AmountField({ amount, setAmount, label }: { amount: string; setAmount(value: string): void; label: string }) {
-  return <div className="grid gap-2"><Label htmlFor="baby-care-amount">{label}</Label><Input id="baby-care-amount" inputMode="numeric" min="0" max="2000" onChange={(event) => setAmount(event.target.value)} onKeyDown={(event) => { if (["e", "E", "+", "-", "."].includes(event.key)) event.preventDefault(); }} pattern="[0-9]*" type="number" value={amount} /></div>;
+function AmountField({ amount, error, setAmount, label }: { amount: string; error?: string; setAmount(value: string): void; label: string }) {
+  return <div className="grid gap-2"><Label htmlFor="baby-care-amount">{label}</Label><Input aria-describedby={error ? "baby-care-amount-error" : undefined} aria-invalid={error ? true : undefined} id="baby-care-amount" inputMode="numeric" min="0" max="2000" onChange={(event) => setAmount(event.target.value)} onKeyDown={(event) => { if (["e", "E", "+", "-", "."].includes(event.key)) event.preventDefault(); }} pattern="[0-9]*" type="number" value={amount} />{error ? <p className="text-sm text-destructive" id="baby-care-amount-error" role="alert">{error}</p> : null}</div>;
 }
 
-function TimeField({ id, label = "时间", value, onChange }: { id: string; label?: string; value: string; onChange(value: string): void }) {
-  return <div className="grid gap-2"><Label htmlFor={id}>{label}</Label><Input id={id} onChange={(event) => onChange(event.target.value)} type="datetime-local" value={value} /></div>;
+function TimeField({ id, error, label = "时间", value, onChange }: { id: string; error?: string; label?: string; value: string; onChange(value: string): void }) {
+  return <div className="grid gap-2"><Label htmlFor={id}>{label}</Label><Input aria-describedby={error ? `${id}-error` : undefined} aria-invalid={error ? true : undefined} id={id} onChange={(event) => onChange(event.target.value)} type="datetime-local" value={value} />{error ? <p className="text-sm text-destructive" id={`${id}-error`} role="alert">{error}</p> : null}</div>;
 }
 
 function NoteField({ note, setNote }: { note: string; setNote(value: string): void }) {

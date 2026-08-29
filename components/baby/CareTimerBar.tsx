@@ -105,7 +105,7 @@ export function CareTimerBar() {
               >
                 <button
                   aria-label={`打开${timer.label}记录`}
-                  className="flex min-h-9 items-center gap-1.5 rounded-full px-1 text-left transition-colors hover:text-primary"
+                  className="flex min-h-11 items-center gap-1.5 rounded-full px-1 text-left transition-colors hover:text-primary"
                   onClick={() => setDialogAction(timer.kind)}
                   type="button"
                 >
@@ -117,12 +117,12 @@ export function CareTimerBar() {
                 </button>
                 <button
                   aria-label={`结束${timer.label}并保存`}
-                  className="flex size-9 items-center justify-center rounded-full bg-card text-primary shadow-sm transition-transform active:scale-95 motion-reduce:transition-none"
+                  className="flex size-11 items-center justify-center rounded-full bg-card text-primary shadow-sm transition-transform active:scale-95 motion-reduce:transition-none"
                   onClick={() => void stopTimer(timer.kind)}
                   title={`结束${timer.label}`}
                   type="button"
                 >
-                  <Square aria-hidden="true" className="size-3.5" />
+                  <Square aria-hidden="true" className="size-4" />
                 </button>
               </div>
             );

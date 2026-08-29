@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 const config: Config = {
   darkMode: ["class"],
@@ -106,7 +107,8 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  // animate-in/out 等工具类来自该插件，dialog 与 select 的进出场动画依赖它。
+  plugins: [tailwindcssAnimate],
 };
 
 export default config;

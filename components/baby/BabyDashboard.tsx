@@ -56,11 +56,11 @@ export function BabyDashboard({ onEditProfile }: { onEditProfile(): void }) {
       </section>
 
       {activeEvents.length > 0 ? (
-        <section className="rounded-card bg-card p-5 shadow-sm"><h3 className="text-[15px] font-semibold">进行中的记录</h3><div className="mt-4 grid gap-2">{activeEvents.map((event) => <Button className="justify-between" key={event.id} onClick={() => setAction(event.type)} variant="secondary"><span>{event.type === "breastfeeding" ? "正在亲喂" : event.type === "pumping" ? "正在吸奶" : "正在睡眠"}</span><span>打开计时</span></Button>)}</div></section>
+        <section className="rounded-card bg-card p-5 shadow-sm"><h2 className="text-[15px] font-semibold">进行中的记录</h2><div className="mt-4 grid gap-2">{activeEvents.map((event) => <Button className="justify-between" key={event.id} onClick={() => setAction(event.type)} variant="secondary"><span>{event.type === "breastfeeding" ? "正在亲喂" : event.type === "pumping" ? "正在吸奶" : "正在睡眠"}</span><span>打开计时</span></Button>)}</div></section>
       ) : null}
 
       <section className="rounded-card bg-card p-5 shadow-sm">
-        <h3 className="text-[15px] font-semibold">今日汇总</h3>
+        <h2 className="text-[15px] font-semibold">今日汇总</h2>
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
           <SummaryItem label="亲喂" value={`${summary.breastfeedingCount} 次 · ${formatCareDuration(summary.breastfeedingDurationMs)}`} />
           <SummaryItem label="瓶喂母乳" value={`${summary.breastmilkBottleCount} 次 · ${summary.breastmilkBottleMl} ml`} />

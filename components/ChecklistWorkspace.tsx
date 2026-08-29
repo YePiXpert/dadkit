@@ -293,7 +293,8 @@ export function ChecklistWorkspace() {
           <HomeGrowthHint tone="inverse" />
         </section>
 
-        <div className="sticky top-[max(env(safe-area-inset-top),0.5rem)] z-30 -mt-8 rounded-card bg-background/95 p-1 backdrop-blur-xl">
+        {/* 移动端没有页头，sm 起要让出 4rem 高的吸顶 AppHeader，避免标签被盖住。 */}
+        <div className="sticky top-[max(env(safe-area-inset-top),0.5rem)] z-30 -mt-8 rounded-card bg-background/95 p-1 backdrop-blur-xl sm:top-[calc(4.5rem+env(safe-area-inset-top))]">
           <ChecklistGroupTabs counts={counts} value={view} onChange={setView} />
         </div>
 

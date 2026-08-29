@@ -276,7 +276,7 @@ export const ChecklistItemRow = memo(function ChecklistItemRow({
             <button
               aria-label={`${actionLabel}：${displayName}`}
               className={cn(
-                "flex size-[44px] shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground ring-2 ring-border transition-all hover:bg-secondary/70 hover:text-primary hover:ring-primary/40 active:scale-95",
+                "flex size-11 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground ring-2 ring-border transition-all hover:bg-secondary/70 hover:text-primary hover:ring-primary/40 active:scale-95",
                 itemState === "ready" &&
                   "bg-secondary text-primary ring-primary/30",
                 itemState === "packed" &&
