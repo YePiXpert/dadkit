@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.content.res.AssetManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -26,6 +27,10 @@ import android.webkit.WebViewClient;
 import android.widget.Toast;
 
 import androidx.webkit.WebViewAssetLoader;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Locale;
 
 
 @SuppressWarnings("deprecation")
@@ -117,10 +122,7 @@ public class LauncherActivity extends Activity {
         );
 
         assetLoader = new WebViewAssetLoader.Builder()
-                .addPathHandler(
-                        "/",
-                        new WebViewAssetLoader.AssetsPathHandler(this, ASSETS_WWW_ROOT)
-                )
+                .addPathHandler("/", new LocalAssetsHandler(this))
                 .build();
 
         CookieManager.getInstance().setAcceptCookie(true);
@@ -284,6 +286,107 @@ public class LauncherActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(flags);
     }
 
+    // 以 dadkit-local 类似的解析顺序提供 assets/www/ 下的静态资源：
+    // 精确文件 → 目录 index.html → 追加 .html（Next 静态导出的路由形态是 xxx.html，
+    // xxx/ 目录里只有嵌套子路由）。MimeTypeMap 对 woff2/webmanifest 覆盖不全，手工映射。
+    private static final class LocalAssetsHandler implements WebViewAssetLoader.PathHandler {
+        private final AssetManager assetManager;
+
+        LocalAssetsHandler(Activity activity) {
+            assetManager = activity.getAssets();
+        }
+
+        @Override
+        public WebResourceResponse handle(String path) {
+            if (path == null || path.isEmpty() || "/".equals(path)) {
+                path = "/index.html";
+            }
+            String assetPath = resolve(path);
+            if (assetPath == null) {
+                return null;
+            }
+            try {
+                InputStream stream = assetManager.open(assetPath);
+                return new WebResourceResponse(mimeOf(assetPath), null, stream);
+            } catch (IOException error) {
+                return null;
+            }
+        }
+
+        private String resolve(String path) {
+            String relative = path.startsWith("/") ? path.substring(1) : path;
+            for (String segment : relative.split("/")) {
+                if (segment.isEmpty() || ".".equals(segment) || "..".equals(segment)) {
+                    return null;
+                }
+            }
+            String[] candidates = {
+                    ASSETS_WWW_ROOT + relative,
+                    ASSETS_WWW_ROOT + relative + "/index.html",
+                    ASSETS_WWW_ROOT + relative + ".html",
+            };
+            for (String candidate : candidates) {
+                if (exists(candidate)) {
+                    return candidate;
+                }
+            }
+            return null;
+        }
+
+        private boolean exists(String assetPath) {
+            try (InputStream stream = assetManager.open(assetPath)) {
+                return true;
+            } catch (IOException error) {
+                return false;
+            }
+        }
+
+        private static String mimeOf(String assetPath) {
+            int dot = assetPath.lastIndexOf('.');
+            String ext = dot < 0
+                    ? ""
+                    : assetPath.substring(dot + 1).toLowerCase(Locale.US);
+            switch (ext) {
+                case "html":
+                case "htm":
+                    return "text/html";
+                case "js":
+                case "mjs":
+                    return "text/javascript";
+                case "css":
+                    return "text/css";
+                case "json":
+                case "map":
+                    return "application/json";
+                case "txt":
+                    return "text/plain";
+                case "png":
+                    return "image/png";
+                case "jpg":
+                case "jpeg":
+                    return "image/jpeg";
+                case "svg":
+                    return "image/svg+xml";
+                case "webp":
+                    return "image/webp";
+                case "ico":
+                    return "image/x-icon";
+                case "woff2":
+                    return "font/woff2";
+                case "woff":
+                    return "font/woff";
+                case "ttf":
+                    return "font/ttf";
+                case "otf":
+                    return "font/otf";
+                case "webmanifest":
+                    return "application/manifest+json";
+                default:
+                    return "application/octet-stream";
+            }
+        }
+    }
+
     private final class AndroidShellBridge {
         @JavascriptInterface
         public void setDarkTheme(boolean dark) {
@@ -361,7 +464,7 @@ public class LauncherActivity extends Activity {
                 WebView view,
                 WebResourceRequest request
         ) {
-            return assetLoader.intercept(request.getUrl());
+            return assetLoader.shouldInterceptRequest(request.getUrl());
         }
 
         @Override
