@@ -53,12 +53,21 @@ curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docke
 首次部署会交互式引导配置，不需要手动编辑 `.env`——按提示选择部署方式并输入地址即可
 （也可以用 `env DADKIT_...=... docker-deploy.sh` 全自动脚本化部署）。两种方式：
 
-1. **域名 + HTTPS（推荐）**：输入域名，容器监听 `127.0.0.1:3333`，
-   你需要自行配置反向代理（Nginx/Caddy 等）终止 HTTPS。
+1. **域名 + HTTPS（推荐）**：输入域名后选择反向代理的位置——
+   和 DadKit 同机（容器监听 `127.0.0.1:3333`，本机 Nginx/Caddy 转发），
+   或**线路机/隧道回源**（域名解析到线路机，线路机经隧道访问后端，
+   容器监听 `0.0.0.0` 供回源，并自动设置 `DADKIT_TRUST_PROXY_HOPS=1`
+   让限流按真实客户端 IP 统计）。回源链路是明文 HTTP，请用防火墙/安全组
+   只放行线路机的 IP，避免被绕过域名直连后端。
 2. **无域名，IP 直连（HTTP）**：输入端口（默认 3333）后脚本自动探测公网 IP，
    容器直接监听 `0.0.0.0` 并关闭 HTTPS 强制（`DADKIT_SYNC_REQUIRE_HTTPS=false`）。
    零依赖即可用，但 token 与家庭数据在网络上是明文传输，仅建议内网、测试
    或明确接受该风险时使用；记得在云厂商安全组放行对应端口。
+
+已经部署过想改监听地址：编辑 `/opt/dadkit/.env` 把 `DADKIT_BIND_ADDRESS` 改为
+`0.0.0.0`（或加上 `DADKIT_TRUST_PROXY_HOPS=1`）后执行
+`docker compose up -d --wait`；也可以直接删掉 `.env` 重新跑部署脚本重选
+（业务数据在 `dadkit-data` 卷里，不受影响）。
 
 浏览器访问任意一种部署都可以直接使用全部功能（包括家庭同步）。注意官方发布的
 APK/IPA 内置的同步地址是官方服务器；要让 App 壳连接自建服务器，需要把

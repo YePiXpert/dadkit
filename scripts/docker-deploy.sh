@@ -135,9 +135,23 @@ run_interactive_setup() {
     domain="$(ask_until_valid '输入域名（如 dadkit.example.com，不用带 https://）: ' is_nonempty)"
     domain="$(strip_origin_input "$domain")"
     WIZARD_PUBLIC_ORIGIN="https://${domain}"
-    WIZARD_BIND_ADDRESS="127.0.0.1"
+    echo
+    echo "反向代理在哪里运行？"
+    echo "  1) 和 DadKit 同一台机器（Nginx/Caddy 直接转发到 127.0.0.1）"
+    echo "  2) 线路机/隧道回源：反代在其他机器上，要经网络访问本机端口"
+    relay="$(ask_until_valid '选择 [1/2]: ' is_1_or_2)"
+    if [ "$relay" = "2" ]; then
+      WIZARD_BIND_ADDRESS="0.0.0.0"
+      relay_note="已选择 0.0.0.0 监听：后端端口将对所有网卡开放且为明文 HTTP，"
+      relay_note="$relay_note请在防火墙/安全组只放行线路机（回源机）的 IP，"
+      relay_note="$relay_note避免被绕过域名直连。"
+    else
+      WIZARD_BIND_ADDRESS="127.0.0.1"
+      relay_note="容器监听 127.0.0.1:3333，把本机反向代理指向该地址并终止 HTTPS。"
+    fi
     WIZARD_PORT="3333"
     WIZARD_REQUIRE_HTTPS="true"
+    WIZARD_TRUST_PROXY_HOPS="1"
     final_url="$WIZARD_PUBLIC_ORIGIN"
   else
     port="$(ask_until_valid '对外端口 [直接回车默认 3333]: ' valid_port_or_empty)"
@@ -169,14 +183,16 @@ run_interactive_setup() {
   echo "  访问地址:        $WIZARD_PUBLIC_ORIGIN"
   echo "  监听地址:        $WIZARD_BIND_ADDRESS:$WIZARD_PORT（容器内固定 3333）"
   echo "  HTTPS 强制同步:  $WIZARD_REQUIRE_HTTPS"
+  if [ "$mode" = "1" ]; then
+    echo "  信任代理跳数:    ${WIZARD_TRUST_PROXY_HOPS}（反向代理传递真实客户端 IP）"
+  fi
   echo "--------------------------------------------------"
   if [ "$mode" = "2" ]; then
     echo "  注意：HTTP 模式下账号 token 与家庭数据在网络上明文传输，"
     echo "  仅建议内网、测试或明确接受该风险时使用。"
     echo "  还需在云厂商安全组 / 防火墙放行 TCP $WIZARD_PORT。"
   else
-    echo "  注意：容器只监听 127.0.0.1:3333，请把你的反向代理"
-    echo "  （Nginx/Caddy 等）指向该地址并终止 HTTPS。"
+    echo "  注意：$relay_note"
   fi
   echo
 
@@ -197,6 +213,9 @@ run_interactive_setup() {
     printf 'DADKIT_BIND_ADDRESS=%s\n' "$WIZARD_BIND_ADDRESS"
     printf 'DADKIT_PUBLIC_ORIGIN=%s\n' "$WIZARD_PUBLIC_ORIGIN"
     printf 'DADKIT_SYNC_REQUIRE_HTTPS=%s\n' "$WIZARD_REQUIRE_HTTPS"
+    if [ -n "${WIZARD_TRUST_PROXY_HOPS:-}" ]; then
+      printf 'DADKIT_TRUST_PROXY_HOPS=%s\n' "$WIZARD_TRUST_PROXY_HOPS"
+    fi
   } >> .env
   chmod 600 .env
   echo "已创建 $APP_DIR/.env"
