@@ -1,5 +1,7 @@
 "use client";
 
+import { isAppShellBuild } from "@/lib/app-shell";
+
 export const INSTALL_PROMPT_DISMISS_KEY = "dadkit-install-prompt-dismissed";
 export const OPEN_INSTALL_PROMPT_EVENT = "dadkit:open-install-prompt";
 export const INSTALL_STATUS_CHANGED_EVENT =
@@ -55,7 +57,7 @@ export function isIosSafariBrowser() {
 
 export function isPwaInstallAvailable() {
   return (
-    !isBundledAndroidApp() &&
+    !isAppShellBuild() &&
     (installPromptAvailableThisSession || isIosInstallGuideAvailable())
   );
 }

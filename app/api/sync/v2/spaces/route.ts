@@ -34,7 +34,12 @@ export async function POST(request: Request) {
       typeof payload.deviceName === "string" ? payload.deviceName : "",
     );
     return syncJson(
-      { protocolVersion: DADKIT_SYNC_PROTOCOL_VERSION, space: result.space },
+      {
+        protocolVersion: DADKIT_SYNC_PROTOCOL_VERSION,
+        space: result.space,
+        // 跨域客户端（静态托管/App 壳）没有同源 Cookie，靠 body 里的 token 走 Bearer。
+        token: result.token,
+      },
       201,
       { "set-cookie": sessionCookie(result.token, request) },
     );

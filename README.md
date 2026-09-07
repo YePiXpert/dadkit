@@ -2,7 +2,7 @@
 
 ## 介绍
 
-DadKit 是一个本地优先的家庭待产与新生儿记录工具，支持网页、可安装的 iPhone PWA，以及内置同一套 PWA 界面的 Android App。三端共享视觉、功能和内容资源。
+DadKit 是一个本地优先的家庭待产与新生儿记录工具，支持网页、可安装的 iPhone PWA、内置本地资源的 Android App 与 iOS App。三端共享视觉、功能和内容资源；客户端资源（页面、字体、插画）本地化，只有家庭同步数据保存在云端服务器。
 
 - 164 个待产与月子物品，按证件包、产房包、病房包（妈妈/宝宝）和月子家中囤货分组，支持全部、待购买、待装包和已装包状态
 - 首页家庭仪表盘与独立纯清单页：进度、出发和宝宝记录一屏总览，物品核对集中在清单页
@@ -66,9 +66,11 @@ docker compose up -d --no-build --remove-orphans --wait
 curl -fsS http://127.0.0.1:3333/healthz
 ```
 
-`DADKIT_PUBLIC_ORIGIN` 是主入口；同一实例如需保留旧域名，可用
-`DADKIT_TRUSTED_ORIGINS` 配置逗号分隔的精确 HTTPS Origin。该列表不支持通配符，
-也不会开放跨站 CORS，只允许这些入口发起带会话的同源同步写操作。
+`DADKIT_PUBLIC_ORIGIN` 是主入口；同一实例如需保留旧域名，或把静态导出的站点
+（见下节）指向本实例的同步 API，可用 `DADKIT_TRUSTED_ORIGINS` 配置逗号分隔的
+精确 HTTPS Origin。该列表不支持通配符。静态托管域名与 App 内置壳（Android 的
+`appassets.androidplatform.net`、iOS 的 `dadkit-local://localhost`，后者始终放行）
+可以跨站调用 `/api/sync`：跨域客户端使用 Bearer token 会话，不依赖 Cookie。
 
 这里克隆仓库只用于取得 Compose 配置和升级脚本；应用镜像直接从 GHCR
 下载，不会在 VPS 本地编译。也可以使用 `sh scripts/docker-deploy.sh` 完成
@@ -87,6 +89,46 @@ curl -fsS http://127.0.0.1:3333/healthz
 每个空间默认最多 24 MiB、12 台有效设备和 5 个有效邀请。超出数据配额的推送会在写盘前原子拒绝，不修改空间文件或滚动备份。运营者可通过 `.env.example` 中的变量调整合理上限，也可关闭新空间注册而不影响已有空间。
 
 正式公开部署必须使用 HTTPS。家庭同步当前不是端到端加密：服务器保存并可读取 canonical 同步数据，服务器运营者理论上能够读取内容。请勿公开邀请链接。`DADKIT_PUBLIC_ORIGIN` 应填写经过验证的正式 origin；单层 Nginx 可设置 `DADKIT_TRUST_PROXY_HOPS=1`，代码默认值为 0，不会无条件信任转发头。
+
+### 静态导出部署（可选）
+
+除完整服务器（页面 + 同步 API）外，也可以把纯前端静态导出后放到任意静态托管，
+同步数据仍指向自建云端实例：
+
+```bash
+npm ci
+NEXT_PUBLIC_DADKIT_API_BASE=https://dadkit.505f.com \
+NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN=https://dadkit.505f.com \
+npm run build:static
+# 产物在 out/，可整体上传到任意静态托管或对象存储
+```
+
+两个变量都在构建期固化进产物：`NEXT_PUBLIC_DADKIT_API_BASE` 是同步 API 的云端
+地址（留空则按同源部署处理），`NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN` 决定邀请
+链接指向的公网页面（静态托管或 App 内生成的邀请链接必须能被其他设备打开）。
+静态产物以 `<meta CSP>` 承接内容安全策略，`connect-src` 只放行构建期配置的
+云端 API。静态托管的域名需要加入云端实例的 `DADKIT_TRUSTED_ORIGINS`。
+反向代理可对所有 `/_next/static/`、`/fonts/`、`/item-art/`、`/growth/` 设置
+长缓存（文件名带内容哈希或为固定资源）。
+
+### Android App 与 iOS App（本地资源壳）
+
+两端 App 的页面资源全部内置在安装包里（构建管线先执行 `npm run build:static`
+再把 `out/` 拷入壳工程），启动与使用不依赖服务器下发页面，仅家庭同步请求云端
+`/api/sync`。App 内 WebView 的本地 origin 走跨域 Bearer 会话，邀请链接一律指向
+公网 Web。
+
+- Android：打 tag 触发 `android-release` 工作流，产出签名 APK 与 AAB。必须先发布
+  云端服务器再打 APK tag——旧版数据迁移依赖云端页面上的导出钩子。
+- iOS：打同一 tag 触发 `ios-release` 工作流（macOS runner），产出**未签名 IPA**
+  构建产物（Artifact，保留 30 天）。下载后用 [Sideloadly](https://sideloadly.io/)
+  或 AltStore 自签安装：免费 Apple ID 也可签名，7 天需重签一次；付费开发者账号
+  可一年一签。自签工具会自动改写 Bundle ID，不影响功能；iOS 无旧数据，无需迁移。
+
+旧版 Android APK（versionCode ≤ 27，远程壳）升级到 v28 时，首次启动会静默加载
+一次旧站点导出 WebView 本地数据，随后导入新版并进入本地资源模式；已开启家庭
+同步的设备直接从云端拉回，无需迁移。迁移失败（如离线首启）会在下次启动自动
+重试，最多三次，之后仍可从「备份与恢复」导入 JSON 备份。
 
 家庭显示名称、成员名称、关系以及事件记录人会进入 JSON、IndexedDB 安全快照和可选家庭同步；“当前设备使用者”只保存在当前设备，不作为独立设置进入任何备份或同步。当前可移植数据格式为 v11，不再写入已下线的家庭分工和医院信息字段；较旧的 v6-v10 数据仍可导入或同步，其中的旧医院信息会被安全忽略，旧分工字段也不会恢复。
 
@@ -107,11 +149,13 @@ curl -fsS http://127.0.0.1:3333/healthz
 
 Android APK 升级：
 
-1. 3.4.12 起 APK 直接加载线上页面，日常页面、样式和业务功能会在下次启动时自动更新，不再需要重复安装 APK；成功联网使用一次后可通过缓存离线打开。
-2. 「我的 → 关于 DadKit」分别显示页面版本和 Android 外壳 versionCode；只有原生外壳、权限或图标变化时才需要安装新版 APK。
-3. 应用内下载与安装链路已下线；需要更新外壳时打开[最新 Release](https://github.com/YePiXpert/dadkit/releases/latest)手动下载 `DadKit-*.apk`，或在「关于 DadKit」点击「打开 GitHub Releases」。下一版外壳（versionCode 27 起）移除了闲置的更新桥与「安装未知应用」权限。
-4. 包名保持 `com.dadkit.mobile`，`versionCode` 按版本递增，可直接覆盖安装旧版本。
+1. versionCode 28 起页面资源全部内置在 APK 中，安装即离线可用，不再从服务器加载页面；页面更新随 APK 发布（家庭同步数据继续保存在云端）。
+2. 「我的 → 关于 DadKit」分别显示页面版本和 Android 外壳 versionCode。
+3. 应用内下载与安装链路已下线；需要更新时打开[最新 Release](https://github.com/YePiXert/dadkit/releases/latest)手动下载 `DadKit-*.apk`，或在「关于 DadKit」点击「打开 GitHub Releases」。
+4. 包名保持 `com.dadkit.mobile`，`versionCode` 按版本递增，可直接覆盖安装旧版本；从远程壳版本（≤27）升级时本地数据自动迁移（见上文）。
+
+iOS IPA 升级：从 `ios-release` 工作流产物下载未签名 IPA，自签后覆盖安装（Bundle ID 需与首次安装一致）。
 
 本次版本的详细变更与验收结果见 [DadKit 3.4.13 发布说明](docs/release-v3.4.13.md)。
 
-浏览器 PWA 与 Android WebView 均优先获取线上页面，网络不可用时回退到最近一次成功缓存。
+浏览器 PWA 优先获取线上页面，网络不可用时回退到最近一次成功缓存；Android 与 iOS App 直接使用内置资源，仅同步数据走网络。

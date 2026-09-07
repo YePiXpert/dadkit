@@ -1,3 +1,5 @@
+import { APP_LOCAL_ORIGINS } from "@/lib/sync/app-origins";
+import { hasBearerCredential } from "@/lib/sync/request-auth";
 import { getSyncSpaceConfig } from "@/lib/sync/space-config";
 
 function normalizeHttpOrigin(value: string | undefined) {
@@ -22,8 +24,8 @@ function configuredOrigin(request: Request) {
   return normalizeHttpOrigin(configured) ?? new URL(request.url).origin;
 }
 
-function configuredMutationOrigins(request: Request) {
-  const origins = new Set([configuredOrigin(request)]);
+function configuredTrustedOrigins() {
+  const origins = new Set<string>();
   const trusted = process.env.DADKIT_TRUSTED_ORIGINS?.trim();
 
   if (trusted) {
@@ -34,6 +36,21 @@ function configuredMutationOrigins(request: Request) {
   }
 
   return origins;
+}
+
+function configuredMutationOrigins(request: Request) {
+  return new Set([configuredOrigin(request), ...configuredTrustedOrigins()]);
+}
+
+// 跨站客户端（App 壳本地 origin、静态托管域名）：未认证的 join/spaces
+// 请求也来自它们，按显式白名单放行，sec-fetch-site 为 cross-site 属预期。
+// requireHttps 下静态托管域名同样必须 https，仅本地开发回环放行 http。
+function isCrossSiteClientOrigin(origin: string) {
+  if (APP_LOCAL_ORIGINS.includes(origin)) return true;
+  if (!configuredTrustedOrigins().has(origin)) return false;
+  return (
+    origin.startsWith("https://") || isLocalDevelopmentOrigin(origin)
+  );
 }
 
 export function isLocalDevelopmentOrigin(origin: string) {
@@ -52,8 +69,14 @@ export function checkMutationOrigin(
   request: Request,
   options: { requireHeader?: boolean } = {},
 ) {
-  if (request.headers.get("sec-fetch-site") === "cross-site") return false;
+  // Bearer 认证：token 本身即凭证，浏览器侧还需先通过 CORS 预检，
+  // 没有同源 Cookie 的 CSRF 面。
+  if (hasBearerCredential(request)) return true;
+
   const origin = request.headers.get("origin");
+
+  if (origin && isCrossSiteClientOrigin(origin)) return true;
+  if (request.headers.get("sec-fetch-site") === "cross-site") return false;
   if (!origin) return options.requireHeader !== true;
   if (!configuredMutationOrigins(request).has(origin)) return false;
   return (

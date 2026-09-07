@@ -8,7 +8,6 @@ import {
   clearPwaInstalledSession,
   INSTALL_PROMPT_DISMISS_KEY,
   INSTALL_STATUS_CHANGED_EVENT,
-  isBundledAndroidApp,
   isIosInstallGuideAvailable,
   isIosSafariBrowser,
   isPwaInstallAvailable,
@@ -18,6 +17,7 @@ import {
   OPEN_INSTALL_PROMPT_EVENT,
   setPwaInstallPromptAvailable,
 } from "@/lib/install-prompt";
+import { isAppShellBuild } from "@/lib/app-shell";
 
 const AUTO_PROMPT_COMPLETION_COUNT = 3;
 
@@ -35,7 +35,7 @@ export function InstallPrompt() {
   const [readyForAutoPrompt, setReadyForAutoPrompt] = useState(false);
 
   useEffect(() => {
-    if (isBundledAndroidApp()) {
+    if (isAppShellBuild()) {
       setPwaInstallPromptAvailable(false);
       setDeferredPrompt(null);
       setShowIosGuide(false);
@@ -138,7 +138,7 @@ export function InstallPrompt() {
 
     function handleManualOpen() {
       if (
-        isBundledAndroidApp() ||
+        isAppShellBuild() ||
         isPwaInstalled() ||
         !isPwaInstallAvailable()
       ) {
@@ -175,7 +175,7 @@ export function InstallPrompt() {
   useEffect(() => {
     if (
       !readyForAutoPrompt ||
-      isBundledAndroidApp() ||
+      isAppShellBuild() ||
       isPwaInstalled() ||
       window.localStorage.getItem(INSTALL_PROMPT_DISMISS_KEY) === "1"
     ) {

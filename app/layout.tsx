@@ -78,14 +78,50 @@ export const viewport: Viewport = {
 // 构建期注入共享 key；对应值见 lib/theme.ts，避免客户端 hook 与首屏脚本漂移。
 const themeInitScript = `(function(){try{var p=window.localStorage.getItem("${THEME_STORAGE_KEY}");if(p!=="light"&&p!=="dark"&&p!=="night"){p=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}var d=p==="dark"||p==="night";document.documentElement.classList.toggle("dark",d);document.documentElement.classList.toggle("night-dim",p==="night");if(window.DadKitAndroidShell){window.DadKitAndroidShell.setDarkTheme(d);}}catch(e){}})();`;
 
+// 静态导出没有服务器响应头，用 meta CSP 承接同等约束；connect-src 额外放行
+// 构建期配置的云端同步 API（NEXT_PUBLIC_DADKIT_API_BASE）。React 19 会把
+// <meta> 提升到 <head>。
+function staticBuildCspContent(): string | undefined {
+  if (process.env.BUILD_TARGET !== "static") return undefined;
+  const apiBase = process.env.NEXT_PUBLIC_DADKIT_API_BASE?.trim();
+  let connectSrc = "'self'";
+  if (apiBase) {
+    try {
+      const url = new URL(apiBase);
+      if (url.protocol === "https:" || url.protocol === "http:") {
+        connectSrc = `'self' ${url.origin}`;
+      }
+    } catch {
+      // 配置异常时保持仅同源，请求会在浏览器侧被拦截并暴露配置问题。
+    }
+  }
+  return [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self'",
+    `connect-src ${connectSrc}`,
+    "worker-src 'self'",
+    "manifest-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+  ].join("; ");
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const staticCsp = staticBuildCspContent();
+
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <body>
+        {staticCsp ? (
+          <meta content={staticCsp} httpEquiv="Content-Security-Policy" />
+        ) : null}
         {MISANS_STYLESHEETS.map((href) => (
           <link href={href} key={href} precedence="font" rel="stylesheet" />
         ))}

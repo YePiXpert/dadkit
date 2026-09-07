@@ -23,6 +23,7 @@ import {
   saveSyncSession,
   type SyncSession,
 } from "@/lib/data/settings-repository";
+import { isRemoteSyncApi, publicAppOrigin, resolveApiUrl } from "@/lib/sync/api-endpoint";
 import {
   estimateSyncClockOffset,
   getSyncClockOffset,
@@ -164,6 +165,12 @@ export async function apiRequest<T>(
   }
   headers.set(DADKIT_SYNC_PROTOCOL_HEADER, String(DADKIT_SYNC_PROTOCOL_VERSION));
 
+  // 跨域场景（静态托管/App 壳）没有同源 Cookie，用本地会话 token 走 Bearer 认证。
+  const sessionToken = loadSyncSession()?.token;
+  if (sessionToken && !headers.has("authorization")) {
+    headers.set("authorization", `Bearer ${sessionToken}`);
+  }
+
   const parentSignal = init.signal;
   const abortFromParent = () => controller.abort(parentSignal?.reason);
 
@@ -178,7 +185,7 @@ export async function apiRequest<T>(
   const requestStartedAt = Date.now();
 
   try {
-    const response = await fetch(path, {
+    const response = await fetch(resolveApiUrl(path), {
       ...init,
       credentials: "same-origin",
       headers,
@@ -715,6 +722,7 @@ export type SyncServiceInfo = {
 function localSessionFromSpace(
   space: SyncSpaceMetadata,
   joinedAt = new Date().toISOString(),
+  token?: string,
 ): SyncSession {
   return {
     version: 2,
@@ -725,6 +733,7 @@ function localSessionFromSpace(
     deviceName: space.currentSession.deviceName,
     role: space.currentSession.role,
     joinedAt,
+    ...(token ? { token } : {}),
   };
 }
 
@@ -746,7 +755,9 @@ export async function fetchSyncSpaceMetadata() {
     const result = await apiRequest<{ space: SyncSpaceMetadata }>("/api/sync/v2/space");
     if (!result.data?.space) throw new SyncApiError("同步空间信息不完整。", 502);
     const existing = loadSyncSession();
-    saveSyncSession(localSessionFromSpace(result.data.space, existing?.joinedAt));
+    saveSyncSession(
+      localSessionFromSpace(result.data.space, existing?.joinedAt, existing?.token),
+    );
     return { ok: true as const, space: result.data.space };
   } catch (error) {
     return { ok: false as const, message: messageOf(error, "无法读取同步空间信息。") };
@@ -755,14 +766,21 @@ export async function fetchSyncSpaceMetadata() {
 
 export async function createRandomSyncSpace(displayName: string, deviceName: string) {
   try {
-    const result = await apiRequest<{ space: SyncSpaceMetadata }>(
+    const result = await apiRequest<{ space: SyncSpaceMetadata; token?: string }>(
       "/api/sync/v2/spaces",
       { method: "POST", body: JSON.stringify({ displayName, deviceName }) },
     );
     if (!result.data?.space) throw new SyncApiError("同步服务没有返回空间信息。", 502);
     clearRetrySchedule();
     saveSyncClientState({});
-    saveSyncSession(localSessionFromSpace(result.data.space));
+    // 同源部署保持纯 HttpOnly Cookie 会话；跨域（静态托管/App 壳）才落 token。
+    saveSyncSession(
+      localSessionFromSpace(
+        result.data.space,
+        undefined,
+        isRemoteSyncApi() ? result.data.token : undefined,
+      ),
+    );
     useSyncStatusStore.setState({ joined: true });
     clearSyncSessionExpired();
     const synced = await syncNow();
@@ -793,7 +811,7 @@ export async function joinSyncSpaceByInvite(
       };
     }
     await createSnapshotAsync("加入家庭同步前");
-    const result = await apiRequest<{ space: SyncSpaceMetadata }>(
+    const result = await apiRequest<{ space: SyncSpaceMetadata; token?: string }>(
       "/api/sync/v2/join",
       {
         method: "POST",
@@ -803,7 +821,14 @@ export async function joinSyncSpaceByInvite(
     if (!result.data?.space) throw new SyncApiError("同步服务没有返回空间信息。", 502);
     clearRetrySchedule();
     saveSyncClientState({ initialDataMode: options.initialDataMode });
-    saveSyncSession(localSessionFromSpace(result.data.space));
+    // 同源部署保持纯 HttpOnly Cookie 会话；跨域（静态托管/App 壳）才落 token。
+    saveSyncSession(
+      localSessionFromSpace(
+        result.data.space,
+        undefined,
+        isRemoteSyncApi() ? result.data.token : undefined,
+      ),
+    );
     useSyncStatusStore.setState({ joined: true });
     clearSyncSessionExpired();
     const synced = await syncNow();
@@ -879,7 +904,7 @@ export async function createSyncInviteLink(ttlMinutes: number) {
     });
     const invite = result.data?.invite;
     if (!invite) throw new SyncApiError("同步服务没有返回邀请。", 502);
-    const origin = typeof window === "undefined" ? "http://localhost" : window.location.origin;
+    const origin = publicAppOrigin();
     return {
       ok: true as const,
       invite: {

@@ -79,7 +79,7 @@ test("Android 设置页区分页面与外壳版本并提供外链更新入口", 
   await expect(
     page.getByRole("heading", { name: "关于 DadKit" }),
   ).toBeVisible();
-  await expect(page.getByText("3.4.13")).toBeVisible();
+  await expect(page.getByText("1.0.0")).toBeVisible();
   await expect(page.getByText("versionCode 22")).toBeVisible();
   await expect(
     page.getByRole("link", { name: "打开 GitHub Releases" }),

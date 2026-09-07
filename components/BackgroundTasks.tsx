@@ -13,6 +13,13 @@ const AndroidNativeMigration = dynamic(
     ),
   { ssr: false },
 );
+const ApkLegacyExport = dynamic(
+  () =>
+    import("@/components/ApkLegacyExport").then(
+      (module) => module.ApkLegacyExport,
+    ),
+  { ssr: false },
+);
 const PwaRegister = dynamic(
   () =>
     import("@/components/PwaRegister").then(
@@ -120,6 +127,7 @@ export function BackgroundTasks() {
       {runtime === "android" ? (
         <AndroidNativeMigration onComplete={handleMigrationComplete} />
       ) : null}
+      <ApkLegacyExport />
       {idle ? <PwaRegister /> : null}
     </>
   );

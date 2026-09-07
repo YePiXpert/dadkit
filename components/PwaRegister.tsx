@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
+import { isAppShellBuild } from "@/lib/app-shell";
+
 const OFFLINE_READY_ATTRIBUTE = "data-dadkit-offline-ready";
 const WORKER_CACHE_TIMEOUT_MS = 60_000;
 const BACKGROUND_CACHE_DELAY_MS = 5 * 60_000;
@@ -88,6 +90,8 @@ export function PwaRegister() {
   }, []);
 
   useEffect(() => {
+    // App 壳内资源已本地化，Service Worker 无意义（自定义 scheme 下也无法注册）。
+    if (isAppShellBuild()) return;
     if (!("serviceWorker" in navigator)) return;
 
     void navigator.serviceWorker.ready
@@ -103,6 +107,9 @@ export function PwaRegister() {
   }, [pathname]);
 
   useEffect(() => {
+    if (isAppShellBuild()) {
+      return;
+    }
     if (!("serviceWorker" in navigator)) {
       return;
     }

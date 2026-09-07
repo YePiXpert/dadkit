@@ -17,10 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/dadkit-release.keystore
-      ANDROID_KEY_ALIAS: dadkit
+      ANDROID_KEYSTORE_ALIAS: dadkit
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       DADKIT_PUBLIC_ORIGIN: https://dadkit.505f.com
+      NEXT_PUBLIC_DADKIT_API_BASE: https://dadkit.505f.com
+      NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN: https://dadkit.505f.com
     steps:
       - uses: actions/checkout@v5
         with:
@@ -30,7 +32,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$GITHUB_REF_NAME" = "v3.4.13"
+          test "$GITHUB_REF_NAME" = "v1.0.0"
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
@@ -68,6 +70,18 @@ jobs:
       - name: Run Chromium and WebKit acceptance tests
         run: npm run test:e2e
 
+      # APK 资源本地化：静态导出 + 同步 API 指向云端。注意发布顺序——
+      # 云端服务器必须先于 APK 发布（旧数据迁移要靠服务器上的导出钩子）。
+      - name: Build static web bundle for the APK
+        run: |
+          npm run build:static
+          test -f out/index.html
+          test -f out/sw.js
+          mkdir -p android/app/src/main/assets
+          rm -rf android/app/src/main/assets/www
+          cp -r out android/app/src/main/assets/www
+          test -f android/app/src/main/assets/www/index.html
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -97,7 +111,7 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon clean assembleRelease bundleRelease
 
-      - name: Verify remote-shell APK alignment and signature
+      - name: Verify local-assets APK alignment and signature
         id: apk
         shell: bash
         run: |
@@ -110,19 +124,23 @@ jobs:
           "$BUILD_TOOLS/zipalign" -c -v 4 "$APK"
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
           zipinfo -1 "$APK" > apk-entries.txt
-          if grep -q '^assets/www/' apk-entries.txt; then
-            echo "Remote-shell APK must not contain bundled web pages." >&2
+          if ! grep -q '^assets/www/index.html$' apk-entries.txt; then
+            echo "Local-assets APK must bundle the static web app." >&2
             exit 1
           fi
-          cp "$APK" DadKit-3.4.13.apk
-          sha256sum DadKit-3.4.13.apk > DadKit-3.4.13.apk.sha256
-          cp "$AAB" DadKit-3.4.13.aab
+          if ! grep -q '^assets/www/sw.js$' apk-entries.txt; then
+            echo "Local-assets APK must bundle the service worker." >&2
+            exit 1
+          fi
+          cp "$APK" DadKit-1.0.0.apk
+          sha256sum DadKit-1.0.0.apk > DadKit-1.0.0.apk.sha256
+          cp "$AAB" DadKit-1.0.0.aab
 
       - name: Store AAB privately for 30 days
         uses: actions/upload-artifact@v4
         with:
-          name: DadKit-3.4.13-aab
-          path: DadKit-3.4.13.aab
+          name: DadKit-1.0.0-aab
+          path: DadKit-1.0.0.aab
           if-no-files-found: error
           retention-days: 30
 
@@ -131,19 +149,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          DadKit 3.4.13
+          DadKit 1.0.0
 
-          - 下线语义不清且使用成本较高的家庭分工与采购规划功能
-          - 首页原家庭分工入口替换为备份与恢复，工具页补齐清单设置和家庭成员入口
-          - 物品详情移除负责人、预算、购买渠道和截止日期等规划编辑项
-          - 可移植数据格式升级到 v10，不再保存、导出或同步家庭分工字段
-          - 旧 v7-v9 备份和同步数据保持可读，其中的历史分工字段会被安全忽略
-          - 家庭成员继续用于宝宝记录人和家庭同步，不受本次下线影响
-          - Android 包名为 com.dadkit.mobile，versionCode 为 26
+          - 资源本地化架构：Android 页面全部内置在安装包内，离线即可启动
+          - 新增 iOS App（未签名 IPA 由构建产物提供，自签后安装）
+          - 家庭同步数据继续存放在云端服务器，仅同步请求走网络
+          - Web 支持静态导出部署，同步 API 可独立跨域调用
+          - 旧版 Android 本地数据会在升级后首次启动时自动迁移
+          - Android 包名为 com.dadkit.mobile，versionCode 为 28
           EOF
           gh release create "$GITHUB_REF_NAME" \
-            DadKit-3.4.13.apk \
-            DadKit-3.4.13.apk.sha256 \
+            DadKit-1.0.0.apk \
+            DadKit-1.0.0.apk.sha256 \
             --verify-tag \
-            --title "DadKit 3.4.13" \
+            --title "DadKit 1.0.0" \
             --notes-file release-notes.md

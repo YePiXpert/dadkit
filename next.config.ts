@@ -29,20 +29,36 @@ const vpsSecurityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
 ];
 
-const nextConfig: NextConfig = {
-  reactStrictMode: true,
-  output: "standalone",
-  images: {
-    unoptimized: true,
-  },
-  async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: vpsSecurityHeaders,
+// 静态导出构建（npm run build:static）：产物给静态托管与 App 壳使用。
+// 服务端路由（app/api/**、app/healthz、middleware.ts）由 scripts/build-static.mjs
+// 在构建期临时移出（App Router 不支持用 pageExtensions 排除，见 vercel/next.js#51478），
+// 同步 API 指向 NEXT_PUBLIC_DADKIT_API_BASE 配置的云端。
+const isStaticBuild = process.env.BUILD_TARGET === "static";
+
+const nextConfig: NextConfig = isStaticBuild
+  ? {
+      reactStrictMode: true,
+      output: "export",
+      images: {
+        unoptimized: true,
       },
-    ];
-  },
-};
+      // 独立于 .next：Next 构建会清理 .next 下的旧产物，避免与服务器构建互相踩踏。
+      distDir: ".dadkit-static-build",
+    }
+  : {
+      reactStrictMode: true,
+      output: "standalone",
+      images: {
+        unoptimized: true,
+      },
+      async headers() {
+        return [
+          {
+            source: "/:path*",
+            headers: vpsSecurityHeaders,
+          },
+        ];
+      },
+    };
 
 export default nextConfig;

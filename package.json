@@ -1,11 +1,12 @@
 {
   "name": "dadkit",
-  "version": "3.4.13",
+  "version": "1.0.0",
   "private": true,
-  "description": "A local-first maternity preparation app for web and Android.",
+  "description": "A local-first maternity preparation app for web, Android and iOS.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:static": "node scripts/build-static.mjs",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit --incremental false",
@@ -14,7 +15,8 @@
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium webkit",
     "performance:check": "node scripts/check-performance-budgets.mjs",
-    "android:validate": "node scripts/validate-android-release.mjs"
+    "android:validate": "node scripts/validate-android-release.mjs",
+    "ios:validate": "node scripts/validate-ios-release.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",

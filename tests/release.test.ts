@@ -39,7 +39,7 @@ describe("release endpoints and product surface", () => {
       }>;
     };
 
-    expect(packageJson.version).toBe("3.4.13");
+    expect(packageJson.version).toBe("1.0.0");
     expect(manifest.name).toBe("DadKit 待产包清单");
     expect(manifest.description).toContain("待产包");
     expect(manifest.description).toContain("宝宝记录");
@@ -91,7 +91,7 @@ describe("release endpoints and product surface", () => {
     expect(readme).not.toContain("公开 APK、日志和仓库不得包含");
   });
 
-  it("ships a trusted remote PWA inside the Android WebView shell", () => {
+  it("ships the local web bundle inside the Android WebView shell", () => {
     const manifest = readSource(
       "android",
       "app",
@@ -118,15 +118,19 @@ describe("release endpoints and product surface", () => {
     expect(manifest).toContain('android:name=".LauncherActivity"');
     expect(activity).toContain("extends Activity");
     expect(activity).toContain("new WebView(this)");
-    expect(activity).not.toContain("shouldInterceptRequest");
-    expect(activity).not.toContain('getAssets().open("www/"');
+    expect(activity).toContain("shouldInterceptRequest");
+    expect(activity).toContain("WebViewAssetLoader");
+    expect(activity).toContain('LOCAL_HOST = "appassets.androidplatform.net"');
+    expect(activity).toContain('API_HOST = "dadkit.505f.com"');
     expect(activity).toContain("loadDataWithBaseURL");
     expect(activity).toContain("DadKitAndroidMigration");
-    expect(activity).toContain("appVersionCode=27");
+    expect(activity).toContain("DadKitAndroidLegacyExport");
+    expect(activity).toContain("source=apk&appVersionCode=");
+    expect(activity).toContain("APP_VERSION_CODE = 28");
     expect(manifest).not.toContain("REQUEST_INSTALL_PACKAGES");
     expect(activity).not.toContain("DadKitAndroidUpdate");
-    expect(validator).toContain("no local request interception");
-    expect(validator).toContain("no APK web asset loader");
+    expect(validator).toContain("local asset loader");
+    expect(validator).toContain("static build excludes API routes");
     expect(existsSync(join(process.cwd(), "scripts", "build-android-web.mjs"))).toBe(false);
     expect(existsSync(join(process.cwd(), "scripts", "prepare-native-android.mjs"))).toBe(false);
     expect(packageJson.devDependencies).not.toHaveProperty("@bubblewrap/cli");
@@ -135,7 +139,7 @@ describe("release endpoints and product surface", () => {
   it("keeps the Android tag release strict and verifies the signed APK", () => {
     const workflow = readSource(".github", "workflows", "android-release.yml");
 
-    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v3.4.13"');
+    expect(workflow).toContain('test "$GITHUB_REF_NAME" = "v1.0.0"');
     expect(workflow).toContain(
       'git merge-base --is-ancestor "$GITHUB_SHA" origin/main',
     );
@@ -143,7 +147,7 @@ describe("release endpoints and product surface", () => {
     expect(workflow).toContain("apksigner");
     expect(workflow).toContain("actions/upload-artifact@v4");
     expect(workflow).toContain("retention-days: 30");
-    expect(workflow).toContain("must not contain bundled web pages");
+    expect(workflow).toContain("must bundle the static web app");
     expect(workflow).toContain('gh release create "$GITHUB_REF_NAME"');
   });
 
@@ -261,7 +265,7 @@ describe("release endpoints and product surface", () => {
   it("installs the entry shell, then keeps all core routes in the background cache list", () => {
     const sw = readSource("public", "sw.js");
 
-    expect(sw).toContain('const CACHE_NAME = "dadkit-v3.4.13-pwa-r3"');
+    expect(sw).toContain('const CACHE_NAME = "dadkit-v1.0.0-pwa-r1"');
     expect(sw).toContain('const PRECACHE_ROUTES = ["/"]');
     expect(sw).toContain("BACKGROUND_ROUTES");
     expect(sw).toContain("networkFirstNavigation(event.request)");

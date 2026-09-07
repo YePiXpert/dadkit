@@ -106,15 +106,20 @@ describe("PWA install status", () => {
     expect(isPwaInstallAvailable()).toBe(true);
   });
 
-  it("recognizes the bundled Android app and suppresses PWA installation", () => {
+  it("recognizes bundled app shells and suppresses PWA installation", () => {
     expect(isBundledAndroidApp()).toBe(false);
 
     stubWindow("Mozilla/5.0 DadKitAndroid/23");
     setPwaInstallPromptAvailable(true);
     expect(isBundledAndroidApp()).toBe(true);
     expect(isPwaInstallAvailable()).toBe(false);
-    expect(installPrompt).toContain("isBundledAndroidApp()");
-    expect(settingsEntry).toContain("isBundledAndroidApp()");
+    expect(installPrompt).toContain("isAppShellBuild()");
+    expect(settingsEntry).toContain("isAppShellBuild()");
+
+    stubWindow("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) DadKitiOS/1");
+    setPwaInstallPromptAvailable(true);
+    expect(isBundledAndroidApp()).toBe(false);
+    expect(isPwaInstallAvailable()).toBe(false);
   });
 
   it("hides the settings entry after standalone or app installation", () => {

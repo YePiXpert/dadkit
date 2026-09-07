@@ -1,0 +1,83 @@
+name: ios-release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-15
+    env:
+      NEXT_PUBLIC_DADKIT_API_BASE: https://dadkit.505f.com
+      NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN: https://dadkit.505f.com
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build static web bundle for the IPA
+        run: |
+          npm ci
+          npm run build:static
+          test -f out/index.html
+          test -f out/sw.js
+
+      - name: Bundle web assets into the Xcode project
+        run: |
+          rm -rf ios/DadKit/www
+          cp -R out ios/DadKit/www
+          test -f ios/DadKit/www/index.html
+
+      - name: Build unsigned iOS app
+        run: |
+          xcodebuild \
+            -project ios/DadKit.xcodeproj \
+            -scheme DadKit \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath ios/build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            build
+
+      - name: Verify app bundle contents
+        run: |
+          APP="ios/build/Build/Products/Release-iphoneos/DadKit.app"
+          test -d "$APP"
+          test -f "$APP/www/index.html"
+          test -f "$APP/www/sw.js"
+          test -f "$APP/Info.plist"
+
+      - name: Package unsigned IPA
+        run: |
+          APP="ios/build/Build/Products/Release-iphoneos/DadKit.app"
+          rm -rf Payload DadKit-ios-unsigned.ipa
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry DadKit-ios-unsigned.ipa Payload
+          shasum -a 256 DadKit-ios-unsigned.ipa > DadKit-ios-unsigned.ipa.sha256
+
+      # 未签名 IPA 无法直接安装：下载后用 Sideloadly / AltStore 等自签工具
+      # 重签名并安装（免费 Apple ID 也可，7 天续签一次）。
+      - name: Store unsigned IPA privately for 30 days
+        uses: actions/upload-artifact@v4
+        with:
+          name: DadKit-ios-unsigned-ipa
+          path: |
+            DadKit-ios-unsigned.ipa
+            DadKit-ios-unsigned.ipa.sha256
+          if-no-files-found: error
+          retention-days: 30

@@ -5,13 +5,13 @@ import { Download } from "lucide-react";
 
 import {
   INSTALL_STATUS_CHANGED_EVENT,
-  isBundledAndroidApp,
   isPwaInstallAvailable,
   isPwaInstalled,
   isStandaloneDisplay,
   markPwaInstalled,
   openInstallPrompt,
 } from "@/lib/install-prompt";
+import { isAppShellBuild } from "@/lib/app-shell";
 
 export function InstallPromptSettingsEntry() {
   const [showInstallEntry, setShowInstallEntry] = useState(false);
@@ -21,7 +21,7 @@ export function InstallPromptSettingsEntry() {
 
     function syncInstallEntry() {
       setShowInstallEntry(
-        !isBundledAndroidApp() &&
+        !isAppShellBuild() &&
           !isPwaInstalled() &&
           isPwaInstallAvailable(),
       );
@@ -41,7 +41,7 @@ export function InstallPromptSettingsEntry() {
       syncInstallEntry();
     }
 
-    if (isBundledAndroidApp()) {
+    if (isAppShellBuild()) {
       setShowInstallEntry(false);
       return;
     }

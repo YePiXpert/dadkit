@@ -3,9 +3,9 @@ import path from "node:path";
 
 const root = process.cwd();
 const expected = {
-  tag: "v3.4.13",
-  versionName: "3.4.13",
-  versionCode: 27,
+  tag: "v1.0.0",
+  versionName: "1.0.0",
+  versionCode: 28,
   packageId: "com.dadkit.mobile",
   host: "dadkit.505f.com",
 };
@@ -19,18 +19,22 @@ const manifest = await readText("android/app/src/main/AndroidManifest.xml");
 const activity = await readText(
   "android/app/src/main/java/com/dadkit/mobile/LauncherActivity.java",
 );
+const buildStatic = await readText("scripts/build-static.mjs");
 
 assert(packageJson.version === expected.versionName, "package.json version");
 assert(packageLock.version === expected.versionName, "package-lock.json version");
+assert(packageJson.scripts?.["build:static"] === "node scripts/build-static.mjs", "static build script");
 assert(!packageJson.scripts?.["android:bundle"], "retired Android bundle script");
 assert(!packageJson.devDependencies?.["@bubblewrap/cli"], "Bubblewrap dependency must be absent");
 assert(!packageLock.packages?.[""]?.devDependencies?.["@bubblewrap/cli"], "Bubblewrap lock entry must be absent");
 assert(nextConfig.includes('output: "standalone"'), "standalone server build");
-assert(!nextConfig.includes("DADKIT_BUILD_TARGET"), "retired Android export target");
-assert(!nextConfig.includes("NEXT_PUBLIC_DADKIT_ANDROID_BUNDLE"), "retired Android build marker");
+assert(nextConfig.includes('output: "export"'), "static export build branch");
+assert(buildStatic.includes('"app/api"'), "static build excludes API routes");
+assert(buildStatic.includes('"middleware.ts"'), "static build excludes middleware");
 assert(gradle.includes(`applicationId "${expected.packageId}"`), "Gradle applicationId");
 assert(gradle.includes(`versionCode ${expected.versionCode}`), "Gradle versionCode");
 assert(gradle.includes(`versionName "${expected.versionName}"`), "Gradle versionName");
+assert(gradle.includes("androidx.webkit:webkit"), "WebViewAssetLoader dependency");
 assert(manifest.includes("android.permission.INTERNET"), "Internet permission");
 assert(!manifest.includes("REQUEST_INSTALL_PACKAGES"), "retired APK install permission");
 assert(!manifest.includes("androidx.core.content.FileProvider"), "retired APK FileProvider");
@@ -39,18 +43,21 @@ assert(manifest.includes('android:allowBackup="false"'), "private app data");
 assert(!manifest.includes("trusted"), "TWA manifest entries must be absent");
 assert(!manifest.includes("asset_statements"), "Digital Asset Links metadata must be absent");
 assert(activity.includes("extends Activity"), "Android activity");
-assert(activity.includes("new WebView(this)"), "remote WebView");
-assert(activity.includes(`APP_HOST = "${expected.host}"`), "production API host");
-assert(activity.includes(`source=apk&appVersionCode=${expected.versionCode}`), "APK start URL version");
-assert(activity.includes(`DadKitAndroid/${expected.versionCode}`), "APK user agent version");
-assert(!activity.includes("shouldInterceptRequest"), "no local request interception");
-assert(!activity.includes('getAssets().open("www/"'), "no APK web asset loader");
-assert(activity.includes("WebResourceError"), "offline main-frame handling");
-assert(activity.includes("loadDataWithBaseURL"), "offline retry page");
+assert(activity.includes("new WebView(this)"), "bundled-assets WebView");
+assert(activity.includes("WebViewAssetLoader"), "local asset loader");
+assert(activity.includes(`LOCAL_HOST = "appassets.androidplatform.net"`), "local asset origin");
+assert(activity.includes(`API_HOST = "${expected.host}"`), "production API host");
+assert(activity.includes("source=apk&appVersionCode="), "APK start URL version");
+assert(activity.includes(`APP_VERSION_CODE = ${expected.versionCode}`), "APK version code");
+assert(activity.includes(`" DadKitAndroid/" + APP_VERSION_CODE`), "APK user agent version");
+assert(activity.includes("DadKitAndroidLegacyExport"), "legacy origin export bridge");
 assert(activity.includes("DadKitAndroidMigration"), "native-to-web data migration bridge");
 assert(!activity.includes("DadKitAndroidUpdate"), "retired in-app update bridge");
 assert(!activity.includes("app-version"), "retired update endpoint");
+assert(activity.includes("WebResourceError"), "offline main-frame handling");
+assert(activity.includes("loadDataWithBaseURL"), "error retry page");
 
+// assets/www 是 CI 在打包前从 out/ 拷入的构建产物，源码树中必须保持缺失。
 for (const retiredPath of [
   "android/app/src/main/java/com/dadkit/mobile/MainActivity.kt",
   "android/app/src/main/java/com/dadkit/mobile/ui/DadKitApp.kt",
@@ -67,7 +74,7 @@ for (const retiredPath of [
 if (tag) assert(tag === expected.tag, `release tag must be ${expected.tag}`);
 
 console.log(
-  `Validated remote PWA APK ${expected.tag}: ${expected.packageId}, versionCode ${expected.versionCode}, trusted host ${expected.host}.`,
+  `Validated local-assets APK ${expected.tag}: ${expected.packageId}, versionCode ${expected.versionCode}, API host ${expected.host}.`,
 );
 
 async function readJson(relativePath) {

@@ -129,7 +129,21 @@ export type SyncSession = {
   deviceName: string;
   role: "owner" | "member";
   joinedAt: string;
+  // 跨域（静态托管/App 壳）场景的 Bearer 凭证；同源 Web 走 HttpOnly Cookie，不落本地。
+  token?: string;
 };
+
+const SYNC_SESSION_TOKEN_PATTERN = /^[0-9a-f]{64}\.[0-9a-f]{48,96}$/;
+
+export function isValidSyncSessionToken(
+  token: unknown,
+  spaceId?: string,
+): token is string {
+  if (typeof token !== "string" || !SYNC_SESSION_TOKEN_PATTERN.test(token)) {
+    return false;
+  }
+  return spaceId === undefined || token.startsWith(`${spaceId}.`);
+}
 
 export type SyncClientState = {
   lastSyncAt?: string;
@@ -537,6 +551,9 @@ export function loadSyncSession(): SyncSession | undefined {
     (value.role === "owner" || value.role === "member") &&
     typeof value.joinedAt === "string"
   ) {
+    const token = isValidSyncSessionToken(value.token, value.spaceId)
+      ? value.token
+      : undefined;
     return {
       version: 2,
       protocolVersion: 2,
@@ -546,6 +563,7 @@ export function loadSyncSession(): SyncSession | undefined {
       deviceName: value.deviceName,
       role: value.role,
       joinedAt: value.joinedAt,
+      ...(token ? { token } : {}),
     };
   }
 

@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import {
+  ANDROID_APP_ORIGIN,
+  IOS_APP_ORIGIN,
+} from "@/lib/sync/app-origins";
 import { checkMutationOrigin } from "@/lib/sync/origin-policy";
 
 afterEach(() => vi.unstubAllEnvs());
@@ -46,7 +50,7 @@ describe("sync mutation origin policy", () => {
     ).toBe(true);
   });
 
-  it("rejects lookalikes, wildcards, cross-site requests and insecure aliases", () => {
+  it("rejects lookalikes, wildcards, untrusted cross-site requests and insecure aliases", () => {
     vi.stubEnv("DADKIT_PUBLIC_ORIGIN", "https://dadkit.example");
     vi.stubEnv(
       "DADKIT_TRUSTED_ORIGINS",
@@ -67,14 +71,53 @@ describe("sync mutation origin policy", () => {
     }
     expect(
       checkMutationOrigin(
-        mutationRequest(
-          "https://legacy.example",
-          "https://legacy.example",
-          "cross-site",
-        ),
+        mutationRequest("https://evil.test", "https://evil.test", "cross-site"),
         { requireHeader: true },
       ),
     ).toBe(false);
+  });
+
+  it("allows trusted static-hosting origins and app shell origins cross-site", () => {
+    vi.stubEnv("DADKIT_PUBLIC_ORIGIN", "https://dadkit.example");
+    vi.stubEnv("DADKIT_TRUSTED_ORIGINS", "https://static.example");
+    vi.stubEnv("DADKIT_SYNC_REQUIRE_HTTPS", "true");
+
+    // 静态托管域名：资源在别处，跨站调用 /api/sync 属预期。
+    expect(
+      checkMutationOrigin(
+        mutationRequest("https://static.example", "https://static.example", "cross-site"),
+        { requireHeader: true },
+      ),
+    ).toBe(true);
+    // App 壳本地资源 origin（Android WebViewAssetLoader / iOS 自定义 scheme）。
+    expect(
+      checkMutationOrigin(
+        mutationRequest(ANDROID_APP_ORIGIN, ANDROID_APP_ORIGIN, "cross-site"),
+        { requireHeader: true },
+      ),
+    ).toBe(true);
+    expect(
+      checkMutationOrigin(
+        mutationRequest("https://dadkit.example", IOS_APP_ORIGIN, "cross-site"),
+        { requireHeader: true },
+      ),
+    ).toBe(true);
+  });
+
+  it("lets Bearer credentials bypass the cookie CSRF origin checks", () => {
+    vi.stubEnv("DADKIT_PUBLIC_ORIGIN", "https://dadkit.example");
+    vi.stubEnv("DADKIT_SYNC_REQUIRE_HTTPS", "true");
+
+    const request = new Request("https://dadkit.example/api/sync/push", {
+      method: "POST",
+      headers: {
+        authorization: "Bearer session-secret",
+        origin: "https://appassets.androidplatform.net",
+        "sec-fetch-site": "cross-site",
+      },
+    });
+
+    expect(checkMutationOrigin(request, { requireHeader: true })).toBe(true);
   });
 
   it("keeps missing Origin behavior explicit", () => {

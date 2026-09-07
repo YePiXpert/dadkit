@@ -4,6 +4,8 @@ node_modules
 
 # next.js
 .next
+.dadkit-static-build
+.static-excluded
 out
 
 # production
@@ -39,6 +41,12 @@ test-results/
 
 # 本地运行时家庭同步数据(DADKIT_DATA_DIR 默认 ./data)
 /data/
+
+# ios build output and bundled web assets (CI copies out/ into www/)
+ios/DadKit/www/
+ios/build/
+ios/DerivedData/
+ios/**/*.ipa
 
 # android build output and signing keys
 android/.gradle/

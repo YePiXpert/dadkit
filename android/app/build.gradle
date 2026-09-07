@@ -15,8 +15,8 @@ android {
         applicationId "com.dadkit.mobile"
         minSdkVersion 23
         targetSdkVersion 36
-        versionCode 27
-        versionName "3.4.13"
+        versionCode 28
+        versionName "1.0.0"
     }
 
     androidResources {
@@ -60,4 +60,6 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'androidx.core:core:1.13.1'
+    // WebViewAssetLoader：以 https 伪域提供 APK 内置的静态资源。
+    implementation 'androidx.webkit:webkit:1.14.0'
 }

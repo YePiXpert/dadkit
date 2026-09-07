@@ -32,7 +32,7 @@ function cookiePair(response: Response) {
 }
 
 describe("HttpOnly sync sessions", () => {
-  it("creates a cookie-only owner session and uses it for pull and push", async () => {
+  it("creates an owner session usable via cookie or Bearer token", async () => {
     const created = await createRoute(new Request(`${origin}/api/sync/v2/spaces`, {
       method: "POST",
       headers: { origin, "content-type": "application/json" },
@@ -44,9 +44,13 @@ describe("HttpOnly sync sessions", () => {
     expect(setCookie).toContain("SameSite=Strict");
     expect(setCookie).toContain("Path=/api/sync");
     expect(setCookie).toContain("Secure");
-    expect(JSON.stringify(await created.json())).not.toMatch(/token|secret/i);
 
     const cookie = cookiePair(created);
+    const ownerToken = decodeURIComponent(cookie.split("=")[1]!);
+    // 跨域客户端（静态托管/App 壳）没有同源 Cookie，body 里回发同一 token 走 Bearer。
+    const createdBody = await created.json() as { token?: string };
+    expect(createdBody.token).toBe(ownerToken);
+
     const pulled = await pullRoute(new Request(`${origin}/api/sync/pull`, { headers: { cookie } }));
     expect(pulled.status).toBe(200);
     const pushed = await pushRoute(new Request(`${origin}/api/sync/push`, {
@@ -63,7 +67,20 @@ describe("HttpOnly sync sessions", () => {
     }));
     expect(crossSite.status).toBe(403);
 
-    const ownerToken = decodeURIComponent(cookie.split("=")[1]!);
+    // Bearer 优先于 Cookie：跨域请求不带有效 Cookie 也应认证成功。
+    const bearerPulled = await pullRoute(new Request(`${origin}/api/sync/pull`, {
+      headers: {
+        cookie: "dadkit_sync_session=invalid.cookie",
+        authorization: `Bearer ${ownerToken}`,
+      },
+    }));
+    expect(bearerPulled.status).toBe(200);
+
+    const invalidBearer = await pullRoute(new Request(`${origin}/api/sync/pull`, {
+      headers: { authorization: "Bearer invalid.token" },
+    }));
+    expect(invalidBearer.status).toBe(401);
+
     const invite = await createV2Invite(ownerToken, 60);
     const joined = await joinRoute(new Request(`${origin}/api/sync/v2/join`, {
       method: "POST",
@@ -71,17 +88,13 @@ describe("HttpOnly sync sessions", () => {
       body: JSON.stringify({ inviteCredential: invite!.code, deviceName: "备用管理员" }),
     }));
     expect(joined.headers.get("set-cookie")).toContain("HttpOnly");
-    const joinedBody = await joined.json() as { space: { currentSession: { id: string } } };
-    expect(JSON.stringify(joinedBody)).not.toMatch(/token|secret/i);
+    const joinedCookie = cookiePair(joined);
+    const joinedBody = await joined.json() as {
+      token?: string;
+      space: { currentSession: { id: string } };
+    };
+    expect(joinedBody.token).toBe(decodeURIComponent(joinedCookie.split("=")[1]!));
     await updateSession(ownerToken, joinedBody.space.currentSession.id, { role: "owner" });
-
-    const bearerRejected = await pullRoute(new Request(`${origin}/api/sync/pull`, {
-      headers: {
-        cookie: "dadkit_sync_session=invalid.cookie",
-        authorization: `Bearer ${ownerToken}`,
-      },
-    }));
-    expect(bearerRejected.status).toBe(401);
 
     const left = await leaveRoute(new Request(`${origin}/api/sync/leave`, {
       method: "POST",
