@@ -15,9 +15,6 @@ concurrency:
 jobs:
   release:
     runs-on: macos-15
-    env:
-      NEXT_PUBLIC_DADKIT_API_BASE: https://dadkit.505f.com
-      NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN: https://dadkit.505f.com
     steps:
       - uses: actions/checkout@v5
 
@@ -26,7 +23,11 @@ jobs:
           node-version: 22
           cache: npm
 
+      # NEXT_PUBLIC_* 仅作用于静态导出步骤，避免影响其他测试与构建。
       - name: Build static web bundle for the IPA
+        env:
+          NEXT_PUBLIC_DADKIT_API_BASE: https://dadkit.505f.com
+          NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN: https://dadkit.505f.com
         run: |
           npm ci
           npm run build:static

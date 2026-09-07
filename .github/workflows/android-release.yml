@@ -21,8 +21,6 @@ jobs:
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
       DADKIT_PUBLIC_ORIGIN: https://dadkit.505f.com
-      NEXT_PUBLIC_DADKIT_API_BASE: https://dadkit.505f.com
-      NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN: https://dadkit.505f.com
     steps:
       - uses: actions/checkout@v5
         with:
@@ -72,7 +70,12 @@ jobs:
 
       # APK 资源本地化：静态导出 + 同步 API 指向云端。注意发布顺序——
       # 云端服务器必须先于 APK 发布（旧数据迁移要靠服务器上的导出钩子）。
+      # NEXT_PUBLIC_* 仅作用于静态导出步骤：泄漏到 npm test / npm run build
+      # 会把 API base 烤进服务器构建并改变 vitest 的相对路径断言。
       - name: Build static web bundle for the APK
+        env:
+          NEXT_PUBLIC_DADKIT_API_BASE: https://dadkit.505f.com
+          NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN: https://dadkit.505f.com
         run: |
           npm run build:static
           test -f out/index.html
