@@ -12,6 +12,9 @@ DADKIT_PUBLIC_ORIGIN_WAS_SET="${DADKIT_PUBLIC_ORIGIN+x}"
 DADKIT_PUBLIC_ORIGIN_VALUE="${DADKIT_PUBLIC_ORIGIN-}"
 DADKIT_TRUSTED_ORIGINS_WAS_SET="${DADKIT_TRUSTED_ORIGINS+x}"
 DADKIT_TRUSTED_ORIGINS_VALUE="${DADKIT_TRUSTED_ORIGINS-}"
+DADKIT_REQUIRE_HTTPS_WAS_SET="${DADKIT_SYNC_REQUIRE_HTTPS+x}"
+DADKIT_REQUIRE_HTTPS_VALUE="${DADKIT_SYNC_REQUIRE_HTTPS-}"
+DADKIT_INTERACTIVE="${DADKIT_INTERACTIVE:-auto}"
 DADKIT_FORCE_RESET="${DADKIT_FORCE_RESET:-0}"
 DADKIT_WAIT_TIMEOUT="${DADKIT_WAIT_TIMEOUT:-120}"
 DADKIT_IMAGE="${DADKIT_IMAGE:-ghcr.io/yepixpert/dadkit:latest}"
@@ -20,7 +23,7 @@ export DADKIT_IMAGE
 # Compose gives shell environment variables precedence over the project's .env.
 # Keep an existing deployment configuration authoritative, while still allowing
 # first-time callers to seed it through `env DADKIT_...=... docker-deploy.sh`.
-unset DADKIT_PORT DADKIT_BIND_ADDRESS DADKIT_PUBLIC_ORIGIN DADKIT_TRUSTED_ORIGINS
+unset DADKIT_PORT DADKIT_BIND_ADDRESS DADKIT_PUBLIC_ORIGIN DADKIT_TRUSTED_ORIGINS DADKIT_SYNC_REQUIRE_HTTPS
 
 need() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -60,12 +63,143 @@ validate_initial_env_value() {
   esac
 }
 
+# ---------- 交互式首次配置 ----------
+# 没有预置环境变量且（终端可用或 DADKIT_INTERACTIVE=1）时，逐项提问并生成 .env。
+# 域名模式保持 127.0.0.1 绑定等反向代理；IP 直连模式绑定 0.0.0.0 并关闭
+# HTTPS 强制（HTTP 明文传输，仅建议内网/测试或明确接受风险时使用）。
+
+strip_origin_input() {
+  printf '%s' "$1" | sed -e 's~^[a-zA-Z][a-zA-Z0-9+.-]*://~~' -e 's~/[/:].*$~~' -e 's~:$~~' -e "s~[[:space:]]~~g"
+}
+
+valid_port() {
+  case "$1" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+  [ "$1" -ge 1 ] && [ "$1" -le 65535 ]
+}
+
+detect_public_ip() {
+  if command -v curl >/dev/null 2>&1; then
+    ip="$(curl -fsS --max-time 4 https://api.ipify.org 2>/dev/null || true)"
+    [ -n "$ip" ] || ip="$(curl -fsS --max-time 4 http://ifconfig.me/ip 2>/dev/null || true)"
+  elif command -v wget >/dev/null 2>&1; then
+    ip="$(wget -qO- -T 4 http://ifconfig.me/ip 2>/dev/null || true)"
+  else
+    ip=""
+  fi
+  printf '%s' "$ip"
+}
+
+ask_until_valid() {
+  prompt="$1"
+  validate="$2"
+  while :; do
+    # 提示打到 stderr，函数 stdout 只回传答案，供命令替换捕获。
+    printf '%s' "$prompt" >&2
+    IFS= read -r answer || exit 1
+    if "$validate" "$answer"; then
+      printf '%s' "$answer"
+      return
+    fi
+    echo "  输入无效，请重试。" >&2
+  done
+}
+
+is_nonempty() { [ -n "$1" ]; }
+is_yes_or_no() { case "$1" in y|Y|n|N) return 0 ;; *) return 1 ;; esac; }
+
+run_interactive_setup() {
+  echo
+  echo "==================== DadKit 首次部署配置 ===================="
+  echo "两种方式任选："
+  echo "  1) 域名 + HTTPS（推荐）——需要你已配好反向代理和证书"
+  echo "  2) 无域名，用服务器 IP 直连（HTTP）——零配置，但数据明文传输"
+  echo
+
+  mode="$(ask_until_valid '选择部署方式 [1/2]: ' is_1_or_2)"
+
+  if [ "$mode" = "1" ]; then
+    domain="$(ask_until_valid '输入域名（如 dadkit.example.com，不用带 https://）: ' is_nonempty)"
+    domain="$(strip_origin_input "$domain")"
+    WIZARD_PUBLIC_ORIGIN="https://${domain}"
+    WIZARD_BIND_ADDRESS="127.0.0.1"
+    WIZARD_PORT="3333"
+    WIZARD_REQUIRE_HTTPS="true"
+    final_url="$WIZARD_PUBLIC_ORIGIN"
+  else
+    port="$(ask_until_valid '对外端口 [直接回车默认 3333]: ' valid_port_or_empty)"
+    [ -n "$port" ] || port=3333
+    detected="$(detect_public_ip)"
+    if [ -n "$detected" ]; then
+      echo "检测到本机公网 IP：${detected}"
+      default_note="（直接回车使用 ${detected}）"
+    else
+      default_note=""
+    fi
+    printf '输入服务器公网 IP%s: ' "$default_note"
+    IFS= read -r addr || exit 1
+    [ -n "$addr" ] || addr="$detected"
+    addr="$(strip_origin_input "$addr")"
+    if [ -z "$addr" ]; then
+      echo "未获得可用的服务器地址，已取消。" >&2
+      exit 1
+    fi
+    WIZARD_PUBLIC_ORIGIN="http://${addr}:${port}"
+    WIZARD_BIND_ADDRESS="0.0.0.0"
+    WIZARD_PORT="$port"
+    WIZARD_REQUIRE_HTTPS="false"
+    final_url="$WIZARD_PUBLIC_ORIGIN"
+  fi
+
+  echo
+  echo "-------------------- 配置确认 --------------------"
+  echo "  访问地址:        $WIZARD_PUBLIC_ORIGIN"
+  echo "  监听地址:        $WIZARD_BIND_ADDRESS:$WIZARD_PORT（容器内固定 3333）"
+  echo "  HTTPS 强制同步:  $WIZARD_REQUIRE_HTTPS"
+  echo "--------------------------------------------------"
+  if [ "$mode" = "2" ]; then
+    echo "  注意：HTTP 模式下账号 token 与家庭数据在网络上明文传输，"
+    echo "  仅建议内网、测试或明确接受该风险时使用。"
+    echo "  还需在云厂商安全组 / 防火墙放行 TCP $WIZARD_PORT。"
+  else
+    echo "  注意：容器只监听 127.0.0.1:3333，请把你的反向代理"
+    echo "  （Nginx/Caddy 等）指向该地址并终止 HTTPS。"
+  fi
+  echo
+
+  confirm="$(ask_until_valid '确认写入配置并继续部署？[y/n]: ' is_yes_or_no)"
+  case "$confirm" in
+    n|N)
+      echo "已取消，未写入任何配置。"
+      exit 0
+      ;;
+  esac
+
+  old_umask="$(umask)"
+  umask 077
+  : > .env
+  umask "$old_umask"
+  {
+    printf 'DADKIT_PORT=%s\n' "$WIZARD_PORT"
+    printf 'DADKIT_BIND_ADDRESS=%s\n' "$WIZARD_BIND_ADDRESS"
+    printf 'DADKIT_PUBLIC_ORIGIN=%s\n' "$WIZARD_PUBLIC_ORIGIN"
+    printf 'DADKIT_SYNC_REQUIRE_HTTPS=%s\n' "$WIZARD_REQUIRE_HTTPS"
+  } >> .env
+  chmod 600 .env
+  echo "已创建 $APP_DIR/.env"
+  WIZARD_FINAL_URL="$final_url"
+}
+
+is_1_or_2() { case "$1" in 1|2) return 0 ;; *) return 1 ;; esac; }
+valid_port_or_empty() { [ -z "$1" ] || valid_port "$1"; }
+
 write_initial_env() {
   if [ -e .env ] || [ -L .env ]; then
     return
   fi
 
-  if [ -z "$DADKIT_PORT_WAS_SET$DADKIT_BIND_ADDRESS_WAS_SET$DADKIT_PUBLIC_ORIGIN_WAS_SET$DADKIT_TRUSTED_ORIGINS_WAS_SET" ]; then
+  if [ -z "$DADKIT_PORT_WAS_SET$DADKIT_BIND_ADDRESS_WAS_SET$DADKIT_PUBLIC_ORIGIN_WAS_SET$DADKIT_TRUSTED_ORIGINS_WAS_SET$DADKIT_REQUIRE_HTTPS_WAS_SET" ]; then
     return
   fi
 
@@ -73,6 +207,7 @@ write_initial_env() {
   validate_initial_env_value DADKIT_BIND_ADDRESS "$DADKIT_BIND_ADDRESS_VALUE"
   validate_initial_env_value DADKIT_PUBLIC_ORIGIN "$DADKIT_PUBLIC_ORIGIN_VALUE"
   validate_initial_env_value DADKIT_TRUSTED_ORIGINS "$DADKIT_TRUSTED_ORIGINS_VALUE"
+  validate_initial_env_value DADKIT_SYNC_REQUIRE_HTTPS "$DADKIT_REQUIRE_HTTPS_VALUE"
 
   old_umask="$(umask)"
   umask 077
@@ -91,9 +226,20 @@ write_initial_env() {
   if [ -n "$DADKIT_TRUSTED_ORIGINS_WAS_SET" ]; then
     printf 'DADKIT_TRUSTED_ORIGINS=%s\n' "$DADKIT_TRUSTED_ORIGINS_VALUE" >> .env
   fi
+  if [ -n "$DADKIT_REQUIRE_HTTPS_WAS_SET" ]; then
+    printf 'DADKIT_SYNC_REQUIRE_HTTPS=%s\n' "$DADKIT_REQUIRE_HTTPS_VALUE" >> .env
+  fi
 
   chmod 600 .env
   echo "Created $APP_DIR/.env from the explicitly supplied deployment settings."
+}
+
+maybe_interactive_setup() {
+  [ -e .env ] || [ -L .env ] && return 0
+  [ -z "$DADKIT_PORT_WAS_SET$DADKIT_BIND_ADDRESS_WAS_SET$DADKIT_PUBLIC_ORIGIN_WAS_SET$DADKIT_TRUSTED_ORIGINS_WAS_SET$DADKIT_REQUIRE_HTTPS_WAS_SET" ] || return 0
+  if [ "$DADKIT_INTERACTIVE" = "1" ] || { [ "$DADKIT_INTERACTIVE" = "auto" ] && [ -t 0 ] && [ -t 1 ]; }; then
+    run_interactive_setup
+  fi
 }
 
 sync_repo() {
@@ -128,14 +274,20 @@ else
   cd "$APP_DIR"
 fi
 
+maybe_interactive_setup
 write_initial_env
 start_and_wait
 
 PUBLISHED_ENDPOINT="$(compose port dadkit 3333 2>/dev/null || true)"
-if [ -n "$PUBLISHED_ENDPOINT" ]; then
+if [ -n "${WIZARD_FINAL_URL:-}" ]; then
+  echo "DadKit 已启动，访问地址：$WIZARD_FINAL_URL"
+  echo "健康检查：$WIZARD_FINAL_URL/healthz"
+elif [ -n "$PUBLISHED_ENDPOINT" ]; then
   echo "DadKit is listening at $PUBLISHED_ENDPOINT; configure an HTTPS reverse proxy before public access."
   echo "Health check: http://${PUBLISHED_ENDPOINT}/healthz"
 else
   echo "DadKit started, but Docker Compose did not report a published endpoint."
 fi
+echo "提示：官方 APK/IPA 内置的同步地址是官方服务器；要让 App 连接这台自建服务器，"
+echo "需要以 DADKIT_PUBLIC_ORIGIN 指向本机重新构建（README「静态导出部署」）。浏览器访问不受影响。"
 compose ps

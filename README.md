@@ -40,8 +40,22 @@ DadKit 是一个本地优先的家庭待产与新生儿记录工具，支持网�
 ## 部署方式
 
 推荐直接拉取 GitHub Actions 已构建并测试通过的
-`ghcr.io/yepixpert/dadkit:latest`，再通过 HTTPS 反向代理公开服务。
-VPS 不需要运行 `npm`、`next build` 或 `docker build`。
+`ghcr.io/yepixpert/dadkit:latest`。VPS 不需要运行 `npm`、`next build` 或 `docker build`。
+
+在 VPS 上执行 `sh scripts/docker-deploy.sh` 即可完成首次部署：脚本会交互式引导配置，
+不需要手动编辑 `.env`——按提示选择部署方式并输入地址即可（也可以用
+`env DADKIT_...=... docker-deploy.sh` 全自动脚本化部署）。两种方式：
+
+1. **域名 + HTTPS（推荐）**：输入域名，容器监听 `127.0.0.1:3333`，
+   你需要自行配置反向代理（Nginx/Caddy 等）终止 HTTPS。
+2. **无域名，IP 直连（HTTP）**：输入端口（默认 3333）后脚本自动探测公网 IP，
+   容器直接监听 `0.0.0.0` 并关闭 HTTPS 强制（`DADKIT_SYNC_REQUIRE_HTTPS=false`）。
+   零依赖即可用，但 token 与家庭数据在网络上是明文传输，仅建议内网、测试
+   或明确接受该风险时使用；记得在云厂商安全组放行对应端口。
+
+浏览器访问任意一种部署都可以直接使用全部功能（包括家庭同步）。注意官方发布的
+APK/IPA 内置的同步地址是官方服务器；要让 App 壳连接自建服务器，需要把
+`NEXT_PUBLIC_DADKIT_API_BASE` 指向自建地址重新构建（见「静态导出部署」）。
 
 ```dotenv
 DADKIT_BIND_ADDRESS=127.0.0.1
