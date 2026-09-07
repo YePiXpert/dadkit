@@ -39,12 +39,19 @@ DadKit 是一个本地优先的家庭待产与新生儿记录工具，支持网�
 
 ## 部署方式
 
+**一键部署**：在 VPS 上执行下面这条命令即可，脚本会自动克隆仓库、
+引导你完成配置（域名或无域名 IP 直连）并启动容器，全程不需要手动编辑文件：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/YePiXpert/dadkit/main/scripts/docker-deploy.sh | sh
+```
+
 推荐直接拉取 GitHub Actions 已构建并测试通过的
 `ghcr.io/yepixpert/dadkit:latest`。VPS 不需要运行 `npm`、`next build` 或 `docker build`。
 
-在 VPS 上执行 `sh scripts/docker-deploy.sh` 即可完成首次部署：脚本会交互式引导配置，
-不需要手动编辑 `.env`——按提示选择部署方式并输入地址即可（也可以用
-`env DADKIT_...=... docker-deploy.sh` 全自动脚本化部署）。两种方式：
+部署脚本就是 `scripts/docker-deploy.sh`（上面的一键命令等价于克隆后执行它）：
+首次部署会交互式引导配置，不需要手动编辑 `.env`——按提示选择部署方式并输入地址即可
+（也可以用 `env DADKIT_...=... docker-deploy.sh` 全自动脚本化部署）。两种方式：
 
 1. **域名 + HTTPS（推荐）**：输入域名，容器监听 `127.0.0.1:3333`，
    你需要自行配置反向代理（Nginx/Caddy 等）终止 HTTPS。

@@ -64,9 +64,21 @@ validate_initial_env_value() {
 }
 
 # ---------- 交互式首次配置 ----------
-# 没有预置环境变量且（终端可用或 DADKIT_INTERACTIVE=1）时，逐项提问并生成 .env。
+# 没有预置环境变量且终端可用（或 DADKIT_INTERACTIVE=1 强制）时，逐项提问并生成 .env。
 # 域名模式保持 127.0.0.1 绑定等反向代理；IP 直连模式绑定 0.0.0.0 并关闭
 # HTTPS 强制（HTTP 明文传输，仅建议内网/测试或明确接受风险时使用）。
+# curl | sh 方式运行时 stdin 是脚本本身，答案改从 /dev/tty 读取（WIZARD_TTY）。
+
+WIZARD_TTY=""
+
+wizard_read() {
+  # $1 = 目标变量名；WIZARD_TTY 非空时从 /dev/tty 读（curl | sh 场景）。
+  if [ -n "$WIZARD_TTY" ]; then
+    IFS= read -r "$1" < "$WIZARD_TTY"
+  else
+    IFS= read -r "$1"
+  fi
+}
 
 strip_origin_input() {
   printf '%s' "$1" | sed -e 's~^[a-zA-Z][a-zA-Z0-9+.-]*://~~' -e 's~/[/:].*$~~' -e 's~:$~~' -e "s~[[:space:]]~~g"
@@ -97,7 +109,7 @@ ask_until_valid() {
   while :; do
     # 提示打到 stderr，函数 stdout 只回传答案，供命令替换捕获。
     printf '%s' "$prompt" >&2
-    IFS= read -r answer || exit 1
+    wizard_read answer || exit 1
     if "$validate" "$answer"; then
       printf '%s' "$answer"
       return
@@ -137,8 +149,8 @@ run_interactive_setup() {
     else
       default_note=""
     fi
-    printf '输入服务器公网 IP%s: ' "$default_note"
-    IFS= read -r addr || exit 1
+    printf '输入服务器公网 IP%s: ' "$default_note" >&2
+    wizard_read addr || exit 1
     [ -n "$addr" ] || addr="$detected"
     addr="$(strip_origin_input "$addr")"
     if [ -z "$addr" ]; then
@@ -237,7 +249,26 @@ write_initial_env() {
 maybe_interactive_setup() {
   [ -e .env ] || [ -L .env ] && return 0
   [ -z "$DADKIT_PORT_WAS_SET$DADKIT_BIND_ADDRESS_WAS_SET$DADKIT_PUBLIC_ORIGIN_WAS_SET$DADKIT_TRUSTED_ORIGINS_WAS_SET$DADKIT_REQUIRE_HTTPS_WAS_SET" ] || return 0
-  if [ "$DADKIT_INTERACTIVE" = "1" ] || { [ "$DADKIT_INTERACTIVE" = "auto" ] && [ -t 0 ] && [ -t 1 ]; }; then
+
+  case "$DADKIT_INTERACTIVE" in
+    0)
+      return 0
+      ;;
+    1)
+      # 测试/脚本化：强制进入向导，答案从 stdin 读。
+      WIZARD_TTY=""
+      run_interactive_setup
+      return 0
+      ;;
+  esac
+
+  # auto：直接运行时 stdin 是终端；curl | sh 时 stdin 是脚本管道，
+  # 改从 /dev/tty 读取答案；两者都不可用（CI/无终端）则跳过向导。
+  if [ -t 0 ]; then
+    WIZARD_TTY=""
+    run_interactive_setup
+  elif ( : ) < /dev/tty 2>/dev/null; then
+    WIZARD_TTY="/dev/tty"
     run_interactive_setup
   fi
 }
