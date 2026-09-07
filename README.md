@@ -170,6 +170,6 @@ Android APK 升级：
 
 iOS IPA 升级：从 `ios-release` 工作流产物下载未签名 IPA，自签后覆盖安装（Bundle ID 需与首次安装一致）。
 
-本次版本的详细变更与验收结果见 [DadKit 3.4.13 发布说明](docs/release-v3.4.13.md)。
+本次版本的详细变更与验收结果见 [DadKit 1.0.0 发布说明](docs/release-v1.0.0.md)。
 
 浏览器 PWA 优先获取线上页面，网络不可用时回退到最近一次成功缓存；Android 与 iOS App 直接使用内置资源，仅同步数据走网络。
