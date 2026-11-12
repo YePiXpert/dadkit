@@ -19,14 +19,14 @@ tmp
 !.env.example
 
 # Private local material must not be sent to the Docker builder.
-**/private-local
-**/private
-**/local
-**/reports
-**/backups
-**/secrets
-**/data
-**/evidence
+/private-local/
+/private/
+/local/
+/reports/
+/backups/
+/secrets/
+/data/
+/evidence/
 **/*.har
 **/*.pem
 **/*.key
