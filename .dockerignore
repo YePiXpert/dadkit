@@ -17,3 +17,22 @@ tmp
 .env
 .env.*
 !.env.example
+
+# Private local material must not be sent to the Docker builder.
+**/private-local
+**/private
+**/local
+**/reports
+**/backups
+**/secrets
+**/data
+**/evidence
+**/*.har
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.mobileprovision
+**/*.sqlite
+**/*.sqlite3
+**/*.db
