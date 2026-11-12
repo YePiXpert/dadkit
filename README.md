@@ -23,21 +23,31 @@ DadKit 是一个本地优先的家庭待产与新生儿记录工具，支持网�
 | --- | --- |
 | ![孕 20 周成长记插画](public/growth/week-20-banana.webp) | ![宝宝纸尿裤插画](public/item-art/general-baby-diapers.webp) |
 
-示例网址：
+以下为占位示例网址，使用时替换为自己的部署地址：
 
-- [正式站点](https://dadkit.505f.com/)
-- [宝宝成长记](https://dadkit.505f.com/growth)
-- [待产清单](https://dadkit.505f.com/checklist)
-- [产房包](https://dadkit.505f.com/checklist/mom)
-- [病房包 · 宝宝](https://dadkit.505f.com/checklist/baby)
-- [准备出发](https://dadkit.505f.com/departure)
-- [家庭成员设置](https://dadkit.505f.com/settings/family)
-- [家庭同步管理](https://dadkit.505f.com/settings/sync)
-- [宝宝记录](https://dadkit.505f.com/baby)
-- [备份与同步](https://dadkit.505f.com/settings/backup)
+- [正式站点](https://dadkit.example.com/)
+- [宝宝成长记](https://dadkit.example.com/growth)
+- [待产清单](https://dadkit.example.com/checklist)
+- [产房包](https://dadkit.example.com/checklist/mom)
+- [病房包 · 宝宝](https://dadkit.example.com/checklist/baby)
+- [准备出发](https://dadkit.example.com/departure)
+- [家庭成员设置](https://dadkit.example.com/settings/family)
+- [家庭同步管理](https://dadkit.example.com/settings/sync)
+- [宝宝记录](https://dadkit.example.com/baby)
+- [备份与同步](https://dadkit.example.com/settings/backup)
 - [最新 Android APK](https://github.com/YePiXpert/dadkit/releases/latest)
 
-## 部署方式
+## 配置与私人资料
+
+真实部署地址与原运维记录已移至维护者私有资料库。仓库中的 `example.com` 均为占位符。
+实例配置放在本机 `.env`；发布 Android/iOS 前，在 GitHub Actions repository variables
+配置 `DADKIT_PUBLIC_ORIGIN`，Android 原生迁移地址和两端同步地址使用同一配置。
+该值会进入客户端安装包，因此它不是秘密；访问家庭数据仍依赖有效邀请和授权。
+签名密钥使用 Secrets；真实家庭记录、邀请链接和设备诊断不要提交。
+
+## 通用部署方式
+
+公开访问时配置 HTTPS 反向代理，并将实例配置保存在不入库的 `.env` 中。
 
 **一键部署**：在 VPS 上执行下面这条命令即可，脚本会自动克隆仓库、
 引导你完成配置（域名或无域名 IP 直连）并启动容器，全程不需要手动编辑文件：
@@ -76,8 +86,8 @@ APK/IPA 内置的同步地址是官方服务器；要让 App 壳连接自建服�
 ```dotenv
 DADKIT_BIND_ADDRESS=127.0.0.1
 DADKIT_PORT=3333
-DADKIT_PUBLIC_ORIGIN=https://dadkit.505f.com
-DADKIT_TRUSTED_ORIGINS=https://dadkit.liyanpeng.com
+DADKIT_PUBLIC_ORIGIN=https://dadkit.example.com
+DADKIT_TRUSTED_ORIGINS=https://app.example.com
 DADKIT_SYNC_REGISTRATION_MODE=open
 DADKIT_SYNC_MAX_SPACE_BYTES=25165824
 DADKIT_SYNC_MAX_DEVICES=12
@@ -127,8 +137,8 @@ curl -fsS http://127.0.0.1:3333/healthz
 
 ```bash
 npm ci
-NEXT_PUBLIC_DADKIT_API_BASE=https://dadkit.505f.com \
-NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN=https://dadkit.505f.com \
+NEXT_PUBLIC_DADKIT_API_BASE=https://dadkit.example.com \
+NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN=https://dadkit.example.com \
 npm run build:static
 # 产物在 out/，可整体上传到任意静态托管或对象存储
 ```

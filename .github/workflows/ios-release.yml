@@ -15,8 +15,13 @@ concurrency:
 jobs:
   release:
     runs-on: macos-15
+    env:
+      DADKIT_PUBLIC_ORIGIN: ${{ vars.DADKIT_PUBLIC_ORIGIN }}
     steps:
       - uses: actions/checkout@v5
+
+      - name: Validate private deployment configuration
+        run: node scripts/validate-deployment-origin.mjs
 
       - uses: actions/setup-node@v5
         with:
@@ -26,8 +31,8 @@ jobs:
       # NEXT_PUBLIC_* 仅作用于静态导出步骤，避免影响其他测试与构建。
       - name: Build static web bundle for the IPA
         env:
-          NEXT_PUBLIC_DADKIT_API_BASE: https://dadkit.505f.com
-          NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN: https://dadkit.505f.com
+          NEXT_PUBLIC_DADKIT_API_BASE: ${{ vars.DADKIT_PUBLIC_ORIGIN }}
+          NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN: ${{ vars.DADKIT_PUBLIC_ORIGIN }}
         run: |
           npm ci
           npm run build:static

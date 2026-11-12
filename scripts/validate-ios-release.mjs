@@ -5,7 +5,6 @@ const root = process.cwd();
 const expected = {
   versionName: "1.0.0",
   bundleId: "com.dadkit.ios",
-  apiHost: "dadkit.505f.com",
 };
 
 const packageJson = await readJson("package.json");
@@ -40,7 +39,7 @@ assert(
   "unsigned IPA pipeline",
 );
 assert(
-  workflow.includes("NEXT_PUBLIC_DADKIT_API_BASE: https://" + expected.apiHost),
+  workflow.includes("NEXT_PUBLIC_DADKIT_API_BASE: ${{ vars.DADKIT_PUBLIC_ORIGIN }}"),
   "cloud sync API base",
 );
 
@@ -48,7 +47,7 @@ assert(
 await assertMissing("ios/DadKit/www");
 
 console.log(
-  `Validated local-assets iOS shell ${expected.versionName}: ${expected.bundleId}, API host ${expected.apiHost}.`,
+  `Validated local-assets iOS shell ${expected.versionName}: ${expected.bundleId}, API host supplied at build time.`,
 );
 
 async function readJson(relativePath) {

@@ -7,12 +7,26 @@ def releaseKeystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
 def releaseKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
 def releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: "dadkit"
 def hasReleaseSigning = releaseKeystorePath && releaseKeystorePassword && releaseKeyPassword
+// The deployment origin is supplied by the build environment, never committed.
+def configuredOrigin = System.getenv("DADKIT_PUBLIC_ORIGIN")
+def apiOrigin = configuredOrigin ?: "https://dadkit.example.com"
+def apiUri = new URI(apiOrigin)
+if (apiUri.scheme != "https" || !apiUri.host || apiUri.rawUserInfo ||
+        apiUri.rawQuery || apiUri.rawFragment || !(apiUri.path in ["", "/"]) || apiUri.port != -1) {
+    throw new GradleException("DADKIT_PUBLIC_ORIGIN must be an HTTPS origin without credentials, path or port")
+}
+if (gradle.startParameter.taskNames.any { it.toLowerCase().contains("release") } && !configuredOrigin) {
+    throw new GradleException("DADKIT_PUBLIC_ORIGIN is required for release builds")
+}
 android {
     compileSdkVersion 36
     namespace "com.dadkit.mobile"
 
+    buildFeatures { buildConfig true }
+
     defaultConfig {
         applicationId "com.dadkit.mobile"
+        buildConfigField "String", "API_HOST", groovy.json.JsonOutput.toJson(apiUri.host)
         minSdkVersion 23
         targetSdkVersion 36
         versionCode 28

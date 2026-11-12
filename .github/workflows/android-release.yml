@@ -20,7 +20,7 @@ jobs:
       ANDROID_KEYSTORE_ALIAS: dadkit
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-      DADKIT_PUBLIC_ORIGIN: https://dadkit.505f.com
+      DADKIT_PUBLIC_ORIGIN: ${{ vars.DADKIT_PUBLIC_ORIGIN }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -37,6 +37,9 @@ jobs:
             echo "Release $GITHUB_REF_NAME already exists; refusing to overwrite it." >&2
             exit 1
           fi
+
+      - name: Validate private deployment configuration
+        run: node scripts/validate-deployment-origin.mjs
 
       - uses: actions/setup-node@v5
         with:
@@ -74,8 +77,8 @@ jobs:
       # 会把 API base 烤进服务器构建并改变 vitest 的相对路径断言。
       - name: Build static web bundle for the APK
         env:
-          NEXT_PUBLIC_DADKIT_API_BASE: https://dadkit.505f.com
-          NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN: https://dadkit.505f.com
+          NEXT_PUBLIC_DADKIT_API_BASE: ${{ vars.DADKIT_PUBLIC_ORIGIN }}
+          NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN: ${{ vars.DADKIT_PUBLIC_ORIGIN }}
         run: |
           npm run build:static
           test -f out/index.html

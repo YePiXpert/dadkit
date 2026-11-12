@@ -36,14 +36,14 @@ import java.util.Locale;
 @SuppressWarnings("deprecation")
 public class LauncherActivity extends Activity {
     // 页面资源全部打包在 assets/www/，经 WebViewAssetLoader 以 https 伪域加载；
-    // 只有家庭同步数据请求云端 API（dadkit.505f.com/api/sync）。
+    // 只有家庭同步数据请求云端 API（构建配置指定的 /api/sync）。
     private static final String LOCAL_HOST = "appassets.androidplatform.net";
     private static final String LOCAL_ORIGIN = "https://" + LOCAL_HOST;
-    private static final String API_HOST = "dadkit.505f.com";
+    private static final String API_HOST = BuildConfig.API_HOST;
     private static final int APP_VERSION_CODE = 28;
     private static final String START_URL =
             LOCAL_ORIGIN + "/?source=apk&appVersionCode=" + APP_VERSION_CODE;
-    // 旧版 APK 的本地数据存在 https://dadkit.505f.com 这个 WebView origin 下；
+    // 旧版 APK 的本地数据存在 构建配置指定的旧站点 WebView origin 下；
     // 升级后首启静默加载一次旧站点导出数据，再进入本地资源版本。
     private static final String LEGACY_MIGRATION_URL =
             "https://" + API_HOST + "/?source=apk-migration&appVersionCode=" + APP_VERSION_CODE;

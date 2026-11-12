@@ -49,7 +49,7 @@ describe("VPS Docker deployment", () => {
     expect(readme).toContain("DADKIT_BIND_ADDRESS");
     expect(readme).toContain("DADKIT_PUBLIC_ORIGIN");
     expect(exampleEnv).toContain("DADKIT_BIND_ADDRESS=127.0.0.1");
-    expect(exampleEnv).toContain("DADKIT_PUBLIC_ORIGIN=https://dadkit.505f.com");
+    expect(exampleEnv).toContain("DADKIT_PUBLIC_ORIGIN=https://dadkit.example.com");
     expect(exampleEnv).toMatch(/^DADKIT_TRUSTED_ORIGINS=$/m);
     expect(exampleEnv).toContain("DADKIT_SYNC_REGISTRATION_MODE=open");
     expect(exampleEnv).toContain("DADKIT_SYNC_MAX_SPACE_BYTES=25165824");

@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-// 旧版 APK 的数据存在远程站点（https://dadkit.505f.com）的 WebView origin 下。
+// 旧版 APK 的数据存在远程站点（https://dadkit.example.com）的 WebView origin 下。
 // 升级到本地资源版本时，Android 壳会先在本页静默调用 __dadkitLegacyExport
 // 导出可移植数据，再切到本地资源页由 AndroidNativeMigration 导入。
 export function ApkLegacyExport() {

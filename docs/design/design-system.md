@@ -108,7 +108,7 @@ V3 的目标：在 V2「打开就知道还差什么」的基础上，把界面�
 ## 发布链路
 
 - Web/PWA：manifest、Service Worker、离线页和安装入口必须可独立工作；新版本需更新 Service Worker cache name。
-- Android：`android/` 是直接加载 `https://dadkit.505f.com` 的轻量 WebView 壳，不再打包 `assets/www`。线上页面导航采用 network-first，成功访问后由 Service Worker 提供离线缓存；当前会话不因部署而刷新，下次启动获取最新页面。原生数据迁移、主题与文件选择桥继续保留；versionCode 27 起外壳不再内置更新桥与安装权限，外壳更新统一引导到 GitHub Releases 外链，旧 APK 中的 `DadKitAndroidUpdate` 桥闲置但保持兼容。「我的 → 关于 DadKit」分别显示页面版本与 Android 外壳 versionCode，并提供「打开 GitHub Releases」入口。发布校验走 `scripts/validate-android-release.mjs`，确认 APK 不含网页包。
+- Android：`android/` 是直接加载 `https://dadkit.example.com` 的轻量 WebView 壳，不再打包 `assets/www`。线上页面导航采用 network-first，成功访问后由 Service Worker 提供离线缓存；当前会话不因部署而刷新，下次启动获取最新页面。原生数据迁移、主题与文件选择桥继续保留；versionCode 27 起外壳不再内置更新桥与安装权限，外壳更新统一引导到 GitHub Releases 外链，旧 APK 中的 `DadKitAndroidUpdate` 桥闲置但保持兼容。「我的 → 关于 DadKit」分别显示页面版本与 Android 外壳 versionCode，并提供「打开 GitHub Releases」入口。发布校验走 `scripts/validate-android-release.mjs`，确认 APK 不含网页包。
 
 ## 边界
 

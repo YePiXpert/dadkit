@@ -83,7 +83,7 @@ describe("release endpoints and product surface", () => {
     expect(readme).toContain("当前设备使用者");
     expect(readme).toContain("亲喂、瓶喂、吸奶、尿布和睡眠");
     expect(readme).toContain("全部、待购买、待装包和已装包");
-    expect(readme).toContain("https://dadkit.505f.com/");
+    expect(readme).toContain("https://dadkit.example.com/");
     expect(readme).toContain("public/og.png");
     expect(readme).toContain("public/growth/week-20-banana.webp");
     expect(readme).toContain("最新 Android APK");
@@ -121,7 +121,7 @@ describe("release endpoints and product surface", () => {
     expect(activity).toContain("shouldInterceptRequest");
     expect(activity).toContain("WebViewAssetLoader");
     expect(activity).toContain('LOCAL_HOST = "appassets.androidplatform.net"');
-    expect(activity).toContain('API_HOST = "dadkit.505f.com"');
+    expect(activity).toContain('API_HOST = BuildConfig.API_HOST');
     expect(activity).toContain("loadDataWithBaseURL");
     expect(activity).toContain("DadKitAndroidMigration");
     expect(activity).toContain("DadKitAndroidLegacyExport");

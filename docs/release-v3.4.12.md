@@ -14,7 +14,7 @@ Android：versionCode 25 / `com.dadkit.mobile`
 
 ## Android 页面热更新
 
-- Android WebView 改为直接加载 `https://dadkit.505f.com`，页面、样式与业务功能随服务器部署，在下次启动时自动生效。
+- Android WebView 改为直接加载 `https://dadkit.example.com`，页面、样式与业务功能随服务器部署，在下次启动时自动生效。
 - Service Worker 对页面导航采用联网优先、缓存兜底；成功联网使用一次后，断网仍可打开最近缓存的主要页面。
 - 当前会话不会因服务器发布而强制刷新，避免打断编辑和记录操作；首次使用或清空应用数据后的第一次启动仍需联网。
 - 移除 APK 内的完整 PWA 静态导出与图片副本，缩小安装包并取消 Android 专用前端构建分支。

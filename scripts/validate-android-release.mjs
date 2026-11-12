@@ -7,7 +7,6 @@ const expected = {
   versionName: "1.0.0",
   versionCode: 28,
   packageId: "com.dadkit.mobile",
-  host: "dadkit.505f.com",
 };
 const tag = process.env.GITHUB_REF_NAME || process.argv[2];
 
@@ -46,7 +45,8 @@ assert(activity.includes("extends Activity"), "Android activity");
 assert(activity.includes("new WebView(this)"), "bundled-assets WebView");
 assert(activity.includes("WebViewAssetLoader"), "local asset loader");
 assert(activity.includes(`LOCAL_HOST = "appassets.androidplatform.net"`), "local asset origin");
-assert(activity.includes(`API_HOST = "${expected.host}"`), "production API host");
+assert(activity.includes("API_HOST = BuildConfig.API_HOST"), "build-time API host");
+assert(gradle.includes('System.getenv("DADKIT_PUBLIC_ORIGIN")'), "deployment origin injection");
 assert(activity.includes("source=apk&appVersionCode="), "APK start URL version");
 assert(activity.includes(`APP_VERSION_CODE = ${expected.versionCode}`), "APK version code");
 assert(activity.includes(`" DadKitAndroid/" + APP_VERSION_CODE`), "APK user agent version");
@@ -74,7 +74,7 @@ for (const retiredPath of [
 if (tag) assert(tag === expected.tag, `release tag must be ${expected.tag}`);
 
 console.log(
-  `Validated local-assets APK ${expected.tag}: ${expected.packageId}, versionCode ${expected.versionCode}, API host ${expected.host}.`,
+  `Validated local-assets APK ${expected.tag}: ${expected.packageId}, versionCode ${expected.versionCode}, API host supplied at build time.`,
 );
 
 async function readJson(relativePath) {

@@ -21,13 +21,13 @@ describe("sync api endpoint resolution", () => {
   });
 
   it("prefixes the configured cloud API base and normalizes it to an origin", async () => {
-    vi.stubEnv("NEXT_PUBLIC_DADKIT_API_BASE", "https://dadkit.505f.com/some/path/");
+    vi.stubEnv("NEXT_PUBLIC_DADKIT_API_BASE", "https://dadkit.example.com/some/path/");
     const endpoint = await import("@/lib/sync/api-endpoint");
 
-    expect(endpoint.SYNC_API_BASE).toBe("https://dadkit.505f.com");
+    expect(endpoint.SYNC_API_BASE).toBe("https://dadkit.example.com");
     expect(endpoint.isRemoteSyncApi()).toBe(true);
     expect(endpoint.resolveApiUrl("/api/sync/pull")).toBe(
-      "https://dadkit.505f.com/api/sync/pull",
+      "https://dadkit.example.com/api/sync/pull",
     );
   });
 
@@ -41,20 +41,20 @@ describe("sync api endpoint resolution", () => {
 
   it("prefers the configured public web origin for invite links", async () => {
     installBrowserStorage();
-    vi.stubEnv("NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN", "https://dadkit.505f.com");
+    vi.stubEnv("NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN", "https://dadkit.example.com");
     vi.stubGlobal("window", { location: { origin: "https://appassets.androidplatform.net" } });
     const endpoint = await import("@/lib/sync/api-endpoint");
 
-    expect(endpoint.publicAppOrigin()).toBe("https://dadkit.505f.com");
+    expect(endpoint.publicAppOrigin()).toBe("https://dadkit.example.com");
   });
 
   it("falls back to the current origin for same-origin deployments", async () => {
     installBrowserStorage();
     vi.stubEnv("NEXT_PUBLIC_DADKIT_PUBLIC_WEB_ORIGIN", "");
-    vi.stubGlobal("window", { location: { origin: "https://dadkit.505f.com" } });
+    vi.stubGlobal("window", { location: { origin: "https://dadkit.example.com" } });
     const endpoint = await import("@/lib/sync/api-endpoint");
 
-    expect(endpoint.publicAppOrigin()).toBe("https://dadkit.505f.com");
+    expect(endpoint.publicAppOrigin()).toBe("https://dadkit.example.com");
   });
 });
 
